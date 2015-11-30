@@ -55,3 +55,25 @@ docs/_build/
 
 # PyBuilder
 target/
+
+
+# Django Files:
+boss_mysql.cnf
+settings.py
+
+
+# Compiled source:
+*.pyc
+*.py~
+*.o
+*.so
+*.out
+*.exe
+*.a
+*.log
+
+
+# OS Generated Files:
+.DS_Store
+*.swp
+
