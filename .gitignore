@@ -56,12 +56,6 @@ docs/_build/
 # PyBuilder
 target/
 
-
-# Django Files:
-boss_mysql.cnf
-settings.py
-
-
 # Compiled source:
 *.pyc
 *.py~

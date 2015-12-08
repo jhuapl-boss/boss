@@ -1,6 +1,0 @@
-# boss_mysql.cnf
-[client]
-database = ''
-user = ''
-password = ''
-default-character-set = utf8

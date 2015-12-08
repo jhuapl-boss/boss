@@ -20,8 +20,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-with open('/path/to/secret_key.txt') as f:
-    SECRET_KEY = f.read().strip()
+
+# TODO: This needs to configured in Vault
+SECRET_KEY = 'SECRET KEY'
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -76,15 +77,18 @@ WSGI_APPLICATION = 'boss.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
+# TODO : The database credentials have to be read from Vault
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'OPTIONS': {
-            'read_default_file': '/path/to/boss_mysql.cnf',
-        },
+        'NAME': 'boss_django',
+        'USER': 'TestUser',
+        'PASSWORD':'TestPassword',
+        'HOST': '',
+        'PORT': '',
+    
     }
 }
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
