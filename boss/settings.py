@@ -21,7 +21,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 
-# TODO: This needs to configured in Vault
+# TODO: This needs to configured to be stored and read from Vault
 SECRET_KEY = 'SECRET KEY'
 
 
@@ -77,15 +77,16 @@ WSGI_APPLICATION = 'boss.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
-# TODO : The database credentials have to be read from Vault
+# Using Amazon RDS
+# TODO : The database credentials have to stored and read from vault
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'boss_django',
+        'NAME': 'bosstest_db',
         'USER': 'TestUser',
         'PASSWORD':'TestPassword',
-        'HOST': '',
-        'PORT': '',
+        'HOST': 'bosstest.cwimetv8ippr.us-east-1.rds.amazonaws.com',
+        'PORT': '3306',
     
     }
 }
