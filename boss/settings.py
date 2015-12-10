@@ -15,14 +15,31 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Vault connection setup
+import urllib.request
+USERDATA_URL = "http://169.254.169.254/latest/user-data"
+vault_token = urllib.request.urlopen(USERDATA_URL).read().decode("utf-8")
+
+import hvac
+VAULT_URL = "http://10.0.0.5:8200"
+vault = hvac.Client(url=VAULT_URL, token=vault_token)
+
+def vault_secret(path, key):
+    response = vault.read(path)
+    if response is not None:
+        response = response["data"][key]
+        
+    if response is None:
+        raise Exception("Could not locate {}/{} in Vault".format(path,key))
+        
+    return response
+    
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-
-# TODO: This needs to configured to be stored and read from Vault
-SECRET_KEY = 'SECRET KEY'
+SECRET_KEY = vault_secret("secret/django", "secret_key")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -78,15 +95,14 @@ WSGI_APPLICATION = 'boss.wsgi.application'
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
 # Using Amazon RDS
-# TODO : The database credentials have to stored and read from vault
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bosstest_db',
-        'USER': 'TestUser',
-        'PASSWORD':'TestPassword',
-        'HOST': 'bosstest.cwimetv8ippr.us-east-1.rds.amazonaws.com',
-        'PORT': '3306',
+        'NAME': vault_secret("secret/django/db", "name"),
+        'USER': vault_secret("secret/django/db", "user"),
+        'PASSWORD':vault_secret("secret/django/db", "password"),
+        'HOST': vault_secret("secret/django/db", "host"),
+        'PORT': vault_secret("secret/django/db", "port"),
     
     }
 }
