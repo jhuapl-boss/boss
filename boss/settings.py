@@ -18,6 +18,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Vault connection setup
 import boss_utils
 vault = boss_utils.Vault()
+config = boss_utils.BossConfig()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
@@ -85,7 +86,7 @@ DATABASES = {
         'NAME': vault.read("secret/django/db", "name"),
         'USER': vault.read("secret/django/db", "user"),
         'PASSWORD':vault.read("secret/django/db", "password"),
-        'HOST': vault.read("secret/django/db", "host"),
+        'HOST': config["aws"]["db"],
         'PORT': vault.read("secret/django/db", "port"),
     
     }
