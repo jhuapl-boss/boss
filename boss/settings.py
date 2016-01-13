@@ -16,15 +16,15 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Vault connection setup
-import boss_utils
-vault = boss_utils.Vault()
-config = boss_utils.BossConfig()
+import boss
+vault = boss.vault.Vault()
+config = boss.configuration.BossConfig()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = vault.read("secret/django", "secret_key")
+SECRET_KEY = vault.read("secret/endpoint/django", "secret_key")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -83,11 +83,11 @@ WSGI_APPLICATION = 'boss.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': vault.read("secret/django/db", "name"),
-        'USER': vault.read("secret/django/db", "user"),
-        'PASSWORD':vault.read("secret/django/db", "password"),
+        'NAME': vault.read("secret/endpoint/django/db", "name"),
+        'USER': vault.read("secret/endpoint/django/db", "user"),
+        'PASSWORD':vault.read("secret/endpoint/django/db", "password"),
         'HOST': config["aws"]["db"],
-        'PORT': vault.read("secret/django/db", "port"),
+        'PORT': vault.read("secret/endpoint/django/db", "port"),
     
     }
 }
