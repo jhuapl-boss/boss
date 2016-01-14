@@ -16,9 +16,9 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Vault connection setup
-import boss
-vault = boss.vault.Vault()
-config = boss.configuration.BossConfig()
+import bossutils
+vault = bossutils.vault.Vault()
+config = bossutils.configuration.BossConfig()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
