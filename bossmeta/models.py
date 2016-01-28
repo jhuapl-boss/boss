@@ -2,8 +2,8 @@ from django.db import models
 
 
 class Collection(models.Model):
-
-    collection_name = models.CharField(max_length = 255, primary_key = True,verbose_name = "Name of the Collection")
+    
+    collection_name = models.CharField(max_length = 255, verbose_name = "Name of the Collection")
     collection_description = models.CharField(max_length = 4096,blank = True)
 
     class Meta:
@@ -14,7 +14,7 @@ class Collection(models.Model):
 class Experiment(models.Model):
 
     collection = models.ForeignKey(Collection,related_name = 'experiments')
-    experiment_name = models.CharField(max_length = 255, primary_key = True,verbose_name = "Name of the Experiment")
+    experiment_name = models.CharField(max_length = 255, verbose_name = "Name of the Experiment")
     experiment_description = models.CharField(max_length = 4096,blank = True)
     num_resolution_levels = models.IntegerField(default = 0)
 
@@ -34,7 +34,7 @@ class Experiment(models.Model):
 
 class CoordinateFrame(models.Model):
     
-    coord_name = models.CharField(max_length = 255, primary_key = True,verbose_name = "Name of the Coordinate reference frame")
+    coord_name = models.CharField(max_length = 255, verbose_name = "Name of the Coordinate reference frame")
     coord_description = models.CharField(max_length = 4096,blank = True)
     
     xextent =  models.IntegerField()
@@ -53,7 +53,7 @@ class CoordinateFrame(models.Model):
 class Dataset(models.Model):
 
     experiment = models.ForeignKey(Experiment,related_name ='datasets')
-    dataset_name = models.CharField(max_length = 255, primary_key = True,verbose_name = "Name of the Dataset")
+    dataset_name = models.CharField(max_length = 255, verbose_name = "Name of the Dataset")
     dataset_description = models.CharField(max_length = 4096,blank = True)
 
     IS_SOURCE_CHOICES = (
@@ -84,7 +84,7 @@ class Dataset(models.Model):
 
 class Channel(models.Model):
 
-    channel_name = models.CharField(max_length = 255, primary_key = True, verbose_name = "Name of the Channel")
+    channel_name = models.CharField(max_length = 255, verbose_name = "Name of the Channel")
     channel_description = models.CharField(max_length = 4096, blank = True)
     dataset = models.ForeignKey(Dataset ,related_name = 'channels')
 
@@ -93,7 +93,7 @@ class Channel(models.Model):
 
 class TimeSample(models.Model):
 
-    ts_name = models.CharField(max_length = 255, primary_key = True,verbose_name = "Name of the Time Sample ")
+    ts_name = models.CharField(max_length = 255, verbose_name = "Name of the Time Sample ")
     ts_description = models.CharField(max_length=4096,blank=True)
     channel = models.ForeignKey(Channel,related_name = 'timesamples')
 
@@ -102,7 +102,7 @@ class TimeSample(models.Model):
 
 class Layer(models.Model):
 
-    layer_name = models.CharField(max_length = 255, primary_key = True,verbose_name = "Name of the Layer ")
+    layer_name = models.CharField(max_length = 255, verbose_name = "Name of the Layer ")
     layer_description = models.CharField(max_length = 4096,blank = True)
     timesample = models.ForeignKey(TimeSample,related_name = 'layers')
 
