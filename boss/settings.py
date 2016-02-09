@@ -12,11 +12,11 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+import bossutils
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Vault connection setup
-import bossutils
 vault = bossutils.vault.Vault()
 config = bossutils.configuration.BossConfig()
 
@@ -44,6 +44,8 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'rest_framework',
     'bosscore',
+    'bossspatialdb',
+    'rest_framework_swagger',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -87,7 +89,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': vault.read("secret/endpoint/django/db", "name"),
         'USER': vault.read("secret/endpoint/django/db", "user"),
-        'PASSWORD':vault.read("secret/endpoint/django/db", "password"),
+        'PASSWORD': vault.read("secret/endpoint/django/db", "password"),
         'HOST': config["aws"]["db"],
         'PORT': vault.read("secret/endpoint/django/db", "port"),
     
