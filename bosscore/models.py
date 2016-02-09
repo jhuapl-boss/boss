@@ -57,9 +57,9 @@ class Dataset(models.Model):
     is_source = models.CharField(choices=IS_SOURCE_CHOICES, max_length=100)
     coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord')
 
-    # default_channel = models.ForeignKey(Channel,related_name='default_channel')
-    # default_time_sample = models.ForeignKey(Time_Sample,related_name='default_time_sample')
-    # default_layer = models.ForeignKey(Layer,related_name='default_layer')
+    default_channel = models.ForeignKey('Channel',related_name='default_channel', null = True)
+    default_time_sample = models.ForeignKey('TimeSample',related_name='default_time_sample', null = True)
+    default_layer = models.ForeignKey('Layer',related_name='default_layer',null = True)
 
 
     DATATYPE_CHOICES = (
