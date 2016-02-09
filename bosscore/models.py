@@ -62,14 +62,6 @@ class Dataset(models.Model):
     default_layer = models.ForeignKey('Layer',related_name='default_layer',null = True)
 
 
-    DATATYPE_CHOICES = (
-        (0, 'uint8'),
-        (1, 'uint16'),
-        (2, 'uint32'),
-    )
-
-    datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
-
     class Meta:
         db_table = u"datasets"
 
@@ -99,6 +91,14 @@ class Layer(models.Model):
     layer_name = models.CharField(max_length=255, verbose_name="Name of the Layer ")
     layer_description = models.CharField(max_length=4096, blank=True)
     timesample = models.ForeignKey(TimeSample, related_name='layers')
+    DATATYPE_CHOICES = (
+        (0, 'uint8'),
+        (1, 'uint16'),
+        (2, 'uint32'),
+        (3, 'uint64'),
+    )
+
+    datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank = True)
 
     class Meta:
         db_table = u"layers"
