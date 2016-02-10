@@ -71,3 +71,5 @@ target/
 .DS_Store
 *.swp
 
+.idea
+bossspatialdb/migrations
