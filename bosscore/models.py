@@ -58,7 +58,7 @@ class Dataset(models.Model):
     coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord')
 
     default_channel = models.ForeignKey('Channel',related_name='default_channel', null = True)
-    default_time_sample = models.ForeignKey('TimeSample',related_name='default_time_sample', null = True)
+    default_timesample = models.ForeignKey('TimeSample',related_name='default_timesample', null = True)
     default_layer = models.ForeignKey('Layer',related_name='default_layer',null = True)
 
 

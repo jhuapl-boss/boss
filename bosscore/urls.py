@@ -12,15 +12,23 @@ urlpatterns = [
     url(r'^info/coordinateframes/?$', views.CoordinateFrameList.as_view()),
 
     # Urls related to the data models
-    url(r'^info/(?P<col>\w+)/(?P<exp>\w+)/(?P<ds>\w+)/(?P<channel>\w+)/(?P<ts>\w+)/(?P<layer>\w+)/?', views.layerObj),
-    url(r'^info/(?P<col>\w+)/(?P<exp>\w+)/(?P<ds>\w+)/(?P<channel>\w+)/(?P<ts>\w+)/?', views.timesampleObj),
-    url(r'^info/(?P<col>\w+)/(?P<exp>\w+)/(?P<ds>\w+)/(?P<channel>\w+)/?', views.channelObj),
-    url(r'^info/(?P<col>\w+)/(?P<exp>\w+)/(?P<ds>\w+)/?', views.datasetObj),
-    url(r'^info/(?P<col>\w+)/?$', views.collectionObj),
-    url(r'^info/(?P<col>\w+)/(?P<exp>\w+)/?', views.experimentObj),
+    url(r'^info/(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/(?P<channel>\w+)/(?P<timesample>\w+)/(?P<layer>\w+)/?', views.LayerObj.as_view()),
+    url(r'^info/(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/(?P<channel>\w+)/(?P<timesample>\w+)/?', views.TimesampleObj.as_view()),
+    url(r'^info/(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/(?P<channel>\w+)/?', views.ChannelObj.as_view()),
+    url(r'^info/(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/?', views.DatasetObj.as_view()),
+    url(r'^info/(?P<collection>\w+)/(?P<experiment>\w+)/?', views.ExperimentObj.as_view()),
+    url(r'^info/(?P<collection>\w+)/?$', views.CollectionObj.as_view()),
 
     # Urls related to metadata
-    url(r'^meta/(?P<webargs>.*)/$$', views.boss_meta),
-    url(r'^meta/(?P<col>\w+)/?(?P<exp>\w+)?/?(?P<ds>\w+)?/?(?P<channel>\w+)?/?(?P<ts>\w+)?/?(?P<layer>\w+)?/?$',
-        views.boss_meta),
+   # url(r'^meta/(?P<webargs>.*)/$$', views.boss_meta),
+   # url(r'^meta/(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<dataset>\w+)?/?(?P<channel>\w+)?/?(?P<timesample>\w+)?/?(?P<layer>\w+)?/?$',views.boss_meta),
+
+    #Urls related to metadata
+    url(r'^meta/(?P<collection>\w+)/(?P<experiment>\w+)?/(?P<dataset>\w+)?/?$', views.BossMeta.as_view()),
+    url(r'^meta/(?P<collection>\w+)/(?P<experiment>\w+)?/?$', views.BossMeta.as_view()),
+    url(r'^meta/(?P<collection>\w+)/$', views.BossMeta.as_view()),
+    
+
+    #url(r'^meta/(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<dataset>\w+)?/?(?P<channel>\w+)?/?(?P<timesample>\w+)?/?(?P<layer>\w+)?/?$',views.boss_meta),
+
 ]
