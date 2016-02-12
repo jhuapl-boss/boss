@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.http import Http404
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import authentication, permissions
@@ -243,7 +245,7 @@ class CutoutView(Cutout):
 
         return ['col1', 'exp1', 'proj1']
 
-    def get(self, request, view, resolution, x_range, y_range, z_range, format=None):
+    def get(self, request, resolution, x_range, y_range, z_range, format=None):
         """
         GET an arbitrary cutout of data based on a datamodel view token
 
@@ -257,6 +259,11 @@ class CutoutView(Cutout):
         :return:
         """
         # Lookup view
+        if 'view' in request.query_params:
+            view = request.query_params['view']
+        else:
+            raise Http404("View Token missing. Please specify the view to access via the optional argument 'view'")
+
         tokens = self.lookup_view(view)
 
         # Set Channel
@@ -283,7 +290,7 @@ class CutoutView(Cutout):
 
         return HttpResponse(d, content_type='application/octet-stream', status=200)
 
-    def post(self, request, view, resolution, x_range, y_range, z_range):
+    def post(self, request, resolution, x_range, y_range, z_range):
         """
         View to handle POST requests for a cuboid of data while providing all datamodel params
 
@@ -299,6 +306,11 @@ class CutoutView(Cutout):
         :return:
         """
         # Lookup view
+        if 'view' in request.query_params:
+            view = request.query_params['view']
+        else:
+            raise Http404("View Token missing. Please specify the view to access via the optional argument 'view'")
+
         tokens = self.lookup_view(view)
 
         # Set Channel
