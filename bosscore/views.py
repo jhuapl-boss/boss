@@ -359,6 +359,7 @@ class BossMeta(APIView):
                 # Check if the collection exists
                 col = Collection.objects.get(collection_name=collection)
                 bosskey = collection
+                
             else:
                 # The collection name is None
                 return HttpResponse(status=404)
@@ -454,8 +455,10 @@ class BossMeta(APIView):
         # The metadata consist of two parts. The bosskey#metakey
         # bosskey represents the datamodel object
         # Metakey is the key for the meta data associated with the data model object
-
-        bosskey = self.get_bosskey(request,collection,experiment,dataset)
+        try:
+            bosskey = self.get_bosskey(request,collection,experiment,dataset)
+        except:
+            return HttpResponse(status=404)
         if bosskey == None or 'metakey' not in request.query_params:
             # TODO raise Bosserror
             return HttpResponse(status=404)
@@ -484,7 +487,6 @@ class BossMeta(APIView):
         # The metadata consist of two parts. The bosskey#metakey
         # bosskey represents the datamodel object
         # Metakey is the key for the meta data associated with the data model object
-
         bosskey = self.get_bosskey(request,collection,experiment,dataset)
         if bosskey == None or 'metakey' not in request.query_params or 'metavalue' not in request.query_params:
             # TODO raise Bosserror
@@ -494,7 +496,6 @@ class BossMeta(APIView):
 
         # generate the new Metakey which combines datamodel keys with the meta data key in the post
         combinedkey = self.get_combinedkey(bosskey, mkey)
-
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB("bossmeta")
         mdb.writemeta(combinedkey, metavalue)
