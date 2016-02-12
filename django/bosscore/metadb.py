@@ -1,14 +1,18 @@
 
 import boto3
+from boto3.session import Session
 
-
+from .cred import *
 class MetaDB:
     def __init__(self, tablename):
         """
         Iniatialize the data base
         :param tablename:  Name of the meta data table
         """
-        dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+        session = Session(aws_access_key_id=temp_aws_access_key_id,
+                  aws_secret_access_key=temp_aws_secret_access_key,
+                  region_name='us-east-1')
+        dynamodb = session.resource('dynamodb')
         self.table = dynamodb.Table(tablename)
 
     def writemeta(self, key, value):
@@ -30,7 +34,6 @@ class MetaDB:
         :param key:
         :return:
         """
-        print (key)
         response = self.table.get_item(
             Key={
                 'metakey': key,
