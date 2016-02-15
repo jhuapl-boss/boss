@@ -10,6 +10,8 @@ import numpy as np
 
 from .parsers import BloscParser
 
+from bosscore.request import BossRequest
+
 
 class Cutout(APIView):
     """
@@ -25,109 +27,32 @@ class Cutout(APIView):
     # TODO: Look into using a renderer, so you can send data back in multiple formats
     parser_classes = (BloscParser,)
 
-    def read_cutout(self, collection, experiment, dataset, resolution, x_range, y_range, z_range,
-                    channel=None, time=None, layer=None):
-        '''
+    def read_cutout(self, request):
+        """
         Method to get a cuboid of data from spdb
 
-        :param collection:
-        :param experiment:
-        :param dataset:
-        :param resolution:
-        :param x_range:
-        :param y_range:
-        :param z_range:
-        :param channel:
-        :param time:
-        :param layer:
+        :param request: BossRequest
         :return:
-        '''
-        # TODO: Validate resolution, xyz range, optional args
-        x_coords = x_range.split(":")
-        y_coords = y_range.split(":")
-        z_coords = z_range.split(":")
-        x_span = int(x_coords[1]) - int(x_coords[0])
-        y_span = int(y_coords[1]) - int(y_coords[0])
-        z_span = int(z_coords[1]) - int(z_coords[0])
-
-        # Set Channel
-        if channel:
-            channel_val = channel
-        else:
-            #TODO: Set to default channel
-            channel_val = 'default'
-
-        # Set Timepoint
-        if time:
-            time_val = time
-        else:
-            #TODO: Set to default time
-            time_val = 'default'
-
-        # Set layer
-        if layer:
-            layer_val = layer
-        else:
-            #TODO: Set to default layer
-            layer_val = 'default'
-
+        """
         # Get bitdepth of dataset
         # TODO: Query for datatype
         numbytes = 8
 
         # Get Cutout
         # TODO: Call spdb to get cubes
-        cutout = np.random.random((x_span, y_span, z_span))
+        cutout = np.random.random((request.get_x_span(), request.get_y_span(), request.get_z_span()))
 
         # Compress and return
         return blosc.compress(cutout, typesize=numbytes)
 
-    def write_cutout(self, data, collection, experiment, dataset, resolution, x_range, y_range, z_range,
-                     channel=None, time=None, layer=None):
+    def write_cutout(self, data, request):
         '''
         Method to write a cutout of data to spdb interface
 
         :param data:
-        :param collection:
-        :param experiment:
-        :param dataset:
-        :param resolution:
-        :param x_range:
-        :param y_range:
-        :param z_range:
-        :param channel:
-        :param time:
-        :param layer:
+        :param request: BossRequest
         :return:
         '''
-        # TODO: Validate resolution, xyz range, optional args
-        x_coords = x_range.split(":")
-        y_coords = y_range.split(":")
-        z_coords = z_range.split(":")
-        x_span = int(x_coords[1]) - int(x_coords[0])
-        y_span = int(y_coords[1]) - int(y_coords[0])
-        z_span = int(z_coords[1]) - int(z_coords[0])
-
-        # Set Channel
-        if channel:
-            channel_val = channel
-        else:
-            #TODO: Set to default channel
-            channel_val = 'default'
-
-        # Set Timepoint
-        if time:
-            time_val = time
-        else:
-            #TODO: Set to default time
-            time_val = 'default'
-
-        # Set layer
-        if layer:
-            layer_val = layer
-        else:
-            #TODO: Set to default layer
-            layer_val = 'default'
 
         # Get bitdepth of dataset
         # TODO: Query for dtype based on datatype of layer
@@ -136,7 +61,10 @@ class Cutout(APIView):
         # Format data
         # TODO: Query for dtype based on datatype of layer
         data_mat = np.fromstring(data, dtype=datatype)
-        data_mat = np.reshape(data_mat, (x_span, y_span, z_span), order='C')
+        print(request.get_x_span())
+        print(request.get_y_span())
+        print(request.get_z_span())
+        data_mat = np.reshape(data_mat, (request.get_x_span(), request.get_y_span(), request.get_z_span()), order='C')
 
         # Dice into cuboids
         # TODO: Dice data into cuboids
@@ -160,28 +88,11 @@ class Cutout(APIView):
         :param z_range: Python style range indicating the Z coordinates of where to post the cuboid (eg. 100:200)
         :return:
         """
-
-        # Set Channel
-        if 'ch' in request.query_params:
-            channel = request.query_params['ch']
-        else:
-            channel = None
-
-        # Set Timepoint
-        if 'time' in request.query_params:
-            time = request.query_params['time']
-        else:
-            time = None
-
-        # Set Layer
-        if 'layer' in request.query_params:
-            layer = request.query_params['layer']
-        else:
-            layer = None
+        # Process request and validate
+        req = BossRequest(request)
 
         # Get Cutout
-        d = self.read_cutout(collection, experiment, dataset, resolution,
-                             x_range, y_range, z_range, channel, time, layer)
+        d = self.read_cutout(req)
 
         return HttpResponse(d, content_type='application/octet-stream', status=200)
 
@@ -202,27 +113,11 @@ class Cutout(APIView):
         :param z_range: Python style range indicating the Z coordinates of where to post the cuboid (eg. 100:200)
         :return:
         """
-        # Set Channel
-        if 'ch' in request.query_params:
-            channel = request.query_params['ch']
-        else:
-            channel = None
-
-        # Set Timepoint
-        if 'time' in request.query_params:
-            time = request.query_params['time']
-        else:
-            time = None
-
-        # Set Layer
-        if 'layer' in request.query_params:
-            layer = request.query_params['layer']
-        else:
-            layer = None
+        # Process request and validate
+        req = BossRequest(request)
 
         # Write byte array to spdb interface after reshape and cutout
-        self.write_cutout(request.data, collection, experiment, dataset, resolution,
-                          x_range, y_range, z_range, channel, time, layer)
+        self.write_cutout(request.data, req)
 
         return Response(status=201)
 
@@ -232,20 +127,7 @@ class CutoutView(Cutout):
     View to handle spatial cutouts by providing a datamodel view token
     """
 
-    def lookup_view(self, view):
-        """
-        Method to lookup a view token and return the collection, experiment, and project
-
-        :param view: Unique View string token
-        :type view: str
-        :returns: List containing the collection, exp, and proj
-        :rtype: list
-        """
-        # TODO: Lookup the col,exp,proj based on the view
-
-        return ['col1', 'exp1', 'proj1']
-
-    def get(self, request, resolution, x_range, y_range, z_range, format=None):
+    def get(self, request, resolution, x_range, y_range, z_range):
         """
         GET an arbitrary cutout of data based on a datamodel view token
 
@@ -258,35 +140,11 @@ class CutoutView(Cutout):
         :param z_range: Python style range indicating the Z coordinates of where to post the cuboid (eg. 100:200)
         :return:
         """
-        # Lookup view
-        if 'view' in request.query_params:
-            view = request.query_params['view']
-        else:
-            raise Http404("View Token missing. Please specify the view to access via the optional argument 'view'")
-
-        tokens = self.lookup_view(view)
-
-        # Set Channel
-        if 'ch' in request.query_params:
-            channel = request.query_params['ch']
-        else:
-            channel = None
-
-        # Set Time Point
-        if 'time' in request.query_params:
-            time = request.query_params['time']
-        else:
-            time = None
-
-        # Set Layer
-        if 'layer' in request.query_params:
-            layer = request.query_params['layer']
-        else:
-            layer = None
+        # Process request and validate
+        req = BossRequest(request)
 
         # Get Cutout
-        d = self.read_cutout(tokens[0], tokens[1], tokens[2], resolution,
-                             x_range, y_range, z_range, channel, time, layer)
+        d = self.read_cutout(req)
 
         return HttpResponse(d, content_type='application/octet-stream', status=200)
 
@@ -305,35 +163,11 @@ class CutoutView(Cutout):
         :param z_range: Python style range indicating the Z coordinates of where to post the cuboid (eg. 100:200)
         :return:
         """
-        # Lookup view
-        if 'view' in request.query_params:
-            view = request.query_params['view']
-        else:
-            raise Http404("View Token missing. Please specify the view to access via the optional argument 'view'")
-
-        tokens = self.lookup_view(view)
-
-        # Set Channel
-        if 'ch' in request.query_params:
-            channel = request.query_params['ch']
-        else:
-            channel = None
-
-        # Set Timepoint
-        if 'time' in request.query_params:
-            time = request.query_params['time']
-        else:
-            time = None
-
-        # Set Layer
-        if 'layer' in request.query_params:
-            layer = request.query_params['layer']
-        else:
-            layer = None
+        # Process request and validate
+        req = BossRequest(request)
 
         # Write byte array to spdb interface after reshape and cutout
-        self.write_cutout(request.data, tokens[0], tokens[1], tokens[2], resolution,
-                          x_range, y_range, z_range, channel, time, layer)
+        self.write_cutout(request.data, req)
 
         return Response(status=201)
 

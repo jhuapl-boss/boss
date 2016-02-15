@@ -1,19 +1,24 @@
+from bossutils.aws import *
 
-import boto3
-from boto3.session import Session
 
-from .cred import *
 class MetaDB:
     def __init__(self, tablename):
         """
         Iniatialize the data base
         :param tablename:  Name of the meta data table
         """
-        session = Session(aws_access_key_id=temp_aws_access_key_id,
-                  aws_secret_access_key=temp_aws_secret_access_key,
-                  region_name='us-east-1')
-        dynamodb = session.resource('dynamodb')
+        # Get a session from AWS manager
+        aws_mngr = get_aws_manager()
+        self.__session = aws_mngr.get_session()
+
+        # Get table
+        dynamodb = self.__session.session.resource('dynamodb')
         self.table = dynamodb.Table(tablename)
+
+    def __del__(self):
+        # Clean up session by returning it to the pool
+        aws_mngr = get_aws_manager()
+        aws_mngr.put_session(self.__session)
 
     def writemeta(self, key, value):
         """
