@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from urllib.error import HTTPError
 
 import re
-
+from .error import BossHTTPError
 META_CONNECTOR = "&"
 
 
@@ -81,8 +81,7 @@ class BossRequest:
                 self.bosskey = None
 
         elif 'view' in request.query_params:
-            self.initialize_view_request(request, webargs)
-
+            return BossHTTPError(404, 30000, "Views not implemented. Specify the full request")
         else:
             m = re.match(
                 "/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?",
@@ -91,10 +90,10 @@ class BossRequest:
                 [collection, experiment, dataset, resolution, x_range, y_range, z_range] = [arg for arg in m.groups()]
 
             else:
-                raise  # Request did not match
+                return BossHTTPError(404, 30000, "Request does not match")
 
             self.initialize_request(request, collection, experiment, dataset)
-            self.set_bosskey
+            self.set_bosskey()
             self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
 
     def initialize_request(self, request, collection, experiment, dataset):
@@ -135,7 +134,7 @@ class BossRequest:
         elif self.datasetobj.default_channel:
             self.channelobj = self.datasetobj.default_channel
         else:
-            raise  # TODO ERROR: Missing channel and default channel
+            return BossHTTPError(404, 30000, 'No channel or default channel found')  
 
         if 'timesample' in request.query_params:
             timesample = request.query_params['timesample']
@@ -143,7 +142,7 @@ class BossRequest:
         elif self.datasetobj.default_timesample:
             self.timesampleobj = self.datasetobj.default_timesample
         else:
-            raise  # TODO ERROR: Missing timesample and default timesample
+            return BossHTTPError(404, 30000, 'No Timesample or default timesample found')
 
         if 'layer' in request.query_params:
             layer = request.query_params['layer']
@@ -151,7 +150,7 @@ class BossRequest:
         elif self.datasetobj.default_layer:
             self.layerobj = self.datasetobj.default_layer
         else:
-            raise  # TODO ERROR: Missing layer and default layer
+            return BossHTTPError(404, 30000, 'No Timesample or default timesample found') 
 
     def initialize_optargs_meta(self, request):
         """
@@ -174,7 +173,7 @@ class BossRequest:
             elif self.datasetobj.default_channel:
                 self.channelobj = self.datasetobj.default_channel
             else:
-                raise  # TODO ERROR: layer specified without a channel or default channel
+                return BossHTTPError(404, 30000, 'No channel or default channel found')
 
             if 'timesample' in request.query_params:
                 timesample = request.query_params['timesample']
@@ -182,7 +181,7 @@ class BossRequest:
             elif self.datasetobj.default_timesample:
                 self.timesampleobj = self.datasetobj.default_timesample
             else:
-                raise  # TODO ERROR: layer specified without a timesample or default timesample
+                return BossHTTPError(404, 30000, 'No timesample or default timesample found')
 
             layer = request.query_params['layer']
             layerstatus = self.set_layer(layer)
@@ -195,7 +194,8 @@ class BossRequest:
             elif self.datasetobj.default_channel:
                 self.channelobj = self.datasetobj.default_channel
             else:
-                raise  # TODO ERROR: timesample specified without a channel or default channel
+                return  BossHTTPError(404, 30000, 'No channel or default channel found')
+
             timesample = request.query_params['timesample']
             timesamplestatus = self.set_timesample(timesample)
 
@@ -234,10 +234,10 @@ class BossRequest:
             self.z_stop = int(z_coords[1])
 
             if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop):
-                raise  # Incorrect cutout args
+                raise BossHTTPError(404, 30000, 'Incorrect cutoutargs')
 
         except TypeError:
-            raise  # Error Not an integer
+            return BossHTTPError(404, 30000, 'Bad. Request. Type error in ')
 
     def initialize_view_request(self, request, webargs):
         """
@@ -268,8 +268,7 @@ class BossRequest:
             self.collectionobj = Collection.objects.get(collection_name=collection)
             return True
         else:
-            return False
-            # raise #TODO : Error : Collection not founf
+            return BossHTTPError(404, 30000, 'Collection not found')
         return false
 
     def get_collection(self):
@@ -292,10 +291,8 @@ class BossRequest:
             self.experimentobj = Experiment.objects.get(experiment_name=experiment, collection=self.collectionobj)
             return True
         else:
-            return HttpResponse(status=404)
-            # raise
-
-            # raise #TODO : Error : Experiment not found
+            return BossHTTPError(404, 30000, 'Experiment not found')
+            
         return false
 
     def get_experiment(self):
@@ -324,8 +321,8 @@ class BossRequest:
             if ds.default_layer: self.default_layer = ds.default_layer
             return True
         else:
-            return HttpResponse(status=404)
-            # raise #TODO : Error : Dataset not found
+            return BossHTTPError(404, 30000, 'Bad Request. Dataset not found')
+            
         return false
 
     def get_dataset(self):
@@ -348,8 +345,8 @@ class BossRequest:
             self.channelobj = Channel.objects.get(channel_name=channel, dataset=self.datasetobj)
             return True
         else:
-            return HttpResponse(status=404)
-            # raise #TODO : Error : Channel name not found
+            return BossHTTPError(404, 30000, 'Bad. Request. Channel not found')
+
         return false
 
     def get_channel(self):
@@ -372,9 +369,8 @@ class BossRequest:
             self.timesampleobj = TimeSample.objects.get(ts_name=timesample, channel=self.channelobj)
             return True
         else:
-            return False
-            # raise #TODO : Error : Timesample name not found
-
+            return BossHTTPError(404, 30000, 'Bad Request. Timesample not found')
+            
     def get_timesample(self):
         """
         Get the current timesample
@@ -395,8 +391,7 @@ class BossRequest:
             self.layerobj = Layer.objects.get(layer_name=layer, timesample=self.timesampleobj)
             return True
         else:
-            return False
-            # raise #TODO : Error : Layer name not found
+            return BossHTTPError(404, 30000, 'Bad. Request. Layer not found')
 
     def get_layer(self):
         """
@@ -557,8 +552,7 @@ class BossRequest:
             self.bosskey = self.collectionobj.collection_name
             return self.bosskey
         else:
-            # TODO - Some bad happened in the init
-            raise
+            return BossHTTPError(404, 30000, "Bad request. Did not initialize correctly")
 
         return self.bosskey
 
@@ -576,17 +570,15 @@ class BossRequest:
             elif self.default_channel:
                 optkey = META_CONNECTOR + self.default_channel.channel_name
             else:
-                raise
-                # TODO : layer specified but missing both channel and optional channel
+                return BossHTTPError(404, 30000, "Bad request. Channel and default channel not found")
 
             if self.timesampleobj:
                 optkey += META_CONNECTOR + self.timesampleobj.ts_name + META_CONNECTOR + self.layerobj.layer_name
             elif self.default_timesample:
                 optkey += META_CONNECTOR + self.default_timesample.ts_name + META_CONNECTOR + self.layerobj.layer_name
             else:
-                raise
-                # TODO :layer specified but missing both timesample and optional timesample argument
-
+                return BossHTTPError(404, 30000, "Bad request. Timesample and default timesample not found")        
+  
         elif self.timesampleobj:
 
             # Check channel and append
@@ -595,8 +587,7 @@ class BossRequest:
             elif self.default_channel:
                 optkey = META_CONNECTOR + self.default_channel.channel_name + META_CONNECTOR + self.timesampleobj.ts_name
             else:
-                raise
-                # TODO : Timesample specified but missing both channel and optional channel
+                return BossHTTPError(404, 30000, "Bad request. Channel and default channel not found")       
 
         elif self.channelobj:
             optkey = META_CONNECTOR + self.channelobj.channel_name
