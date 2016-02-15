@@ -14,7 +14,7 @@ class CoordinateFrameSerializer(serializers.ModelSerializer):
 class LayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Layer
-        fields = ('layer_name', 'layer_description', 'timesample')
+        fields = ('layer_name', 'layer_description', 'timesample', 'datatype')
 
 
 class TimeSampleSerializer(serializers.ModelSerializer):
@@ -40,8 +40,7 @@ class DatasetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dataset
         fields = (
-        'dataset_name', 'dataset_description', 'experiment', 'is_source', 'coord_frame', 'datatype', 'channels',
-        'coord')
+        'dataset_name', 'dataset_description', 'experiment', 'is_source', 'coord_frame', 'channels','coord','default_channel','default_timesample','default_layer')
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
