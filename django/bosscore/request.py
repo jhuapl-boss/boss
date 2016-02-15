@@ -94,7 +94,7 @@ class BossRequest:
                 raise  # Request did not match
 
             self.initialize_request(request, collection, experiment, dataset)
-            self.set_bosskey
+            self.set_bosskey()
             self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
 
     def initialize_request(self, request, collection, experiment, dataset):
