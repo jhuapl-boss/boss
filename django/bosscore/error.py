@@ -12,7 +12,7 @@ class BossHTTPError(JsonResponse):
 
     """
 
-    def __init__(self, status, code, message):
+    def __init__(self, status, message, code=0):
         """
         Custom HTTP error class
         :param status: HTTP Status code
