@@ -6,9 +6,8 @@ from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.views import APIView
 
-from bosscore.models import Collection, Experiment, Dataset, Channel, TimeSample, Layer, CoordinateFrame
-from bosscore.serializers import CollectionSerializer, ExperimentSerializer, DatasetSerializer, ChannelSerializer, \
-    TimeSampleSerializer, LayerSerializer, CoordinateFrameSerializer
+from bosscore.models import *
+from bosscore.serializers import *
 
 import re
 import os, sys
@@ -16,10 +15,11 @@ import os, sys
 
 from . import metadb
 from .bosserror import BossError
+from .request import BossRequest
 
 class CollectionObj(APIView):
     """
-    View to access a collection given collection_name
+    View to access a collection object
     :param request:
     :param col: Collection name
     """
@@ -40,9 +40,13 @@ class CollectionObj(APIView):
 
         serializer = CollectionSerializer(collectionobj)
         return Response(serializer.data)
-        
 
     def post(request,collection):
+        """
+        Post a new collection using django rest framework
+        :param collection:
+        :return:
+        """
         serializer = CollectionSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -50,6 +54,11 @@ class CollectionObj(APIView):
         return Response(serializer.errors, status=400)
 
     def delete(request,collection):
+        """
+        Delete a collection
+        :param collection:  Name of collection to delete
+        :return:
+        """
         try:
             collectionobj= Collection.objects.get(collection_name=collection)
         except Collection.DoesNotExist:
@@ -59,7 +68,7 @@ class CollectionObj(APIView):
 
 class ExperimentObj(APIView):
     """
-    View to access a collection given collection_name
+    View to access an experiment object
     :param request:
     :param col: Collection name
     """
@@ -81,6 +90,12 @@ class ExperimentObj(APIView):
     
  
     def post(request,collection,experiment):
+        """
+        Post  a new experiment
+        :param collection:
+        :param experiment:
+        :return:
+        """
         serializer = ExperimentSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -88,6 +103,12 @@ class ExperimentObj(APIView):
         return Response(serializer.errors, status=400)
 
     def delete(request,collection,experiment):
+        """
+        Delete an experiment object given the collection and experiment name
+        :param collection:
+        :param experiment:
+        :return:
+        """
         try:
             col = Collection.objects.get(collection_name=collection)
             experimentobj = Experiment.objects.get(experiment_name=experiment, collection=collection)
@@ -101,7 +122,7 @@ class ExperimentObj(APIView):
 
 class DatasetObj(APIView):
     """
-    View to access a dataset
+    View to access a dataset object
    
     """
     def get(self, request, collection, experiment, dataset):
@@ -126,6 +147,13 @@ class DatasetObj(APIView):
         return HttpResponse(status=404)
 
     def post(request,collection,experiment,dataset):
+        """
+        Post a new dataset object
+        :param collection:
+        :param experiment:
+        :param dataset:
+        :return:
+        """
         serializer = DatasetSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -133,6 +161,13 @@ class DatasetObj(APIView):
         return Response(serializer.errors, status=400)
 
     def delete(request,collection,experiment,dataset):
+        """
+        Delete a dataset
+        :param collection: Collection name
+        :param experiment: Experiment name
+        :param dataset: Dataset name
+        :return:
+        """
         try:
             col = Collection.objects.get(collection_name=collection)
             exp = Experiment.objects.get(experiment_name=experiment, collection=col)
@@ -176,6 +211,15 @@ class ChannelObj(APIView):
         return HttpResponse(status=404)
 
     def post(request,collection,experiment,dataset,channel):
+        """
+        Post a new Channel
+
+        :param collection: Collection
+        :param experiment: Experiment
+        :param dataset: Dataset
+        :param channel: Channel
+        :return:
+        """
         serializer = DatasetSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -183,6 +227,14 @@ class ChannelObj(APIView):
         return Response(serializer.errors, status=400)
 
     def delete(request,collection,experiment,dataset,channel):
+        """
+        Delete a Channel
+        :param collection:
+        :param experiment:
+        :param dataset:
+        :param channel:
+        :return:
+        """
         try:
             col = Collection.objects.get(collection_name=collection)
             exp = Experiment.objects.get(experiment_name=experiment, collection=col)
@@ -231,6 +283,15 @@ class TimesampleObj(APIView):
         return HttpResponse(status=404)
 
     def post(request,collection,experiment,dataset,channel, timesample):
+        """
+        Post a timesample
+        :param collection:
+        :param experiment:
+        :param dataset:
+        :param channel:
+        :param timesample:
+        :return:
+        """
         serializer = TimeSampleSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -238,7 +299,16 @@ class TimesampleObj(APIView):
         return Response(serializer.errors, status=400)
 
     def delete(request,collection,experiment,dataset,channel,timesample):
-        
+
+        """
+        Delete a timesample
+        :param collection:
+        :param experiment:
+        :param dataset:
+        :param channel:
+        :param timesample:
+        :return:
+        """
         try:
             col = Collection.objects.get(collection_name=collection)
             exp = Experiment.objects.get(experiment_name=experiment, collection=col)
@@ -256,7 +326,7 @@ class TimesampleObj(APIView):
 
 class LayerObj(APIView):
     """
-    View to access a time sample
+    View to access a Layer
 
     """
     def get(self, request, collection, experiment, dataset, channel, timesample, layer):
@@ -289,6 +359,16 @@ class LayerObj(APIView):
         return HttpResponse(status=404)
 
     def post(request,collection,experiment,dataset,channel, timesample, layer):
+        """
+        Post a layer
+        :param collection:
+        :param experiment:
+        :param dataset:
+        :param channel:
+        :param timesample:
+        :param layer:
+        :return:
+        """
         serializer = LayerSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -296,6 +376,16 @@ class LayerObj(APIView):
         return Response(serializer.errors, status=400)
 
     def delete(request,collection,experiment,dataset,channel,timesample,layer):
+        """
+        Delete a layer
+        :param collection:
+        :param experiment:
+        :param dataset:
+        :param channel:
+        :param timesample:
+        :param layer:
+        :return:
+        """
         try:
             col = Collection.objects.get(collection_name=collection)
             exp = Experiment.objects.get(experiment_name=experiment, collection=col)
@@ -315,36 +405,58 @@ class LayerObj(APIView):
 
 
 class CollectionList(generics.ListCreateAPIView):
+    """
+    List all collections
+
+    """
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
 
 
 class ExperimentList(generics.ListCreateAPIView):
+    """
+    List all experiments
+    """
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
 
 
 class DatasetList(generics.ListCreateAPIView):
+    """
+    List all datasets
+    """
     queryset = Dataset.objects.all()
     serializer_class = DatasetSerializer
 
 
 class ChannelList(generics.ListCreateAPIView):
+    """
+    List all channels
+    """
     queryset = Channel.objects.all()
     serializer_class = ChannelSerializer
 
 
 class TimeSampleList(generics.ListCreateAPIView):
+    """
+    List all timesamples
+    """
     queryset = TimeSample.objects.all()
     serializer_class = TimeSampleSerializer
 
 
 class LayerList(generics.ListCreateAPIView):
+    """
+    List all layers
+    """
     queryset = Layer.objects.all()
     serializer_class = LayerSerializer
 
 
 class CoordinateFrameList(generics.ListCreateAPIView):
+    """
+    List all coordinate frames
+    """
     queryset = CoordinateFrame.objects.all()
     serializer_class = CoordinateFrameSerializer
 
@@ -353,84 +465,7 @@ class BossMeta(APIView):
     View to handle read,write,update and delete metadata queries
     
     """
-    def get_bosskey(self, request,collection,experiment,dataset):
-        try :
-            if collection:
-                # Check if the collection exists
-                col = Collection.objects.get(collection_name=collection)
-                bosskey = collection
-                
-            else:
-                # The collection name is None
-                return HttpResponse(status=404)
-
-            if experiment:
-                # Check if the experiment exists
-                exp = Experiment.objects.get(experiment_name=experiment, collection = col)
-                bosskey += "&" + experiment
-            else:
-                # Experiment is None
-                return bosskey
-            
-
-            if dataset:
-                ds = Dataset.objects.get(dataset_name=dataset, experiment=exp)
-                bosskey += "&" + dataset
-            else:
-                return bosskey
-            
-            if 'layer' in request.query_params:
-                #get channel and timesample
-                if 'channel' in request.query_params:
-                    channel = request.query_params['channel']
-                else:
-                    default_channel = (ds.default_channel)
-                    channel = default_channel.channel_name
-                
-                if 'timesample' in request.query_params:
-                    timesample = request.query_params['timesample']
-                else:
-                    #TODO - verify error checking  if default_ts is none
-                    default_ts = (ds.default_timesample)
-                    time = default_ts.timesample_name
-                
-                layer = request.query_params['layer']
-                layerobj = Layer.objects.get(layer_name = layer) 
-
-                #Update the key for boss
-                bosskey = bosskey + "&" + channel + "&" + time + "&" + layer
-                return bosskey
-
-            if 'timesample' in request.query_params:
-                #get channel and timesample
-                if 'channel' in request.query_params:
-                    channel = request.query_params['channel']
-                else:
-                    default_channel = (ds.default_channel)
-                    channel = default_channel.channel_name
-
-                ts = request.query_params['timesample']
-                tsobj = TimeSample.objects.get(timesample_name = layer, channel = default_channel)
-
-                #Update the key for boss
-                bosskey = bosskey + "&" + channel + "&"+ time
-                
-            if 'channel' in request.query_params:
-                #get channel and timesample
-                channel = request.query_params['channel']
-                channelobj = Channel.objects.get(channel_name = channel, dataset = ds)
-
-                #Update the key for boss
-                bosskey = bosskey + "&" + channel 
-                return bosskey
-
-            return bosskey
-
-                
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,TimeSample.DoesNotExist, Layer.DoesNotExist):
-            return HttpResponse(status=404)
-            
-
+    
     def get_combinedkey(self,bosskey,metakey):
         """
         Generate a new metakey which is a combiniation of the datamodel representation and metaday key
@@ -455,8 +490,9 @@ class BossMeta(APIView):
         # The metadata consist of two parts. The bosskey#metakey
         # bosskey represents the datamodel object
         # Metakey is the key for the meta data associated with the data model object
+        req = BossRequest(request)
         try:
-            bosskey = self.get_bosskey(request,collection,experiment,dataset)
+            bosskey = req.get_bosskey()
         except:
             return HttpResponse(status=404)
         if bosskey == None or 'metakey' not in request.query_params:
@@ -487,13 +523,17 @@ class BossMeta(APIView):
         # The metadata consist of two parts. The bosskey#metakey
         # bosskey represents the datamodel object
         # Metakey is the key for the meta data associated with the data model object
-        bosskey = self.get_bosskey(request,collection,experiment,dataset)
+        req = BossRequest(request)
+        try:
+            bosskey = req.get_bosskey()
+        except:
+            return HttpResponse(status=404)
+        
         if bosskey == None or 'metakey' not in request.query_params or 'metavalue' not in request.query_params:
             # TODO raise Bosserror
             return HttpResponse(status=404)
         mkey = request.query_params['metakey']
         metavalue = request.query_params['metavalue']
-
         # generate the new Metakey which combines datamodel keys with the meta data key in the post
         combinedkey = self.get_combinedkey(bosskey, mkey)
         # Post Metadata the dynamodb database
@@ -512,8 +552,14 @@ class BossMeta(APIView):
         :param dataset: Dataset name. Default = None
         :return:
         """
-        #Get the concatenated key
-        bosskey = self.get_bosskey(request,collection,experiment,dataset)
+
+        req = BossRequest(request)
+        try:
+            bosskey = req.get_bosskey()
+        except:
+            return HttpResponse(status=404)        #Get the concatenated key
+            
+        
         if bosskey == None or 'metakey' not in request.query_params :
             # TODO raise Bosserror
             return HttpResponse(status=404)
@@ -545,8 +591,12 @@ class BossMeta(APIView):
         # bosskey represents the datamodel object
         # Metakey is the key for the meta data associated with the data model object
         
+        req = BossRequest(request)
+        try:
+            bosskey = req.get_bosskey()
+        except:
+            return HttpResponse(status=404)
         
-        bosskey = self.get_bosskey(request,collection,experiment,dataset)
         if bosskey == None or 'metakey' not in request.query_params or 'metavalue' not in request.query_params:
             # TODO raise Bosserror
             return HttpResponse(status=404)
