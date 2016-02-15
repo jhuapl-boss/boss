@@ -81,8 +81,7 @@ class BossRequest:
                 self.bosskey = None
 
         elif 'view' in request.query_params:
-            self.initialize_view_request(request, webargs)
-
+            return BossHTTPError(404, 30000, "Views not implemented. Specify the full request")
         else:
             m = re.match(
                 "/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?",
