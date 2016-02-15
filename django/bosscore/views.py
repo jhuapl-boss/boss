@@ -14,7 +14,6 @@ import os, sys
 
 
 from . import metadb
-from .bosserror import BossError
 from .request import BossRequest
 
 class CollectionObj(APIView):
