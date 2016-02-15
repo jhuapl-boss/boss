@@ -2,6 +2,26 @@ from django.http import JsonResponse
 from bossutils.logger import BossLogger
 
 
+class BossError(Exception):
+    """
+    Custom Error class to capture the same information as a BossHTTPError
+
+    When you reach a point in your code where you want to stop execution and return an error to the user:
+
+        raise BossError(409, "Key already exists", 20001)
+
+    """
+
+    def __init__(self, *args):
+        """
+        Custom HTTP error class
+        :param args: A tuple of (http_status_code, message, error_code)
+        :return:
+        """
+        # Set status code
+        self.args = args
+
+
 class BossHTTPError(JsonResponse):
     """
     Custom HTTP Error class that logs and renders a json response

@@ -11,6 +11,7 @@ import numpy as np
 from .parsers import BloscParser
 
 from bosscore.request import BossRequest
+from bosscore.error import BossError, BossHTTPError
 
 
 class Cutout(APIView):
@@ -89,7 +90,10 @@ class Cutout(APIView):
         :return:
         """
         # Process request and validate
-        req = BossRequest(request)
+        try:
+            req = BossRequest(request)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         # Get Cutout
         d = self.read_cutout(req)
@@ -114,7 +118,10 @@ class Cutout(APIView):
         :return:
         """
         # Process request and validate
-        req = BossRequest(request)
+        try:
+            req = BossRequest(request)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         # Write byte array to spdb interface after reshape and cutout
         self.write_cutout(request.data, req)
@@ -141,7 +148,10 @@ class CutoutView(Cutout):
         :return:
         """
         # Process request and validate
-        req = BossRequest(request)
+        try:
+            req = BossRequest(request)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         # Get Cutout
         d = self.read_cutout(req)
@@ -164,7 +174,10 @@ class CutoutView(Cutout):
         :return:
         """
         # Process request and validate
-        req = BossRequest(request)
+        try:
+            req = BossRequest(request)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         # Write byte array to spdb interface after reshape and cutout
         self.write_cutout(request.data, req)
