@@ -7,14 +7,14 @@ class CoordinateFrameSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoordinateFrame
         fields = (
-            'coord_name', 'coord_description', 'xextent', 'yextent', 'zextent', 'xvoxelsize', 'yvoxelsize',
-            'zvoxelsize')
+            'name', 'description', 'x_extent', 'y_extent', 'z_extent', 'x_voxelsize', 'y_voxelsize',
+            'z_voxelsize')
 
 
 class LayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Layer
-        fields = ('layer_name', 'layer_description', 'timesample', 'datatype')
+        fields = ('name', 'description', 'time', 'datatype')
 
 
 class TimeSampleSerializer(serializers.ModelSerializer):
@@ -22,7 +22,7 @@ class TimeSampleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TimeSample
-        fields = ('ts_name', 'ts_description', 'channel', 'layers')
+        fields = ('name', 'description', 'channel', 'layers')
 
 
 class ChannelSerializer(serializers.ModelSerializer):
@@ -30,7 +30,7 @@ class ChannelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('channel_name', 'channel_description', 'dataset', 'timesamples')
+        fields = ('name', 'description', 'dataset', 'timesamples')
 
 
 class DatasetSerializer(serializers.ModelSerializer):
@@ -40,7 +40,8 @@ class DatasetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dataset
         fields = (
-        'dataset_name', 'dataset_description', 'experiment', 'is_source', 'coord_frame', 'channels','coord','default_channel','default_timesample','default_layer')
+            'name', 'description', 'experiment', 'is_source', 'coord_frame', 'channels', 'coord',
+            'default_channel', 'default_time', 'default_layer')
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
@@ -49,8 +50,8 @@ class ExperimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Experiment
         fields = (
-        'experiment_name', 'experiment_description', 'collection', 'num_resolution_levels', 'heirarchy_method',
-        'datasets')
+            'name', 'description', 'collection', 'num_resolution_levels', 'hierarchy_method',
+            'datasets')
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -59,4 +60,4 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('collection_name', 'collection_description', 'experiments')
+        fields = ('name', 'description', 'experiments')

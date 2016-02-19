@@ -33,7 +33,7 @@ class CollectionObj(APIView):
         :return:
         """
         try:
-            collectionobj= Collection.objects.get(collection_name=collection)
+            collectionobj= Collection.objects.get(name=collection)
         except Collection.DoesNotExist:
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
 
@@ -59,7 +59,7 @@ class CollectionObj(APIView):
         :return:
         """
         try:
-            collectionobj= Collection.objects.get(collection_name=collection)
+            collectionobj= Collection.objects.get(name=collection)
         except Collection.DoesNotExist:
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
         collectionobj.delete()
@@ -79,8 +79,8 @@ class ExperimentObj(APIView):
         :return:
         """
         try:
-            col = Collection.objects.get(collection_name=collection)
-            experiment = Experiment.objects.get(experiment_name=experiment, collection=col)
+            col = Collection.objects.get(name=collection)
+            experiment = Experiment.objects.get(name=experiment, collection=col)
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
 
@@ -109,8 +109,8 @@ class ExperimentObj(APIView):
         :return:
         """
         try:
-            col = Collection.objects.get(collection_name=collection)
-            experimentobj = Experiment.objects.get(experiment_name=experiment, collection=collection)
+            col = Collection.objects.get(name=collection)
+            experimentobj = Experiment.objects.get(name=experiment, collection=collection)
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
         
@@ -133,9 +133,9 @@ class DatasetObj(APIView):
         :return:
         """
         try:
-            col= Collection.objects.get(collection_name=collection)
-            exp = Experiment.objects.get(experiment_name=experiment, collection=col)
-            datasetobj = Dataset.objects.get(dataset_name=dataset, experiment=exp)
+            col= Collection.objects.get(name=collection)
+            exp = Experiment.objects.get(name=experiment, collection=col)
+            datasetobj = Dataset.objects.get(name=dataset, experiment=exp)
             
         except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist):
             return HttpResponse(status=404)
@@ -168,9 +168,9 @@ class DatasetObj(APIView):
         :return:
         """
         try:
-            col = Collection.objects.get(collection_name=collection)
-            exp = Experiment.objects.get(experiment_name=experiment, collection=col)
-            datasetobj = Dataset.objects.get(dataset_name=ds, experiment=exp)
+            col = Collection.objects.get(name=collection)
+            exp = Experiment.objects.get(name=experiment, collection=col)
+            datasetobj = Dataset.objects.get(name=ds, experiment=exp)
 
         except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist):
             return HttpResponse(status=404)
@@ -196,10 +196,10 @@ class ChannelObj(APIView):
         """
 
         try:
-            col = Collection.objects.get(collection_name=collection)
-            exp = Experiment.objects.get(experiment_name=experiment, collection=col)
-            ds = Dataset.objects.get(dataset_name=dataset, experiment=exp)
-            channelobj = Channel.objects.get(channel_name=channel, dataset=ds)
+            col = Collection.objects.get(name=collection)
+            exp = Experiment.objects.get(name=experiment, collection=col)
+            ds = Dataset.objects.get(name=dataset, experiment=exp)
+            channelobj = Channel.objects.get(name=channel, dataset=ds)
 
         except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist):
             return HttpResponse(status=404)
@@ -235,10 +235,10 @@ class ChannelObj(APIView):
         :return:
         """
         try:
-            col = Collection.objects.get(collection_name=collection)
-            exp = Experiment.objects.get(experiment_name=experiment, collection=col)
-            ds = Dataset.objects.get(dataset_name=dataset, experiment=exp)
-            channelobj = Channel.objects.get(channel_name=channel, dataset=ds)
+            col = Collection.objects.get(name=collection)
+            exp = Experiment.objects.get(name=experiment, collection=col)
+            ds = Dataset.objects.get(name=dataset, experiment=exp)
+            channelobj = Channel.objects.get(name=channel, dataset=ds)
 
 
         except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist):
@@ -266,11 +266,11 @@ class TimesampleObj(APIView):
         """
 
         try:
-            col = Collection.objects.get(collection_name=collection)
-            exp = Experiment.objects.get(experiment_name=experiment, collection=col)
-            ds = Dataset.objects.get(dataset_name=dataset, experiment=exp)
-            channel = Channel.objects.get(channel_name=channel, dataset=ds)
-            tsobj = TimeSample.objects.get(ts_name=timesample, channel=channel)
+            col = Collection.objects.get(name=collection)
+            exp = Experiment.objects.get(name=experiment, collection=col)
+            ds = Dataset.objects.get(name=dataset, experiment=exp)
+            channel = Channel.objects.get(name=channel, dataset=ds)
+            tsobj = TimeSample.objects.get(name=timesample, channel=channel)
 
         except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,
             TimeSample.DoesNotExist):
@@ -309,11 +309,11 @@ class TimesampleObj(APIView):
         :return:
         """
         try:
-            col = Collection.objects.get(collection_name=collection)
-            exp = Experiment.objects.get(experiment_name=experiment, collection=col)
-            ds = Dataset.objects.get(dataset_name=dataset, experiment=exp)
-            channel = Channel.objects.get(channel_name=channel, dataset=ds)
-            tsobj = TimeSample.objects.get(ts_name=timesample, channel=channel)
+            col = Collection.objects.get(name=collection)
+            exp = Experiment.objects.get(name=experiment, collection=col)
+            ds = Dataset.objects.get(name=dataset, experiment=exp)
+            channel = Channel.objects.get(name=channel, dataset=ds)
+            tsobj = TimeSample.objects.get(name=timesample, channel=channel)
 
         except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,
             TimeSample.DoesNotExist):
@@ -340,12 +340,12 @@ class LayerObj(APIView):
         :return:
         """
         try:
-            col = Collection.objects.get(collection_name=collection)
-            exp = Experiment.objects.get(experiment_name=experiment, collection=col)
-            ds = Dataset.objects.get(dataset_name=dataset, experiment=exp)
-            channel = Channel.objects.get(channel_name=channel, dataset=ds)
-            ts = TimeSample.objects.get(ts_name=timesample, channel=channel)
-            layerobj = Layer.objects.get(layer_name=layer, timesample=ts)
+            col = Collection.objects.get(name=collection)
+            exp = Experiment.objects.get(name=experiment, collection=col)
+            ds = Dataset.objects.get(name=dataset, experiment=exp)
+            channel = Channel.objects.get(name=channel, dataset=ds)
+            ts = TimeSample.objects.get(name=timesample, channel=channel)
+            layerobj = Layer.objects.get(name=layer, timesample=ts)
 
 
         except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,
@@ -386,12 +386,12 @@ class LayerObj(APIView):
         :return:
         """
         try:
-            col = Collection.objects.get(collection_name=collection)
-            exp = Experiment.objects.get(experiment_name=experiment, collection=col)
-            ds = Dataset.objects.get(dataset_name=dataset, experiment=exp)
-            channel = Channel.objects.get(channel_name=channel, dataset=ds)
-            ts = TimeSample.objects.get(ts_name=timesample, channel=channel)
-            layerobj = Layer.objects.get(layer_name=layer, timesample=ts)
+            col = Collection.objects.get(name=collection)
+            exp = Experiment.objects.get(name=experiment, collection=col)
+            ds = Dataset.objects.get(name=dataset, experiment=exp)
+            channel = Channel.objects.get(name=channel, dataset=ds)
+            ts = TimeSample.objects.get(name=timesample, channel=channel)
+            layerobj = Layer.objects.get(name=layer, timesample=ts)
 
 
         except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,

@@ -28,7 +28,7 @@ class BossRequest:
         self.timesampleobj = None
         self.layerobj = None
         self.default_channel = None
-        self.default_timesample = None
+        self.default_time = None
         self.default_layer = None
         self.coord_frame = None
 
@@ -141,8 +141,8 @@ class BossRequest:
         if 'timesample' in request.query_params:
             timesample = request.query_params['timesample']
             timesamplestatus = self.set_timesample(timesample)
-        elif self.datasetobj.default_timesample:
-            self.timesampleobj = self.datasetobj.default_timesample
+        elif self.datasetobj.default_time:
+            self.timesampleobj = self.datasetobj.default_time
         else:
             return BossHTTPError(404, 'No Timesample or default timesample found', 30000)
 
@@ -180,8 +180,8 @@ class BossRequest:
             if 'timesample' in request.query_params:
                 timesample = request.query_params['timesample']
                 timesamplestatus = self.set_timesample(timesample)
-            elif self.datasetobj.default_timesample:
-                self.timesampleobj = self.datasetobj.default_timesample
+            elif self.datasetobj.default_time:
+                self.timesampleobj = self.datasetobj.default_time
             else:
                 return BossHTTPError(404, 'No timesample or default timesample found', 30000)
 
@@ -266,8 +266,8 @@ class BossRequest:
         :param collection: Collection name specified in the request
         :return: None
         """
-        if Collection.objects.filter(collection_name=str(collection)).exists():
-            self.collectionobj = Collection.objects.get(collection_name=collection)
+        if Collection.objects.filter(name=str(collection)).exists():
+            self.collectionobj = Collection.objects.get(name=collection)
             return True
         else:
             return BossHTTPError(404, 'Collection not found', 30000)
@@ -279,7 +279,7 @@ class BossRequest:
         :return: Collection name for the data model representing the current collection
         """
         if self.collectionobj:
-            return self.collectionobj.collection_name
+            return self.collectionobj.name
 
     def set_experiment(self, experiment):
         """
@@ -289,8 +289,8 @@ class BossRequest:
         :param experiment: Experiment name from the request
         :return: None
         """
-        if Experiment.objects.filter(experiment_name=experiment, collection=self.collectionobj).exists():
-            self.experimentobj = Experiment.objects.get(experiment_name=experiment, collection=self.collectionobj)
+        if Experiment.objects.filter(name=experiment, collection=self.collectionobj).exists():
+            self.experimentobj = Experiment.objects.get(name=experiment, collection=self.collectionobj)
             return True
         else:
             return BossHTTPError(404, 'Experiment not found', 30000)
@@ -304,7 +304,7 @@ class BossRequest:
         """
 
         if self.experimentobj:
-            return self.experimentobj.experiment_name
+            return self.experimentobj.name
 
     def set_dataset(self, dataset):
         """
@@ -314,12 +314,12 @@ class BossRequest:
         :param dataset: Dataset name in the request
         :return:
         """
-        if Dataset.objects.filter(dataset_name=dataset, experiment=self.experimentobj).exists():
-            ds = Dataset.objects.get(dataset_name=dataset, experiment=self.experimentobj)
+        if Dataset.objects.filter(name=dataset, experiment=self.experimentobj).exists():
+            ds = Dataset.objects.get(name=dataset, experiment=self.experimentobj)
             self.datasetobj = ds
             if ds.coord_frame: self.coord_frame = ds.coord_frame
             if ds.default_channel: self.default_channel = ds.default_channel
-            if ds.default_timesample: self.default_timesample = ds.default_timesample
+            if ds.default_time: self.default_time = ds.default_time
             if ds.default_layer: self.default_layer = ds.default_layer
             return True
         else:
@@ -333,7 +333,7 @@ class BossRequest:
         :return: Dataset name of the current dataset
         """
         if self.datasetobj:
-            return self.datasetobj.dataset_name
+            return self.datasetobj.name
 
     def set_channel(self, channel):
         """
@@ -343,8 +343,8 @@ class BossRequest:
         :param channel: Channel name from the request
         :return:
         """
-        if Channel.objects.filter(channel_name=channel, dataset=self.datasetobj).exists():
-            self.channelobj = Channel.objects.get(channel_name=channel, dataset=self.datasetobj)
+        if Channel.objects.filter(name=channel, dataset=self.datasetobj).exists():
+            self.channelobj = Channel.objects.get(name=channel, dataset=self.datasetobj)
             return True
         else:
             return BossHTTPError(404, 'Bad. Request. Channel not found', 30000)
@@ -357,7 +357,7 @@ class BossRequest:
         :return:  Channel name for the current channel
         """
         if self.channelobj:
-            return self.channelobj.channel_name
+            return self.channelobj.name
 
     def set_timesample(self, timesample):
         """
@@ -367,8 +367,8 @@ class BossRequest:
         :param timesample:
         :return:
         """
-        if TimeSample.objects.filter(ts_name=timesample, channel=self.channelobj).exists():
-            self.timesampleobj = TimeSample.objects.get(ts_name=timesample, channel=self.channelobj)
+        if TimeSample.objects.filter(name=timesample, channel=self.channelobj).exists():
+            self.timesampleobj = TimeSample.objects.get(name=timesample, channel=self.channelobj)
             return True
         else:
             return BossHTTPError(404, 'Bad Request. Timesample not found', 30000)
@@ -379,7 +379,7 @@ class BossRequest:
         :return: Timesample name for the current timesample
         """
         if self.timesampleobj:
-            return self.timesampleobj.ts_name
+            return self.timesampleobj.name
 
     def set_layer(self, layer):
         """
@@ -389,8 +389,8 @@ class BossRequest:
         :param layer: Layer name from the request
         :return:
         """
-        if Layer.objects.filter(layer_name=layer, timesample=self.timesampleobj).exists():
-            self.layerobj = Layer.objects.get(layer_name=layer, timesample=self.timesampleobj)
+        if Layer.objects.filter(name=layer, time=self.timesampleobj).exists():
+            self.layerobj = Layer.objects.get(name=layer, time=self.timesampleobj)
             return True
         else:
             return BossHTTPError(404, 'Bad. Request. Layer not found', 30000)
@@ -401,7 +401,7 @@ class BossRequest:
         :return: Layer name of the current layer
         """
         if self.layerobj:
-            return self.layerobj.layer_name
+            return self.layerobj.name
 
     def set_metakey(self, metakey):
         """
@@ -440,28 +440,28 @@ class BossRequest:
         Get the default layer for the current dataset
         :return: Name of the default layer
         """
-        return self.default_layer.layer_name
+        return self.default_layer.name
 
     def get_default_channel(self):
         """
         Get the default channel for the current dataset
         :return: Name of the default channel
         """
-        return self.default_channel.channel_name
+        return self.default_channel.name
 
-    def get_default_timesample(self):
+    def get_default_time(self):
         """
         Get the default timesample for the current dataset
         :return: Name of the default timesample
         """
-        return self.default_timesample.ts_name
+        return self.default_time.name
 
     def get_coordinate_frame(self):
         """
         Get the coordinate with the bounds for the current dataset
         :return: Name of the coordinate frame
         """
-        return self.coord_frame.coord_name
+        return self.coord_frame.name
 
     def get_resolution(self):
         """
@@ -544,14 +544,14 @@ class BossRequest:
         self.bosskey = ""
 
         if self.collectionobj and self.experimentobj and self.datasetobj:
-            self.bosskey = self.collectionobj.collection_name + META_CONNECTOR + self.experimentobj.experiment_name + META_CONNECTOR + self.datasetobj.dataset_name
+            self.bosskey = self.collectionobj.name + META_CONNECTOR + self.experimentobj.name + META_CONNECTOR + self.datasetobj.name
             self.bosskey += self.get_optkey()
             return self.bosskey
         elif self.collectionobj and self.experimentobj and self.service == 'meta':
-            self.bosskey = self.collectionobj.collection_name + META_CONNECTOR + self.experimentobj.experiment_name
+            self.bosskey = self.collectionobj.name + META_CONNECTOR + self.experimentobj.name
             return self.bosskey
         elif self.collectionobj and self.service == 'meta':
-            self.bosskey = self.collectionobj.collection_name
+            self.bosskey = self.collectionobj.name
             return self.bosskey
         else:
             return BossHTTPError(404, "Bad request. Did not initialize correctly", 30000)
@@ -568,16 +568,16 @@ class BossRequest:
 
             # Check for channel and timesample
             if self.channelobj:
-                optkey = META_CONNECTOR + self.channelobj.channel_name
+                optkey = META_CONNECTOR + self.channelobj.name
             elif self.default_channel:
-                optkey = META_CONNECTOR + self.default_channel.channel_name
+                optkey = META_CONNECTOR + self.default_channel.name
             else:
                 return BossHTTPError(404, "Bad request. Channel and default channel not found", 30000)
 
             if self.timesampleobj:
-                optkey += META_CONNECTOR + self.timesampleobj.ts_name + META_CONNECTOR + self.layerobj.layer_name
-            elif self.default_timesample:
-                optkey += META_CONNECTOR + self.default_timesample.ts_name + META_CONNECTOR + self.layerobj.layer_name
+                optkey += META_CONNECTOR + self.timesampleobj.name + META_CONNECTOR + self.layerobj.name
+            elif self.default_time:
+                optkey += META_CONNECTOR + self.default_time.name + META_CONNECTOR + self.layerobj.name
             else:
                 return BossHTTPError(404, "Bad request. Timesample and default timesample not found", 30000)
   
@@ -585,14 +585,14 @@ class BossRequest:
 
             # Check channel and append
             if self.channelobj:
-                optkey = META_CONNECTOR + self.channelobj.channel_name + META_CONNECTOR + self.timesampleobj.ts_name
+                optkey = META_CONNECTOR + self.channelobj.name + META_CONNECTOR + self.timesampleobj.name
             elif self.default_channel:
-                optkey = META_CONNECTOR + self.default_channel.channel_name + META_CONNECTOR + self.timesampleobj.ts_name
+                optkey = META_CONNECTOR + self.default_channel.name + META_CONNECTOR + self.timesampleobj.name
             else:
                 return BossHTTPError(404, "Bad request. Channel and default channel not found", 30000)
 
         elif self.channelobj:
-            optkey = META_CONNECTOR + self.channelobj.channel_name
+            optkey = META_CONNECTOR + self.channelobj.name
 
         return optkey
 

@@ -16,25 +16,25 @@ class BossCoreRequestTests(APITestCase):
         Initialize the database
         :return:
         """
-        col = Collection.objects.create(collection_name='col1')
-        exp = Experiment.objects.create(experiment_name='exp1', collection=col, num_resolution_levels=5)
-        coordFrame = CoordinateFrame.objects.create(coord_name='cf1', xextent=1000, yextent=10000, zextent=10000,
-                                                    xvoxelsize=4, yvoxelsize=4, zvoxelsize=4)
-        ds = Dataset.objects.create(dataset_name='ds1', experiment=exp, coord_frame=coordFrame)
-        channel = Channel.objects.create(channel_name='channel1', dataset=ds)
-        ts = TimeSample.objects.create(ts_name='ts1', channel=channel)
-        layer = Layer.objects.create(layer_name='layer1', timesample=ts)
-        extralayer = Layer.objects.create(layer_name='layerx', timesample=ts)
+        col = Collection.objects.create(name='col1')
+        exp = Experiment.objects.create(name='exp1', collection=col, num_resolution_levels=5)
+        cf = CoordinateFrame.objects.create(name='cf1', x_extent=1000, y_extent=10000, z_extent=10000,
+                                                    x_voxelsize=4, y_voxelsize=4, z_voxelsize=4)
+        ds = Dataset.objects.create(name='ds1', experiment=exp, coord_frame=cf)
+        channel = Channel.objects.create(name='channel1', dataset=ds)
+        ts = TimeSample.objects.create(name='ts1', channel=channel)
+        layer = Layer.objects.create(name='layer1', time=ts)
+        extralayer = Layer.objects.create(name='layerx', time=ts)
 
         ds.default_channel = channel
-        ds.default_timesample = ts
+        ds.default_time = ts
         ds.default_layer = layer
         ds.save()
 
-        ds = Dataset.objects.create(dataset_name='ds5', experiment=exp, coord_frame=coordFrame)
-        channel = Channel.objects.create(channel_name='channel5', dataset=ds)
-        ts = TimeSample.objects.create(ts_name='ts5', channel=channel)
-        layer = Layer.objects.create(layer_name='layer5', timesample=ts)
+        ds = Dataset.objects.create(name='ds5', experiment=exp, coord_frame=cf)
+        channel = Channel.objects.create(name='channel5', dataset=ds)
+        ts = TimeSample.objects.create(name='ts5', channel=channel)
+        layer = Layer.objects.create(name='layer5', time=ts)
 
     def test_request_cutout_init(self):
         """

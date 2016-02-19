@@ -2,8 +2,8 @@ from django.db import models
 
 
 class Collection(models.Model):
-    collection_name = models.CharField(max_length=255, verbose_name="Name of the Collection")
-    collection_description = models.CharField(max_length=4096, blank=True)
+    name = models.CharField(max_length=255, verbose_name="Name of the Collection")
+    description = models.CharField(max_length=4096, blank=True)
 
     class Meta:
         db_table = u"collections"
@@ -11,35 +11,35 @@ class Collection(models.Model):
 
 class Experiment(models.Model):
     collection = models.ForeignKey(Collection, related_name='experiments')
-    experiment_name = models.CharField(max_length=255, verbose_name="Name of the Experiment")
-    experiment_description = models.CharField(max_length=4096, blank=True)
+    name = models.CharField(max_length=255, verbose_name="Name of the Experiment")
+    description = models.CharField(max_length=4096, blank=True)
     num_resolution_levels = models.IntegerField(default=0)
 
-    HEIRARCHY_METHOD_CHOICES = (
+    HIERARCHY_METHOD_CHOICES = (
         (0, 'near_iso'),
         (1, 'iso'),
         (2, 'slice'),
     )
-    heirarchy_method = models.CharField(choices=HEIRARCHY_METHOD_CHOICES, max_length=100)
+    hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
 
     class Meta:
         db_table = u"experiments"
 
     def __unicode__(self):
-        return '%s' % (self.experiment_name)
+        return '%s' % (self.name)
 
 
 class CoordinateFrame(models.Model):
-    coord_name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
-    coord_description = models.CharField(max_length=4096, blank=True)
+    name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
+    description = models.CharField(max_length=4096, blank=True)
 
-    xextent = models.IntegerField()
-    yextent = models.IntegerField()
-    zextent = models.IntegerField()
+    x_extent = models.IntegerField()
+    y_extent = models.IntegerField()
+    z_extent = models.IntegerField()
 
-    xvoxelsize = models.FloatField(default=1.0)
-    yvoxelsize = models.FloatField(default=1.0)
-    zvoxelsize = models.FloatField(default=1.0)
+    x_voxelsize = models.FloatField(default=1.0)
+    y_voxelsize = models.FloatField(default=1.0)
+    z_voxelsize = models.FloatField(default=1.0)
 
     class Meta:
         db_table = u"coordinate_frames"
@@ -47,8 +47,8 @@ class CoordinateFrame(models.Model):
 
 class Dataset(models.Model):
     experiment = models.ForeignKey(Experiment, related_name='datasets')
-    dataset_name = models.CharField(max_length=255, verbose_name="Name of the Dataset")
-    dataset_description = models.CharField(max_length=4096, blank=True)
+    name = models.CharField(max_length=255, verbose_name="Name of the Dataset")
+    description = models.CharField(max_length=4096, blank=True)
 
     IS_SOURCE_CHOICES = (
         (0, 'NO'),
@@ -58,7 +58,7 @@ class Dataset(models.Model):
     coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord')
 
     default_channel = models.ForeignKey('Channel',related_name='default_channel', null = True)
-    default_timesample = models.ForeignKey('TimeSample',related_name='default_timesample', null = True)
+    default_time = models.ForeignKey('TimeSample',related_name='default_time', null = True)
     default_layer = models.ForeignKey('Layer',related_name='default_layer',null = True)
 
 
@@ -70,8 +70,8 @@ class Dataset(models.Model):
 
 
 class Channel(models.Model):
-    channel_name = models.CharField(max_length=255, verbose_name="Name of the Channel")
-    channel_description = models.CharField(max_length=4096, blank=True)
+    name = models.CharField(max_length=255, verbose_name="Name of the Channel")
+    description = models.CharField(max_length=4096, blank=True)
     dataset = models.ForeignKey(Dataset, related_name='channels')
 
     class Meta:
@@ -79,18 +79,18 @@ class Channel(models.Model):
 
 
 class TimeSample(models.Model):
-    ts_name = models.CharField(max_length=255, verbose_name="Name of the Time Sample ")
-    ts_description = models.CharField(max_length=4096, blank=True)
+    name = models.CharField(max_length=255, verbose_name="Name of the Time Sample ")
+    description = models.CharField(max_length=4096, blank=True)
     channel = models.ForeignKey(Channel, related_name='timesamples')
 
     class Meta:
-        db_table = u"timesamples"
+        db_table = u"time"
 
 
 class Layer(models.Model):
-    layer_name = models.CharField(max_length=255, verbose_name="Name of the Layer ")
-    layer_description = models.CharField(max_length=4096, blank=True)
-    timesample = models.ForeignKey(TimeSample, related_name='layers')
+    name = models.CharField(max_length=255, verbose_name="Name of the Layer ")
+    description = models.CharField(max_length=4096, blank=True)
+    time = models.ForeignKey(TimeSample, related_name='layers')
     DATATYPE_CHOICES = (
         (0, 'uint8'),
         (1, 'uint16'),
