@@ -41,7 +41,7 @@ class BossCoreRequestTests(APITestCase):
         Test initialization of cutout requests for the datamodel
         :return:
         """
-        url = '/v0.1/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/'
+        url = '/v0.2/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/'
         col = 'col1'
         exp = 'exp1'
         ds = 'ds1'
@@ -103,7 +103,7 @@ class BossCoreRequestTests(APITestCase):
         Test initialization of cutout arguments for a cutout request
         :return:
         """
-        url = '/v0.1/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/'
+        url = '/v0.2/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/'
         col = 'col1'
         exp = 'exp1'
         ds = 'ds1'

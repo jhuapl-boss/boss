@@ -62,9 +62,6 @@ class Cutout(APIView):
         # Format data
         # TODO: Query for dtype based on datatype of layer
         data_mat = np.fromstring(data, dtype=datatype)
-        print(request.get_x_span())
-        print(request.get_y_span())
-        print(request.get_z_span())
         data_mat = np.reshape(data_mat, (request.get_x_span(), request.get_y_span(), request.get_z_span()), order='C')
 
         # Dice into cuboids

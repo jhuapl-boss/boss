@@ -32,8 +32,9 @@ class BossRequest:
         self.default_layer = None
         self.coord_frame = None
 
-        # Endpoint service from the request
+        # Endpoint service and version number from the request
         self.service = None
+        self.version = None
 
         # Boss key representing the datamodel for a valid request
         self.bosskey = None
@@ -53,10 +54,11 @@ class BossRequest:
 
         # Parse the request for the service
         url = str(request.META['PATH_INFO'])
-        m = re.match("/v0.1/(?P<service>\w+)/(?P<webargs>.*)?/?", url)
+        m = re.match("/v(?P<version>\d+\.\d+)/(?P<service>\w+)/(?P<webargs>.*)?/?", url)
 
-        [service, webargs] = [arg for arg in m.groups()]
+        [version, service, webargs] = [arg for arg in m.groups()]
         self.set_service(service)
+        self.version = version
 
         if service == 'meta':
             # The meta data service has different requirements from the cutout

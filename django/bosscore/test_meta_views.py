@@ -42,7 +42,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         datamodel params resolves to the meta view
         :return:
         """
-        baseurl = '/v0.1/meta/col1/'
+        baseurl = '/v0.2/meta/col1/'
         argspost = '?metakey=testmkey&metavalue=TestString'
         argsget = '?metakey=testmkey'
 
@@ -70,7 +70,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         Test to make sure the meta URL for get, post, delete and update with an experiment
         :return:
         """
-        baseurl = '/v0.1/meta/col1/exp1/'
+        baseurl = '/v0.2/meta/col1/exp1/'
         argspost = '?metakey=testmkey&metavalue=TestString'
         argsget = '?metakey=testmkey'
 
@@ -99,7 +99,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         :return:
         """
 
-        baseurl = '/v0.1/meta/col1/exp1/dataset1/'
+        baseurl = '/v0.2/meta/col1/exp1/dataset1/'
         argspost = '?metakey=testmkey&metavalue=TestString'
         argsget = '?metakey=testmkey'
 
@@ -128,7 +128,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         :return:
         """
 
-        baseurl = '/v0.1/meta/col1/exp1/dataset1/'
+        baseurl = '/v0.2/meta/col1/exp1/dataset1/'
         argspost = '?channel=channel1&metakey=testmkey&metavalue=TestString'
         argsget = '?channel=channel1&metakey=testmkey'
 
@@ -158,7 +158,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         :return:
         """
 
-        baseurl = '/v0.1/meta/col1/exp1/dataset1/'
+        baseurl = '/v0.2/meta/col1/exp1/dataset1/'
         argspost = '?channel=channel1&timesample=ts1&metakey=testmkey&metavalue=TestString'
         argsget = '?channel=channel1&timesample=ts1&metakey=testmkey'
 
@@ -188,7 +188,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         :return:
         """
 
-        baseurl = '/v0.1/meta/col1/exp1/dataset1/'
+        baseurl = '/v0.2/meta/col1/exp1/dataset1/'
         argspost = '?channel=channel1&timesample=ts1&layer=layer1&metakey=testmkey&metavalue=TestString'
         argsget = '?channel=channel1&timesample=ts1&layer=layer1&metakey=testmkey'
 
