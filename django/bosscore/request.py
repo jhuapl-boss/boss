@@ -138,9 +138,9 @@ class BossRequest:
         else:
             return BossHTTPError(404, 'No channel or default channel found', 30000)
 
-        if 'timesample' in request.query_params:
-            timesample = request.query_params['timesample']
-            timesamplestatus = self.set_timesample(timesample)
+        if 'time' in request.query_params:
+            time = request.query_params['time']
+            timestatus = self.set_timesample(time)
         elif self.datasetobj.default_time:
             self.timesampleobj = self.datasetobj.default_time
         else:
@@ -177,9 +177,9 @@ class BossRequest:
             else:
                 return BossHTTPError(404, 'No channel or default channel found', 30000)
 
-            if 'timesample' in request.query_params:
-                timesample = request.query_params['timesample']
-                timesamplestatus = self.set_timesample(timesample)
+            if 'time' in request.query_params:
+                time = request.query_params['time']
+                timestatus = self.set_timesample(time)
             elif self.datasetobj.default_time:
                 self.timesampleobj = self.datasetobj.default_time
             else:
@@ -188,7 +188,7 @@ class BossRequest:
             layer = request.query_params['layer']
             layerstatus = self.set_layer(layer)
 
-        elif 'timesample' in request.query_params:
+        elif 'time' in request.query_params:
             # timesample specified - check for channel 
             if 'channel' in request.query_params:
                 channel = request.query_params['channel']
@@ -198,8 +198,8 @@ class BossRequest:
             else:
                 return  BossHTTPError(404, 'No channel or default channel found', 30000)
 
-            timesample = request.query_params['timesample']
-            timesamplestatus = self.set_timesample(timesample)
+            time = request.query_params['time']
+            timestatus = self.set_timesample(time)
 
         elif 'channel' in request.query_params:
             channel = request.query_params['channel']
@@ -359,7 +359,7 @@ class BossRequest:
         if self.channelobj:
             return self.channelobj.name
 
-    def set_timesample(self, timesample):
+    def set_timesample(self, time):
         """
         Set the current timesample
 
@@ -367,8 +367,8 @@ class BossRequest:
         :param timesample:
         :return:
         """
-        if TimeSample.objects.filter(name=timesample, channel=self.channelobj).exists():
-            self.timesampleobj = TimeSample.objects.get(name=timesample, channel=self.channelobj)
+        if TimeSample.objects.filter(name=time, channel=self.channelobj).exists():
+            self.timesampleobj = TimeSample.objects.get(name=time, channel=self.channelobj)
             return True
         else:
             return BossHTTPError(404, 'Bad Request. Timesample not found', 30000)

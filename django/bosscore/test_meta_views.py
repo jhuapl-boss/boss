@@ -159,8 +159,8 @@ class BossCoreMetaServiceViewTests(APITestCase):
         """
 
         baseurl = '/v0.2/meta/col1/exp1/dataset1/'
-        argspost = '?channel=channel1&timesample=ts1&metakey=testmkey&metavalue=TestString'
-        argsget = '?channel=channel1&timesample=ts1&metakey=testmkey'
+        argspost = '?channel=channel1&time=ts1&metakey=testmkey&metavalue=TestString'
+        argsget = '?channel=channel1&time=ts1&metakey=testmkey'
 
         # Post a new metedata object for the collection
 
@@ -168,7 +168,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         self.assertEqual(response.status_code, 201)
 
         # Update the metadata
-        argspost = '?channel=channel1&timesample=ts1&metakey=testmkey&metavalue=TestStringModified'
+        argspost = '?channel=channel1&time=ts1&metakey=testmkey&metavalue=TestStringModified'
         response = self.client.put(baseurl + argspost)
         self.assertEqual(response.status_code, 201)
 
@@ -189,8 +189,8 @@ class BossCoreMetaServiceViewTests(APITestCase):
         """
 
         baseurl = '/v0.2/meta/col1/exp1/dataset1/'
-        argspost = '?channel=channel1&timesample=ts1&layer=layer1&metakey=testmkey&metavalue=TestString'
-        argsget = '?channel=channel1&timesample=ts1&layer=layer1&metakey=testmkey'
+        argspost = '?channel=channel1&time=ts1&layer=layer1&metakey=testmkey&metavalue=TestString'
+        argsget = '?channel=channel1&time=ts1&layer=layer1&metakey=testmkey'
 
         # Post a new metedata object for the collection
 
@@ -198,7 +198,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         self.assertEqual(response.status_code, 201)
 
         # Update the metadata
-        argspost = '?channel=channel1&timesample=ts1&layer=layer1&metakey=testmkey&metavalue=TestStringModified'
+        argspost = '?channel=channel1&time=ts1&layer=layer1&metakey=testmkey&metavalue=TestStringModified'
         response = self.client.put(baseurl + argspost)
         self.assertEqual(response.status_code, 201)
 

@@ -172,7 +172,7 @@ class BossCoreMetaRequestTests(APITestCase):
         expectedTs = 'ts1'
 
         # create the request with channelname and timesamplename
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&timesample=ts1&metakey=mkey'
+        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&metakey=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         ret = BossRequest(drfrequest)
@@ -180,7 +180,7 @@ class BossCoreMetaRequestTests(APITestCase):
         self.assertEqual(ret.get_timesample(), expectedTs)
 
         # create the request with timesample name not found
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&timesample=ts2&metakey=mkey'
+        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts2&metakey=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         ret = BossRequest(drfrequest)
@@ -197,7 +197,7 @@ class BossCoreMetaRequestTests(APITestCase):
         expectedLayer = 'layer1'
 
         # create the request with channel name and timesample name and layer name
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&timesample=ts1&layer=layer1&metakey=mkey'
+        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer1&metakey=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         ret = BossRequest(drfrequest)
@@ -206,7 +206,7 @@ class BossCoreMetaRequestTests(APITestCase):
         self.assertEqual(ret.get_layer(), expectedLayer)
 
         # create the invalid layer name
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&timesample=ts1&layer=layer2&metakey=mkey'
+        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer2&metakey=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         ret = BossRequest(drfrequest)
@@ -311,7 +311,7 @@ class BossCoreMetaRequestTests(APITestCase):
         self.assertEqual(bosskey, expectedValue)
 
         # channel and timesample
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&timesample=ts1&metakey=mkey'
+        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&metakey=mkey'
         expectedValue = 'col1&exp1&ds1&channel1&ts1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
@@ -320,7 +320,7 @@ class BossCoreMetaRequestTests(APITestCase):
         self.assertEqual(bosskey, expectedValue)
 
         # channel and timesample and layer
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&timesample=ts1&layer=layer1&metakey=mkey'
+        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer1&metakey=mkey'
         expectedValue = 'col1&exp1&ds1&channel1&ts1&layer1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
