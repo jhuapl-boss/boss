@@ -20,28 +20,28 @@ class MetaDB:
         aws_mngr = get_aws_manager()
         aws_mngr.put_session(self.__session)
 
-    def writemeta(self, key, value):
+    def writemeta(self, metakey, value):
         """
         Store meta data in the Dynamo table
-        :param key: Meta data key - Combination of the boss data model key and meta data key
+        :param metakey: Meta data key - Combination of the boss data model key and meta data key
         :param value: Meta data value
         """
         response = self.table.put_item(
             Item={
-                'metakey': key,
+                'metakey': metakey,
                 'metavalue': value,
             }
         )
 
-    def getmeta(self, key):
+    def getmeta(self, metakey):
         """
         Retrieve the meta data for a given key
-        :param key:
+        :param metakey:
         :return:
         """
         response = self.table.get_item(
             Key={
-                'metakey': key,
+                'metakey': metakey,
             }
         )
         if 'Item' in response:
@@ -49,30 +49,30 @@ class MetaDB:
         else:
             return None
 
-    def deletemeta(self, key):
+    def deletemeta(self, metakey):
         """
         Delete the meta data item for the specified key
-        :param key: Meta data key to be delete
+        :param metakey: Meta data key to be delete
         :return:
         """
         response = self.table.delete_item(
             Key={
-                'metakey': key,
+                'metakey': metakey,
             },
             ReturnValues='ALL_OLD'
         )
         return response
 
-    def updatemeta(self, key, newvalue):
+    def updatemeta(self, metakey, newvalue):
         """
         Update the Value for the given key
-        :param key: Search key
+        :param metakey: Search key
         :param newvalue: New value for the meta data key
         :return:
         """
         response = self.table.update_item(
             Key={
-                'metakey': key,
+                'metakey': metakey,
             },
             UpdateExpression='SET metavalue = :val1',
             ExpressionAttributeValues={

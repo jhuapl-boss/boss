@@ -465,15 +465,15 @@ class BossMeta(APIView):
     
     """
     
-    def get_combinedkey(self,bosskey,metakey):
+    def get_combinedkey(self,bosskey,key):
         """
-        Generate a new metakey which is a combiniation of the datamodel representation and metaday key
+        Generate a new metakey which is a combiniation of the datamodel representation and meta data key
 
         :param bosskey: This represents the datamodel object to attach the metadata to. I
-        :param metakey: Meta data key
+        :param key: Meta data key
         :return: new meta key
         """
-        return (bosskey + "#" +metakey)
+        return (bosskey + "#" + key)
 
     def get(self, request, collection, experiment=None, dataset= None ):
         """
@@ -486,18 +486,18 @@ class BossMeta(APIView):
         :return:
         """
 
-        # The metadata consist of two parts. The bosskey#metakey
+        # The metadata consist of two parts. The bosskey#key
         # bosskey represents the datamodel object
-        # Metakey is the key for the meta data associated with the data model object
+        # key is the key for the meta data associated with the data model object
         req = BossRequest(request)
         try:
             bosskey = req.get_bosskey()
         except:
             return HttpResponse(status=404)
-        if bosskey == None or 'metakey' not in request.query_params:
+        if bosskey == None or 'key' not in request.query_params:
             # TODO raise Bosserror
             return HttpResponse(status=404)
-        mkey = request.query_params['metakey']
+        mkey = request.query_params['key']
         combinedkey = self.get_combinedkey(bosskey,mkey)
         
         mdb = metadb.MetaDB("bossmeta")
@@ -519,25 +519,25 @@ class BossMeta(APIView):
         :return:
         """
 
-        # The metadata consist of two parts. The bosskey#metakey
+        # The metadata consist of two parts. The bosskey#key
         # bosskey represents the datamodel object
-        # Metakey is the key for the meta data associated with the data model object
+        # key is the key for the meta data associated with the data model object
         req = BossRequest(request)
         try:
             bosskey = req.get_bosskey()
         except:
             return HttpResponse(status=404)
         
-        if bosskey == None or 'metakey' not in request.query_params or 'metavalue' not in request.query_params:
+        if bosskey == None or 'key' not in request.query_params or 'value' not in request.query_params:
             # TODO raise Bosserror
             return HttpResponse(status=404)
-        mkey = request.query_params['metakey']
-        metavalue = request.query_params['metavalue']
+        mkey = request.query_params['key']
+        value = request.query_params['value']
         # generate the new Metakey which combines datamodel keys with the meta data key in the post
         combinedkey = self.get_combinedkey(bosskey, mkey)
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB("bossmeta")
-        mdb.writemeta(combinedkey, metavalue)
+        mdb.writemeta(combinedkey, value)
         return HttpResponse(status=201)
 
 
@@ -558,11 +558,10 @@ class BossMeta(APIView):
         except:
             return HttpResponse(status=404)        #Get the concatenated key
             
-        
-        if bosskey == None or 'metakey' not in request.query_params :
+        if bosskey == None or 'key' not in request.query_params :
             # TODO raise Bosserror
             return HttpResponse(status=404)
-        mkey = request.query_params['metakey']
+        mkey = request.query_params['key']
 
         # generate the new Metakey which combines datamodel keys with the meta data key in the post
         combinedkey = self.get_combinedkey(bosskey, mkey)
@@ -586,9 +585,9 @@ class BossMeta(APIView):
         :return:
         """
         
-        # The metadata consist of two parts. The bosskey#metakey
+        # The metadata consist of two parts. The bosskey#key
         # bosskey represents the datamodel object
-        # Metakey is the key for the meta data associated with the data model object
+        # key is the key for the meta data associated with the data model object
         
         req = BossRequest(request)
         try:
@@ -596,16 +595,16 @@ class BossMeta(APIView):
         except:
             return HttpResponse(status=404)
         
-        if bosskey == None or 'metakey' not in request.query_params or 'metavalue' not in request.query_params:
+        if bosskey == None or 'key' not in request.query_params or 'value' not in request.query_params:
             # TODO raise Bosserror
             return HttpResponse(status=404)
-        mkey = request.query_params['metakey']
-        metavalue = request.query_params['metavalue']
+        mkey = request.query_params['key']
+        value = request.query_params['value']
             
-        # generate the new Metakey which combines datamodel keys with the meta data key in the post
+        # generate the new metakey which combines the bosskey with the meta data key in the post
         combinedkey = self.get_combinedkey(bosskey, mkey)
             
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB("bossmeta")
-        mdb.updatemeta(combinedkey, metavalue)
+        mdb.updatemeta(combinedkey, value)
         return HttpResponse(status=201)

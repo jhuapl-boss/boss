@@ -40,8 +40,8 @@ class BossRequest:
         self.bosskey = None
 
         # Meta data key and value
-        self.metakey = None
-        self.metavalue = None
+        self.key = None
+        self.value = None
 
         # Cutout args from the request
         self.resolution = None
@@ -74,10 +74,10 @@ class BossRequest:
             # TODO - Do we need this here?
             if self.collectionobj:
                 self.set_bosskey()
-                if 'metakey' in request.query_params:
-                    self.set_metakey(request.query_params['metakey'])
-                if 'metavalue' in request.query_params:
-                    self.set_metavalue(request.query_params['metavalue'])
+                if 'key' in request.query_params:
+                    self.set_key(request.query_params['key'])
+                if 'value' in request.query_params:
+                    self.set_value(request.query_params['value'])
             else:
                 # We don't have a valid collection bosskey =""
                 self.bosskey = None
@@ -403,37 +403,37 @@ class BossRequest:
         if self.layerobj:
             return self.layerobj.name
 
-    def set_metakey(self, metakey):
+    def set_key(self, key):
         """
-        Set the metakey
+        Set the key
 
         The meta key is an optional argument specified as an option argument for the metadata service
-        :param metakey: Meta data key specified in the request
+        :param key: Meta data key specified in the request
         :return: None
         """
-        self.metakey = metakey
+        self.key = key
 
-    def get_metakey(self):
+    def get_key(self):
         """
         Get the meta data key
-        :return: metakey
+        :return: key
         """
-        return self.metakey
+        return self.key
 
-    def set_metavalue(self, metavalue):
+    def set_value(self, value):
         """
         Set the meta data value
-        :param metavalue: String representing the meta data
+        :param value: String representing the meta data
         :return:
         """
-        self.metavalue = metavalue
+        self.value = value
 
-    def get_metavalue(self):
+    def get_value(self):
         """
         Get the string for the meta data value
-        :return: metavalue
+        :return: value
         """
-        return self.metavalue
+        return self.value
 
     def get_default_layer(self):
         """
