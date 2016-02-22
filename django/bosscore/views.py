@@ -6,8 +6,9 @@ from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.views import APIView
 
-from bosscore.models import *
-from bosscore.serializers import *
+from .models import *
+from .serializers import *
+from .error import BossError, BossHTTPError
 
 import re
 import os, sys
@@ -489,14 +490,19 @@ class BossMeta(APIView):
         # The metadata consist of two parts. The bosskey#key
         # bosskey represents the datamodel object
         # key is the key for the meta data associated with the data model object
-        req = BossRequest(request)
+
+        if 'key' not in request.query_params:
+            return BossHTTPError(404, "Missing optional argument key in the request", 30000)
+
         try:
+            req = BossRequest(request)
             bosskey = req.get_bosskey()
-        except:
-            return HttpResponse(status=404)
-        if bosskey == None or 'key' not in request.query_params:
-            # TODO raise Bosserror
-            return HttpResponse(status=404)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+
+        if bosskey == None :
+            return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
+
         mkey = request.query_params['key']
         combinedkey = self.get_combinedkey(bosskey,mkey)
         
@@ -505,7 +511,7 @@ class BossMeta(APIView):
         if mdata:
             return Response(mdata)
         else:
-            return HttpResponseBadRequest("[ERROR]- Key {} not found".format(mkey))
+            return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
             
         
     def post(self, request, collection, experiment=None, dataset= None ):
@@ -522,17 +528,22 @@ class BossMeta(APIView):
         # The metadata consist of two parts. The bosskey#key
         # bosskey represents the datamodel object
         # key is the key for the meta data associated with the data model object
-        req = BossRequest(request)
+
+        if 'key' not in request.query_params or 'value' not in request.query_params:
+            return BossHTTPError(404, "Missing optional argument key/value in the request", 30000)
+
         try:
+            req = BossRequest(request)
             bosskey = req.get_bosskey()
-        except:
-            return HttpResponse(status=404)
-        
-        if bosskey == None or 'key' not in request.query_params or 'value' not in request.query_params:
-            # TODO raise Bosserror
-            return HttpResponse(status=404)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+
+        if bosskey == None :
+            return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
+
         mkey = request.query_params['key']
         value = request.query_params['value']
+
         # generate the new Metakey which combines datamodel keys with the meta data key in the post
         combinedkey = self.get_combinedkey(bosskey, mkey)
         # Post Metadata the dynamodb database
@@ -551,16 +562,18 @@ class BossMeta(APIView):
         :param dataset: Dataset name. Default = None
         :return:
         """
+        if 'key' not in request.query_params:
+            return BossHTTPError(404, "Missing optional argument key in the request", 30000)
 
-        req = BossRequest(request)
         try:
+            req = BossRequest(request)
             bosskey = req.get_bosskey()
-        except:
-            return HttpResponse(status=404)        #Get the concatenated key
-            
-        if bosskey == None or 'key' not in request.query_params :
-            # TODO raise Bosserror
-            return HttpResponse(status=404)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+
+        if bosskey == None :
+            return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
+
         mkey = request.query_params['key']
 
         # generate the new Metakey which combines datamodel keys with the meta data key in the post
@@ -589,15 +602,18 @@ class BossMeta(APIView):
         # bosskey represents the datamodel object
         # key is the key for the meta data associated with the data model object
         
-        req = BossRequest(request)
+        if 'key' not in request.query_params or 'value' not in request.query_params:
+            return BossHTTPError(404, "Missing optional argument key/value in the request", 30000)
+
         try:
+            req = BossRequest(request)
             bosskey = req.get_bosskey()
-        except:
-            return HttpResponse(status=404)
-        
-        if bosskey == None or 'key' not in request.query_params or 'value' not in request.query_params:
-            # TODO raise Bosserror
-            return HttpResponse(status=404)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+
+        if bosskey == None :
+            return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
+
         mkey = request.query_params['key']
         value = request.query_params['value']
             
