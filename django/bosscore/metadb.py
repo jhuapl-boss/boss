@@ -12,7 +12,7 @@ class MetaDB:
         self.__session = aws_mngr.get_session()
 
         # Get table
-        dynamodb = self.__session.session.resource('dynamodb')
+        dynamodb = self.__session.resource('dynamodb')
         self.table = dynamodb.Table(tablename)
 
     def __del__(self):
