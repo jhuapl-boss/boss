@@ -120,3 +120,9 @@ STATIC_ROOT = '/var/www/static/'
 from bossutils.aws import *
 aws_mngr = get_aws_manager()
 #aws_mngr.start_credential_refresh()
+
+# Django rest framework versioning requirements
+REST_FRAMEWORK = {
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning'
+}
+BOSS_VERSION ='v0.2'

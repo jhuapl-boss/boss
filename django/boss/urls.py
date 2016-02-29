@@ -22,9 +22,9 @@ from . import views
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^v0.2/cutout/', include('bossspatialdb.urls')),
+    url(r'^v0.2/cutout/', include('bossspatialdb.urls', namespace='v0.2')),
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
-    url(r'^v0.2/info/', include('bosscore.info_urls')),
-    url(r'^v0.2/meta/', include('bosscore.meta_urls')),
+    url(r'^v0.2/info/', include('bosscore.info_urls', namespace='v0.2')),
+    url(r'^v0.2/meta/', include('bosscore.meta_urls', namespace='v0.2')),
 ]

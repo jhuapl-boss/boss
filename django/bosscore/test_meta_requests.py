@@ -7,6 +7,8 @@ from .request import BossRequest
 from .views import BossMeta
 from .models import *
 
+from django.conf import settings
+version  = settings.BOSS_VERSION
 
 class BossCoreMetaRequestTests(APITestCase):
     """
@@ -44,10 +46,12 @@ class BossCoreMetaRequestTests(APITestCase):
         :return:
         """
         # create the request with collection name
-        url = '/v0.2/meta/col1/?key=mkey'
+        url = '/' + version + '/meta/col1/?key=mkey'
         expectedValue = 'col1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
+
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), expectedValue)
 
@@ -57,22 +61,24 @@ class BossCoreMetaRequestTests(APITestCase):
         :return:
         """
         # create the request with collection name
-        url = '/v0.2/meta/col2/?key=mkey'
+        url = '/' + version + '/meta/col2/?key=mkey'
         expectedValue = None
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         #ret = BossRequest(drfrequest)
         #self.assertEqual(ret.get_collection(), expectedValue)
 
         # Test With experiment not found
-        url = '/v0.2/meta/col1/exp2/ds1/?key=mkey'
+        url = '/' + version+ '/meta/col1/exp2/ds1/?key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         #ret = BossRequest(drfrequest)
         #self.assertEqual(ret.get_experiment(), None)
 
         # Test with dataset not found
-        url = '/v0.2/meta/col1/exp1/ds2/?key=mkey'
+        url = '/' + version + 'meta/col1/exp1/ds2/?key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         #ret = BossRequest(drfrequest)
@@ -84,11 +90,13 @@ class BossCoreMetaRequestTests(APITestCase):
         :return:
         """
         # create the request with collection name and experiment name
-        url = '/v0.2/meta/col1/exp1/?key=mkey'
+        url = '/' + version +'/meta/col1/exp1/?key=mkey'
         expectedCol = 'col1'
         expectedExp = 'exp1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
+
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), expectedCol)
         self.assertEqual(ret.get_experiment(), expectedExp)
@@ -99,13 +107,15 @@ class BossCoreMetaRequestTests(APITestCase):
         :return:
         """
         # create the request with collection name and experiment name
-        url = '/v0.2/meta/col1/exp1/ds1/'
+        url = '/' + version + '/meta/col1/exp1/ds1/'
         expectedCol = 'col1'
         expectedExp = 'exp1'
         expectedDs = 'ds1'
 
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
+
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), expectedCol)
         self.assertEqual(ret.get_experiment(), expectedExp)
@@ -117,7 +127,7 @@ class BossCoreMetaRequestTests(APITestCase):
         :return:
         """
         # create the request with collection name and experiment name and dataset name
-        url = '/v0.2/meta/col1/exp1/ds1/?key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?key=mkey'
         expectedCol = 'col1'
         expectedExp = 'exp1'
         expectedDs = 'ds1'
@@ -128,6 +138,7 @@ class BossCoreMetaRequestTests(APITestCase):
 
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), expectedCol)
         self.assertEqual(ret.get_experiment(), expectedExp)
@@ -149,17 +160,19 @@ class BossCoreMetaRequestTests(APITestCase):
         expectedChannel = 'channel1'
 
         # create the request with channel name
-        url = '/v0.2/meta/col1/exp1/ds1/channel1/?channel=channel1&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/channel1/?channel=channel1&key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_channel(), expectedChannel)
 
         # Test with channel name not found
 
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel2&key=mkey'
+        url = '/' + version +'/meta/col1/exp1/ds1/?channel=channel2&key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         #ret = BossRequest(drfrequest)
         #TODO - Test that this throws an error
 
@@ -172,17 +185,19 @@ class BossCoreMetaRequestTests(APITestCase):
         expectedTs = 'ts1'
 
         # create the request with channelname and timesamplename
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&key=mkey'
+        url = '/' + version +'/meta/col1/exp1/ds1/?channel=channel1&time=ts1&key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_channel(), expectedChannel)
         self.assertEqual(ret.get_timesample(), expectedTs)
 
         # create the request with timesample name not found
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts2&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?channel=channel1&time=ts2&key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         #ret = BossRequest(drfrequest)
         #TODO - Test that this throws an error
 
@@ -196,18 +211,20 @@ class BossCoreMetaRequestTests(APITestCase):
         expectedLayer = 'layer1'
 
         # create the request with channel name and timesample name and layer name
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer1&key=mkey'
+        url = '/' + version +'/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer1&key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_channel(), expectedChannel)
         self.assertEqual(ret.get_timesample(), expectedTs)
         self.assertEqual(ret.get_layer(), expectedLayer)
 
         # create the invalid layer name
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer2&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer2&key=mkey'
         request = self.rf.get(url)
         #drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         #response = BossRequest(drfrequest)
 
 
@@ -221,7 +238,7 @@ class BossCoreMetaRequestTests(APITestCase):
         expectedTs = 'ts5'
 
         # create the request with timesample name and layer name but no channel or default channel
-        url = '/v0.2/meta/col1/exp1/ds5/?timesample=ts5&layer=layer5&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds5/?timesample=ts5&layer=layer5&key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         # TODO ---- Error checking should fix this?
@@ -235,9 +252,10 @@ class BossCoreMetaRequestTests(APITestCase):
         """
         # TODO - Think about how to handle this better
         # create the request with out experiment and dataset but with optargs
-        url = '/v0.2/meta/col1/?channel=channel1&key=mkey'
+        url = '/' + version + '/meta/col1/?channel=channel1&key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
 
         self.assertEqual(ret.get_channel(), None)
@@ -249,19 +267,21 @@ class BossCoreMetaRequestTests(APITestCase):
         Test retriving a bossmeta key from  BossRequest object with collection name
         """
         # create the request
-        url = '/v0.2/meta/col1/?key=mkey'
+        url = '/' +version + '/meta/col1/?key=mkey'
         expectedValue = 'col1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(ret.get_collection(), expectedValue)
         self.assertEqual(bosskey, expectedValue)
 
         # Invalid collection name
-        url = '/v0.2/meta/col2/?key=mkey'
+        url = '/'+ version + '/meta/col2/?key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         #ret = BossRequest(drfrequest)
         #osskey = ret.get_bosskey()
         #self.assertEqual(ret.get_collection(), None)
@@ -272,10 +292,11 @@ class BossCoreMetaRequestTests(APITestCase):
         Test retriving a bossmeta key from  BossRequest object with collection name and experimentname
         """
         # create the request
-        url = '/v0.2/meta/col1/exp1/?key=mkey'
+        url = '/' + version + '/meta/col1/exp1/?key=mkey'
         expectedValue = 'col1&exp1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(bosskey, expectedValue)
@@ -285,10 +306,11 @@ class BossCoreMetaRequestTests(APITestCase):
         Test retriving a bossmeta key from  BossRequest object with collection name and experimentname and dataset nam
         """
         # create the request
-        url = '/v0.2/meta/col1/exp1/ds1/?key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?key=mkey'
         expectedValue = 'col1&exp1&ds1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(bosskey, expectedValue)
@@ -299,28 +321,31 @@ class BossCoreMetaRequestTests(APITestCase):
         """
 
         # only channel
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&key=mkey'
+        url = '/' + version +'/meta/col1/exp1/ds1/?channel=channel1&key=mkey'
         expectedValue = 'col1&exp1&ds1&channel1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(bosskey, expectedValue)
 
         # channel and timesample
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?channel=channel1&time=ts1&key=mkey'
         expectedValue = 'col1&exp1&ds1&channel1&ts1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(bosskey, expectedValue)
 
         # channel and timesample and layer
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer1&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?channel=channel1&time=ts1&layer=layer1&key=mkey'
         expectedValue = 'col1&exp1&ds1&channel1&ts1&layer1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(bosskey, expectedValue)
@@ -330,19 +355,21 @@ class BossCoreMetaRequestTests(APITestCase):
         Test the bossmeta key is generated correctly using the default channel
         """
         # timesample and layer - use default channel
-        url = '/v0.2/meta/col1/exp1/ds1/?timesample=ts1&layer=layer1&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?timesample=ts1&layer=layer1&key=mkey'
         expectedValue = 'col1&exp1&ds1&channel1&ts1&layer1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(bosskey, expectedValue)
 
         # layer - use default channel and timesample
-        url = '/v0.2/meta/col1/exp1/ds1/?layer=layer1&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?layer=layer1&key=mkey'
         expectedValue = 'col1&exp1&ds1&channel1&ts1&layer1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(bosskey, expectedValue)
@@ -352,10 +379,12 @@ class BossCoreMetaRequestTests(APITestCase):
         Test the bossmeta key is generated correctly using the default channel
         """
         # timesample and layer - use default channel
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&layer=layer1&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?channel=channel1&layer=layer1&key=mkey'
         expectedValue = 'col1&exp1&ds1&channel1&ts1&layer1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
+
         ret = BossRequest(drfrequest)
         bosskey = ret.get_bosskey()
         self.assertEqual(bosskey, expectedValue)
@@ -364,10 +393,12 @@ class BossCoreMetaRequestTests(APITestCase):
         """
         Test the the get meta key method
         """
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&layer=layer1&key=mkey'
+        url = '/' + version + '/meta/col1/exp1/ds1/?channel=channel1&layer=layer1&key=mkey'
         expectedValue = 'mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
+
         ret = BossRequest(drfrequest)
         key = ret.get_key()
         self.assertEqual(key, expectedValue)
@@ -376,10 +407,11 @@ class BossCoreMetaRequestTests(APITestCase):
         """
         Test the the get meta key method
         """
-        url = '/v0.2/meta/col1/exp1/ds1/?channel=channel1&layer=layer1&key=mkey&value=TestValue'
+        url = '/' + version +'/meta/col1/exp1/ds1/?channel=channel1&layer=layer1&key=mkey&value=TestValue'
         expectedValue = 'TestValue'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
         value = ret.get_value()
         self.assertEqual(value, expectedValue)

@@ -4,6 +4,8 @@ from rest_framework.request import Request
 
 from .request import BossRequest
 from .models import Collection, Experiment, Dataset, Channel, CoordinateFrame, TimeSample, Layer
+from django.conf import settings
+version  = settings.BOSS_VERSION
 
 
 class BossCoreRequestTests(APITestCase):
@@ -36,12 +38,13 @@ class BossCoreRequestTests(APITestCase):
         ts = TimeSample.objects.create(name='ts5', channel=channel)
         layer = Layer.objects.create(name='layer5', time=ts)
 
+
     def test_request_cutout_init(self):
         """
         Test initialization of cutout requests for the datamodel
         :return:
         """
-        url = '/v0.2/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/'
+        url = '/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/'
         col = 'col1'
         exp = 'exp1'
         ds = 'ds1'
@@ -54,6 +57,8 @@ class BossCoreRequestTests(APITestCase):
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
+        drfrequest.version = version
+
         drfrequest.query_params['channel'] = 'channel1'
         drfrequest.query_params['timesample'] = 'ts1'
         drfrequest.query_params['layer'] = 'layer1'
@@ -71,7 +76,8 @@ class BossCoreRequestTests(APITestCase):
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
-
+        drfrequest.version = version
+        
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
@@ -85,6 +91,8 @@ class BossCoreRequestTests(APITestCase):
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
+        drfrequest.version = version
+
         #        drfrequest.query_params['channel'] = 'channel1'
         #        drfrequest.query_params['timesample'] = 'ts1'
         drfrequest.query_params['layer'] = 'layerx'
@@ -103,7 +111,7 @@ class BossCoreRequestTests(APITestCase):
         Test initialization of cutout arguments for a cutout request
         :return:
         """
-        url = '/v0.2/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/'
+        url = '/' + version +'/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/'
         col = 'col1'
         exp = 'exp1'
         ds = 'ds1'
@@ -121,6 +129,7 @@ class BossCoreRequestTests(APITestCase):
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
+        drfrequest.version = version 
         ret = BossRequest(drfrequest)
 
         self.assertEqual(ret.get_resolution(), res)
