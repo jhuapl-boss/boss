@@ -7,6 +7,8 @@ from rest_framework.test import APITestCase
 
 import blosc
 import numpy as np
+from django.conf import settings
+version  = settings.BOSS_VERSION
 
 
 class CutoutInterfaceRoutingTests(APITestCase):
@@ -41,7 +43,7 @@ class CutoutInterfaceRoutingTests(APITestCase):
         Test to make sure the cutout URL with all datamodel params resolves
         :return:
         """
-        view_based_cutout = resolve('/v0.2/cutout/col1/exp1/ds1/2/0:5/0:6/0:2')
+        view_based_cutout = resolve('/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2')
         self.assertEqual(view_based_cutout.func.__name__, Cutout.as_view().__name__)
 
     def test_view_token_cutout_resolves_to_cutoutview(self):
@@ -49,7 +51,7 @@ class CutoutInterfaceRoutingTests(APITestCase):
         Test to make sure the cutout URL with just a view token resolves
         :return:
         """
-        view_based_cutout = resolve('/v0.2/cutout/2/0:5/0:6/0:2?view=token1')
+        view_based_cutout = resolve('/' + version + '/cutout/2/0:5/0:6/0:2?view=token1')
         self.assertEqual(view_based_cutout.func.__name__, CutoutView.as_view().__name__)
 
 
@@ -90,7 +92,7 @@ class CutoutInterfaceViewTests(APITestCase):
         h = a.tobytes()
         bb = blosc.compress(h, typesize=8)
 
-        response = self.client.post('/v0.2/cutout/col1/exp1/ds1/2/0:5/0:6/0:2', bb,
+        response = self.client.post('/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2', bb,
                                     content_type='application/octet-stream')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -104,7 +106,7 @@ class CutoutInterfaceViewTests(APITestCase):
         h = a.tobytes()
         bb = blosc.compress(h, typesize=8)
 
-        response = self.client.post('/v0.2/cutout/2/0:5/0:6/0:2?view=token1', bb,
+        response = self.client.post('/' + version + '/cutout/2/0:5/0:6/0:2?view=token1', bb,
                                     content_type='application/octet-stream')
 
         # TODO: Once views are implemented need to finish test and switch to 200
@@ -116,7 +118,7 @@ class CutoutInterfaceViewTests(APITestCase):
         Test to make sure getting a block of data returns a 200
         :return:
         """
-        response = self.client.get('/v0.2/cutout/col1/exp1/ds1/2/0:5/0:6/0:2',
+        response = self.client.get('/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2',
                                    content_type='application/octet-stream')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -126,7 +128,7 @@ class CutoutInterfaceViewTests(APITestCase):
         Test to make sure getting a block of data returns a 200
         :return:
         """
-        response = self.client.get('/v0.2/cutout/2/0:5/0:6/0:2?view=token1',
+        response = self.client.get('/' + version + '/cutout/2/0:5/0:6/0:2?view=token1',
                                    content_type='application/octet-stream')
 
         # TODO: Once views are implemented need to finish test and switch to 200
@@ -138,7 +140,7 @@ class CutoutInterfaceViewTests(APITestCase):
         Test to make sure you get an error
         :return:
         """
-        response = self.client.get('/v0.2/cutout/2/0:5/0:6/0:2',
+        response = self.client.get('/' + version + '/cutout/2/0:5/0:6/0:2',
                                    content_type='application/octet-stream')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

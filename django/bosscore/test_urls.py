@@ -2,6 +2,9 @@ from rest_framework.test import APITestCase
 from django.core.urlresolvers import resolve
 from .views import BossMeta
 
+from django.conf import settings
+version  = settings.BOSS_VERSION
+
 class BossCoreMetaServiceRoutingTests(APITestCase):
 
     def test_meta_urls_resolves_to_BossMeta_views(self):
@@ -10,11 +13,11 @@ class BossCoreMetaServiceRoutingTests(APITestCase):
  params resolves to the meta view
         :return:
         """
-        match = resolve('/v0.2/meta/col1/')
+        match = resolve('/' + version + '/meta/col1/')
         self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
 
-        match = resolve('/v0.2/meta/col1/exp1/')
+        match = resolve('/' + version + '/meta/col1/exp1/')
         self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
 
-        match = resolve('/v0.2/meta/col1/exp1/ds1/')
+        match = resolve('/' + version + '/meta/col1/exp1/ds1/')
         self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
