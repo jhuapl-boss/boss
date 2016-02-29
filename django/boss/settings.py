@@ -119,3 +119,10 @@ STATIC_ROOT = '/var/www/static/'
 # Setup the AWS manager for boto3 session pooling as Vault issued AWS creds
 from bossutils.aws import *
 aws_mngr = get_aws_manager()
+#aws_mngr.start_credential_refresh()
+
+# Django rest framework versioning requirements
+REST_FRAMEWORK = {
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning'
+}
+BOSS_VERSION ='v0.2'

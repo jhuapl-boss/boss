@@ -50,15 +50,14 @@ class BossRequest:
         self.x_stop = 0
         self.y_stop = 0
         self.z_stop = 0
-
-        # Parse the request for the service
+        
+        self.version = request.version
+       # Parse the request for the service
         url = str(request.META['PATH_INFO'])
         m = re.match("/v(?P<version>\d+\.\d+)/(?P<service>\w+)/(?P<webargs>.*)?/?", url)
 
         [version, service, webargs] = [arg for arg in m.groups()]
         self.set_service(service)
-        self.version = version
-
         if service == 'meta':
             # The meta data service has different requirements from the cutout
 
@@ -68,7 +67,7 @@ class BossRequest:
             # If optional args are specified without col, experiment and dataset this is an error
             # Note this only applies to the meta service because experiment and dataset are optional
             # TODO
-
+            
             self.initialize_request(request, collection, experiment, dataset)
             # TODO - Do we need this here?
             if self.collectionobj:

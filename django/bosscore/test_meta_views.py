@@ -1,10 +1,9 @@
-from django.test import TestCase, Client
-from rest_framework import status
+
 from rest_framework.test import APITestCase
-from django.core.urlresolvers import resolve
-from .views import BossMeta
-from rest_framework.test import APIRequestFactory
 from .models import *
+
+from django.conf import settings
+version  = settings.BOSS_VERSION
 
 
 class BossCoreMetaServiceViewTests(APITestCase):
@@ -42,7 +41,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         datamodel params resolves to the meta view
         :return:
         """
-        baseurl = '/v0.2/meta/col1/'
+        baseurl = '/' + version + '/meta/col1/'
         argspost = '?key=testmkey&value=TestString'
         argsget = '?key=testmkey'
 
@@ -70,7 +69,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         Test to make sure the meta URL for get, post, delete and update with an experiment
         :return:
         """
-        baseurl = '/v0.2/meta/col1/exp1/'
+        baseurl = '/' + version + '/meta/col1/exp1/'
         argspost = '?key=testmkey&value=TestString'
         argsget = '?key=testmkey'
 
@@ -99,7 +98,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         :return:
         """
 
-        baseurl = '/v0.2/meta/col1/exp1/dataset1/'
+        baseurl = '/' + version + '/meta/col1/exp1/dataset1/'
         argspost = '?key=testmkey&value=TestString'
         argsget = '?key=testmkey'
 
@@ -128,7 +127,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         :return:
         """
 
-        baseurl = '/v0.2/meta/col1/exp1/dataset1/'
+        baseurl = '/' + version + '/meta/col1/exp1/dataset1/'
         argspost = '?channel=channel1&key=testmkey&value=TestString'
         argsget = '?channel=channel1&key=testmkey'
 
@@ -158,7 +157,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         :return:
         """
 
-        baseurl = '/v0.2/meta/col1/exp1/dataset1/'
+        baseurl = '/' + version + '/meta/col1/exp1/dataset1/'
         argspost = '?channel=channel1&time=ts1&key=testmkey&value=TestString'
         argsget = '?channel=channel1&time=ts1&key=testmkey'
 
@@ -188,7 +187,7 @@ class BossCoreMetaServiceViewTests(APITestCase):
         :return:
         """
 
-        baseurl = '/v0.2/meta/col1/exp1/dataset1/'
+        baseurl = '/' + version + '/meta/col1/exp1/dataset1/'
         argspost = '?channel=channel1&time=ts1&layer=layer1&key=testmkey&value=TestString'
         argsget = '?channel=channel1&time=ts1&layer=layer1&key=testmkey'
 
