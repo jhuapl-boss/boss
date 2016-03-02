@@ -18,7 +18,6 @@ from django.contrib import admin
 
 from . import views
 
-#TODO: Think about versioning better. Think major version in url. minor in header?
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
