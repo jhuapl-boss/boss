@@ -1,61 +1,32 @@
 from rest_framework import serializers
-
-from bosscore.models import Collection, Experiment, Dataset, Channel, TimeSample, Layer, CoordinateFrame
+from bosscore.models import *
 
 
 class CoordinateFrameSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoordinateFrame
-        fields = (
-            'name', 'description', 'x_extent', 'y_extent', 'z_extent', 'x_voxelsize', 'y_voxelsize',
-            'z_voxelsize')
+        fields = ('name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
+                  'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit')
 
 
-class LayerSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Layer
-        fields = ('name', 'description', 'time', 'datatype')
-
-
-class TimeSampleSerializer(serializers.ModelSerializer):
-    layers = LayerSerializer(many=True, read_only=True)
+class ChannelLayerSerializer(serializers.ModelSerializer):
+    # Layers = TimeSampleSerializer(many=True, read_only=True)
 
     class Meta:
-        model = TimeSample
-        fields = ('name', 'description', 'channel', 'layers')
-
-
-class ChannelSerializer(serializers.ModelSerializer):
-    timesamples = TimeSampleSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Channel
-        fields = ('name', 'description', 'dataset', 'timesamples')
-
-
-class DatasetSerializer(serializers.ModelSerializer):
-    channels = ChannelSerializer(many=True, read_only=True)
-    coord = CoordinateFrameSerializer(read_only=True)
-
-    class Meta:
-        model = Dataset
-        fields = (
-            'name', 'description', 'experiment', 'is_source', 'coord_frame', 'channels', 'coord',
-            'default_channel', 'default_time', 'default_layer')
+        model = ChannelLayer
+        fields = ('name', 'description', 'experiment', 'is_channel', 'default_time_step', 'datatype')
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
-    datasets = DatasetSerializer(many=True, read_only=True)
+    channel_layers = ChannelLayerSerializer(many=True, read_only=True)
 
     class Meta:
         model = Experiment
-        fields = (
-            'name', 'description', 'collection', 'num_resolution_levels', 'hierarchy_method',
-            'datasets')
+        fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
+                  'channel_layers')
 
 
 class CollectionSerializer(serializers.ModelSerializer):
-    # experiments = serializers.StringRelatedField(many=True)
     experiments = ExperimentSerializer(many=True, read_only=True)
 
     class Meta:

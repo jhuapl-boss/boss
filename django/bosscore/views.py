@@ -1,7 +1,4 @@
-from django.shortcuts import render
-
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, Http404
-from rest_framework.decorators import api_view
+from django.http import HttpResponse, HttpResponseBadRequest
 from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.views import APIView
@@ -10,41 +7,37 @@ from .models import *
 from .serializers import *
 from .error import BossError, BossHTTPError
 
-import re
-import os, sys
-
-
 from . import metadb
 from .request import BossRequest
+
 
 class CollectionObj(APIView):
     """
     View to access a collection object
-    :param request:
-    :param col: Collection name
+
     """
-    def get(self, request,collection):
+    def get(self, request, collection):
         """
-        View to handle GET requests for metadata
+        View to handle GET requests for a Collection
 
         :param request: DRF Request object
         :param collection: Collection Name specifying the collection you want to get the meta data for
-        :param experiment: Experiment name. default = None
-        :param dataset: Dataset name. Default = None
         :return:
         """
         try:
-            collectionobj= Collection.objects.get(name=collection)
+            collection_obj = Collection.objects.get(name=collection)
         except Collection.DoesNotExist:
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
 
-        serializer = CollectionSerializer(collectionobj)
+        serializer = CollectionSerializer(collection_obj)
         return Response(serializer.data)
 
-    def post(request,collection):
+    def post(self,request, collection):
         """
         Post a new collection using django rest framework
-        :param collection:
+
+        :param request: DRF Request object
+        :param collection: Collection name
         :return:
         """
         serializer = CollectionSerializer(data=request.data)
@@ -53,47 +46,50 @@ class CollectionObj(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
-    def delete(request,collection):
+    def delete(self, request, collection):
         """
         Delete a collection
+        :param request: DRF Request object
         :param collection:  Name of collection to delete
         :return:
         """
         try:
-            collectionobj= Collection.objects.get(name=collection)
+            collection_obj = Collection.objects.get(name=collection)
         except Collection.DoesNotExist:
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
-        collectionobj.delete()
+        collection_obj.delete()
         return HttpResponse(status=204)
+
 
 class ExperimentObj(APIView):
     """
     View to access an experiment object
-    :param request:
-    :param col: Collection name
+
     """
-    def get(self, request,collection, experiment):
+
+    def get(self, request, collection, experiment):
         """
         Retrieve information about a experiment.
-        :param col: Collection name
-        :param exp: Experiment name
+        :param request: DRF Request object
+        :param collection: Collection name
+        :param experiment: Experiment name
         :return:
         """
         try:
-            col = Collection.objects.get(name=collection)
-            experiment = Experiment.objects.get(name=experiment, collection=col)
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
 
-        serializer = ExperimentSerializer(experiment)
+        serializer = ExperimentSerializer(experiment_obj)
         return Response(serializer.data)
-    
- 
-    def post(request,collection,experiment):
+
+    def post(self, request, collection, experiment):
         """
         Post  a new experiment
-        :param collection:
-        :param experiment:
+        :param request: DRF Request object
+        :param collection: Collection name
+        :param experiment: Experiment name
         :return:
         """
         serializer = ExperimentSerializer(data=request.data)
@@ -102,306 +98,86 @@ class ExperimentObj(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
-    def delete(request,collection,experiment):
+    def delete(self, request, collection, experiment):
         """
         Delete an experiment object given the collection and experiment name
-        :param collection:
-        :param experiment:
+        :param request: DRF Request object
+        :param collection: Collection Name
+        :param experiment: Experiment Name
         :return:
         """
         try:
-            col = Collection.objects.get(name=collection)
-            experimentobj = Experiment.objects.get(name=experiment, collection=collection)
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
-        
-        experimentobj.delete()
-        return HttpResponse(status=204)
-  
 
-
-class DatasetObj(APIView):
-    """
-    View to access a dataset object
-   
-    """
-    def get(self, request, collection, experiment, dataset):
-        """
-        Retrieve information about a dataset.
-        :param col: Collection name
-        :param exp: Experiment name
-        :param exp: Dataset name
-        :return:
-        """
-        try:
-            col= Collection.objects.get(name=collection)
-            exp = Experiment.objects.get(name=experiment, collection=col)
-            datasetobj = Dataset.objects.get(name=dataset, experiment=exp)
-            
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist):
-            return HttpResponse(status=404)
-            
-        if request.method == 'GET':
-            serializer = DatasetSerializer(datasetobj)
-            return Response(serializer.data)
-        return HttpResponse(status=404)
-
-    def post(request,collection,experiment,dataset):
-        """
-        Post a new dataset object
-        :param collection:
-        :param experiment:
-        :param dataset:
-        :return:
-        """
-        serializer = DatasetSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    def delete(request,collection,experiment,dataset):
-        """
-        Delete a dataset
-        :param collection: Collection name
-        :param experiment: Experiment name
-        :param dataset: Dataset name
-        :return:
-        """
-        try:
-            col = Collection.objects.get(name=collection)
-            exp = Experiment.objects.get(name=experiment, collection=col)
-            datasetobj = Dataset.objects.get(name=ds, experiment=exp)
-
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist):
-            return HttpResponse(status=404)
-        datasetobj.delete()
+        experiment_obj.delete()
         return HttpResponse(status=204)
 
 
-
-
-class ChannelObj(APIView):
+class ChannelLayerObj(APIView):
     """
     View to access a channel
 
     """
-    def get(self, request, collection, experiment, dataset, channel):
+
+    def get(self, request, collection, experiment, channel_layer):
         """
         Retrieve information about a channel.
-        :param col: Collection name
-        :param exp: Experiment name
-        :param exp: Dataset name
-        :param exp: Channel name
+        :param request: DRF Request object
+        :param collection: Collection name
+        :param experiment: Experiment name
+        :param channel_layer: Channel or Layer name
         :return:
         """
 
         try:
-            col = Collection.objects.get(name=collection)
-            exp = Experiment.objects.get(name=experiment, collection=col)
-            ds = Dataset.objects.get(name=dataset, experiment=exp)
-            channelobj = Channel.objects.get(name=channel, dataset=ds)
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
 
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist):
+        except (Collection.DoesNotExist, Experiment.DoesNotExist, ChannelLayer.DoesNotExist):
             return HttpResponse(status=404)
 
         if request.method == 'GET':
-            serializer = ChannelSerializer(channelobj)
+            serializer = ChannelLayerSerializer(channel_layer_obj)
             return Response(serializer.data)
         return HttpResponse(status=404)
 
-    def post(request,collection,experiment,dataset,channel):
+    def post(self, request, collection, experiment, channel_layer):
         """
         Post a new Channel
-
+        :param request: DRF Request object
         :param collection: Collection
         :param experiment: Experiment
-        :param dataset: Dataset
-        :param channel: Channel
+        :param channel_layer: Channel or Layer
         :return:
         """
-        serializer = DatasetSerializer(data=request.data)
+        serializer = ChannelLayerSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
-    def delete(request,collection,experiment,dataset,channel):
+    def delete(self, request, collection, experiment, channel_layer):
         """
         Delete a Channel
-        :param collection:
-        :param experiment:
-        :param dataset:
-        :param channel:
+        :param request: DRF Request object
+        :param collection: Collection
+        :param experiment: Experiment
+        :param channel_layer: Channel or Layer
         :return:
         """
         try:
-            col = Collection.objects.get(name=collection)
-            exp = Experiment.objects.get(name=experiment, collection=col)
-            ds = Dataset.objects.get(name=dataset, experiment=exp)
-            channelobj = Channel.objects.get(name=channel, dataset=ds)
-
-
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist):
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
+        except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
-        
-        channelobj.delete()
+
+        channel_layer_obj.delete()
         return HttpResponse(status=204)
-
-
-
-class TimesampleObj(APIView):
-    """
-    View to access a time sample
-
-    """
-    def get(self, request, collection, experiment, dataset, channel, timesample):
-        """
-        Retrieve information about a channel.
-        :param col: Collection name
-        :param exp: Experiment name
-        :param exp: Dataset name
-        :param exp: Channel name
-        :param exp: time sample name
-        :return:
-        """
-
-        try:
-            col = Collection.objects.get(name=collection)
-            exp = Experiment.objects.get(name=experiment, collection=col)
-            ds = Dataset.objects.get(name=dataset, experiment=exp)
-            channel = Channel.objects.get(name=channel, dataset=ds)
-            tsobj = TimeSample.objects.get(name=timesample, channel=channel)
-
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,
-            TimeSample.DoesNotExist):
-            return HttpResponse(status=404)
-
-        if request.method == 'GET':
-            serializer = TimeSampleSerializer(tsobj)
-            return Response(serializer.data)
-        return HttpResponse(status=404)
-
-    def post(request,collection,experiment,dataset,channel, timesample):
-        """
-        Post a timesample
-        :param collection:
-        :param experiment:
-        :param dataset:
-        :param channel:
-        :param timesample:
-        :return:
-        """
-        serializer = TimeSampleSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    def delete(request,collection,experiment,dataset,channel,timesample):
-
-        """
-        Delete a timesample
-        :param collection:
-        :param experiment:
-        :param dataset:
-        :param channel:
-        :param timesample:
-        :return:
-        """
-        try:
-            col = Collection.objects.get(name=collection)
-            exp = Experiment.objects.get(name=experiment, collection=col)
-            ds = Dataset.objects.get(name=dataset, experiment=exp)
-            channel = Channel.objects.get(name=channel, dataset=ds)
-            tsobj = TimeSample.objects.get(name=timesample, channel=channel)
-
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,
-            TimeSample.DoesNotExist):
-            return HttpResponse(status=404)
-        
-        tsobj.delete()
-        return HttpResponse(status=204)
-
-
-class LayerObj(APIView):
-    """
-    View to access a Layer
-
-    """
-    def get(self, request, collection, experiment, dataset, channel, timesample, layer):
-        """
-        Retrieve information about a channel.
-        :param col: Collection name
-        :param exp: Experiment name
-        :param exp: Dataset name
-        :param exp: Channel name
-        :param exp: time sample name
-        :param exp: Layer name
-        :return:
-        """
-        try:
-            col = Collection.objects.get(name=collection)
-            exp = Experiment.objects.get(name=experiment, collection=col)
-            ds = Dataset.objects.get(name=dataset, experiment=exp)
-            channel = Channel.objects.get(name=channel, dataset=ds)
-            ts = TimeSample.objects.get(name=timesample, channel=channel)
-            layerobj = Layer.objects.get(name=layer, timesample=ts)
-
-
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,
-            TimeSample.DoesNotExist, Layer.DoesNotExist):
-            return HttpResponse(status=404)
-
-        if request.method == 'GET':
-            serializer = LayerSerializer(layerobj)
-            return Response(serializer.data)
-        return HttpResponse(status=404)
-
-    def post(request,collection,experiment,dataset,channel, timesample, layer):
-        """
-        Post a layer
-        :param collection:
-        :param experiment:
-        :param dataset:
-        :param channel:
-        :param timesample:
-        :param layer:
-        :return:
-        """
-        serializer = LayerSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    def delete(request,collection,experiment,dataset,channel,timesample,layer):
-        """
-        Delete a layer
-        :param collection:
-        :param experiment:
-        :param dataset:
-        :param channel:
-        :param timesample:
-        :param layer:
-        :return:
-        """
-        try:
-            col = Collection.objects.get(name=collection)
-            exp = Experiment.objects.get(name=experiment, collection=col)
-            ds = Dataset.objects.get(name=dataset, experiment=exp)
-            channel = Channel.objects.get(name=channel, dataset=ds)
-            ts = TimeSample.objects.get(name=timesample, channel=channel)
-            layerobj = Layer.objects.get(name=layer, timesample=ts)
-
-
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, Dataset.DoesNotExist, Channel.DoesNotExist,
-            TimeSample.DoesNotExist, Layer.DoesNotExist):
-            return HttpResponse(status=404)
-
-        tsobj.delete()
-        return HttpResponse(status=204)
-
 
 
 class CollectionList(generics.ListCreateAPIView):
@@ -421,36 +197,20 @@ class ExperimentList(generics.ListCreateAPIView):
     serializer_class = ExperimentSerializer
 
 
-class DatasetList(generics.ListCreateAPIView):
-    """
-    List all datasets
-    """
-    queryset = Dataset.objects.all()
-    serializer_class = DatasetSerializer
-
-
 class ChannelList(generics.ListCreateAPIView):
     """
     List all channels
     """
-    queryset = Channel.objects.all()
-    serializer_class = ChannelSerializer
-
-
-class TimeSampleList(generics.ListCreateAPIView):
-    """
-    List all timesamples
-    """
-    queryset = TimeSample.objects.all()
-    serializer_class = TimeSampleSerializer
+    queryset = ChannelLayer.objects.all()
+    serializer_class = ChannelLayerSerializer
 
 
 class LayerList(generics.ListCreateAPIView):
     """
     List all layers
     """
-    queryset = Layer.objects.all()
-    serializer_class = LayerSerializer
+    queryset = ChannelLayer.objects.all()
+    serializer_class = ChannelLayerSerializer
 
 
 class CoordinateFrameList(generics.ListCreateAPIView):
@@ -460,13 +220,14 @@ class CoordinateFrameList(generics.ListCreateAPIView):
     queryset = CoordinateFrame.objects.all()
     serializer_class = CoordinateFrameSerializer
 
+
 class BossMeta(APIView):
     """
     View to handle read,write,update and delete metadata queries
     
     """
-    
-    def get_combinedkey(self,bosskey,key):
+
+    def get_combinedkey(self, bosskey, key):
         """
         Generate a new metakey which is a combiniation of the datamodel representation and meta data key
 
@@ -476,7 +237,7 @@ class BossMeta(APIView):
         """
         return (bosskey + "#" + key)
 
-    def get(self, request, collection, experiment=None, dataset= None ):
+    def get(self, request, collection, experiment=None, dataset=None):
         """
         View to handle GET requests for metadata 
         ​
@@ -490,32 +251,31 @@ class BossMeta(APIView):
         # The metadata consist of two parts. The bosskey#key
         # bosskey represents the datamodel object
         # key is the key for the meta data associated with the data model object
-        
+
         if 'key' not in request.query_params:
             return BossHTTPError(404, "Missing optional argument key in the request", 30000)
 
         try:
             req = BossRequest(request)
             bosskey = req.get_bosskey()
-            
+
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
-        if bosskey == None :
+        if bosskey == None:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
-        combinedkey = self.get_combinedkey(bosskey,mkey)
-        
+        combinedkey = self.get_combinedkey(bosskey, mkey)
+
         mdb = metadb.MetaDB("bossmeta")
         mdata = mdb.getmeta(combinedkey)
         if mdata:
             return Response(mdata)
         else:
             return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
-            
-        
-    def post(self, request, collection, experiment=None, dataset= None ):
+
+    def post(self, request, collection, experiment=None, dataset=None):
         """
         View to handle POST requests for metadata
         
@@ -539,7 +299,7 @@ class BossMeta(APIView):
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
-        if bosskey == None :
+        if bosskey == None:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
@@ -552,8 +312,7 @@ class BossMeta(APIView):
         mdb.writemeta(combinedkey, value)
         return HttpResponse(status=201)
 
-
-    def delete(self, request, collection, experiment=None, dataset= None ):
+    def delete(self, request, collection, experiment=None, dataset=None):
         """
         View to handle the delete requests for metadata
 
@@ -572,7 +331,7 @@ class BossMeta(APIView):
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
-        if bosskey == None :
+        if bosskey == None:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
@@ -587,8 +346,8 @@ class BossMeta(APIView):
             return HttpResponse(status=201)
         else:
             return HttpResponseBadRequest("[ERROR]- Key {} not found ".format(mkey))
-           
-    def put(self, request, collection, experiment=None, dataset= None ):
+
+    def put(self, request, collection, experiment=None, dataset=None):
         """
         View to handle update requests for metadata
         
@@ -598,11 +357,11 @@ class BossMeta(APIView):
         :param dataset: Dataset name. Default = None
         :return:
         """
-        
+
         # The metadata consist of two parts. The bosskey#key
         # bosskey represents the datamodel object
         # key is the key for the meta data associated with the data model object
-        
+
         if 'key' not in request.query_params or 'value' not in request.query_params:
             return BossHTTPError(404, "Missing optional argument key/value in the request", 30000)
 
@@ -612,15 +371,15 @@ class BossMeta(APIView):
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
-        if bosskey == None :
+        if bosskey == None:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
         value = request.query_params['value']
-            
+
         # generate the new metakey which combines the bosskey with the meta data key in the post
         combinedkey = self.get_combinedkey(bosskey, mkey)
-            
+
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB("bossmeta")
         mdb.updatemeta(combinedkey, value)

@@ -6,14 +6,50 @@ class Collection(models.Model):
     description = models.CharField(max_length=4096, blank=True)
 
     class Meta:
-        db_table = u"collections"
+        db_table = u"collection"
+
+
+class CoordinateFrame(models.Model):
+    name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
+    description = models.CharField(max_length=4096, blank=True)
+
+    x_start = models.IntegerField()
+    x_stop = models.IntegerField()
+    y_start = models.IntegerField()
+    y_stop = models.IntegerField()
+    z_start = models.IntegerField()
+    z_stop = models.IntegerField()
+
+    x_voxel_size = models.FloatField(default=1.0)
+    y_voxel_size = models.FloatField(default=1.0)
+    z_voxel_size = models.FloatField(default=1.0)
+
+    VOXEL_UNIT_CHOICES = (
+        (0, 'Nanometer'),
+        (1, 'Micrometer'),
+        (2, 'Millimeter'),
+        (3, 'Centimeter')
+    )
+    voxel_unit = models.CharField(choices=VOXEL_UNIT_CHOICES, max_length=100)
+    time_step = models.IntegerField()
+    TIMESTEP_UNIT_CHOICES = (
+        (0, 'Nanosecond'),
+        (1, 'Microsecond'),
+        (2, 'Millisecond'),
+        (3, 'Centimeters'),
+    )
+    time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100)
+
+    class Meta:
+        db_table = u"coordinate_frame"
 
 
 class Experiment(models.Model):
     collection = models.ForeignKey(Collection, related_name='experiments')
     name = models.CharField(max_length=255, verbose_name="Name of the Experiment")
     description = models.CharField(max_length=4096, blank=True)
-    num_resolution_levels = models.IntegerField(default=0)
+    coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord')
+    num_hierarchy_levels = models.IntegerField(default=0)
 
     HIERARCHY_METHOD_CHOICES = (
         (0, 'near_iso'),
@@ -23,74 +59,18 @@ class Experiment(models.Model):
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
 
     class Meta:
-        db_table = u"experiments"
+        db_table = u"experiment"
 
     def __unicode__(self):
-        return '%s' % (self.name)
+        return '%s' % self.name
 
 
-class CoordinateFrame(models.Model):
-    name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
-    description = models.CharField(max_length=4096, blank=True)
-
-    x_extent = models.IntegerField()
-    y_extent = models.IntegerField()
-    z_extent = models.IntegerField()
-
-    x_voxelsize = models.FloatField(default=1.0)
-    y_voxelsize = models.FloatField(default=1.0)
-    z_voxelsize = models.FloatField(default=1.0)
-
-    class Meta:
-        db_table = u"coordinate_frames"
-
-
-class Dataset(models.Model):
-    experiment = models.ForeignKey(Experiment, related_name='datasets')
-    name = models.CharField(max_length=255, verbose_name="Name of the Dataset")
-    description = models.CharField(max_length=4096, blank=True)
-
-    IS_SOURCE_CHOICES = (
-        (0, 'NO'),
-        (1, 'YES'),
-    )
-    is_source = models.CharField(choices=IS_SOURCE_CHOICES, max_length=100)
-    coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord')
-
-    default_channel = models.ForeignKey('Channel',related_name='default_channel', null = True)
-    default_time = models.ForeignKey('TimeSample',related_name='default_time', null = True)
-    default_layer = models.ForeignKey('Layer',related_name='default_layer',null = True)
-
-
-    class Meta:
-        db_table = u"datasets"
-
-    def __unicode__(self):
-        return '%s' % (self.dataset_name)
-
-
-class Channel(models.Model):
+class ChannelLayer(models.Model):
     name = models.CharField(max_length=255, verbose_name="Name of the Channel")
     description = models.CharField(max_length=4096, blank=True)
-    dataset = models.ForeignKey(Dataset, related_name='channels')
-
-    class Meta:
-        db_table = u"channels"
-
-
-class TimeSample(models.Model):
-    name = models.CharField(max_length=255, verbose_name="Name of the Time Sample ")
-    description = models.CharField(max_length=4096, blank=True)
-    channel = models.ForeignKey(Channel, related_name='timesamples')
-
-    class Meta:
-        db_table = u"time"
-
-
-class Layer(models.Model):
-    name = models.CharField(max_length=255, verbose_name="Name of the Layer ")
-    description = models.CharField(max_length=4096, blank=True)
-    time = models.ForeignKey(TimeSample, related_name='layers')
+    experiment = models.ForeignKey(Experiment, related_name='channellayer')
+    is_channel = models.BooleanField()
+    default_time_step = models.IntegerField()
     DATATYPE_CHOICES = (
         (0, 'uint8'),
         (1, 'uint16'),
@@ -98,7 +78,15 @@ class Layer(models.Model):
         (3, 'uint64'),
     )
 
-    datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank = True)
+    datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank=True)
 
     class Meta:
-        db_table = u"layers"
+        db_table = u"channel_layer"
+
+
+class ChannelLayerMap(models.Model):
+    channel = models.ForeignKey(ChannelLayer, related_name='channel')
+    layer = models.ForeignKey(ChannelLayer, related_name='layer')
+
+    class Meta:
+        db_table = u"channel_layer_map"

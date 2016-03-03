@@ -18,7 +18,7 @@ from django.contrib import admin
 
 from . import views
 
-#TODO: Think about versioning better. Think major version in url. minor in header?
+# TODO: Think about versioning better. Think major version in url. minor in header?
 
 urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
@@ -26,5 +26,5 @@ urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
     url(r'^v0.2/info/', include('bosscore.info_urls', namespace='v0.2')),
-    url(r'^v0.2/meta/', include('bosscore.meta_urls', namespace='v0.2')),
+    #url(r'^v0.2/meta/', include('bosscore.meta_urls', namespace='v0.2')),
 ]
