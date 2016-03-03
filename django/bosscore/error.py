@@ -21,12 +21,19 @@ class BossError(Exception):
         # Set status code
         self.args = args
 
+    def to_http(self):
+        """
+        Convert error to an HTTP error so you can return to the user if in a view
+        :return: bosscore.error.BossHTTPError
+        """
+        return BossHTTPError(self.args[0], self.args[1], self.args[2])
+
 
 class BossHTTPError(JsonResponse):
     """
     Custom HTTP Error class that logs and renders a json response
 
-    When you reach a point in your code where you want to stop execution and return an error to the user:
+    When you reach a point in a django view where you want to stop execution and return an error to the user:
 
         return BossHTTPError(409, 20001, "Key already exists")
 
