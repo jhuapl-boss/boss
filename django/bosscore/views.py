@@ -32,7 +32,7 @@ class CollectionObj(APIView):
         serializer = CollectionSerializer(collection_obj)
         return Response(serializer.data)
 
-    def post(self,request, collection):
+    def post(self, request, collection):
         """
         Post a new collection using django rest framework
 
@@ -235,16 +235,16 @@ class BossMeta(APIView):
         :param key: Meta data key
         :return: new meta key
         """
-        return (bosskey + "#" + key)
+        return bosskey + "#" + key
 
-    def get(self, request, collection, experiment=None, dataset=None):
+    def get(self, request, collection, experiment = None, channel_layer = None):
         """
         View to handle GET requests for metadata 
         ​
         :param request: DRF Request object
         :param collection: Collection Name specifying the collection you want to get the meta data for
         :param experiment: Experiment name. default = None
-        :param dataset: Dataset name. Default = None 
+        :param channel_layer: Channel or Layer name
         :return:
         """
 
@@ -260,9 +260,9 @@ class BossMeta(APIView):
             bosskey = req.get_bosskey()
 
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
-        if bosskey == None:
+        if bosskey == None :
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
@@ -271,18 +271,20 @@ class BossMeta(APIView):
         mdb = metadb.MetaDB("bossmeta")
         mdata = mdb.getmeta(combinedkey)
         if mdata:
-            return Response(mdata)
+            [bosskey, mkey] = mdata['metakey'].split('#')
+            data = {'key': mkey, 'value': mdata['metavalue']}
+            return Response(data)
         else:
             return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
 
-    def post(self, request, collection, experiment=None, dataset=None):
+    def post(self, request, collection, experiment= None, channel_layer=None):
         """
         View to handle POST requests for metadata
         
         :param request: DRF Request object
         :param collection: Collection Name specifying the collection you want to get the meta data for
         :param experiment: Experiment name. default = None
-        :param dataset: Dataset name. Default = None
+        :param channel_layer: Channel or Layer name. Default = None
         :return:
         """
 
@@ -297,7 +299,7 @@ class BossMeta(APIView):
             req = BossRequest(request)
             bosskey = req.get_bosskey()
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
         if bosskey == None:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
@@ -312,14 +314,14 @@ class BossMeta(APIView):
         mdb.writemeta(combinedkey, value)
         return HttpResponse(status=201)
 
-    def delete(self, request, collection, experiment=None, dataset=None):
+    def delete(self, request, collection, experiment = None, channel_layer= None):
         """
         View to handle the delete requests for metadata
 
         :param request: DRF Request object
         :param collection: Collection Name specifying the collection you want to get the meta data for
         :param experiment: Experiment name. default = None
-        :param dataset: Dataset name. Default = None
+        :param channel_layer: channel or layer name. Default = None
         :return:
         """
         if 'key' not in request.query_params:
@@ -329,7 +331,7 @@ class BossMeta(APIView):
             req = BossRequest(request)
             bosskey = req.get_bosskey()
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
         if bosskey == None:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
@@ -347,14 +349,14 @@ class BossMeta(APIView):
         else:
             return HttpResponseBadRequest("[ERROR]- Key {} not found ".format(mkey))
 
-    def put(self, request, collection, experiment=None, dataset=None):
+    def put(self, request, collection, experiment=None, channel_layer = None):
         """
         View to handle update requests for metadata
         
         :param request: DRF Request object
         :param collection: Collection Name specifying the collection you want to get the meta data for
         :param experiment: Experiment name. default = None
-        :param dataset: Dataset name. Default = None
+        :param channel_layer: Channel or Layer name. Default = None
         :return:
         """
 
@@ -369,7 +371,7 @@ class BossMeta(APIView):
             req = BossRequest(request)
             bosskey = req.get_bosskey()
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
         if bosskey == None:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
