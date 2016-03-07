@@ -3,7 +3,7 @@ from rest_framework import status
 import json
 import unittest
 
-from .error import BossHTTPError, BossError
+from ..error import BossHTTPError, BossError
 
 
 class BossHTTPErrorTests(APITestCase):

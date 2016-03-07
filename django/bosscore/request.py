@@ -122,7 +122,7 @@ class BossRequest:
         :return: None
         """
 
-        if resolution in range(0, self.experiment.num_resolution_levels):
+        if resolution in range(0, self.experiment.num_hierarchy_levels):
             self.resolution = int(resolution)
 
         # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG
@@ -197,6 +197,7 @@ class BossRequest:
         """
         if Experiment.objects.filter(name=experiment_name, collection=self.collection).exists():
             self.experiment = Experiment.objects.get(name=experiment_name, collection=self.collection)
+            self.coord_frame = self.experiment.coord_frame
             return True
         else:
             raise BossError(404, "Experiment {} not found".format(experiment_name), 30000)
