@@ -268,7 +268,7 @@ class BossMeta(APIView):
         mkey = request.query_params['key']
         combinedkey = self.get_combinedkey(bosskey, mkey)
 
-        mdb = metadb.MetaDB("bossmeta")
+        mdb = metadb.MetaDB()
         mdata = mdb.getmeta(combinedkey)
         if mdata:
             [bosskey, mkey] = mdata['metakey'].split('#')
@@ -310,7 +310,7 @@ class BossMeta(APIView):
         # generate the new Metakey which combines datamodel keys with the meta data key in the post
         combinedkey = self.get_combinedkey(bosskey, mkey)
         # Post Metadata the dynamodb database
-        mdb = metadb.MetaDB("bossmeta")
+        mdb = metadb.MetaDB()
         mdb.writemeta(combinedkey, value)
         return HttpResponse(status=201)
 
@@ -342,7 +342,7 @@ class BossMeta(APIView):
         combinedkey = self.get_combinedkey(bosskey, mkey)
 
         # Delete metadata from the dynamodb database
-        mdb = metadb.MetaDB("bossmeta")
+        mdb = metadb.MetaDB()
         response = mdb.deletemeta(combinedkey)
         if 'Attributes' in response:
             return HttpResponse(status=201)
@@ -383,6 +383,6 @@ class BossMeta(APIView):
         combinedkey = self.get_combinedkey(bosskey, mkey)
 
         # Post Metadata the dynamodb database
-        mdb = metadb.MetaDB("bossmeta")
+        mdb = metadb.MetaDB()
         mdb.updatemeta(combinedkey, value)
         return HttpResponse(status=201)

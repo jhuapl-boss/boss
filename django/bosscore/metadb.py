@@ -1,8 +1,12 @@
+import bossutils
 from bossutils.aws import *
 
+# Get the table name from boss.config
+config = bossutils.configuration.BossConfig()
+tablename = config["aws"]["meta-db"]
 
 class MetaDB:
-    def __init__(self, tablename):
+    def __init__(self):
         """
         Iniatialize the data base
         :param tablename:  Name of the meta data table
