@@ -79,6 +79,7 @@ class ChannelLayer(models.Model):
     )
 
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank=True)
+    max_time_step = models.IntegerField(default=0)
     layer_map = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False)
 
     class Meta:
