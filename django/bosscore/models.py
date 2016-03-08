@@ -25,18 +25,18 @@ class CoordinateFrame(models.Model):
     z_voxel_size = models.FloatField(default=1.0)
 
     VOXEL_UNIT_CHOICES = (
-        (0, 'Nanometer'),
-        (1, 'Micrometer'),
-        (2, 'Millimeter'),
-        (3, 'Centimeter')
+        ('nanometer', 'NANOMETER'),
+        ('micrometer', 'MICROMETER'),
+        ('millimeter', 'MILLIMETER'),
+        ('centimeter', 'CENTIMETER')
     )
     voxel_unit = models.CharField(choices=VOXEL_UNIT_CHOICES, max_length=100)
     time_step = models.IntegerField()
     TIMESTEP_UNIT_CHOICES = (
-        (0, 'Nanosecond'),
-        (1, 'Microsecond'),
-        (2, 'Millisecond'),
-        (3, 'Centimeters'),
+        ('nanosecond', 'NANOSECOND'),
+        ('microsecond', 'MICROSECOND'),
+        ('millisecond', 'Millisecond'),
+        ('centimeters', 'Centimeters'),
     )
     time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100)
 
@@ -52,9 +52,9 @@ class Experiment(models.Model):
     num_hierarchy_levels = models.IntegerField(default=0)
 
     HIERARCHY_METHOD_CHOICES = (
-        (0, 'near_iso'),
-        (1, 'iso'),
-        (2, 'slice'),
+        ('near_iso', 'NEAR_ISO'),
+        ('iso', 'ISO'),
+        ('slice', 'SLICE'),
     )
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
 
@@ -72,13 +72,14 @@ class ChannelLayer(models.Model):
     is_channel = models.BooleanField()
     default_time_step = models.IntegerField()
     DATATYPE_CHOICES = (
-        (0, 'uint8'),
-        (1, 'uint16'),
-        (2, 'uint32'),
-        (3, 'uint64'),
+        ('unit8', 'UINT8'),
+        ('uint16', 'UINT16'),
+        ('uint32', 'UINT32'),
+        ('uint62', 'UINT64'),
     )
 
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank=True)
+    layer_map = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False)
 
     class Meta:
         db_table = u"channel_layer"

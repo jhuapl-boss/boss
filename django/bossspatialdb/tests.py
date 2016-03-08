@@ -18,25 +18,22 @@ class CutoutInterfaceRoutingTests(APITestCase):
         Initialize the database
         :return:
         """
+
         col = Collection.objects.create(name='col1')
-        exp = Experiment.objects.create(name='exp1', collection=col, num_resolution_levels=5)
-        cf = CoordinateFrame.objects.create(name='cf1', x_extent=1000, y_extent=10000, z_extent=10000,
-                                                    x_voxelsize=4, y_voxelsize=4, z_voxelsize=4)
-        ds = Dataset.objects.create(name='ds1', experiment=exp, coord_frame=cf)
-        channel = Channel.objects.create(name='channel1', dataset=ds)
-        ts = TimeSample.objects.create(name='ts1', channel=channel)
-        layer = Layer.objects.create(name='layer1', time=ts)
-        extralayer = Layer.objects.create(name='layerx', time=ts)
+        cf = CoordinateFrame.objects.create(name='cf1', description ='cf1',
+                                            x_start=0, x_stop=1000,
+                                            y_start=0, y_stop=1000,
+                                            z_start=0, z_stop=1000,
+                                            x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
+                                            time_step=1
+                                            )
+        exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf)
+        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step = 1)
+        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step = 1)
 
-        ds.default_channel = channel
-        ds.default_time = ts
-        ds.default_layer = layer
-        ds.save()
-
-        ds = Dataset.objects.create(name='ds5', experiment=exp, coord_frame=cf)
-        channel = Channel.objects.create(name='channel5', dataset=ds)
-        ts = TimeSample.objects.create(name='ts5', channel=channel)
-        layer = Layer.objects.create(name='layer5', time=ts)
+        channel = ChannelLayer.objects.create(name='channel2', experiment=exp, is_channel=True, default_time_step = 1)
+        layer = ChannelLayer.objects.create(name='layer2', experiment=exp, is_channel=False, default_time_step = 1)
+        
 
     def test_full_token_cutout_resolves_to_cutout(self):
         """
@@ -64,24 +61,20 @@ class CutoutInterfaceViewTests(APITestCase):
         :return:
         """
         col = Collection.objects.create(name='col1')
-        exp = Experiment.objects.create(name='exp1', collection=col, num_resolution_levels=5)
-        cf = CoordinateFrame.objects.create(name='cf1', x_extent=1000, y_extent=10000, z_extent=10000,
-                                                    x_voxelsize=4, y_voxelsize=4, z_voxelsize=4)
-        ds = Dataset.objects.create(name='ds1', experiment=exp, coord_frame=cf)
-        channel = Channel.objects.create(name='channel1', dataset=ds)
-        ts = TimeSample.objects.create(name='ts1', channel=channel)
-        layer = Layer.objects.create(name='layer1', time=ts)
-        extralayer = Layer.objects.create(name='layerx', time=ts)
+        cf = CoordinateFrame.objects.create(name='cf1', description ='cf1',
+                                            x_start=0, x_stop=1000,
+                                            y_start=0, y_stop=1000,
+                                            z_start=0, z_stop=1000,
+                                            x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
+                                            time_step=1
+                                            )
+        exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf)
+        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step = 1)
+        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step = 1)
 
-        ds.default_channel = channel
-        ds.default_time = ts
-        ds.default_layer = layer
-        ds.save()
+        channel = ChannelLayer.objects.create(name='channel2', experiment=exp, is_channel=True, default_time_step = 1)
+        layer = ChannelLayer.objects.create(name='layer2', experiment=exp, is_channel=False, default_time_step = 1)
 
-        ds = Dataset.objects.create(name='ds5', experiment=exp, coord_frame=cf)
-        channel = Channel.objects.create(name='channel5', dataset=ds)
-        ts = TimeSample.objects.create(name='ts5', channel=channel)
-        layer = Layer.objects.create(name='layer5', time=ts)
 
     def test_full_token_cutout_post(self):
         """

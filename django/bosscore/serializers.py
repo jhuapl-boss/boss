@@ -14,7 +14,7 @@ class ChannelLayerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChannelLayer
-        fields = ('name', 'description', 'experiment', 'is_channel', 'default_time_step', 'datatype')
+        fields = ('name', 'description', 'experiment', 'is_channel', 'default_time_step', 'datatype', 'layer_map')
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
