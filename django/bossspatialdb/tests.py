@@ -33,7 +33,7 @@ class CutoutInterfaceRoutingTests(APITestCase):
 
         channel = ChannelLayer.objects.create(name='channel2', experiment=exp, is_channel=True, default_time_step = 1)
         layer = ChannelLayer.objects.create(name='layer2', experiment=exp, is_channel=False, default_time_step = 1)
-        
+
 
     def test_full_token_cutout_resolves_to_cutout(self):
         """
@@ -85,7 +85,7 @@ class CutoutInterfaceViewTests(APITestCase):
         h = a.tobytes()
         bb = blosc.compress(h, typesize=8)
 
-        response = self.client.post('/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2', bb,
+        response = self.client.post('/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2', bb,
                                     content_type='application/octet-stream')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -111,7 +111,7 @@ class CutoutInterfaceViewTests(APITestCase):
         Test to make sure getting a block of data returns a 200
         :return:
         """
-        response = self.client.get('/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2',
+        response = self.client.get('/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2',
                                    content_type='application/octet-stream')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
