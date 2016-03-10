@@ -1,23 +1,61 @@
 
 from rest_framework.test import APITestCase
 from ..models import *
+import bossutils
+import boto3
+from bossutils.aws import *
+
 
 from django.conf import settings
 version  = settings.BOSS_VERSION
+
+# Get the table name from boss.config
+config = bossutils.configuration.BossConfig()
+testtablename = config["aws"]["test-meta-db"]
+aws_mngr = get_aws_manager()
 
 
 class BossCoreMetaServiceViewTests(APITestCase):
     """
     Class to tests the bosscore views for the metadata service
     """
+    @classmethod
+    def setUpClass(cls):
+        cls.__session = aws_mngr.get_session()
 
+        # Get table
+        dynamodb = cls.__session.resource('dynamodb')
+        cls.table = dynamodb.create_table(
+            TableName=testtablename,
+            KeySchema=[
+                {
+                    'AttributeName': 'metakey',
+                    'KeyType': 'HASH'  # Partition key
+                },
+
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'metakey',
+                    'AttributeType': 'S'
+                },
+
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 10,
+                'WriteCapacityUnits': 10
+            }
+        )
+        cls.table.meta.client.get_waiter('table_exists').wait(TableName=testtablename)
+
+    
     def setUp(self):
         """
         Initialize the  database with a some objects to test
         :return:
         """
         col = Collection.objects.create(name='col1')
-        cf = CoordinateFrame.objects.create(name='cf1', description ='cf1',
+        cf = CoordinateFrame.objects.create(name='cf1', description='cf1',
                                             x_start=0, x_stop=1000,
                                             y_start=0, y_stop=1000,
                                             z_start=0, z_stop=1000,
@@ -26,8 +64,8 @@ class BossCoreMetaServiceViewTests(APITestCase):
                                             )
         exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf)
 
-        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step = 1)
-        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step = 1)
+        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step=1)
+        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step=1)
 
     def test_meta_data_service_collection(self):
         """
@@ -144,3 +182,8 @@ class BossCoreMetaServiceViewTests(APITestCase):
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
         self.assertEqual(response.status_code, 201)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.table.delete()
+        cls.table.meta.client.get_waiter('table_not_exists').wait(TableName=testtablename)

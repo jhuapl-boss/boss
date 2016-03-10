@@ -1,5 +1,8 @@
 from bossutils.aws import *
+import sys
 
+# Get the table name from boss.config
+config = bossutils.configuration.BossConfig()
 
 class MetaDB:
     def __init__(self, tablename):
@@ -13,6 +16,10 @@ class MetaDB:
 
         # Get table
         dynamodb = self.__session.resource('dynamodb')
+        if 'test' in sys.argv:
+            tablename = config["aws"]["test-meta-db"]
+        else:
+            tablename = config["aws"]["meta-db"]
         self.table = dynamodb.Table(tablename)
 
     def __del__(self):
