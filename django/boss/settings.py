@@ -12,19 +12,26 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
-import bossutils
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Vault connection setup
-vault = bossutils.vault.Vault()
-config = bossutils.configuration.BossConfig()
+USE_LOCAL = os.environ.get('USING_DJANGO_TESTRUNNER') is not None
+if not USE_LOCAL:
+    # Vault connection setup
+    import bossutils
+
+    vault = bossutils.vault.Vault()
+    config = bossutils.configuration.BossConfig()
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.8/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = vault.read("secret/endpoint/django", "secret_key")
+if not USE_LOCAL:
+    SECRET_KEY = vault.read('secret/endpoint/django', 'secret_key')
+else:
+    SECRET_KEY = 'cki+nch2)9b_xatlg1n-!(db07ctl#*qh8j-jr)0h!0+c0nbkr'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -33,7 +40,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -44,6 +51,21 @@ INSTALLED_APPS = (
     'bosscore',
     'bossspatialdb',
     'rest_framework_swagger',
+]
+
+# Add django_jenkins if running on a Jenkins server.
+if USE_LOCAL:
+    INSTALLED_APPS.insert(0, 'django_jenkins')
+
+# Calculate test coverage for apps listed here.
+PROJECT_APPS = [
+    'bosscore',
+    'bossspatialdb',
+]
+
+JENKINS_TASKS = (
+    'django_jenkins.tasks.run_pep8',
+    'django_jenkins.tasks.run_pylint',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -77,6 +99,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'boss.wsgi.application'
 
+if USE_LOCAL:
+    db_default_name = 'microns'
+    db_default_user = 'root'
+    db_default_password = 'MICrONS'
+    db_default_host = '127.0.0.1'
+    db_default_port = 3306
+else:
+    db_default_name = vault.read('secret/endpoint/django/db', 'name')
+    db_default_user = vault.read('secret/endpoint/django/db', 'user')
+    db_default_password = vault.read('secret/endpoint/django/db', 'password')
+    db_default_host = config['aws']['db']
+    db_default_port = vault.read('secret/endpoint/django/db', 'port')
+
+
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
@@ -84,12 +120,12 @@ WSGI_APPLICATION = 'boss.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': vault.read("secret/endpoint/django/db", "name"),
-        'USER': vault.read("secret/endpoint/django/db", "user"),
-        'PASSWORD': vault.read("secret/endpoint/django/db", "password"),
-        'HOST': config["aws"]["db"],
-        'PORT': vault.read("secret/endpoint/django/db", "port"),
-
+        'NAME': db_default_name,
+        'USER': db_default_user,
+        'PASSWORD': db_default_password,
+        'HOST': db_default_host,
+        'PORT': db_default_port,
+    
     }
 }
 
@@ -112,13 +148,15 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = '/var/www/static/'
 
-# Setup the AWS manager for boto3 session pooling as Vault issued AWS creds
-from bossutils.aws import *
-
-aws_mngr = get_aws_manager()
+if not USE_LOCAL:
+    # Setup the AWS manager for boto3 session pooling as Vault issued AWS creds
+    from bossutils.aws import *
+    aws_mngr = get_aws_manager()
 
 # Django rest framework versioning requirements
 REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning'
 }
+# Version that unit tests are being run against
 BOSS_VERSION = 'v0.3'
+
