@@ -8,6 +8,9 @@ class Collection(models.Model):
     class Meta:
         db_table = u"collection"
 
+    def __str__(self):
+        return self.name
+
 
 class CoordinateFrame(models.Model):
     name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
@@ -25,23 +28,26 @@ class CoordinateFrame(models.Model):
     z_voxel_size = models.FloatField(default=1.0)
 
     VOXEL_UNIT_CHOICES = (
-        ('nanometer', 'NANOMETER'),
-        ('micrometer', 'MICROMETER'),
-        ('millimeter', 'MILLIMETER'),
-        ('centimeter', 'CENTIMETER')
+        ('nanometers', 'NANOMETERS'),
+        ('micrometers', 'MICROMETERS'),
+        ('millimeters', 'MILLIMETERS'),
+        ('centimeters', 'CENTIMETERS')
     )
     voxel_unit = models.CharField(choices=VOXEL_UNIT_CHOICES, max_length=100)
     time_step = models.IntegerField()
     TIMESTEP_UNIT_CHOICES = (
-        ('nanosecond', 'NANOSECOND'),
-        ('microsecond', 'MICROSECOND'),
-        ('millisecond', 'Millisecond'),
-        ('centimeters', 'Centimeters'),
+        ('nanoseconds', 'NANOSECONDS'),
+        ('microseconds', 'MICROSECONDS'),
+        ('milliseconds', 'MILLISECONDS'),
+        ('seconds', 'SECONDS'),
     )
     time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100)
 
     class Meta:
         db_table = u"coordinate_frame"
+
+    def __str__(self):
+        return self.name
 
 
 class Experiment(models.Model):
@@ -61,8 +67,8 @@ class Experiment(models.Model):
     class Meta:
         db_table = u"experiment"
 
-    def __unicode__(self):
-        return '%s' % self.name
+    def __str__(self):
+        return self.name
 
 
 class ChannelLayer(models.Model):
@@ -72,18 +78,21 @@ class ChannelLayer(models.Model):
     is_channel = models.BooleanField()
     default_time_step = models.IntegerField()
     DATATYPE_CHOICES = (
-        ('unit8', 'UINT8'),
+        ('uint8', 'UINT8'),
         ('uint16', 'UINT16'),
         ('uint32', 'UINT32'),
-        ('uint62', 'UINT64'),
+        ('uint64', 'UINT64'),
     )
 
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank=True)
-    max_time_step = models.IntegerField(default=0)
+    max_time_sample = models.IntegerField(default=0)
     layer_map = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False)
 
     class Meta:
         db_table = u"channel_layer"
+
+    def __str__(self):
+        return self.name
 
 
 class ChannelLayerMap(models.Model):
@@ -92,3 +101,6 @@ class ChannelLayerMap(models.Model):
 
     class Meta:
         db_table = u"channel_layer_map"
+
+    def __str__(self):
+        return self.name

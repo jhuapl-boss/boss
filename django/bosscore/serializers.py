@@ -10,7 +10,7 @@ class CoordinateFrameSerializer(serializers.ModelSerializer):
 
 
 class ChannelLayerSerializer(serializers.ModelSerializer):
-    # Layers = TimeSampleSerializer(many=True, read_only=True)
+    #Layers = TimeSampleSerializer(many=True, read_only=True)
 
     class Meta:
         model = ChannelLayer

@@ -26,12 +26,10 @@ config = bossutils.configuration.BossConfig()
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = vault.read("secret/endpoint/django", "secret_key")
 
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -79,7 +77,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'boss.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
@@ -92,7 +89,7 @@ DATABASES = {
         'PASSWORD': vault.read("secret/endpoint/django/db", "password"),
         'HOST': config["aws"]["db"],
         'PORT': vault.read("secret/endpoint/django/db", "port"),
-    
+
     }
 }
 
@@ -109,7 +106,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
@@ -118,11 +114,11 @@ STATIC_ROOT = '/var/www/static/'
 
 # Setup the AWS manager for boto3 session pooling as Vault issued AWS creds
 from bossutils.aws import *
+
 aws_mngr = get_aws_manager()
-#aws_mngr.start_credential_refresh()
 
 # Django rest framework versioning requirements
 REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning'
 }
-BOSS_VERSION ='v0.2'
+BOSS_VERSION = 'v0.3'

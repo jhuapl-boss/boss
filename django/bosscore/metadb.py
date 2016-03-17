@@ -1,5 +1,7 @@
 from bossutils.aws import *
+import bossutils
 import sys
+
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()

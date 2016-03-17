@@ -237,7 +237,7 @@ class BossMeta(APIView):
         """
         return bosskey + "#" + key
 
-    def get(self, request, collection, experiment = None, channel_layer = None):
+    def get(self, request, collection, experiment=None, channel_layer=None):
         """
         View to handle GET requests for metadata 
         ​
