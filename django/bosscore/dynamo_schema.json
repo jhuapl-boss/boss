@@ -1,0 +1,19 @@
+{
+    "KeySchema": [
+        {
+            "AttributeName": "metakey",
+            "KeyType": "HASH"
+        }
+
+    ],
+    "AttributeDefinitions":[
+        {
+            "AttributeName": "metakey",
+            "AttributeType": "S"
+        }
+    ],
+    "ProvisionedThroughput":{
+        "ReadCapacityUnits": 10,
+        "WriteCapacityUnits": 10
+    }
+}

@@ -1,6 +1,8 @@
 import bossutils
 from bossutils.aws import *
 import bossutils
+import boto3
+import os
 import sys
 
 # Get the table name from boss.config
@@ -16,22 +18,31 @@ class MetaDB:
         Iniatialize the data base
         :param tablename:  Name of the meta data table
         """
-        # Get a session from AWS manager
-        aws_mngr = get_aws_manager()
-        self.__session = aws_mngr.get_session()
 
-        # Get table
-        dynamodb = self.__session.resource('dynamodb')
-        if 'test' in sys.argv:
-            tablename = config["aws"]["test-meta-db"]
+        self.__local_dynamo = os.environ.get('USING_DJANGO_TESTRUNNER') is not None
+        if not self.__local_dynamo:
+            # Get a session from AWS manager
+            aws_mngr = get_aws_manager()
+            self.__session = aws_mngr.get_session()
+
+            # Get table
+            dynamodb = self.__session.resource('dynamodb')
+            if 'test' in sys.argv:
+                tablename = config["aws"]["test-meta-db"]
+            else:
+                tablename = config["aws"]["meta-db"]
         else:
             tablename = config["aws"]["meta-db"]
+            session = boto3.Session(aws_access_key_id='foo', aws_secret_access_key='foo')
+            dynamodb = session.resource('dynamodb', region_name='us-east-1', endpoint_url='http://localhost:8000')
+
         self.table = dynamodb.Table(tablename)
 
     def __del__(self):
         # Clean up session by returning it to the pool
-        aws_mngr = get_aws_manager()
-        aws_mngr.put_session(self.__session)
+        if not self.__local_dynamo:
+            aws_mngr = get_aws_manager()
+            aws_mngr.put_session(self.__session)
 
     def writemeta(self, metakey, value):
         """
