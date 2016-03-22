@@ -6,7 +6,7 @@
 export USING_DJANGO_TESTRUNNER=1
 
 # Ensure a fresh DB available.
-mysql -u root --password=MICrONS < fresh_db.sql
+mysql -u root --password=MICrONS < jenkins_files/fresh_db.sql
 
 cd ../django
 
