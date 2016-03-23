@@ -13,6 +13,10 @@ class Collection(models.Model):
 
 
 class CoordinateFrame(models.Model):
+    """
+
+
+    """
     name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
     description = models.CharField(max_length=4096, blank=True)
 
@@ -63,6 +67,7 @@ class Experiment(models.Model):
         ('slice', 'SLICE'),
     )
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
+    max_time_sample = models.IntegerField(default=0)
 
     class Meta:
         db_table = u"experiment"
@@ -72,7 +77,7 @@ class Experiment(models.Model):
 
 
 class ChannelLayer(models.Model):
-    name = models.CharField(max_length=255, verbose_name="Name of the Channel")
+    name = models.CharField(max_length=255, verbose_name="Name of the Channel or Layer")
     description = models.CharField(max_length=4096, blank=True)
     experiment = models.ForeignKey(Experiment, related_name='channellayer')
     is_channel = models.BooleanField()
@@ -85,8 +90,9 @@ class ChannelLayer(models.Model):
     )
 
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank=True)
-    max_time_sample = models.IntegerField(default=0)
-    layer_map = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False)
+
+    #channels = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False, related_name='ref_channels')
+    linked_channel_layers = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False, related_name='ref_layers_channels')
 
     class Meta:
         db_table = u"channel_layer"
@@ -96,6 +102,9 @@ class ChannelLayer(models.Model):
 
 
 class ChannelLayerMap(models.Model):
+    """
+
+    """
     channel = models.ForeignKey(ChannelLayer, related_name='channel')
     layer = models.ForeignKey(ChannelLayer, related_name='layer')
 
@@ -103,4 +112,22 @@ class ChannelLayerMap(models.Model):
         db_table = u"channel_layer_map"
 
     def __str__(self):
-        return self.name
+        return 'Channel = {}, Layer = {}'.format(self.channel.name,self.layer.name)
+
+class BossLookup(models.Model):
+    """
+    Keeps track of the bosskey and maps it to a unique lookup key
+
+    """
+    lookup_key = models.CharField(max_length=255)
+    boss_key = models.CharField(max_length=255)
+
+    collection_name = models.CharField(max_length=255)
+    experiment_name = models.CharField(max_length=255, blank=True, null=True)
+    channel_layer_name = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        db_table = u"lookup"
+
+    def __str__(self):
+        return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key,self.boss_key)

@@ -42,7 +42,7 @@ class BossCoreRequestTests(APITestCase):
         col = 'col1'
         exp = 'exp1'
         channel = 'channel1'
-        bosskey = 'col1&exp1&channel1'
+        boss_key = 'col1&exp1&channel1'
 
         # Create the request
         req = HttpRequest()
@@ -54,7 +54,7 @@ class BossCoreRequestTests(APITestCase):
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel_layer(), channel)
-        self.assertEqual(ret.get_bosskey(), bosskey)
+        self.assertEqual(ret.get_boss_key(), boss_key)
 
     def test_request_cutout_init_layer(self):
         """
@@ -65,7 +65,7 @@ class BossCoreRequestTests(APITestCase):
         col = 'col1'
         exp = 'exp1'
         layer = 'layer1'
-        bosskey = 'col1&exp1&layer1'
+        boss_key = 'col1&exp1&layer1'
 
         # Create the request
         req = HttpRequest()
@@ -77,7 +77,7 @@ class BossCoreRequestTests(APITestCase):
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel_layer(), layer)
-        self.assertEqual(ret.get_bosskey(), bosskey)
+        self.assertEqual(ret.get_boss_key(), boss_key)
 
     def test_request_cutout_init_cutoutargs_channel(self):
         """
@@ -88,7 +88,7 @@ class BossCoreRequestTests(APITestCase):
         col = 'col1'
         exp = 'exp1'
         channel = 'channel1'
-        bosskey = 'col1&exp1&channel1'
+        boss_key = 'col1&exp1&channel1'
 
         res = 2
         (x_start, x_stop) = (0, 5)
@@ -114,3 +114,5 @@ class BossCoreRequestTests(APITestCase):
         self.assertEqual(ret.get_z_start(), z_start)
         self.assertEqual(ret.get_z_stop(), z_stop)
         self.assertEqual(ret.get_z_span(), z_stop - z_start)
+
+

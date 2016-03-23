@@ -1,8 +1,9 @@
 from .models import *
-from django.http import HttpResponse
+from .lookup import LookUpKey
 
 import re
 from .error import BossHTTPError, BossError
+
 META_CONNECTOR = "&"
 
 
@@ -32,7 +33,7 @@ class BossRequest:
         self.version = None
 
         # Boss key representing the datamodel for a valid request
-        self.bosskey = None
+        self.boss_key = None
 
         # Meta data key and value
         self.key = None
@@ -46,9 +47,9 @@ class BossRequest:
         self.x_stop = 0
         self.y_stop = 0
         self.z_stop = 0
-        
+
         self.version = request.version
-       # Parse the request for the service
+        # Parse the request for the service
         url = str(request.META['PATH_INFO'])
         m = re.match("/v(?P<version>\d+\.\d+)/(?P<service>\w+)/(?P<webargs>.*)?/?", url)
 
@@ -63,20 +64,20 @@ class BossRequest:
             # If optional args are specified without col, experiment and dataset this is an error
             # Note this only applies to the meta service because experiment and dataset are optional
             # TODO
-            
+
             self.initialize_request(request, collection_name, experiment_name, channel_layer_name)
             # TODO - Do we need this here?
 
 
             if self.collection:
-                self.set_bosskey()
+                self.set_boss_key()
                 if 'key' in request.query_params:
                     self.set_key(request.query_params['key'])
                 if 'value' in request.query_params:
                     self.set_value(request.query_params['value'])
             else:
-                # We don't have a valid collection bosskey =""
-                self.bosskey = None
+                # We don't have a valid collection boss_key =""
+                self.boss_key = None
 
         elif 'view' in request.query_params:
             raise BossError(404, "Views not implemented. Specify the full request", 30000)
@@ -84,14 +85,16 @@ class BossRequest:
             m = re.match(
                 "/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?",
                 webargs)
-            if (m):
-                [collection_name, experiment_name, channel_layer_name, resolution, x_range, y_range, z_range] = [arg for arg in m.groups()]
+            if m:
+                [collection_name, experiment_name, channel_layer_name, resolution, x_range, y_range, z_range] = [arg for
+                                                                                                                 arg in
+                                                                                                                 m.groups()]
 
             else:
                 raise BossError(404, "Unable to parse the url.", 30000)
 
             self.initialize_request(request, collection_name, experiment_name, channel_layer_name)
-            self.set_bosskey()
+            self.set_boss_key()
             self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
 
     def initialize_request(self, request, collection_name, experiment_name, channel_layer_name):
@@ -108,8 +111,7 @@ class BossRequest:
             if experiment_name and colstatus:
                 expstatus = self.set_experiment(experiment_name)
                 if channel_layer_name and expstatus:
-                    status = self.set_channel_layer(channel_layer_name)
-
+                    self.set_channel_layer(channel_layer_name)
 
     def set_cutoutargs(self, resolution, x_range, y_range, z_range):
         """
@@ -142,10 +144,14 @@ class BossRequest:
             self.z_stop = int(z_coords[1])
 
             if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop):
-                raise BossError(404, "Incorrect cutout arguments {}/{}/{}/{}".format(resolution,x_range,y_range,z_range), 30000)
+                raise BossError(404,
+                                "Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
+                                30000)
 
         except TypeError:
-            raise BossError(404, "Type error in cutout argument{}/{}/{}/{}".format(resolution,x_range,y_range,z_range), 30000)
+            raise BossError(404,
+                            "Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
+                            30000)
 
     def initialize_view_request(self, request, webargs):
         """
@@ -227,7 +233,6 @@ class BossRequest:
         else:
             raise BossError(404, "Dataset {} not found".format(channel_layer_name), 30000)
 
-
     def get_channel_layer(self):
         """
         Get the curent dataset
@@ -235,7 +240,6 @@ class BossRequest:
         """
         if self.channel_layer:
             return self.channel_layer.name
-
 
     def set_key(self, key):
         """
@@ -353,35 +357,42 @@ class BossRequest:
         """
         return self.z_stop - self.z_start
 
-    def set_bosskey(self):
+    def set_boss_key(self):
         """
-        Create the bosskey for the request.
+        Create the boss key for the request.
 
-        The bosskey concatenates the names of the datamodel stack to create a string represting the datamodel of the request
-        :return: string that represents the bosskey for the current request
+        The boss key concatenates the names of the datamodel stack to create a string represting the datamodel of the request
+        :return: string that represents the boss key for the current request
         """
 
-        self.bosskey = ""
+        self.boss_key = ""
 
         if self.collection and self.experiment and self.channel_layer:
-            self.bosskey = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR + self.channel_layer.name
-            return self.bosskey
+            self.boss_key = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR + self.channel_layer.name
+            return self.boss_key
         elif self.collection and self.experiment and self.service == 'meta':
-            self.bosskey = self.collection.name + META_CONNECTOR + self.experiment.name
-            return self.bosskey
+            self.boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
+            return self.boss_key
         elif self.collection and self.service == 'meta':
-            self.bosskey = self.collection.name
-            return self.bosskey
+            self.boss_key = self.collection.name
+            return self.boss_key
         else:
-            return BossHTTPError(404, "Error creating the bosskey", 30000)
+            return BossHTTPError(404, "Error creating the boss key", 30000)
 
-        return self.bosskey
+        return self.boss_key
 
-
-
-    def get_bosskey(self):
+    def get_boss_key(self):
         """
-        Get the bosskey for the current object
-        :return: bosskey
+        Get the boss_key for the current object
+        :return: boss_key
         """
-        return self.bosskey
+        return self.boss_key
+
+    def get_lookup_key(self):
+        """
+
+        Returns:
+
+        """
+        lookup_key = LookUpKey.get_lookup_key(self.boss_key)
+        return lookup_key
