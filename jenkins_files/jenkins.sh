@@ -23,5 +23,12 @@ python3 manage.py migrate
 
 python3 manage.py collectstatic --noinput
 
+# Start local DynamoDB.
+java -Djava.library.path=/usr/local/bin/dynamo/DynamoDBLocal_lib/ -jar /usr/local/bin/dynamo/DynamoDBLocal.jar -inMemory &
+
+# Run tests.
 python3 manage.py jenkins --enable-coverage --noinput
+
+# Shutdown local DynamoDB.
+kill $!
 
