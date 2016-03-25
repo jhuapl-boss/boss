@@ -4,6 +4,8 @@ from ..models import *
 import bossutils
 import boto3
 import json
+import os
+import unittest
 
 
 from django.conf import settings
@@ -14,6 +16,9 @@ config = bossutils.configuration.BossConfig()
 testtablename = config["aws"]["meta-db"]
 
 
+# Assume there is no local DynamoDB unless the env variable set by jenkins.sh
+# present.
+@unittest.skipIf(os.environ.get('USING_DJANGO_TESTRUNNER') is None, 'No local DynamoDB.')
 class BossCoreMetaServiceViewTests(APITestCase):
     """
     Class to tests the bosscore views for the metadata service
