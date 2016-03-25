@@ -4,6 +4,7 @@ import bossutils
 import boto3
 import os
 import sys
+from boto3.dynamodb.conditions import Key
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()
@@ -15,10 +16,10 @@ config = bossutils.configuration.BossConfig()
 class MetaDB:
     def __init__(self):
         """
-        Iniatialize the data base
-        :param tablename:  Name of the meta data table
-        """
+        Initialize the data base
+        Returns:
 
+        """
         self.__local_dynamo = os.environ.get('USING_DJANGO_TESTRUNNER') is not None
         if not self.__local_dynamo:
             # Get a session from AWS manager
@@ -44,28 +45,41 @@ class MetaDB:
             aws_mngr = get_aws_manager()
             aws_mngr.put_session(self.__session)
 
-    def writemeta(self, metakey, value):
+    def write_meta(self, lookup_key, key, value):
         """
-        Store meta data in the Dynamo table
-        :param metakey: Meta data key - Combination of the boss data model key and meta data key
-        :param value: Meta data value
+        Write the  meta data to dyanmodb
+        Args:
+            lookup_key: Key for the object requested
+            key: Meta data key
+            value: Metadata value
+
+        Returns:
+
         """
+
         response = self.table.put_item(
             Item={
-                'metakey': metakey,
+                'lookup_key': lookup_key,
+                'key': key,
                 'metavalue': value,
             }
         )
 
-    def getmeta(self, metakey):
+    def get_meta(self, lookup_key, key):
         """
         Retrieve the meta data for a given key
-        :param metakey:
-        :return:
+        Args:
+            lookup_key: Key for the object requested
+            key: Metadata key
+
+        Returns:
+
         """
+
         response = self.table.get_item(
             Key={
-                'metakey': metakey,
+                'lookup_key': lookup_key,
+                'key': key,
             }
         )
         if 'Item' in response:
@@ -73,35 +87,64 @@ class MetaDB:
         else:
             return None
 
-    def deletemeta(self, metakey):
+    def delete_meta(self, lookup_key,key):
         """
         Delete the meta data item for the specified key
-        :param metakey: Meta data key to be delete
-        :return:
+        Args:
+            lookup_key: Key for the object requested
+            key: Metadata key
+
+        Returns:
+
         """
+
         response = self.table.delete_item(
             Key={
-                'metakey': metakey,
+                'lookup_key': lookup_key,
+                'key': key,
             },
             ReturnValues='ALL_OLD'
         )
         return response
 
-    def updatemeta(self, metakey, newvalue):
+    def update_meta(self, lookup_key, key, new_value):
         """
         Update the Value for the given key
-        :param metakey: Search key
-        :param newvalue: New value for the meta data key
-        :return:
+        Args:
+            lookup_key: Key for the object requested
+            key: Metadata key
+            new_value: New meta data value
+
+        Returns:
+
         """
+
         response = self.table.update_item(
             Key={
-                'metakey': metakey,
+                'lookup_key': lookup_key,
+                'key': key,
             },
             UpdateExpression='SET metavalue = :val1',
             ExpressionAttributeValues={
-                ':val1': newvalue
+                ':val1': new_value
             },
             ReturnValues='UPDATED_NEW'
         )
         return response
+
+    def get_meta_list(self, lookup_key):
+        """
+        Retrieve all the meta data for a given object using the lookupley
+        Args:
+            lookup_key: Key for the object requested
+        Returns:
+
+        """
+        response = self.table.query(
+            KeyConditionExpression=Key('lookup_key').eq(lookup_key)
+        )
+
+        if 'Items' in response:
+            return response['Items']
+        else:
+            return None

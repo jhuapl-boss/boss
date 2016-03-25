@@ -322,57 +322,54 @@ class BossMeta(APIView):
     
     """
 
-    def get_combinedkey(self, lookup_key, key):
-        """
-        Generate a new metakey which is a combiniation of the datamodel representation and meta data key
-
-        :param bosskey: This represents the datamodel object to attach the metadata to. I
-        :param key: Meta data key
-        :return: new meta key
-        """
-        return lookup_key + "#" + key
-
     def get(self, request, collection, experiment=None, channel_layer=None):
         """
         View to handle GET requests for metadata
 
         Args:
             request: DRF Request object
-            collection: Collection Name specifying the collection you want to get the meta data for
+            collection: Collection Name
             experiment: Experiment name. default = None
             channel_layer: Channel or Layer name
 
         Returns:
 
         """
-        # The metadata consist of two parts. The bosskey#key
-        # bosskey represents the datamodel object
-        # key is the key for the meta data associated with the data model object
-
-        if 'key' not in request.query_params:
-            return BossHTTPError(404, "Missing optional argument key in the request", 30000)
-
         try:
+            # Validate the request and get the lookup Key
             req = BossRequest(request)
             lookup_key = req.get_lookup_key()
 
         except BossError as err:
             return err.to_http()
 
-        if lookup_key == None :
+        if not lookup_key or lookup_key[0] == "":
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
-        mkey = request.query_params['key']
-        combinedkey = self.get_combinedkey(lookup_key, mkey)
+        if 'key' not in request.query_params:
+            # List all keys that are valid for the query
+            mdb = metadb.MetaDB()
+            mdata = mdb.get_meta_list(lookup_key[0])
+            if not mdata:
+                return BossHTTPError(404, "Cannot find keys that match this request", 30000)
+            else:
+                keys =[]
+                for meta in mdata:
+                    keys.append(meta['key'])
+                data = {'keys': keys}
+                return Response(data)
 
-        mdb = metadb.MetaDB()
-        mdata = mdb.getmeta(combinedkey)
-        if mdata:
-            [lookup_key, mkey] = mdata['metakey'].split('#')
-            data = {'key': mkey, 'value': mdata['metavalue']}
-            return Response(data)
+            #return BossHTTPError(404, "Missing optional argument key in the request", 30000)
         else:
-            return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
+
+            mkey = request.query_params['key']
+            mdb = metadb.MetaDB()
+            mdata = mdb.get_meta(lookup_key[0],mkey)
+            if mdata:
+                data = {'key': mdata['key'], 'value': mdata['metavalue']}
+                return Response(data)
+            else:
+                return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
 
     def post(self, request, collection, experiment= None, channel_layer=None):
         """
@@ -387,9 +384,6 @@ class BossMeta(APIView):
         Returns:
 
         """
-        # The metadata consist of two parts. The bosskey#key
-        # bosskey represents the datamodel object
-        # key is the key for the meta data associated with the data model object
 
         if 'key' not in request.query_params or 'value' not in request.query_params:
             return BossHTTPError(404, "Missing optional argument key/value in the request", 30000)
@@ -400,17 +394,17 @@ class BossMeta(APIView):
         except BossError as err:
             return err.to_http()
 
-        if lookup_key == None:
+        if not lookup_key or not lookup_key[0]:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
         value = request.query_params['value']
 
-        # generate the new Metakey which combines datamodel keys with the meta data key in the post
-        combinedkey = self.get_combinedkey(lookup_key, mkey)
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
-        mdb.writemeta(combinedkey, value)
+        if mdb.get_meta(lookup_key[0],mkey):
+            return BossHTTPError(404, "Invalid request. The key {} already exists".format(mkey), 30000)
+        mdb.write_meta(lookup_key[0], mkey, value)
         return HttpResponse(status=201)
 
     def delete(self, request, collection, experiment = None, channel_layer= None):
@@ -438,14 +432,13 @@ class BossMeta(APIView):
         if not lookup_key:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
-        mkey = request.query_params['key']
 
-        # generate the new Metakey which combines datamodel keys with the meta data key in the post
-        combinedkey = self.get_combinedkey(lookup_key, mkey)
+
+        mkey = request.query_params['key']
 
         # Delete metadata from the dynamodb database
         mdb = metadb.MetaDB()
-        response = mdb.deletemeta(combinedkey)
+        response = mdb.delete_meta(lookup_key[0],mkey)
 
         if 'Attributes' in response:
             return HttpResponse(status=201)
@@ -477,16 +470,13 @@ class BossMeta(APIView):
         except BossError as err:
             return err.to_http()
 
-        if lookup_key == None:
+        if not lookup_key:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
         value = request.query_params['value']
 
-        # generate the new metakey which combines the bosskey with the meta data key in the post
-        combinedkey = self.get_combinedkey(lookup_key, mkey)
-
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
-        mdb.updatemeta(combinedkey, value)
+        mdb.update_meta(lookup_key[0], mkey, value)
         return HttpResponse(status=201)

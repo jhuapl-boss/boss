@@ -146,7 +146,7 @@ class BossCoreMetaRequestTests(APITestCase):
         ret = BossRequest(drfrequest)
         boss_key = ret.get_boss_key()
         self.assertEqual(ret.get_collection(), expectedValue)
-        self.assertEqual(boss_key, expectedValue)
+        self.assertEqual(boss_key[0], expectedValue)
 
     def test_get_boss_key_experiment(self):
         """
@@ -160,7 +160,7 @@ class BossCoreMetaRequestTests(APITestCase):
         drfrequest.version = version
         ret = BossRequest(drfrequest)
         boss_key = ret.get_boss_key()
-        self.assertEqual(boss_key, expectedValue)
+        self.assertEqual(boss_key[0], expectedValue)
 
     def test_get_boss_key_channel(self):
         """
@@ -174,7 +174,7 @@ class BossCoreMetaRequestTests(APITestCase):
         drfrequest.version = version
         ret = BossRequest(drfrequest)
         boss_key = ret.get_boss_key()
-        self.assertEqual(boss_key, expectedValue)
+        self.assertEqual(boss_key[0], expectedValue)
 
     def test_get_boss_key_layer(self):
         """
@@ -188,7 +188,7 @@ class BossCoreMetaRequestTests(APITestCase):
         drfrequest.version = version
         ret = BossRequest(drfrequest)
         boss_key = ret.get_boss_key()
-        self.assertEqual(boss_key, expectedValue)
+        self.assertEqual(boss_key[0], expectedValue)
 
     def test_get_key(self):
         """

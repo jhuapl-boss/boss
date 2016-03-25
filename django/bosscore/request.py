@@ -33,7 +33,8 @@ class BossRequest:
         self.version = None
 
         # Boss key representing the datamodel for a valid request
-        self.boss_key = None
+        self.boss_key = []
+
 
         # Meta data key and value
         self.key = None
@@ -48,6 +49,10 @@ class BossRequest:
         self.y_stop = 0
         self.z_stop = 0
 
+        # Timesample argument
+        self.time_start = 0
+        self.time_stop = 0
+
         self.version = request.version
         # Parse the request for the service
         url = str(request.META['PATH_INFO'])
@@ -61,13 +66,11 @@ class BossRequest:
             m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel_layer>\w+)?/?", webargs)
             [collection_name, experiment_name, channel_layer_name] = [arg for arg in m.groups()]
 
-            # If optional args are specified without col, experiment and dataset this is an error
+            # If optional args are specified without col, experiment and channel this is an error
             # Note this only applies to the meta service because experiment and dataset are optional
             # TODO
 
             self.initialize_request(request, collection_name, experiment_name, channel_layer_name)
-            # TODO - Do we need this here?
-
 
             if self.collection:
                 self.set_boss_key()
@@ -82,20 +85,32 @@ class BossRequest:
         elif 'view' in request.query_params:
             raise BossError(404, "Views not implemented. Specify the full request", 30000)
         else:
-            m = re.match(
-                "/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?",
-                webargs)
+
+            time = ""
+            m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<resolution>\d)/"
+                     + "(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?(?P<rest>.*)?/?",webargs)
+
             if m:
-                [collection_name, experiment_name, channel_layer_name, resolution, x_range, y_range, z_range] = [arg for
-                                                                                                                 arg in
-                                                                                                                 m.groups()]
+                [collection_name, experiment_name, channel_layer_name, resolution, x_range, y_range, z_range]\
+                    =[arg for arg in m.groups()[:-1]]
+                time = m.groups()[-1]
+                self.initialize_request(request, collection_name, experiment_name, channel_layer_name)
+                if not time:
+                    # get default time
+                    self.time_start = self.channel_layer.default_time_step
+                    self.time_stop = self.channel_layer.default_time_step+1
+                else:
+                    self.set_time(time)
+
+                self.set_boss_key()
+                self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
+
+
 
             else:
                 raise BossError(404, "Unable to parse the url.", 30000)
 
-            self.initialize_request(request, collection_name, experiment_name, channel_layer_name)
-            self.set_boss_key()
-            self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
+
 
     def initialize_request(self, request, collection_name, experiment_name, channel_layer_name):
         """
@@ -365,19 +380,26 @@ class BossRequest:
         :return: string that represents the boss key for the current request
         """
 
-        self.boss_key = ""
+        self.boss_key = []
+        boss_key= []
 
         if self.collection and self.experiment and self.channel_layer:
-            self.boss_key = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR + self.channel_layer.name
-            return self.boss_key
+            boss_key =self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR + self.channel_layer.name
+
         elif self.collection and self.experiment and self.service == 'meta':
-            self.boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
-            return self.boss_key
+            boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
         elif self.collection and self.service == 'meta':
-            self.boss_key = self.collection.name
-            return self.boss_key
+            boss_key = self.collection.name
         else:
             return BossHTTPError(404, "Error creating the boss key", 30000)
+
+        self.boss_key = []
+        if self.service == 'meta':
+            self.boss_key.append(boss_key)
+        else:
+            for time_step in range(self.time_start,self.time_stop):
+                key = boss_key + '&' + str(time_step)
+                self.boss_key.append(key)
 
         return self.boss_key
 
@@ -388,11 +410,44 @@ class BossRequest:
         """
         return self.boss_key
 
+
     def get_lookup_key(self):
         """
 
         Returns:
 
         """
-        lookup_key = LookUpKey.get_lookup_key(self.boss_key)
-        return lookup_key
+        lookup = []
+        for key in self.boss_key:
+            lkey = LookUpKey.get_lookup_key(key)
+            if lkey:
+                lookup.append(lkey.lookup_key)
+        return lookup
+
+    def set_time(self, time):
+        m = re.match("/?(?P<time_start>\d+)\:?(?P<time_stop>\d+)?/?",time)
+        if m:
+            [tstart,tstop] = [arg for arg in m.groups()]
+            if tstart:
+                self.time_start = int(tstart)
+                if self.time_start >self.experiment.max_time_sample:
+                    return BossHTTPError(404, "Invalid time range {}. Start time is greater than the maximum time "
+                                              "sample {}".format(time,str(self.experiment.max_time_sample)), 30000)
+            else:
+                return BossHTTPError(404, "Unable to parse time sample argument {}".format(time), 30000)
+            if tstop:
+                self.time_stop = int(tstop)
+                if self.time_stop > self.time_start or self.time_stop > self.experiment.max_time_sample+1:
+                    return BossHTTPError(404, "Invalid time range {}. End time is greater than the start time "
+                                              "or out of bouds with maximum time sample {}".format(time,str(self.experiment.max_time_sample)), 30000)
+            else:
+                self.time_stop = self.time_start+1
+
+    def get_time(self):
+        """
+
+        Returns: Time sample range
+
+        """
+        return range(self.time_start,self.time_stop)
+
