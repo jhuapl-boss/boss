@@ -1,6 +1,8 @@
 from django.core.urlresolvers import resolve
 from .views import CutoutView, Cutout
+
 from bosscore.models import *
+from .setup_db import setupTestDB
 
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -19,20 +21,7 @@ class CutoutInterfaceRoutingTests(APITestCase):
         :return:
         """
 
-        col = Collection.objects.create(name='col1')
-        cf = CoordinateFrame.objects.create(name='cf1', description ='cf1',
-                                            x_start=0, x_stop=1000,
-                                            y_start=0, y_stop=1000,
-                                            z_start=0, z_stop=1000,
-                                            x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
-                                            time_step=1
-                                            )
-        exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf)
-        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step = 1)
-        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step = 1)
-
-        channel = ChannelLayer.objects.create(name='channel2', experiment=exp, is_channel=True, default_time_step = 1)
-        layer = ChannelLayer.objects.create(name='layer2', experiment=exp, is_channel=False, default_time_step = 1)
+        setupTestDB.insert_test_data()
 
 
     def test_full_token_cutout_resolves_to_cutout(self):
@@ -60,21 +49,7 @@ class CutoutInterfaceViewTests(APITestCase):
         Initialize the database
         :return:
         """
-        col = Collection.objects.create(name='col1')
-        cf = CoordinateFrame.objects.create(name='cf1', description ='cf1',
-                                            x_start=0, x_stop=1000,
-                                            y_start=0, y_stop=1000,
-                                            z_start=0, z_stop=1000,
-                                            x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
-                                            time_step=1
-                                            )
-        exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf)
-        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step = 1)
-        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step = 1)
-
-        channel = ChannelLayer.objects.create(name='channel2', experiment=exp, is_channel=True, default_time_step = 1)
-        layer = ChannelLayer.objects.create(name='layer2', experiment=exp, is_channel=False, default_time_step = 1)
-
+        setupTestDB.insert_test_data()
 
     def test_full_token_cutout_post(self):
         """
