@@ -99,6 +99,29 @@ TEMPLATES = [
     },
 ]
 
+AUTHENTICATION_BACKENDS = (
+    'djangooidc.backends.OpenIdConnectBackend',
+)
+
+OIDC_DEFAULT_BEHAVIOUR = {
+    'response_type': 'code',
+    'scope': ['openid', 'profile', 'email'],
+}
+
+public_uri = vault.read('secret/endpoint/auth', 'public_uri')
+OIDC_PROVIDERS = {
+    'KeyCloak': {
+        'srv_discovery_url': vault.read('secret/endpoint/auth', 'url'),
+        'behaviour': OIDC_DEFAULT_BEHAVIOUR,
+        'client_registration': {
+            'client_id': vault.read('secret/endpoint/auth', 'client_id'),
+            'client_secret': vault.read('secret/endpoint/auth', 'client_secret'),
+            'redirect_uris': [public_uri + '/openid/callback/login/'],
+            'post_logout_redirect_uris': [public_uri + '/openid/callback/logout/'],
+        },
+    }
+}
+
 WSGI_APPLICATION = 'boss.wsgi.application'
 
 if USE_LOCAL:
@@ -127,7 +150,7 @@ DATABASES = {
         'PASSWORD': db_default_password,
         'HOST': db_default_host,
         'PORT': db_default_port,
-    
+
     }
 }
 

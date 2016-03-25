@@ -2,6 +2,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import permissions
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 import socket
 
@@ -27,3 +28,9 @@ class Ping(APIView):
         content = {'ip': socket.gethostbyname(socket.gethostname())}
         return Response(content)
 
+class Test(APIView, LoginRequiredMixin):
+    authentication_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        content = request.User
+        return Response(content)

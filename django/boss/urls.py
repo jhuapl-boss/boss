@@ -24,6 +24,8 @@ urlpatterns = [
     url(r'^v0.2/cutout/', include('bossspatialdb.urls', namespace='v0.2')),
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
+    url(r'^test/', views.Test.as_view()),
+    url(r'^openid/', include('djangooidc.urls')),
     url(r'^v0.2/info/', include('bosscore.info_urls', namespace='v0.2')),
     url(r'^v0.2/meta/', include('bosscore.meta_urls', namespace='v0.2')),
 ]
