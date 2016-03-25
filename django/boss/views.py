@@ -28,9 +28,9 @@ class Ping(APIView):
         content = {'ip': socket.gethostbyname(socket.gethostname())}
         return Response(content)
 
-class Test(APIView, LoginRequiredMixin):
+class Test(LoginRequiredMixin, APIView):
     authentication_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        content = request.User
+        content = {"username": request.user.username}
         return Response(content)

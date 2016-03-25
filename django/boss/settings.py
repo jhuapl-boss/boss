@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'bosscore',
     'bossspatialdb',
     'rest_framework_swagger',
+    'djangooidc',
 ]
 
 # Add django_jenkins if running on a Jenkins server.
@@ -100,8 +101,12 @@ TEMPLATES = [
 ]
 
 AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
     'djangooidc.backends.OpenIdConnectBackend',
 )
+
+# bypass the djangooidc provided page and go directly to the keycloak page
+LOGIN_URL = "/openid/openid/KeyCloak"
 
 OIDC_DEFAULT_BEHAVIOUR = {
     'response_type': 'code',
