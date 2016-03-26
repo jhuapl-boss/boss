@@ -57,4 +57,3 @@ class LookUpKey:
         """
         lookup_obj = BossLookup.objects.get(boss_key=bkey)
         return lookup_obj
-

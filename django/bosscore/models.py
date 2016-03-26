@@ -2,6 +2,9 @@ from django.db import models
 
 
 class Collection(models.Model):
+    """
+    Object representing a Boss Collection
+    """
     name = models.CharField(max_length=255, verbose_name="Name of the Collection")
     description = models.CharField(max_length=4096, blank=True)
 
@@ -14,7 +17,7 @@ class Collection(models.Model):
 
 class CoordinateFrame(models.Model):
     """
-
+    Coordinate Frame for Boss Experiments
 
     """
     name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
@@ -55,6 +58,9 @@ class CoordinateFrame(models.Model):
 
 
 class Experiment(models.Model):
+    """
+    Object representing a BOSS experiment
+    """
     collection = models.ForeignKey(Collection, related_name='experiments')
     name = models.CharField(max_length=255, verbose_name="Name of the Experiment")
     description = models.CharField(max_length=4096, blank=True)
@@ -77,6 +83,10 @@ class Experiment(models.Model):
 
 
 class ChannelLayer(models.Model):
+    """
+    Object representing a channel or layer. For image datasets these are channels and for annotations datasets these
+    are layers.
+    """
     name = models.CharField(max_length=255, verbose_name="Name of the Channel or Layer")
     description = models.CharField(max_length=4096, blank=True)
     experiment = models.ForeignKey(Experiment, related_name='channellayer')
@@ -91,8 +101,10 @@ class ChannelLayer(models.Model):
 
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank=True)
 
-    #channels = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False, related_name='ref_channels')
-    linked_channel_layers = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False, related_name='ref_layers_channels')
+    # channels = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False,
+    # related_name='ref_channels')
+    linked_channel_layers = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False,
+                                                   related_name='ref_layers_channels')
 
     class Meta:
         db_table = u"channel_layer"
@@ -103,7 +115,7 @@ class ChannelLayer(models.Model):
 
 class ChannelLayerMap(models.Model):
     """
-
+    Many to many mapping betweens clannels and layers
     """
     channel = models.ForeignKey(ChannelLayer, related_name='channel')
     layer = models.ForeignKey(ChannelLayer, related_name='layer')
@@ -112,7 +124,8 @@ class ChannelLayerMap(models.Model):
         db_table = u"channel_layer_map"
 
     def __str__(self):
-        return 'Channel = {}, Layer = {}'.format(self.channel.name,self.layer.name)
+        return 'Channel = {}, Layer = {}'.format(self.channel.name, self.layer.name)
+
 
 class BossLookup(models.Model):
     """
@@ -130,4 +143,4 @@ class BossLookup(models.Model):
         db_table = u"lookup"
 
     def __str__(self):
-        return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key,self.boss_key)
+        return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key,self. boss_key)

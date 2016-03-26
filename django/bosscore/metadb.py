@@ -13,6 +13,7 @@ tablename = config["aws"]["meta-db"]
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()
 
+
 class MetaDB:
     def __init__(self):
         """
@@ -87,7 +88,7 @@ class MetaDB:
         else:
             return None
 
-    def delete_meta(self, lookup_key,key):
+    def delete_meta(self, lookup_key, key):
         """
         Delete the meta data item for the specified key
         Args:
