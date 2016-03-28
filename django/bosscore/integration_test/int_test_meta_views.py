@@ -1,10 +1,12 @@
 
 from rest_framework.test import APITestCase
 from ..models import *
+from ..test.test_meta_views import MetaServiceViewTestsMixin
 from .setup_db import setupTestDB
 import bossutils
 import boto3
 from bossutils.aws import *
+import json
 
 
 from django.conf import settings
@@ -16,7 +18,7 @@ testtablename = config["aws"]["test-meta-db"]
 aws_mngr = get_aws_manager()
 
 
-class BossCoreMetaServiceViewIntegrationTests(BossCoreMetaServiceViewTests):
+class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITestCase):
     """
     Class to tests the bosscore views for the metadata service
 
@@ -34,3 +36,8 @@ class BossCoreMetaServiceViewIntegrationTests(BossCoreMetaServiceViewTests):
         dynamodb = cls.__session.resource('dynamodb')
         cls.table = dynamodb.create_table(TableName=testtablename, **tblcfg)
         cls.table.meta.client.get_waiter('table_exists').wait(TableName=testtablename)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.table.delete()
+        cls.table.meta.client.get_waiter('table_not_exists').wait(TableName=testtablename)
