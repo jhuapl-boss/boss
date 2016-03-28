@@ -144,11 +144,11 @@ class BossCoreMetaRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
         ret = BossRequest(drfrequest)
-        bosskey = ret.get_bosskey()
+        boss_key = ret.get_boss_key()
         self.assertEqual(ret.get_collection(), expectedValue)
-        self.assertEqual(bosskey, expectedValue)
+        self.assertEqual(boss_key[0], expectedValue)
 
-    def test_get_bosskey_experiment(self):
+    def test_get_boss_key_experiment(self):
         """
         Test retriving a bossmeta key from  BossRequest object with collection name and experimentname
         """
@@ -159,10 +159,10 @@ class BossCoreMetaRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
         ret = BossRequest(drfrequest)
-        bosskey = ret.get_bosskey()
-        self.assertEqual(bosskey, expectedValue)
+        boss_key = ret.get_boss_key()
+        self.assertEqual(boss_key[0], expectedValue)
 
-    def test_get_bosskey_channel(self):
+    def test_get_boss_key_channel(self):
         """
         Test retriving a bossmeta key from  BossRequest object with collection name and experimentname
         """
@@ -173,10 +173,10 @@ class BossCoreMetaRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
         ret = BossRequest(drfrequest)
-        bosskey = ret.get_bosskey()
-        self.assertEqual(bosskey, expectedValue)
+        boss_key = ret.get_boss_key()
+        self.assertEqual(boss_key[0], expectedValue)
 
-    def test_get_bosskey_layer(self):
+    def test_get_boss_key_layer(self):
         """
         Test retriving a bossmeta key from  BossRequest object with collection name and experimentname
         """
@@ -187,8 +187,8 @@ class BossCoreMetaRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
         ret = BossRequest(drfrequest)
-        bosskey = ret.get_bosskey()
-        self.assertEqual(bosskey, expectedValue)
+        boss_key = ret.get_boss_key()
+        self.assertEqual(boss_key[0], expectedValue)
 
     def test_get_key(self):
         """

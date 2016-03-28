@@ -6,6 +6,7 @@ from ..request import BossRequest
 from ..models import *
 from django.conf import settings
 version  = settings.BOSS_VERSION
+from .setup_db import setupTestDB
 
 
 class BossCoreRequestTests(APITestCase):
@@ -18,20 +19,8 @@ class BossCoreRequestTests(APITestCase):
         Initialize the database
         :return:
         """
-        col = Collection.objects.create(name='col1')
-        cf = CoordinateFrame.objects.create(name='cf1', description ='cf1',
-                                            x_start=0, x_stop=1000,
-                                            y_start=0, y_stop=1000,
-                                            z_start=0, z_stop=1000,
-                                            x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
-                                            time_step=1
-                                            )
-        exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf, num_hierarchy_levels=10)
-        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step = 1)
-        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step = 1)
+        setupTestDB.insert_test_data()
 
-        channel = ChannelLayer.objects.create(name='channel2', experiment=exp, is_channel=True, default_time_step = 1)
-        layer = ChannelLayer.objects.create(name='layer2', experiment=exp, is_channel=False, default_time_step = 1)
 
     def test_request_cutout_init_channel(self):
         """
@@ -42,7 +31,7 @@ class BossCoreRequestTests(APITestCase):
         col = 'col1'
         exp = 'exp1'
         channel = 'channel1'
-        bosskey = 'col1&exp1&channel1'
+        boss_key = 'col1&exp1&channel1&0'
 
         # Create the request
         req = HttpRequest()
@@ -54,7 +43,7 @@ class BossCoreRequestTests(APITestCase):
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel_layer(), channel)
-        self.assertEqual(ret.get_bosskey(), bosskey)
+        self.assertEqual(ret.get_boss_key()[0], boss_key)
 
     def test_request_cutout_init_layer(self):
         """
@@ -65,7 +54,7 @@ class BossCoreRequestTests(APITestCase):
         col = 'col1'
         exp = 'exp1'
         layer = 'layer1'
-        bosskey = 'col1&exp1&layer1'
+        boss_key = 'col1&exp1&layer1&0'
 
         # Create the request
         req = HttpRequest()
@@ -77,7 +66,8 @@ class BossCoreRequestTests(APITestCase):
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel_layer(), layer)
-        self.assertEqual(ret.get_bosskey(), bosskey)
+        self.assertEqual(ret.get_boss_key()[0], boss_key)
+
 
     def test_request_cutout_init_cutoutargs_channel(self):
         """
@@ -88,7 +78,7 @@ class BossCoreRequestTests(APITestCase):
         col = 'col1'
         exp = 'exp1'
         channel = 'channel1'
-        bosskey = 'col1&exp1&channel1'
+        boss_key = 'col1&exp1&channel0'
 
         res = 2
         (x_start, x_stop) = (0, 5)
@@ -114,3 +104,156 @@ class BossCoreRequestTests(APITestCase):
         self.assertEqual(ret.get_z_start(), z_start)
         self.assertEqual(ret.get_z_stop(), z_stop)
         self.assertEqual(ret.get_z_span(), z_stop - z_start)
+
+    def test_request_cutout_init_cutoutargs_no_time(self):
+        """
+        Test initialization of timesample arguments  without a specific timesample
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel1'
+        boss_key = 'col1&exp1&channel1'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+        ret = BossRequest(drfrequest)
+        time = ret.get_time()
+        self.assertEqual(time,range(0,1))
+
+
+    def test_request_cutout_init_cutoutargs_time(self):
+        """
+        Test initialization of timesample arguments  without a specific timesample
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel1'
+        boss_key = 'col1&exp1&channel1'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+        ret = BossRequest(drfrequest)
+        time = ret.get_time()
+        self.assertEqual(time,range(1,2))
+
+
+    def test_request_cutout_init_cutoutargs_time_range(self):
+        """
+        Test initialization of boss_key for a time sample range
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel1'
+        exp_boss_keys = ['col1&exp1&channel1&1','col1&exp1&channel1&2','col1&exp1&channel1&3', 'col1&exp1&channel1&4']
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+        ret = BossRequest(drfrequest)
+        time = ret.get_time()
+        boss_keys = ret.get_boss_key()
+        self.assertEqual(time,range(1,5))
+        self.assertEqual(boss_keys,exp_boss_keys)
+
+    def test_request_cutout_bosskey_time(self):
+        """
+        Test initialization of boss_key for a time sample range
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel1'
+        exp_boss_keys = ['col1&exp1&channel1&1','col1&exp1&channel1&2','col1&exp1&channel1&3', 'col1&exp1&channel1&4']
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+        ret = BossRequest(drfrequest)
+        boss_keys = ret.get_boss_key()
+        self.assertEqual(boss_keys,exp_boss_keys)
+
+        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/1:2/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel1'
+        exp_boss_keys = ['col1&exp1&channel1&0']
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+        ret = BossRequest(drfrequest)
+        boss_keys = ret.get_boss_key()
+        self.assertEqual(boss_keys,exp_boss_keys)
+
+        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel1'
+        exp_boss_keys = ['col1&exp1&channel1&1']
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+        ret = BossRequest(drfrequest)
+        boss_keys = ret.get_boss_key()
+        self.assertEqual(boss_keys,exp_boss_keys)
+
+
+    def test_request_cutout_lookupkey(self):
+        """
+        Test initialization of boss_key for a time sample range
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel1'
+        exp_boss_keys = ['col1&exp1&channel1&1','col1&exp1&channel1&2','col1&exp1&channel1&3', 'col1&exp1&channel1&4']
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+        ret = BossRequest(drfrequest)
+        boss_keys = ret.get_boss_key()
+        col_id = ret.collection.pk
+        exp_id = ret.experiment.pk
+        channel_layer_id = ret.channel_layer.pk
+        base_lookup = str(col_id) + '&' + str(exp_id) + '&' + str(channel_layer_id)
+        exp_lookup_keys=[]
+        exp_lookup_keys.append(base_lookup+'&1')
+        exp_lookup_keys.append(base_lookup+'&2')
+        exp_lookup_keys.append(base_lookup+'&3')
+        exp_lookup_keys.append(base_lookup+'&4')
+
+        lookup_keys= ret.get_lookup_key()
+        self.assertEqual(lookup_keys,exp_lookup_keys)
+
+
+
+
+
+
+

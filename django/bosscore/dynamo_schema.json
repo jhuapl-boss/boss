@@ -1,0 +1,26 @@
+{
+    "KeySchema": [
+        {
+            "AttributeName": "lookup_key",
+            "KeyType": "HASH"
+        },
+        {
+            "AttributeName": "key",
+            "KeyType": "RANGE"
+        }
+    ],
+    "AttributeDefinitions":[
+        {
+            "AttributeName": "lookup_key",
+            "AttributeType": "S"
+        },
+        {
+            "AttributeName": "key",
+            "AttributeType": "S"
+        }
+    ],
+    "ProvisionedThroughput":{
+        "ReadCapacityUnits": 10,
+        "WriteCapacityUnits": 10
+    }
+}
