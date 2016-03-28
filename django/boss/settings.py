@@ -120,7 +120,6 @@ OIDC_PROVIDERS = {
         'behaviour': OIDC_DEFAULT_BEHAVIOUR,
         'client_registration': {
             'client_id': vault.read('secret/endpoint/auth', 'client_id'),
-            'client_secret': vault.read('secret/endpoint/auth', 'client_secret'),
             'redirect_uris': [public_uri + '/openid/callback/login/'],
             'post_logout_redirect_uris': [public_uri + '/openid/callback/logout/'],
         },
