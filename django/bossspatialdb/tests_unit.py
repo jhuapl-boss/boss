@@ -1,8 +1,7 @@
 from django.core.urlresolvers import resolve
 from .views import CutoutView, Cutout
 
-from bosscore.models import *
-from .setup_db import setupTestDB
+from bosscore.test.setup_db import setupTestDB
 
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -10,7 +9,8 @@ from rest_framework.test import APITestCase
 import blosc
 import numpy as np
 from django.conf import settings
-version  = settings.BOSS_VERSION
+
+version = settings.BOSS_VERSION
 
 
 class CutoutInterfaceRoutingTests(APITestCase):
