@@ -70,6 +70,7 @@ class ChannelLayer(models.Model):
     description = models.CharField(max_length=4096, blank=True)
     experiment = models.ForeignKey(Experiment, related_name='channellayer')
     is_channel = models.BooleanField()
+    base_resolution = models.IntegerField(default=0)
     default_time_step = models.IntegerField()
     DATATYPE_CHOICES = (
         ('unit8', 'UINT8'),
