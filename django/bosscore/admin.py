@@ -1,8 +1,29 @@
 from django.contrib import admin
 from .models import *
+from guardian.admin import GuardedModelAdmin
 
-admin.site.register(Collection)
-admin.site.register(Experiment)
-admin.site.register(ChannelLayer)
-admin.site.register(CoordinateFrame)
-admin.site.register(ChannelLayerMap)
+class CollectionAdmin(GuardedModelAdmin):
+    model = Collection
+
+
+class ExperimentAdmin(GuardedModelAdmin):
+    model = Experiment
+
+
+class ChannelLayerAdmin(GuardedModelAdmin):
+    model = ChannelLayer
+
+
+class CoordinateFrameAdmin(GuardedModelAdmin):
+    model = CoordinateFrame
+
+
+class ChannelLayerMapAdmin(GuardedModelAdmin):
+    model = ChannelLayerMap
+
+
+admin.site.register(Collection,CollectionAdmin)
+admin.site.register(Experiment,ExperimentAdmin)
+admin.site.register(ChannelLayer,ChannelLayerAdmin)
+admin.site.register(CoordinateFrame,CoordinateFrameAdmin)
+admin.site.register(ChannelLayerMap,ChannelLayerMapAdmin)

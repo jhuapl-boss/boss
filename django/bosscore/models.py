@@ -7,9 +7,16 @@ class Collection(models.Model):
     """
     name = models.CharField(max_length=255, verbose_name="Name of the Collection")
     description = models.CharField(max_length=4096, blank=True)
+    creator = models.ForeignKey('auth.User', related_name='collections')
 
     class Meta:
         db_table = u"collection"
+        managed = True
+        permissions = (
+
+            ('view_collection', 'Can view collection'),
+
+        )
 
     def __str__(self):
         return self.name
@@ -22,6 +29,7 @@ class CoordinateFrame(models.Model):
     """
     name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
     description = models.CharField(max_length=4096, blank=True)
+    #creator = models.ForeignKey('auth.User', related_name='coordinateframes')
 
     x_start = models.IntegerField()
     x_stop = models.IntegerField()
@@ -64,6 +72,8 @@ class Experiment(models.Model):
     collection = models.ForeignKey(Collection, related_name='experiments')
     name = models.CharField(max_length=255, verbose_name="Name of the Experiment")
     description = models.CharField(max_length=4096, blank=True)
+    creator = models.ForeignKey('auth.User', related_name='experiment')
+
     coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord')
     num_hierarchy_levels = models.IntegerField(default=0)
 
@@ -77,6 +87,11 @@ class Experiment(models.Model):
 
     class Meta:
         db_table = u"experiment"
+        permissions = (
+            ('view_experiment', 'Can view experiment'),
+#            ('remove_experiment', 'Can remove experiment'),
+#           ('update_experiment', 'Can update experiment'),
+        )
 
     def __str__(self):
         return self.name
@@ -89,6 +104,8 @@ class ChannelLayer(models.Model):
     """
     name = models.CharField(max_length=255, verbose_name="Name of the Channel or Layer")
     description = models.CharField(max_length=4096, blank=True)
+    creator = models.ForeignKey('auth.User', related_name='ChannelLayer')
+
     experiment = models.ForeignKey(Experiment, related_name='channellayer')
     is_channel = models.BooleanField()
     default_time_step = models.IntegerField()
@@ -108,6 +125,11 @@ class ChannelLayer(models.Model):
 
     class Meta:
         db_table = u"channel_layer"
+        permissions = (
+            ('view_channellayer', 'Can view channel or layer'),
+#            ('remove_channel_layer', 'Can remove channel_layer'),
+#            ('update_channel_layer', 'Can update channel_layer'),
+        )
 
     def __str__(self):
         return self.name

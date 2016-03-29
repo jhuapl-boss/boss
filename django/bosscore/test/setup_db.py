@@ -1,11 +1,13 @@
 from ..models import *
+from django.contrib.auth.models import User
 
 
 class setupTestDB:
     @staticmethod
     def insert_test_data():
         max_time = 10
-        col = Collection.objects.create(name='col1')
+        user = User.objects.create_user('testuser')
+        col = Collection.objects.create(name='col1',creator=user)
         lkup_key = str(col.pk)
         bs_key = col.name
         BossLookup.objects.create(lookup_key=lkup_key,boss_key=bs_key,collection_name=col.name)
@@ -17,12 +19,14 @@ class setupTestDB:
                                             x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
                                             time_step=1
                                             )
-        exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf, num_hierarchy_levels=10, max_time_sample = max_time)
+        exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf, num_hierarchy_levels=10,
+                                        max_time_sample = max_time, creator=user)
         lkup_key = str(col.pk) + '&' + str(exp.pk)
         bs_key = col.name + '&' + str(exp.name)
         BossLookup.objects.create(lookup_key=lkup_key,boss_key=bs_key,collection_name=col.name,experiment_name=exp.name)
 
-        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step=0)
+        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True,
+                                              default_time_step=0, creator=user)
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(channel.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + channel.name
         BossLookup.objects.create(lookup_key=base_lkup_key,boss_key=base_bs_key,
@@ -39,8 +43,8 @@ class setupTestDB:
                                     channel_layer_name=channel.name
                                     )
 
-
-        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step=0)
+        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False,
+                                            default_time_step=0,creator=user)
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(layer.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + layer.name
         BossLookup.objects.create(lookup_key=base_lkup_key,boss_key=base_bs_key,

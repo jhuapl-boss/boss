@@ -15,11 +15,13 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
+from django.conf.urls import include
 
 from . import views
 
 
 urlpatterns = [
+    url(r'^api-auth/', include('rest_framework.urls',namespace='rest_framework')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^v0.2/cutout/', include('bossspatialdb.urls', namespace='v0.2')),
     url(r'^v0.3/cutout/', include('bossspatialdb.urls', namespace='v0.3')),

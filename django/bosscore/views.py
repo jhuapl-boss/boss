@@ -10,7 +10,12 @@ from .lookup import LookUpKey
 from .error import BossError, BossHTTPError
 
 from . import metadb
+from .permissions import BossPermissionManager
 from .request import BossRequest
+from django.contrib.auth.models import User,Group
+from guardian.shortcuts import assign_perm,get_perms
+from guardian.shortcuts import get_objects_for_user, get_user_perms
+from bosscore.models import Collection
 
 
 class CollectionObj(APIView):
@@ -28,11 +33,13 @@ class CollectionObj(APIView):
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
+            if request.user.has_perm("view_collection", collection_obj):
+                serializer = CollectionSerializer(collection_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except Collection.DoesNotExist:
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
-
-        serializer = CollectionSerializer(collection_obj)
-        return Response(serializer.data)
 
     def post(self, request, collection):
         """
@@ -57,10 +64,13 @@ class CollectionObj(APIView):
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
+            if request.user.has_perm("delete_collection", collection_obj):
+                collection_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except Collection.DoesNotExist:
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
-        collection_obj.delete()
-        return HttpResponse(status=204)
 
 
 class ExperimentObj(APIView):
@@ -80,11 +90,13 @@ class ExperimentObj(APIView):
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            if request.user.has_perm("view_experiment", experiment_obj):
+                serializer = ExperimentSerializer(experiment_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
-
-        serializer = ExperimentSerializer(experiment_obj)
-        return Response(serializer.data)
 
     def post(self, request, collection, experiment):
         """
@@ -111,11 +123,13 @@ class ExperimentObj(APIView):
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            if request.user.has_perm("delete_experiment", experiment_obj):
+                experiment_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
-
-        experiment_obj.delete()
-        return HttpResponse(status=204)
 
 
 class ChannelLayerObj(APIView):
@@ -138,14 +152,13 @@ class ChannelLayerObj(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
-
+            if request.user.has_perm("view_channellayer", channel_layer_obj):
+                serializer = ChannelLayerSerializer(channel_layer_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except (Collection.DoesNotExist, Experiment.DoesNotExist, ChannelLayer.DoesNotExist):
             return HttpResponse(status=404)
-
-        if request.method == 'GET':
-            serializer = ChannelLayerSerializer(channel_layer_obj)
-            return Response(serializer.data)
-        return HttpResponse(status=404)
 
     def post(self, request, collection, experiment, channel_layer):
         """
@@ -175,11 +188,14 @@ class ChannelLayerObj(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
+            if request.user.has_perm("delete_channellayer", channel_layer_obj):
+                channel_layer_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
-
-        channel_layer_obj.delete()
-        return HttpResponse(status=204)
 
 
 class CollectionList(generics.ListCreateAPIView):
@@ -189,6 +205,22 @@ class CollectionList(generics.ListCreateAPIView):
     """
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Collections that user has view permissions on
+
+        """
+        # queryset = self.get_queryset()
+        collections = get_objects_for_user(request.user, 'view_collection', klass=Collection)
+        serializer = CollectionSerializer(collections, many=True)
+        return Response(serializer.data)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -205,14 +237,15 @@ class CollectionList(generics.ListCreateAPIView):
         """
         col_data = request.data
         serializer = CollectionSerializer(data=col_data)
-
         if serializer.is_valid():
-            serializer.save()
-
+            serializer.save(creator=self.request.user)
             collection = Collection.objects.get(name=col_data['name'])
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, collection,'collection')
+
             lookup_key = collection.pk
             boss_key = collection.name
-            LookUpKey.add_lookup(lookup_key,boss_key,collection.name)
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
@@ -223,8 +256,24 @@ class ExperimentList(generics.ListCreateAPIView):
     """
     List all experiments
     """
+
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Experiments that user has view permissions on
+
+        """
+        experiments = get_objects_for_user(request.user, 'view_experiment', klass=Experiment)
+        serializer = ExperimentSerializer(experiments, many=True)
+        return Response(serializer.data)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -232,27 +281,48 @@ class ExperimentList(generics.ListCreateAPIView):
         serializer = ExperimentSerializer(data=exp_data)
 
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(creator=self.request.user)
 
             # Create the boss lookup entry
             experiment = Experiment.objects.get(name=exp_data['name'])
             collection = experiment.collection
+            # TODO - Since we are only showing collections that we have access to, we do not need to check for
+            # permissions on the collection object
+
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, experiment, 'experiment')
+
             boss_key = collection.name + '&' + experiment.name
             lookup_key = str(collection.pk) + '&' + str(experiment.pk)
-            LookUpKey.add_lookup(lookup_key,boss_key,collection.name,experiment.name)
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
 class ChannelList(generics.ListCreateAPIView):
     """
     List all channels
     """
-    queryset = ChannelLayer.objects.filter(is_channel=True)
-    serializer_class = ChannelSerializer
+    queryset = ChannelLayer.objects.all()
+    serializer_class = ChannelLayerSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Channel_Layers that user has view permissions on
+
+        """
+        channel_layers = get_objects_for_user(request.user, 'view_channellayer',
+                                              klass=ChannelLayer).filter(is_channel=True)
+        serializer = ChannelLayerSerializer(channel_layers, many=True)
+        return Response(serializer.data)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -260,22 +330,26 @@ class ChannelList(generics.ListCreateAPIView):
         serializer = ChannelSerializer(data=channel_data)
 
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(creator=self.request.user)
 
             # Create the boss lookup entry
             channel = ChannelLayer.objects.get(name=channel_data['name'])
             experiment = channel.experiment
             collection = experiment.collection
             max_time_sample = experiment.max_time_sample
+
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, channel, 'channellayer')
+
+            # Create a new bosslookup key
             boss_key = collection.name + '&' + experiment.name + '&' + channel.name
             lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(channel.pk)
-            LookUpKey.add_lookup(lookup_key,boss_key,collection.name,experiment.name, channel.name, max_time_sample)
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, channel.name, max_time_sample)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class LayerList(generics.ListCreateAPIView):
@@ -285,22 +359,42 @@ class LayerList(generics.ListCreateAPIView):
     queryset = ChannelLayer.objects.filter(is_channel=False)
     serializer_class = LayerSerializer
 
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Channel_Layers that user has view permissions on
+
+        """
+        channel_layers = get_objects_for_user(request.user, 'view_channellayer',
+                                              klass=ChannelLayer).filter(is_channel=False)
+        serializer = ChannelLayerSerializer(channel_layers, many=True)
+        return Response(serializer.data)
+
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         layer_data = request.data
         serializer = LayerSerializer(data=layer_data)
 
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(creator=self.request.user)
 
             # Create the boss lookup entry
             layer = ChannelLayer.objects.get(name=layer_data['name'])
             experiment = layer.experiment
             collection = experiment.collection
             max_time_sample = experiment.max_time_sample
+
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, layer, 'channellayer')
+
             boss_key = collection.name + '&' + experiment.name + '&' + layer.name
             lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(layer.pk)
-            LookUpKey.add_lookup(lookup_key,boss_key,collection.name,experiment.name,layer.name, max_time_sample)
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, layer.name, max_time_sample)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -353,18 +447,17 @@ class BossMeta(APIView):
             if not mdata:
                 return BossHTTPError(404, "Cannot find keys that match this request", 30000)
             else:
-                keys =[]
+                keys = []
                 for meta in mdata:
                     keys.append(meta['key'])
                 data = {'keys': keys}
                 return Response(data)
 
-            #return BossHTTPError(404, "Missing optional argument key in the request", 30000)
         else:
 
             mkey = request.query_params['key']
             mdb = metadb.MetaDB()
-            mdata = mdb.get_meta(lookup_key[0],mkey)
+            mdata = mdb.get_meta(lookup_key[0], mkey)
             if mdata:
                 data = {'key': mdata['key'], 'value': mdata['metavalue']}
                 return Response(data)
@@ -402,12 +495,12 @@ class BossMeta(APIView):
 
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
-        if mdb.get_meta(lookup_key[0],mkey):
+        if mdb.get_meta(lookup_key[0], mkey):
             return BossHTTPError(404, "Invalid request. The key {} already exists".format(mkey), 30000)
         mdb.write_meta(lookup_key[0], mkey, value)
         return HttpResponse(status=201)
 
-    def delete(self, request, collection, experiment = None, channel_layer= None):
+    def delete(self, request, collection, experiment=None, channel_layer=None):
         """
         View to handle the delete requests for metadata
         Args:
@@ -432,13 +525,11 @@ class BossMeta(APIView):
         if not lookup_key:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
-
-
         mkey = request.query_params['key']
 
         # Delete metadata from the dynamodb database
         mdb = metadb.MetaDB()
-        response = mdb.delete_meta(lookup_key[0],mkey)
+        response = mdb.delete_meta(lookup_key[0], mkey)
 
         if 'Attributes' in response:
             return HttpResponse(status=201)

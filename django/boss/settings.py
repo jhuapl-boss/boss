@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'bosscore',
     'bossspatialdb',
     'rest_framework_swagger',
+    'guardian'
 ]
 
 # Add django_jenkins if running on a Jenkins server.
@@ -153,9 +154,20 @@ if not USE_LOCAL:
     from bossutils.aws import *
     aws_mngr = get_aws_manager()
 
-# Django rest framework versioning requirements
+ANONYMOUS_USER_NAME = None
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend', # this is default
+    'guardian.backends.ObjectPermissionBackend',
+)
+
+# Django rest framework versioning  and permission requirements
 REST_FRAMEWORK = {
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning'
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+        #'rest_framework.permissions.DjangoModelPermissions'
+    )
+
 }
 # Version that unit tests are being run against
 BOSS_VERSION = 'v0.3'

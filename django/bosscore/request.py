@@ -411,8 +411,6 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-
-        self.boss_key = []
         boss_key = []
 
         if self.collection and self.experiment and self.channel_layer:
