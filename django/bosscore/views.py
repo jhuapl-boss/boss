@@ -2,13 +2,20 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.views import APIView
+from rest_framework import status
+from django.db import IntegrityError, transaction
 
-from .models import *
 from .serializers import *
+from .lookup import LookUpKey
 from .error import BossError, BossHTTPError
 
 from . import metadb
+from .permissions import BossPermissionManager
 from .request import BossRequest
+from django.contrib.auth.models import User,Group
+from guardian.shortcuts import assign_perm,get_perms
+from guardian.shortcuts import get_objects_for_user, get_user_perms
+from bosscore.models import Collection
 
 
 class CollectionObj(APIView):
@@ -26,11 +33,13 @@ class CollectionObj(APIView):
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
+            if request.user.has_perm("view_collection", collection_obj):
+                serializer = CollectionSerializer(collection_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except Collection.DoesNotExist:
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
-
-        serializer = CollectionSerializer(collection_obj)
-        return Response(serializer.data)
 
     def post(self, request, collection):
         """
@@ -55,10 +64,13 @@ class CollectionObj(APIView):
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
+            if request.user.has_perm("delete_collection", collection_obj):
+                collection_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except Collection.DoesNotExist:
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
-        collection_obj.delete()
-        return HttpResponse(status=204)
 
 
 class ExperimentObj(APIView):
@@ -78,11 +90,13 @@ class ExperimentObj(APIView):
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            if request.user.has_perm("view_experiment", experiment_obj):
+                serializer = ExperimentSerializer(experiment_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
-
-        serializer = ExperimentSerializer(experiment_obj)
-        return Response(serializer.data)
 
     def post(self, request, collection, experiment):
         """
@@ -109,11 +123,13 @@ class ExperimentObj(APIView):
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            if request.user.has_perm("delete_experiment", experiment_obj):
+                experiment_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
-
-        experiment_obj.delete()
-        return HttpResponse(status=204)
 
 
 class ChannelLayerObj(APIView):
@@ -136,14 +152,13 @@ class ChannelLayerObj(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
-
+            if request.user.has_perm("view_channellayer", channel_layer_obj):
+                serializer = ChannelLayerSerializer(channel_layer_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except (Collection.DoesNotExist, Experiment.DoesNotExist, ChannelLayer.DoesNotExist):
             return HttpResponse(status=404)
-
-        if request.method == 'GET':
-            serializer = ChannelLayerSerializer(channel_layer_obj)
-            return Response(serializer.data)
-        return HttpResponse(status=404)
 
     def post(self, request, collection, experiment, channel_layer):
         """
@@ -173,28 +188,117 @@ class ChannelLayerObj(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
+            if request.user.has_perm("delete_channellayer", channel_layer_obj):
+                channel_layer_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+
         except (Collection.DoesNotExist, Experiment.DoesNotExist):
             return HttpResponse(status=404)
-
-        channel_layer_obj.delete()
-        return HttpResponse(status=204)
 
 
 class CollectionList(generics.ListCreateAPIView):
     """
-    List all collections
+    List all collections or create a new collection
 
     """
     queryset = Collection.objects.all()
     serializer_class = CollectionSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Collections that user has view permissions on
+
+        """
+        # queryset = self.get_queryset()
+        collections = get_objects_for_user(request.user, 'view_collection', klass=Collection)
+        serializer = CollectionSerializer(collections, many=True)
+        return Response(serializer.data)
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        """Create a new collection
+
+        Create a new collection and an associated bosskey for that collection
+        Args:
+            request:
+            *args:
+            **kwargs:
+
+        Returns:
+
+        """
+        col_data = request.data
+        serializer = CollectionSerializer(data=col_data)
+        if serializer.is_valid():
+            serializer.save(creator=self.request.user)
+            collection = Collection.objects.get(name=col_data['name'])
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, collection,'collection')
+
+            lookup_key = collection.pk
+            boss_key = collection.name
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ExperimentList(generics.ListCreateAPIView):
     """
     List all experiments
     """
+
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Experiments that user has view permissions on
+
+        """
+        experiments = get_objects_for_user(request.user, 'view_experiment', klass=Experiment)
+        serializer = ExperimentSerializer(experiments, many=True)
+        return Response(serializer.data)
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        exp_data = request.data
+        serializer = ExperimentSerializer(data=exp_data)
+
+        if serializer.is_valid():
+            serializer.save(creator=self.request.user)
+
+            # Create the boss lookup entry
+            experiment = Experiment.objects.get(name=exp_data['name'])
+            collection = experiment.collection
+            # TODO - Since we are only showing collections that we have access to, we do not need to check for
+            # permissions on the collection object
+
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, experiment, 'experiment')
+
+            boss_key = collection.name + '&' + experiment.name
+            lookup_key = str(collection.pk) + '&' + str(experiment.pk)
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChannelList(generics.ListCreateAPIView):
@@ -204,13 +308,98 @@ class ChannelList(generics.ListCreateAPIView):
     queryset = ChannelLayer.objects.all()
     serializer_class = ChannelLayerSerializer
 
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Channel_Layers that user has view permissions on
+
+        """
+        channel_layers = get_objects_for_user(request.user, 'view_channellayer',
+                                              klass=ChannelLayer).filter(is_channel=True)
+        serializer = ChannelLayerSerializer(channel_layers, many=True)
+        return Response(serializer.data)
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        channel_data = request.data
+        serializer = ChannelSerializer(data=channel_data)
+
+        if serializer.is_valid():
+            serializer.save(creator=self.request.user)
+
+            # Create the boss lookup entry
+            channel = ChannelLayer.objects.get(name=channel_data['name'])
+            experiment = channel.experiment
+            collection = experiment.collection
+            max_time_sample = experiment.max_time_sample
+
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, channel, 'channellayer')
+
+            # Create a new bosslookup key
+            boss_key = collection.name + '&' + experiment.name + '&' + channel.name
+            lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(channel.pk)
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, channel.name, max_time_sample)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class LayerList(generics.ListCreateAPIView):
     """
     List all layers
     """
-    queryset = ChannelLayer.objects.all()
-    serializer_class = ChannelLayerSerializer
+    queryset = ChannelLayer.objects.filter(is_channel=False)
+    serializer_class = LayerSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Channel_Layers that user has view permissions on
+
+        """
+        channel_layers = get_objects_for_user(request.user, 'view_channellayer',
+                                              klass=ChannelLayer).filter(is_channel=False)
+        serializer = ChannelLayerSerializer(channel_layers, many=True)
+        return Response(serializer.data)
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        layer_data = request.data
+        serializer = LayerSerializer(data=layer_data)
+
+        if serializer.is_valid():
+            serializer.save(creator=self.request.user)
+
+            # Create the boss lookup entry
+            layer = ChannelLayer.objects.get(name=layer_data['name'])
+            experiment = layer.experiment
+            collection = experiment.collection
+            max_time_sample = experiment.max_time_sample
+
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, layer, 'channellayer')
+
+            boss_key = collection.name + '&' + experiment.name + '&' + layer.name
+            lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(layer.pk)
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, layer.name, max_time_sample)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CoordinateFrameList(generics.ListCreateAPIView):
@@ -227,123 +416,121 @@ class BossMeta(APIView):
     
     """
 
-    def get_combinedkey(self, bosskey, key):
+    def get(self, request, collection, experiment=None, channel_layer=None):
         """
-        Generate a new metakey which is a combiniation of the datamodel representation and meta data key
+        View to handle GET requests for metadata
 
-        :param bosskey: This represents the datamodel object to attach the metadata to. I
-        :param key: Meta data key
-        :return: new meta key
+        Args:
+            request: DRF Request object
+            collection: Collection Name
+            experiment: Experiment name. default = None
+            channel_layer: Channel or Layer name
+
+        Returns:
+
         """
-        return bosskey + "#" + key
-
-    def get(self, request, collection, experiment = None, channel_layer = None):
-        """
-        View to handle GET requests for metadata 
-        ​
-        :param request: DRF Request object
-        :param collection: Collection Name specifying the collection you want to get the meta data for
-        :param experiment: Experiment name. default = None
-        :param channel_layer: Channel or Layer name
-        :return:
-        """
-
-        # The metadata consist of two parts. The bosskey#key
-        # bosskey represents the datamodel object
-        # key is the key for the meta data associated with the data model object
-
-        if 'key' not in request.query_params:
-            return BossHTTPError(404, "Missing optional argument key in the request", 30000)
-
         try:
+            # Validate the request and get the lookup Key
             req = BossRequest(request)
-            bosskey = req.get_bosskey()
+            lookup_key = req.get_lookup_key()
 
         except BossError as err:
             return err.to_http()
 
-        if bosskey == None :
+        if not lookup_key or lookup_key[0] == "":
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
-        mkey = request.query_params['key']
-        combinedkey = self.get_combinedkey(bosskey, mkey)
+        if 'key' not in request.query_params:
+            # List all keys that are valid for the query
+            mdb = metadb.MetaDB()
+            mdata = mdb.get_meta_list(lookup_key[0])
+            if not mdata:
+                return BossHTTPError(404, "Cannot find keys that match this request", 30000)
+            else:
+                keys = []
+                for meta in mdata:
+                    keys.append(meta['key'])
+                data = {'keys': keys}
+                return Response(data)
 
-        mdb = metadb.MetaDB()
-        mdata = mdb.getmeta(combinedkey)
-        if mdata:
-            [bosskey, mkey] = mdata['metakey'].split('#')
-            data = {'key': mkey, 'value': mdata['metavalue']}
-            return Response(data)
         else:
-            return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
+
+            mkey = request.query_params['key']
+            mdb = metadb.MetaDB()
+            mdata = mdb.get_meta(lookup_key[0], mkey)
+            if mdata:
+                data = {'key': mdata['key'], 'value': mdata['metavalue']}
+                return Response(data)
+            else:
+                return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
 
     def post(self, request, collection, experiment= None, channel_layer=None):
         """
         View to handle POST requests for metadata
-        
-        :param request: DRF Request object
-        :param collection: Collection Name specifying the collection you want to get the meta data for
-        :param experiment: Experiment name. default = None
-        :param channel_layer: Channel or Layer name. Default = None
-        :return:
-        """
 
-        # The metadata consist of two parts. The bosskey#key
-        # bosskey represents the datamodel object
-        # key is the key for the meta data associated with the data model object
+        Args:
+            request: DRF Request object
+            collection: Collection Name specifying the collection you want to get the meta data for
+            experiment: Experiment name. default = None
+            channel_layer: Channel or Layer name. Default = None
+
+        Returns:
+
+        """
 
         if 'key' not in request.query_params or 'value' not in request.query_params:
             return BossHTTPError(404, "Missing optional argument key/value in the request", 30000)
 
         try:
             req = BossRequest(request)
-            bosskey = req.get_bosskey()
+            lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()
 
-        if bosskey == None:
+        if not lookup_key or not lookup_key[0]:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
         value = request.query_params['value']
 
-        # generate the new Metakey which combines datamodel keys with the meta data key in the post
-        combinedkey = self.get_combinedkey(bosskey, mkey)
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
-        mdb.writemeta(combinedkey, value)
+        if mdb.get_meta(lookup_key[0], mkey):
+            return BossHTTPError(404, "Invalid request. The key {} already exists".format(mkey), 30000)
+        mdb.write_meta(lookup_key[0], mkey, value)
         return HttpResponse(status=201)
 
-    def delete(self, request, collection, experiment = None, channel_layer= None):
+    def delete(self, request, collection, experiment=None, channel_layer=None):
         """
         View to handle the delete requests for metadata
+        Args:
+            request: DRF Request object
+            collection: Collection name. Default = None
+            experiment: Experiment name. Default = None
+            channel_layer: Channel_layer name . Default = None
 
-        :param request: DRF Request object
-        :param collection: Collection Name specifying the collection you want to get the meta data for
-        :param experiment: Experiment name. default = None
-        :param channel_layer: channel or layer name. Default = None
-        :return:
+        Returns:
+
         """
+
         if 'key' not in request.query_params:
             return BossHTTPError(404, "Missing optional argument key in the request", 30000)
 
         try:
             req = BossRequest(request)
-            bosskey = req.get_bosskey()
+            lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()
 
-        if bosskey == None:
+        if not lookup_key:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
 
-        # generate the new Metakey which combines datamodel keys with the meta data key in the post
-        combinedkey = self.get_combinedkey(bosskey, mkey)
-
         # Delete metadata from the dynamodb database
         mdb = metadb.MetaDB()
-        response = mdb.deletemeta(combinedkey)
+        response = mdb.delete_meta(lookup_key[0], mkey)
+
         if 'Attributes' in response:
             return HttpResponse(status=201)
         else:
@@ -352,14 +539,15 @@ class BossMeta(APIView):
     def put(self, request, collection, experiment=None, channel_layer = None):
         """
         View to handle update requests for metadata
-        
-        :param request: DRF Request object
-        :param collection: Collection Name specifying the collection you want to get the meta data for
-        :param experiment: Experiment name. default = None
-        :param channel_layer: Channel or Layer name. Default = None
-        :return:
-        """
+        Args:
+            request: DRF Request object
+            collection: Collection Name. Default = None
+            experiment: Experiment Name. Default = None
+            channel_layer: Channel Name Default + None
 
+        Returns:
+
+        """
         # The metadata consist of two parts. The bosskey#key
         # bosskey represents the datamodel object
         # key is the key for the meta data associated with the data model object
@@ -369,20 +557,17 @@ class BossMeta(APIView):
 
         try:
             req = BossRequest(request)
-            bosskey = req.get_bosskey()
+            lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()
 
-        if bosskey == None:
+        if not lookup_key:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
         value = request.query_params['value']
 
-        # generate the new metakey which combines the bosskey with the meta data key in the post
-        combinedkey = self.get_combinedkey(bosskey, mkey)
-
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
-        mdb.updatemeta(combinedkey, value)
+        mdb.update_meta(lookup_key[0], mkey, value)
         return HttpResponse(status=201)

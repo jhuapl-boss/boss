@@ -1,11 +1,10 @@
 
 from rest_framework.test import APITestCase
+from ..models import *
 from .setup_db import setupTestDB
 import bossutils
 import boto3
-import json
-import os
-import unittest
+from bossutils.aws import *
 
 
 from django.conf import settings
@@ -13,29 +12,45 @@ version  = settings.BOSS_VERSION
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()
-testtablename = config["aws"]["meta-db"]
+testtablename = config["aws"]["test-meta-db"]
+aws_mngr = get_aws_manager()
 
 
-# Assume there is no local DynamoDB unless the env variable set by jenkins.sh
-# present.
-@unittest.skipIf(os.environ.get('USING_DJANGO_TESTRUNNER') is None, 'No local DynamoDB.')
 class BossCoreMetaServiceViewTests(APITestCase):
     """
     Class to tests the bosscore views for the metadata service
     """
     @classmethod
     def setUpClass(cls):
-        # Load table info
-        cfgfile = open('bosscore/dynamo_schema.json', 'r')
-        tblcfg = json.load(cfgfile)
-        
+        cls.__session = aws_mngr.get_session()
+
         # Get table
-        session = boto3.Session(aws_access_key_id='foo', aws_secret_access_key='foo')
-        dynamodb = session.resource('dynamodb', region_name='us-east-1', endpoint_url='http://localhost:8000')
+        dynamodb = cls.__session.resource('dynamodb')
         cls.table = dynamodb.create_table(
-            TableName=testtablename, **tblcfg
+            TableName=testtablename,
+            KeySchema=[
+                {
+                    'AttributeName': 'metakey',
+                    'KeyType': 'HASH'  # Partition key
+                },
+
+            ],
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'metakey',
+                    'AttributeType': 'S'
+                },
+
+            ],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 10,
+                'WriteCapacityUnits': 10
+            }
         )
         cls.table.meta.client.get_waiter('table_exists').wait(TableName=testtablename)
+
+
+
 
     
     def setUp(self):
@@ -43,18 +58,6 @@ class BossCoreMetaServiceViewTests(APITestCase):
         Initialize the  database with a some objects to test
         :return:
         """
-        # col = Collection.objects.create(name='col1')
-        # cf = CoordinateFrame.objects.create(name='cf1', description='cf1',
-        #                                     x_start=0, x_stop=1000,
-        #                                     y_start=0, y_stop=1000,
-        #                                     z_start=0, z_stop=1000,
-        #                                     x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
-        #                                     time_step=1
-        #                                     )
-        # exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf)
-        #
-        # channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step=1)
-        # layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step=1)
         setupTestDB.insert_test_data()
 
     def test_meta_data_service_collection(self):

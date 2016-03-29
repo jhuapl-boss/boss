@@ -1,14 +1,21 @@
 {
     "KeySchema": [
         {
-            "AttributeName": "metakey",
+            "AttributeName": "lookup_key",
             "KeyType": "HASH"
+        },
+        {
+            "AttributeName": "key",
+            "KeyType": "RANGE"
         }
-
     ],
     "AttributeDefinitions":[
         {
-            "AttributeName": "metakey",
+            "AttributeName": "lookup_key",
+            "AttributeType": "S"
+        },
+        {
+            "AttributeName": "key",
             "AttributeType": "S"
         }
     ],

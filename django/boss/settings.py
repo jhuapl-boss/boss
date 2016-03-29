@@ -33,12 +33,10 @@ if not USE_LOCAL:
 else:
     SECRET_KEY = 'cki+nch2)9b_xatlg1n-!(db07ctl#*qh8j-jr)0h!0+c0nbkr'
 
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -54,6 +52,7 @@ INSTALLED_APPS = [
     'bossspatialdb',
     'rest_framework_swagger',
     'djangooidc',
+    'guardian'
 ]
 
 # Add django_jenkins if running on a Jenkins server.
@@ -171,7 +170,6 @@ USE_L10N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
@@ -182,10 +180,22 @@ if not USE_LOCAL:
     # Setup the AWS manager for boto3 session pooling as Vault issued AWS creds
     from bossutils.aws import *
     aws_mngr = get_aws_manager()
-    #aws_mngr.start_credential_refresh()
 
-# Django rest framework versioning requirements
+ANONYMOUS_USER_NAME = None
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend', # this is default
+    'guardian.backends.ObjectPermissionBackend',
+)
+
+# Django rest framework versioning  and permission requirements
 REST_FRAMEWORK = {
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning'
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+        #'rest_framework.permissions.DjangoModelPermissions'
+    )
+
 }
-BOSS_VERSION ='v0.2'
+# Version that unit tests are being run against
+BOSS_VERSION = 'v0.3'
+
