@@ -99,32 +99,6 @@ TEMPLATES = [
     },
 ]
 
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-    'djangooidc.backends.OpenIdConnectBackend',
-)
-
-# bypass the djangooidc provided page and go directly to the keycloak page
-LOGIN_URL = "/openid/openid/KeyCloak"
-
-OIDC_DEFAULT_BEHAVIOUR = {
-    'response_type': 'code',
-    'scope': ['openid', 'profile', 'email'],
-}
-
-public_uri = vault.read('secret/endpoint/auth', 'public_uri')
-OIDC_PROVIDERS = {
-    'KeyCloak': {
-        'srv_discovery_url': vault.read('secret/endpoint/auth', 'url'),
-        'behaviour': OIDC_DEFAULT_BEHAVIOUR,
-        'client_registration': {
-            'client_id': vault.read('secret/endpoint/auth', 'client_id'),
-            'redirect_uris': [public_uri + '/openid/callback/login/'],
-            'post_logout_redirect_uris': [public_uri + '/openid/callback/logout/'],
-        },
-    }
-}
-
 WSGI_APPLICATION = 'boss.wsgi.application'
 
 if USE_LOCAL:
@@ -184,8 +158,30 @@ if not USE_LOCAL:
 ANONYMOUS_USER_NAME = None
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # this is default
+    'djangooidc.backends.OpenIdConnectBackend',
     'guardian.backends.ObjectPermissionBackend',
 )
+
+# bypass the djangooidc provided page and go directly to the keycloak page
+LOGIN_URL = "/openid/openid/KeyCloak"
+
+OIDC_DEFAULT_BEHAVIOUR = {
+    'response_type': 'code',
+    'scope': ['openid', 'profile', 'email'],
+}
+
+public_uri = vault.read('secret/endpoint/auth', 'public_uri')
+OIDC_PROVIDERS = {
+    'KeyCloak': {
+        'srv_discovery_url': vault.read('secret/endpoint/auth', 'url'),
+        'behaviour': OIDC_DEFAULT_BEHAVIOUR,
+        'client_registration': {
+            'client_id': vault.read('secret/endpoint/auth', 'client_id'),
+            'redirect_uris': [public_uri + '/openid/callback/login/'],
+            'post_logout_redirect_uris': [public_uri + '/openid/callback/logout/'],
+        },
+    }
+}
 
 # Django rest framework versioning  and permission requirements
 REST_FRAMEWORK = {
