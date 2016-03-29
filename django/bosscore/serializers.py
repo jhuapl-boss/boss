@@ -16,26 +16,31 @@ class ChannelLayerMapSerializer(serializers.ModelSerializer):
         model = ChannelLayerMap
         fields = ('channel', 'layer')
 
+
 class NameOnlySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChannelLayer
         fields = ('name',)
 
+
 class ChannelSerializer(serializers.ModelSerializer):
-    linked_channel_layers = NameOnlySerializer(many=True,read_only=True)
-    is_channel = serializers.BooleanField(default=True,read_only=True)
+    linked_channel_layers = NameOnlySerializer(many=True, read_only=True)
+    is_channel = serializers.BooleanField(default=True, read_only=True)
 
     class Meta:
         model = ChannelLayer
-        fields = ('name', 'description', 'experiment', 'is_channel', 'default_time_step', 'datatype','linked_channel_layers')
+        fields = ('name', 'description', 'experiment', 'is_channel', 'base_resolution',
+                  'default_time_step', 'datatype', 'linked_channel_layers')
+
 
 class LayerSerializer(serializers.ModelSerializer):
     linked_channel_layers = NameOnlySerializer(many=True, read_only=True)
-    is_channel = serializers.BooleanField(default=False,read_only=True)
+    is_channel = serializers.BooleanField(default=False, read_only=True)
     class Meta:
         model = ChannelLayer
-        fields = ('name', 'description', 'is_channel','experiment', 'default_time_step', 'datatype','linked_channel_layers')
+        fields = ('name', 'description', 'experiment', 'is_channel', 'base_resolution',
+                  'default_time_step', 'datatype', 'linked_channel_layers')
 
 
 class ChannelLayerSerializer(serializers.ModelSerializer):
@@ -52,7 +57,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Experiment
         fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
-                  'max_time_sample','channel_layers')
+                  'max_time_sample', 'channel_layers')
 
 
 class CollectionSerializer(serializers.ModelSerializer):

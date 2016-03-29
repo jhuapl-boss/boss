@@ -12,6 +12,9 @@ https://docs.djangoproject.com/en/1.8/ref/settings/
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+import sys
+from pathlib import Path
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -116,18 +119,31 @@ else:
 # Database
 # https://docs.djangoproject.com/en/1.8/ref/settings/#databases
 
-# Using Amazon RDS
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': db_default_name,
-        'USER': db_default_user,
-        'PASSWORD': db_default_password,
-        'HOST': db_default_host,
-        'PORT': db_default_port,
-    
+USE_SQLITE = os.environ.get('USE_SQLITE') is not None
+if USE_SQLITE:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(str(Path(__file__).parents[2]), 'testdb.db'),
+            'USER': '',
+            'PASSWORD': '',
+            'HOST': '',
+            'PORT': '',
+        }
     }
-}
+else:
+    # Using Amazon RDS
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': db_default_name,
+            'USER': db_default_user,
+            'PASSWORD': db_default_password,
+            'HOST': db_default_host,
+            'PORT': db_default_port,
+
+        }
+    }
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
@@ -160,3 +176,5 @@ REST_FRAMEWORK = {
 # Version that unit tests are being run against
 BOSS_VERSION = 'v0.3'
 
+# Add SPDB to the python path
+sys.path.append(os.path.join(str(Path(__file__).parents[2]), 'spdb'))

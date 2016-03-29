@@ -1,17 +1,16 @@
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.http import Http404
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import authentication, permissions
 import blosc
 import numpy as np
 
-from .parsers import BloscParser
+from .parsers import BloscParser, BloscPythonParser
+from .renderers import BloscRenderer, BloscPythonRenderer
 
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError
+
+from project import BossResourceDjango
 
 
 class Cutout(APIView):
@@ -26,9 +25,10 @@ class Cutout(APIView):
 
     # Set Parser and Renderer
     # TODO: Look into using a renderer, so you can send data back in multiple formats
-    parser_classes = (BloscParser,)
+    parser_classes = (BloscParser, BloscPythonParser)
+    renderer_classes = (BloscRenderer, BloscPythonRenderer)
 
-    def read_cutout(self, request):
+    def read_cutout(self, request, resource):
         """
         Method to get a cuboid of data from spdb
 
@@ -92,10 +92,14 @@ class Cutout(APIView):
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
-        # Get Cutout
-        d = self.read_cutout(req)
+        # Convert to Resource
+        resource = BossResourceDjango(req)
 
-        return HttpResponse(d, content_type='application/octet-stream', status=200)
+        # Get Cutout
+        d = self.read_cutout(req, resource)
+
+        # Return DRF response so content negotiation occurs automatically via renderers
+        return Response(d, status=200)
 
     def post(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
         """

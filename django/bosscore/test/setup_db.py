@@ -22,7 +22,8 @@ class setupTestDB:
         bs_key = col.name + '&' + str(exp.name)
         BossLookup.objects.create(lookup_key=lkup_key,boss_key=bs_key,collection_name=col.name,experiment_name=exp.name)
 
-        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step=0)
+        channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step=0,
+                                              base_resolution=0)
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(channel.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + channel.name
         BossLookup.objects.create(lookup_key=base_lkup_key,boss_key=base_bs_key,
@@ -40,7 +41,8 @@ class setupTestDB:
                                     )
 
 
-        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step=0)
+        layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step=0,
+                                            base_resolution=0)
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(layer.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + layer.name
         BossLookup.objects.create(lookup_key=base_lkup_key,boss_key=base_bs_key,
