@@ -1,11 +1,16 @@
 from django.db import models
+from django.core.validators import RegexValidator
+
+class NameValidator(RegexValidator):
+    regex = "^[a-zA-Z0-9_-]*$"
+    message = u'Invalid Name.'
 
 
 class Collection(models.Model):
     """
     Object representing a Boss Collection
     """
-    name = models.CharField(max_length=255, verbose_name="Name of the Collection")
+    name = models.CharField(max_length=255, verbose_name="Name of the Collection",validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='collections')
 
@@ -27,7 +32,7 @@ class CoordinateFrame(models.Model):
     Coordinate Frame for Boss Experiments
 
     """
-    name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame")
+    name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame",validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
     #creator = models.ForeignKey('auth.User', related_name='coordinateframes')
 
@@ -70,7 +75,7 @@ class Experiment(models.Model):
     Object representing a BOSS experiment
     """
     collection = models.ForeignKey(Collection, related_name='experiments')
-    name = models.CharField(max_length=255, verbose_name="Name of the Experiment")
+    name = models.CharField(max_length=255, verbose_name="Name of the Experiment",validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='experiment')
 
@@ -89,8 +94,6 @@ class Experiment(models.Model):
         db_table = u"experiment"
         permissions = (
             ('view_experiment', 'Can view experiment'),
-#            ('remove_experiment', 'Can remove experiment'),
-#           ('update_experiment', 'Can update experiment'),
         )
 
     def __str__(self):
@@ -102,7 +105,7 @@ class ChannelLayer(models.Model):
     Object representing a channel or layer. For image datasets these are channels and for annotations datasets these
     are layers.
     """
-    name = models.CharField(max_length=255, verbose_name="Name of the Channel or Layer")
+    name = models.CharField(max_length=255, verbose_name="Name of the Channel or Layer",validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='ChannelLayer')
 
@@ -127,8 +130,6 @@ class ChannelLayer(models.Model):
         db_table = u"channel_layer"
         permissions = (
             ('view_channellayer', 'Can view channel or layer'),
-#            ('remove_channel_layer', 'Can remove channel_layer'),
-#            ('update_channel_layer', 'Can update channel_layer'),
         )
 
     def __str__(self):

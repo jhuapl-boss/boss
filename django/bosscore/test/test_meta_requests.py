@@ -5,6 +5,9 @@ from ..request import BossRequest
 from ..views import BossMeta
 from ..models import *
 from .setup_db import setupTestDB
+from django.contrib.auth.models import User
+from rest_framework.test import APIClient
+
 
 from django.conf import settings
 version  = settings.BOSS_VERSION
@@ -20,21 +23,10 @@ class BossCoreMetaRequestTests(APITestCase):
         :return:
         """
         self.rf = APIRequestFactory()
-        # col = Collection.objects.create(name='col1')
-        # cf = CoordinateFrame.objects.create(name='cf1', description ='cf1',
-        #                                     x_start=0, x_stop=1000,
-        #                                     y_start=0, y_stop=1000,
-        #                                     z_start=0, z_stop=1000,
-        #                                     x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
-        #                                     time_step=1
-        #                                     )
-        # exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf)
-        # channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step = 1)
-        # layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step = 1)
-        #
-        # channel = ChannelLayer.objects.create(name='channel2', experiment=exp, is_channel=True, default_time_step = 1)
-        # layer = ChannelLayer.objects.create(name='layer2', experiment=exp, is_channel=False, default_time_step = 1)
         setupTestDB.insert_test_data()
+        self.user = User.objects.get(username='testuser')
+
+
 
     def test_bossrequest_init_collection(self):
         """
@@ -144,6 +136,8 @@ class BossCoreMetaRequestTests(APITestCase):
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
+        drfrequest.user = self.user
+
         ret = BossRequest(drfrequest)
         boss_key = ret.get_boss_key()
         self.assertEqual(ret.get_collection(), expectedValue)
@@ -159,6 +153,8 @@ class BossCoreMetaRequestTests(APITestCase):
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
+        drfrequest.user = self.user
+
         ret = BossRequest(drfrequest)
         boss_key = ret.get_boss_key()
         self.assertEqual(boss_key[0], expectedValue)
@@ -173,6 +169,8 @@ class BossCoreMetaRequestTests(APITestCase):
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
+        drfrequest.user = self.user
+
         ret = BossRequest(drfrequest)
         boss_key = ret.get_boss_key()
         self.assertEqual(boss_key[0], expectedValue)
@@ -187,6 +185,8 @@ class BossCoreMetaRequestTests(APITestCase):
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
+        drfrequest.user = self.user
+
         ret = BossRequest(drfrequest)
         boss_key = ret.get_boss_key()
         self.assertEqual(boss_key[0], expectedValue)
@@ -200,6 +200,7 @@ class BossCoreMetaRequestTests(APITestCase):
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
+        drfrequest.user = self.user
 
         ret = BossRequest(drfrequest)
         key = ret.get_key()
@@ -214,6 +215,8 @@ class BossCoreMetaRequestTests(APITestCase):
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
+        drfrequest.user = self.user
+
         ret = BossRequest(drfrequest)
         value = ret.get_value()
         self.assertEqual(value, expectedValue)
