@@ -53,7 +53,7 @@ class BossHTTPError(JsonResponse):
         self.status_code = status
 
         # Log
-        blog = BossLogger()
+        blog = BossLogger().logger
         blog.info("BossHTTPError - Status: {0} - Code: {1} - Message: {2}".format(status, code, message))
 
         # Return
