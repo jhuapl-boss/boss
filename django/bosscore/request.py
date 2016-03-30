@@ -433,8 +433,9 @@ class BossRequest:
         else:
             return BossHTTPError(404, "Error creating the boss key", 30000)
 
-        if perm == False:
-            return BossHTTPError(404, "You do not have permissions", 30000)
+        #if not perm:
+        #    return BossHTTPError(404, "You do not have permissions", 30000)
+
         self.boss_key = []
         if self.service == 'meta':
             self.boss_key.append(boss_key)
