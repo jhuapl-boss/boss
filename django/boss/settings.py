@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'bosscore',
     'bossspatialdb',
     'rest_framework_swagger',
-    'djangooidc',
     'guardian'
 ]
 
@@ -158,11 +157,14 @@ if not USE_LOCAL:
 ANONYMOUS_USER_NAME = None
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # this is default
-    'djangooidc.backends.OpenIdConnectBackend',
     'guardian.backends.ObjectPermissionBackend',
 )
 
 if not USE_LOCAL:
+    # Restrict djangooidc so it is not used during unit tests
+    INSTALLED_APPS.append("djangooidc")
+    AUTHENTICATION_BACKENDS.insert(1,'djangooidc.backends.OpenIdConnectBackend')
+
     # bypass the djangooidc provided page and go directly to the keycloak page
     LOGIN_URL = "/openid/openid/KeyCloak"
 
