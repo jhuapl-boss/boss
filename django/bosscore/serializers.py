@@ -88,7 +88,6 @@ class CollectionSerializer(serializers.ModelSerializer):
     experiments = ExperimentSerializer(many=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 
-
     class Meta:
         model = Collection
         fields = ('name', 'description', 'experiments', 'creator')

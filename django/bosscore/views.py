@@ -548,9 +548,6 @@ class BossMeta(APIView):
         Returns:
 
         """
-        # The metadata consist of two parts. The bosskey#key
-        # bosskey represents the datamodel object
-        # key is the key for the meta data associated with the data model object
 
         if 'key' not in request.query_params or 'value' not in request.query_params:
             return BossHTTPError(404, "Missing optional argument key/value in the request", 30000)

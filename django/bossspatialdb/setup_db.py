@@ -6,7 +6,8 @@ class setupTestDB:
     @staticmethod
     def insert_test_data():
         max_time = 10
-        user = User.objects.create_user('testuser')
+        user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        
         col = Collection.objects.create(name='col1',creator=user)
         lkup_key = str(col.pk)
         bs_key = col.name
