@@ -1,5 +1,9 @@
 
 from rest_framework.test import APITestCase
+<<<<<<< HEAD
+=======
+from ..models import *
+>>>>>>> origin/integration
 from .setup_db import setupTestDB
 import bossutils
 import boto3
@@ -15,46 +19,17 @@ version  = settings.BOSS_VERSION
 config = bossutils.configuration.BossConfig()
 testtablename = config["aws"]["meta-db"]
 
-
-# Assume there is no local DynamoDB unless the env variable set by jenkins.sh
-# present.
-@unittest.skipIf(os.environ.get('USING_DJANGO_TESTRUNNER') is None, 'No local DynamoDB.')
-class BossCoreMetaServiceViewTests(APITestCase):
+class MetaServiceViewTestsMixin(object):
     """
-    Class to tests the bosscore views for the metadata service
+    The test methods used by both the "unit" level tests and the integration
+    level tests.
     """
-    @classmethod
-    def setUpClass(cls):
-        # Load table info
-        cfgfile = open('bosscore/dynamo_schema.json', 'r')
-        tblcfg = json.load(cfgfile)
-        
-        # Get table
-        session = boto3.Session(aws_access_key_id='foo', aws_secret_access_key='foo')
-        dynamodb = session.resource('dynamodb', region_name='us-east-1', endpoint_url='http://localhost:8000')
-        cls.table = dynamodb.create_table(
-            TableName=testtablename, **tblcfg
-        )
-        cls.table.meta.client.get_waiter('table_exists').wait(TableName=testtablename)
 
-    
     def setUp(self):
         """
         Initialize the  database with a some objects to test
         :return:
         """
-        # col = Collection.objects.create(name='col1')
-        # cf = CoordinateFrame.objects.create(name='cf1', description='cf1',
-        #                                     x_start=0, x_stop=1000,
-        #                                     y_start=0, y_stop=1000,
-        #                                     z_start=0, z_stop=1000,
-        #                                     x_voxel_size=4, y_voxel_size=4, z_voxel_size=4,
-        #                                     time_step=1
-        #                                     )
-        # exp = Experiment.objects.create(name='exp1', collection=col, coord_frame=cf)
-        #
-        # channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step=1)
-        # layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step=1)
         setupTestDB.insert_test_data()
 
     def test_meta_data_service_collection(self):
@@ -172,6 +147,29 @@ class BossCoreMetaServiceViewTests(APITestCase):
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
         self.assertEqual(response.status_code, 201)
+
+
+# Assume there is no local DynamoDB unless the env variable set by jenkins.sh
+# present.
+@unittest.skipIf(os.environ.get('USING_DJANGO_TESTRUNNER') is None, 'No local DynamoDB.')
+class BossCoreMetaServiceViewTests(MetaServiceViewTestsMixin, APITestCase):
+    """
+    Class to tests the bosscore views for the metadata service
+    """
+    @classmethod
+    def setUpClass(cls):
+        # Load table info
+        cfgfile = open('bosscore/dynamo_schema.json', 'r')
+        tblcfg = json.load(cfgfile)
+
+        # Get table
+        session = boto3.Session(aws_access_key_id='foo', aws_secret_access_key='foo')
+        dynamodb = session.resource('dynamodb', region_name='us-east-1', endpoint_url='http://localhost:8000')
+        cls.table = dynamodb.create_table(
+            TableName=testtablename, **tblcfg
+        )
+        cls.table.meta.client.get_waiter('table_exists').wait(TableName=testtablename)
+
 
     @classmethod
     def tearDownClass(cls):
