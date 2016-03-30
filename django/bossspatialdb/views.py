@@ -10,7 +10,8 @@ from .renderers import BloscRenderer, BloscPythonRenderer
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError
 
-from project import BossResourceDjango
+from spdb.project import BossResourceDjango
+from spdb.spatialdb import spatialdb
 
 
 class Cutout(APIView):

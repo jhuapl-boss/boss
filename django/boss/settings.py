@@ -177,4 +177,5 @@ REST_FRAMEWORK = {
 BOSS_VERSION = 'v0.3'
 
 # Add SPDB to the python path
-sys.path.append(os.path.join(str(Path(__file__).parents[2]), 'spdb'))
+sys.path.append(str(Path(__file__).parents[2]))
+
