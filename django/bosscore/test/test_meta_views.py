@@ -1,9 +1,6 @@
 
 from rest_framework.test import APITestCase
-<<<<<<< HEAD
-=======
 from ..models import *
->>>>>>> origin/integration
 from .setup_db import setupTestDB
 import bossutils
 import boto3
