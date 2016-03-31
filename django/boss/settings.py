@@ -15,7 +15,6 @@ import os
 import sys
 from pathlib import Path
 
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 USE_LOCAL = os.environ.get('USING_DJANGO_TESTRUNNER') is not None
@@ -54,6 +53,7 @@ INSTALLED_APPS = [
     'bosscore',
     'bossspatialdb',
     'rest_framework_swagger',
+    'guardian'
 ]
 
 # Add django_jenkins if running on a Jenkins server.
@@ -145,6 +145,7 @@ else:
         }
     }
 
+
 # Internationalization
 # https://docs.djangoproject.com/en/1.8/topics/i18n/
 
@@ -169,9 +170,46 @@ if not USE_LOCAL:
     from bossutils.aws import *
     aws_mngr = get_aws_manager()
 
-# Django rest framework versioning requirements
+ANONYMOUS_USER_NAME = None
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend', # this is default
+    'guardian.backends.ObjectPermissionBackend',
+)
+
+if not USE_LOCAL:
+    # Restrict djangooidc so it is not used during unit tests
+    INSTALLED_APPS.append("djangooidc")
+    AUTHENTICATION_BACKENDS.insert(1,'djangooidc.backends.OpenIdConnectBackend')
+
+    # bypass the djangooidc provided page and go directly to the keycloak page
+    LOGIN_URL = "/openid/openid/KeyCloak"
+
+    OIDC_DEFAULT_BEHAVIOUR = {
+        'response_type': 'code',
+        'scope': ['openid', 'profile', 'email'],
+    }
+
+    public_uri = vault.read('secret/endpoint/auth', 'public_uri')
+    OIDC_PROVIDERS = {
+        'KeyCloak': {
+            'srv_discovery_url': vault.read('secret/endpoint/auth', 'url'),
+            'behaviour': OIDC_DEFAULT_BEHAVIOUR,
+            'client_registration': {
+                'client_id': vault.read('secret/endpoint/auth', 'client_id'),
+                'redirect_uris': [public_uri + '/openid/callback/login/'],
+                'post_logout_redirect_uris': [public_uri + '/openid/callback/logout/'],
+            },
+        }
+    }
+
+# Django rest framework versioning  and permission requirements
 REST_FRAMEWORK = {
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning'
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+        #'rest_framework.permissions.DjangoModelPermissions'
+    )
+
 }
 # Version that unit tests are being run against
 BOSS_VERSION = 'v0.3'

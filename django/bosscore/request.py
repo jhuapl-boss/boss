@@ -1,5 +1,6 @@
 from .models import *
 from .lookup import LookUpKey
+from .permissions import BossPermissionManager
 
 import re
 from .error import BossHTTPError, BossError
@@ -53,9 +54,13 @@ class BossRequest:
         self.time_start = 0
         self.time_stop = 0
 
+        # Make this private?
         self.version = request.version
+        self.request = request
+
         # Parse the request for the service
         url = str(request.META['PATH_INFO'])
+
         m = re.match("/v(?P<version>\d+\.\d+)/(?P<service>\w+)/(?P<webargs>.*)?/?", url)
 
         [version, service, webargs] = [arg for arg in m.groups()]
@@ -411,19 +416,25 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-
-        self.boss_key = []
         boss_key = []
 
         if self.collection and self.experiment and self.channel_layer:
             boss_key = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR + self.channel_layer.name
-
+            perm = BossPermissionManager.check_permissions_object(self.request.user,self.channel_layer,
+                                                                  self.request.method,'channellayer')
         elif self.collection and self.experiment and self.service == 'meta':
             boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
+            perm = BossPermissionManager.check_permissions_object(self.request.user,self.experiment,
+                                                                  self.request.method,'experiment')
         elif self.collection and self.service == 'meta':
             boss_key = self.collection.name
+            perm = BossPermissionManager.check_permissions_object(self.request.user,self.collection,
+                                                                  self.request.method,'collection')
         else:
             return BossHTTPError(404, "Error creating the boss key", 30000)
+
+        #if not perm:
+        #    return BossHTTPError(404, "You do not have permissions", 30000)
 
         self.boss_key = []
         if self.service == 'meta':
@@ -434,6 +445,7 @@ class BossRequest:
                 self.boss_key.append(key)
 
         return self.boss_key
+
 
     def get_boss_key(self):
         """
