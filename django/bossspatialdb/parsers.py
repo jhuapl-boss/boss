@@ -1,5 +1,11 @@
 from rest_framework.parsers import BaseParser
 import blosc
+import numpy as np
+
+from bosscore.request import BossRequest
+from bosscore.error import BossError, BossHTTPError
+
+import spdb
 
 
 class BloscParser(BaseParser):
@@ -10,7 +16,7 @@ class BloscParser(BaseParser):
 
     def parse(self, stream, media_type=None, parser_context=None):
         """
-           Uncompressed bytes from a POST that contains blosc compressed matrix data
+           Compressed bytes from a POST that contains blosc compressed matrix data
 
            **Bytes object produced should be C-ordered**
 
@@ -20,9 +26,30 @@ class BloscParser(BaseParser):
         :param parser_context:
         :return:
         """
-        # Decompress and return
-        parser_context['kwargs']
-        return blosc.decompress(stream.read())
+        # Process request and validate
+        try:
+            req = BossRequest(parser_context['request'])
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+#
+        # Convert to Resource
+        resource = spdb.project.BossResourceDjango(req)
+#
+        # Get datatype
+        datatype = resource.get_data_type().lower()
+        if datatype == "uint8":
+            bitdepth = np.uint8
+        elif datatype == "uint32":
+            bitdepth = np.uint32
+        elif datatype == "uint64":
+            bitdepth = np.uint64
+        else:
+            return BossHTTPError(400, "Unsupported datatype provided to parser")
+
+        # Decompress, reshape, and return
+        raw_data = blosc.decompress(stream.read())
+        data_mat = np.fromstring(raw_data, dtype=bitdepth)
+        return np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
 
 
 class BloscPythonParser(BaseParser):

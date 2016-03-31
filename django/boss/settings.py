@@ -178,4 +178,3 @@ BOSS_VERSION = 'v0.3'
 
 # Add SPDB to the python path
 sys.path.append(str(Path(__file__).parents[2]))
-

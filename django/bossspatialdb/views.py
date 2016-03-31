@@ -1,25 +1,31 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import authentication, permissions
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 import blosc
 import numpy as np
 
 from .parsers import BloscParser, BloscPythonParser
 from .renderers import BloscRenderer, BloscPythonRenderer
 
+from django.http import HttpResponse
+
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError
 
-from spdb.project import BossResourceDjango
-from spdb.spatialdb import spatialdb
+import spdb
 
 
 class Cutout(APIView):
     """
     View to handle spatial cutouts by providing all datamodel fields
 
-    * Requires token authentication.
+    * Requires authentication.
     """
+    def __init__(self):
+        super().__init__()
+        self.data_type = None
+
     # TODO: add auth and permissions once user stuff is setup, currently allowing everyone and now auth
     authentication_classes = ()
     permission_classes = (permissions.AllowAny,)
@@ -27,54 +33,11 @@ class Cutout(APIView):
     # Set Parser and Renderer
     # TODO: Look into using a renderer, so you can send data back in multiple formats
     parser_classes = (BloscParser, BloscPythonParser)
-    renderer_classes = (BloscRenderer, BloscPythonRenderer)
-
-    def read_cutout(self, request, resource):
-        """
-        Method to get a cuboid of data from spdb
-
-        :param request: BossRequest
-        :return:
-        """
-        # Get bitdepth of dataset
-        # TODO: Query for datatype
-        numbytes = 8
-
-        # Get Cutout
-        # TODO: Call spdb to get cubes
-        cutout = np.random.random((request.get_x_span(), request.get_y_span(), request.get_z_span()))
-
-        # Compress and return
-        return blosc.compress(cutout, typesize=numbytes)
-
-    def write_cutout(self, data, request):
-        '''
-        Method to write a cutout of data to spdb interface
-
-        :param data:
-        :param request: BossRequest
-        :return:
-        '''
-
-        # Get bitdepth of dataset
-        # TODO: Query for dtype based on datatype of layer
-        datatype = int
-
-        # Format data
-        # TODO: Query for dtype based on datatype of layer
-        data_mat = np.fromstring(data, dtype=datatype)
-        data_mat = np.reshape(data_mat, (request.get_x_span(), request.get_y_span(), request.get_z_span()), order='C')
-
-        # Dice into cuboids
-        # TODO: Dice data into cuboids
-
-        # Write to cache
-        # TODO: Write data to cache
-        print("Would have written {0} bytes to the cache".format(len(data)))
+    renderer_classes = (BloscRenderer, BloscPythonRenderer, JSONRenderer, BrowsableAPIRenderer)
 
     def get(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
         """
-        View to handle GET requests for a cuboit of data while providing all params
+        View to handle GET requests for a cuboid of data while providing all params
 
         :param request: DRF Request object
         :type request: rest_framework.request.Request
@@ -94,19 +57,48 @@ class Cutout(APIView):
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         # Convert to Resource
-        resource = BossResourceDjango(req)
+        resource = spdb.project.BossResourceDjango(req)
 
-        # Get Cutout
-        d = self.read_cutout(req, resource)
+        # Get interface to SPDB cache
+        cache = spdb.spatialdb.SpatialDB()
+
+        # Get the data out of the cache
+        corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
+        extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
+        data = cache.cutout(resource, corner, extent, req.get_resolution())
+
+        self.data_type = resource.get_data_type()
 
         # Return DRF response so content negotiation occurs automatically via renderers
-        return Response(d, status=200)
+        if self.data_type == "uint8":
+            bitdepth = 8
+        elif self.data_type == "uint32":
+            bitdepth = 32
+        elif self.data_type == "uint64":
+            bitdepth = 64
+        else:
+            return BossHTTPError(400, "Unsupported datatype provided to parser")
+
+        # Currently, content negotiation is backed into the view.
+        if request.accepted_media_type == 'application/blosc':
+            # TODO: Look into this extra copy.  Probably can ensure ndarray is c-order when created.
+            if not data.data.flags['C_CONTIGUOUS']:
+                data.data = data.data.copy(order='C')
+            compressed_data = blosc.compress(data.data, typesize=bitdepth)
+
+        else:
+            # TODO: Look into this extra copy.  Probably can ensure ndarray is c-order when created.
+            if not data.data.flags['C_CONTIGUOUS']:
+                data.data = data.data.copy(order='C')
+            compressed_data = blosc.pack_array(data.data)
+
+        return HttpResponse(compressed_data, content_type=request.accepted_media_type)
 
     def post(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
         """
         View to handle POST requests for a cuboid of data while providing all datamodel params
 
-        Cuboid data should be LZ4 compressed bytes
+        Due to parser implementation, request.data should be a numpy array already.
 
         :param request: DRF Request object
         :type request: rest_framework.request.Request
@@ -125,8 +117,15 @@ class Cutout(APIView):
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
-        # Write byte array to spdb interface after reshape and cutout
-        self.write_cutout(request.data, req)
+        # Convert to Resource
+        resource = spdb.project.BossResourceDjango(req)
+
+        # Get interface to SPDB cache
+        cache = spdb.spatialdb.SpatialDB()
+
+        # Write block to cache
+        corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
+        cache.write_cuboid(resource, corner, req.get_resolution(), request.data)
 
         return Response(status=201)
 

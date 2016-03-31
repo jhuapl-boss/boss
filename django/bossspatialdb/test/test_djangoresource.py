@@ -1,15 +1,8 @@
-import blosc
-import numpy as np
-
 from django.conf import settings
-from django.core.urlresolvers import resolve
 from django.http import HttpRequest
 
-from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.request import Request
-
-from ..views import CutoutView, Cutout
 
 from bosscore.request import BossRequest
 
@@ -195,77 +188,3 @@ class TestDjangoResource(APITestCase):
 
         assert resource.get_data_type() == self.request_channel.channel_layer.datatype
         assert resource.get_data_type() == self.request_channel.channel_layer.datatype
-
-
-#class CutoutInterfaceViewTests(APITestCase):
-#    # TODO: Add proper view tests once cache is integrated, currently just making sure you get the right statuscode back
-#
-#    def setUp(self):
-#        """
-#        Initialize the database
-#        :return:
-#        """
-#        setupTestDB.insert_test_data()
-#
-#    def test_full_token_cutout_post(self):
-#        """
-#        Test to make sure posting a block of data returns a 201
-#        :return:
-#        """
-#        a = np.random.randint(0, 100, (5, 6, 2))
-#        h = a.tobytes()
-#        bb = blosc.compress(h, typesize=8)
-#
-#        response = self.client.post('/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2', bb,
-#                                    content_type='application/octet-stream')
-#
-#        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#
-#    def test_view_token_cutout_post(self):
-#        """
-#        Test to make sure posting a block of data returns a 201
-#        :return:
-#        """
-#        a = np.random.randint(0, 100, (5, 6, 2))
-#        h = a.tobytes()
-#        bb = blosc.compress(h, typesize=8)
-#
-#        response = self.client.post('/' + version + '/cutout/2/0:5/0:6/0:2?view=token1', bb,
-#                                    content_type='application/octet-stream')
-#
-#        # TODO: Once views are implemented need to finish test and switch to 200
-#        #self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-#
-#    def test_full_token_cutout_get(self):
-#        """
-#        Test to make sure getting a block of data returns a 200
-#        :return:
-#        """
-#        response = self.client.get('/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2',
-#                                   content_type='application/octet-stream')
-#
-#        self.assertEqual(response.status_code, status.HTTP_200_OK)
-#
-#    def test_view_token_cutout_get(self):
-#        """
-#        Test to make sure getting a block of data returns a 200
-#        :return:
-#        """
-#        response = self.client.get('/' + version + '/cutout/2/0:5/0:6/0:2?view=token1',
-#                                   content_type='application/octet-stream')
-#
-#        # TODO: Once views are implemented need to finish test and switch to 200
-#        #self.assertEqual(response.status_code, status.HTTP_200_OK)
-#        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-#
-#    def test_view_token_cutout_get_missing_token_error(self):
-#        """
-#        Test to make sure you get an error
-#        :return:
-#        """
-#        response = self.client.get('/' + version + '/cutout/2/0:5/0:6/0:2',
-#                                   content_type='application/octet-stream')
-#
-#        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-#

@@ -32,7 +32,7 @@ class SetupTestDB:
                                   experiment_name=exp.name)
 
         channel = ChannelLayer.objects.create(name='channel1', experiment=exp, is_channel=True, default_time_step=0,
-                                              base_resolution=0)
+                                              base_resolution=0, datatype='uint8')
 
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(channel.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + channel.name
@@ -52,7 +52,7 @@ class SetupTestDB:
                                       )
 
         layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False, default_time_step=0,
-                                            base_resolution=0)
+                                            base_resolution=0, datatype='uint64')
 
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(layer.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + layer.name
