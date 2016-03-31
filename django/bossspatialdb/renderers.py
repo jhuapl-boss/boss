@@ -40,11 +40,10 @@ class BloscRenderer(renderers.BaseRenderer):
         #    bitdepth = 64
         #else:
         #    return BossHTTPError(400, "Unsupported datatype provided to parser")
-#
-        ## TODO: Look into this extra copy.  Probably can ensure ndarray is c-order when created.
+
         #if not data.flags['C_CONTIGUOUS']:
         #    data = data.copy(order='C')
-#
+
         #compressed_data = blosc.compress(data, typesize=bitdepth)
         #return Response(compressed_data, content_type='application/blosc')
         pass

@@ -15,10 +15,9 @@ class BloscParser(BaseParser):
     media_type = 'application/blosc'
 
     def parse(self, stream, media_type=None, parser_context=None):
-        """
-           Compressed bytes from a POST that contains blosc compressed matrix data
+        """Method to decompress bytes from a POST that contains blosc compressed matrix data
 
-           **Bytes object produced should be C-ordered**
+           **Bytes object decompressed should be C-ordered**
 
         :param stream: Request stream
         stream type: django.core.handlers.wsgi.WSGIRequest
@@ -54,15 +53,14 @@ class BloscParser(BaseParser):
 
 class BloscPythonParser(BaseParser):
     """
-    Parser that handles blosc compressed binary data
+    Parser that handles blosc compressed binary data in python numpy format
     """
     media_type = 'application/blosc-python'
 
     def parse(self, stream, media_type=None, parser_context=None):
-        """
-           Uncompressed bytes from a POST that contains blosc compressed matrix data
+        """Method to decompress bytes from a POST that contains blosc compressed numpy ndarray
 
-           **Bytes object produced should be C-ordered**
+        Only should be used if data sent was compressed using blosc.pack_array()
 
         :param stream: Request stream
         stream type: django.core.handlers.wsgi.WSGIRequest

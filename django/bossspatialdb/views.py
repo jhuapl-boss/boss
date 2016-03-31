@@ -26,12 +26,8 @@ class Cutout(APIView):
         super().__init__()
         self.data_type = None
 
-    # TODO: add auth and permissions once user stuff is setup, currently allowing everyone and now auth
-    authentication_classes = ()
-    permission_classes = (permissions.AllowAny,)
-
     # Set Parser and Renderer
-    # TODO: Look into using a renderer, so you can send data back in multiple formats
+
     parser_classes = (BloscParser, BloscPythonParser)
     renderer_classes = (BloscRenderer, BloscPythonRenderer, JSONRenderer, BrowsableAPIRenderer)
 
@@ -43,7 +39,7 @@ class Cutout(APIView):
         :type request: rest_framework.request.Request
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
-        :param dataset: Dataset identifier, indicating which dataset or annotation project you want to access
+        :param dataset: Dataset identifier, indicating which channel or layer you want to access
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_range: Python style range indicating the X coordinates of where to post the cuboid (eg. 100:200)
         :param y_range: Python style range indicating the Y coordinates of where to post the cuboid (eg. 100:200)
@@ -69,7 +65,6 @@ class Cutout(APIView):
 
         self.data_type = resource.get_data_type()
 
-        # Return DRF response so content negotiation occurs automatically via renderers
         if self.data_type == "uint8":
             bitdepth = 8
         elif self.data_type == "uint32":
@@ -79,7 +74,7 @@ class Cutout(APIView):
         else:
             return BossHTTPError(400, "Unsupported datatype provided to parser")
 
-        # Currently, content negotiation is backed into the view.
+        # Currently, content negotiation is in the view.
         if request.accepted_media_type == 'application/blosc':
             # TODO: Look into this extra copy.  Probably can ensure ndarray is c-order when created.
             if not data.data.flags['C_CONTIGUOUS']:

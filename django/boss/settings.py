@@ -171,15 +171,15 @@ if not USE_LOCAL:
     aws_mngr = get_aws_manager()
 
 ANONYMOUS_USER_NAME = None
-AUTHENTICATION_BACKENDS = (
+AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend', # this is default
     'guardian.backends.ObjectPermissionBackend',
-)
+]
 
 if not USE_LOCAL:
     # Restrict djangooidc so it is not used during unit tests
     INSTALLED_APPS.append("djangooidc")
-    AUTHENTICATION_BACKENDS.insert(1,'djangooidc.backends.OpenIdConnectBackend')
+    AUTHENTICATION_BACKENDS.insert(1, 'djangooidc.backends.OpenIdConnectBackend')
 
     # bypass the djangooidc provided page and go directly to the keycloak page
     LOGIN_URL = "/openid/openid/KeyCloak"
@@ -214,5 +214,3 @@ REST_FRAMEWORK = {
 # Version that unit tests are being run against
 BOSS_VERSION = 'v0.3'
 
-# Add SPDB to the python path
-sys.path.append(str(Path(__file__).parents[2]))
