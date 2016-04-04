@@ -6,6 +6,9 @@
 # settings.py disables some dependencies when this env variable is set.
 export USING_DJANGO_TESTRUNNER=1
 
+# Disable Dean's integration tests.
+export UNIT_ONLY=1
+
 # Start local DynamoDB.
 java -Djava.library.path=/usr/local/bin/dynamo/DynamoDBLocal_lib/ -jar /usr/local/bin/dynamo/DynamoDBLocal.jar -inMemory &
 
