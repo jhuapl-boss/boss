@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+from .base import *
 
-if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "boss.settings.production")
+"""
+Run the boss with a local MySQL database.
+"""
 
-    from django.core.management import execute_from_command_line
-
-    execute_from_command_line(sys.argv)
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'microns',
+        'USER': 'root',
+        'PASSWORD': 'MICrONS',
+        'HOST': '127.0.0.1',
+        'PORT': 3306,
+    }
+}

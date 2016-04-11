@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import sys
+from .base import *
+from .mysql import *
 
-if __name__ == "__main__":
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "boss.settings.production")
+"""
+Run the boss on a Jenkins CI server.
+"""
 
-    from django.core.management import execute_from_command_line
+INSTALLED_APPS.insert(0, 'django_jenkins')
 
-    execute_from_command_line(sys.argv)
+# Calculate test coverage for apps listed here.
+PROJECT_APPS = [
+    'bosscore',
+    'bossspatialdb',
+]
+
+JENKINS_TASKS = (
+    'django_jenkins.tasks.run_pep8',
+    'django_jenkins.tasks.run_pylint',
+)
