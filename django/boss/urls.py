@@ -12,6 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from django.conf.urls import include, url
+from django.contrib import admin
+from django.conf.urls import include
+from django.conf import settings
+
+from . import views
+>>>>>>> giontc1
+
 """boss URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -43,10 +51,12 @@ urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
     url(r'^test/', views.Test.as_view()),
-    url(r'^openid/', include('djangooidc.urls')),
     url(r'^v0.2/info/', include('bosscore.info_urls', namespace='v0.2')),
     url(r'^v0.2/meta/', include('bosscore.meta_urls', namespace='v0.2')),
     url(r'^v0.3/info/', include('bosscore.info_urls', namespace='v0.3')),
     url(r'^v0.3/meta/', include('bosscore.meta_urls', namespace='v0.3')),
 
 ]
+
+if 'djangooidc' in settings.INSTALLED_APPS:
+    urlpatterns.append(url(r'^openid/', include('djangooidc.urls')))

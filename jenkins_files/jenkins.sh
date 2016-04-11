@@ -7,6 +7,9 @@
 export USING_DJANGO_TESTRUNNER=1
 export DJANGO_SETTINGS_MODULE=boss.settings.jenkins
 
+# Disable Dean's integration tests.
+export UNIT_ONLY=1
+
 # Start local DynamoDB.
 java -Djava.library.path=/usr/local/bin/dynamo/DynamoDBLocal_lib/ -jar /usr/local/bin/dynamo/DynamoDBLocal.jar -inMemory &
 
