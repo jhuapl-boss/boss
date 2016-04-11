@@ -18,7 +18,6 @@ from django.conf.urls import include
 from django.conf import settings
 
 from . import views
->>>>>>> giontc1
 
 """boss URL Configuration
 
