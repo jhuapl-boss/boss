@@ -87,6 +87,63 @@ class CollectionObj(APIView):
             return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
 
 
+class CollectionDetail(APIView):
+    """
+    View to access a collection object
+
+    """
+    def get(self, request, collection):
+        """
+        View to handle GET requests for a Collection
+
+        :param request: DRF Request object
+        :param collection: Collection Name specifying the collection you want to get the meta data for
+        :return:
+        """
+
+        try:
+            collection_obj = Collection.objects.get(name=collection)
+
+            # Check for permissions
+            if request.user.has_perm("view_collection", collection_obj):
+                serializer = CollectionSerializer(collection_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+
+    def put(self, request, collection):
+        """
+        Update a collection using django rest framework
+
+        :param request: DRF Request object
+        :param collection: Collection name
+        :return:
+        """
+        serializer = CollectionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    def delete(self, request, collection):
+        """
+        Delete a collection
+        :param request: DRF Request object
+        :param collection:  Name of collection to delete
+        :return:
+        """
+        try:
+            collection_obj = Collection.objects.get(name=collection)
+            if request.user.has_perm("delete_collection", collection_obj):
+                collection_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+        except Collection.DoesNotExist:
+            return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
+
 class ExperimentObj(APIView):
     """
     View to access an experiment object

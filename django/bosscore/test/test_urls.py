@@ -14,18 +14,20 @@
 
 from rest_framework.test import APITestCase
 from django.core.urlresolvers import resolve
-from ..views import BossMeta
+from ..views import BossMeta, CollectionList, CollectionObj
 
 from django.conf import settings
-version  = settings.BOSS_VERSION
+version = settings.BOSS_VERSION
+
 
 class BossCoreMetaServiceRoutingTests(APITestCase):
 
     def test_meta_urls_resolves_to_BossMeta_views(self):
         """
-        Test to make sure the meta URL for get, post, delete and update with all datamodel\
- params resolves to the meta view
-        :return:
+        Test to make sure the meta URL for get, post, delete and update with all
+        datamodel params resolves to the meta view
+
+        Returns: None
         """
         match = resolve('/' + version + '/meta/col1/')
         self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
@@ -35,3 +37,20 @@ class BossCoreMetaServiceRoutingTests(APITestCase):
 
         match = resolve('/' + version + '/meta/col1/exp1/ch1/')
         self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
+
+
+class BossCoreManageDataRoutingTests(APITestCase):
+
+    def test_manage_data_urls_collection_resolves(self):
+        """
+        Test that all manage_data urls for collections resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/manage-data/collections/')
+        self.assertEqual(match.func.__name__, CollectionList.as_view().__name__)
+
+        match = resolve('/' + version + '/manage-data/col1/')
+        self.assertEqual(match.func.__name__, Col.as_view().__name__)

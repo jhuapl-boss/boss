@@ -50,10 +50,14 @@ urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
     url(r'^test/', views.Test.as_view()),
+
+
     url(r'^v0.2/info/', include('bosscore.info_urls', namespace='v0.2')),
     url(r'^v0.2/meta/', include('bosscore.meta_urls', namespace='v0.2')),
     url(r'^v0.3/info/', include('bosscore.info_urls', namespace='v0.3')),
     url(r'^v0.3/meta/', include('bosscore.meta_urls', namespace='v0.3')),
+
+    url(r'^v0.4/manage-data/', include('bosscore.manage_data_urls', namespace='v0.4')),
 
 ]
 
