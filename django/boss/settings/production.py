@@ -27,6 +27,9 @@ SECRET_KEY = vault.read('secret/endpoint/django', 'secret_key')
 
 DEBUG = False
 
+# ToDo: update with actual allowed host names.
+ALLOWED_HOSTS = ['*']
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
