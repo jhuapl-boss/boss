@@ -434,16 +434,16 @@ class BossRequest:
 
         if self.collection and self.experiment and self.channel_layer:
             boss_key = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR + self.channel_layer.name
-            perm = BossPermissionManager.check_permissions_object(self.request.user,self.channel_layer,
-                                                                  self.request.method,'channellayer')
+            #perm = BossPermissionManager.check_permissions_object(self.request.user,self.channel_layer,
+            #                                                      self.request.method,'channellayer')
         elif self.collection and self.experiment and self.service == 'meta':
             boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
-            perm = BossPermissionManager.check_permissions_object(self.request.user,self.experiment,
-                                                                  self.request.method,'experiment')
+            #perm = BossPermissionManager.check_permissions_object(self.request.user,self.experiment,
+            #                                                      self.request.method,'experiment')
         elif self.collection and self.service == 'meta':
             boss_key = self.collection.name
-            perm = BossPermissionManager.check_permissions_object(self.request.user,self.collection,
-                                                                  self.request.method,'collection')
+            #perm = BossPermissionManager.check_permissions_object(self.request.user,self.collection,
+            #                                                      self.request.method,'collection')
         else:
             return BossHTTPError(404, "Error creating the boss key", 30000)
 
