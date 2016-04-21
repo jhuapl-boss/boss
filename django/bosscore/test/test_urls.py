@@ -69,6 +69,23 @@ class BossCoreManageDataRoutingTests(APITestCase):
         match = resolve('/' + version + '/manage-data/col1/exp1/')
         self.assertEqual(match.func.__name__, ExperimentDetail.as_view().__name__)
 
+    def test_manage_data_urls_channel_layer_resolves(self):
+        """
+        Test that all manage_data urls for experiments resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/manage-data/col1/exp1/channels/')
+        self.assertEqual(match.func.__name__, ChannelList.as_view().__name__)
+
+        match = resolve('/' + version + '/manage-data/col1/exp1/layers/')
+        self.assertEqual(match.func.__name__, LayerList.as_view().__name__)
+
+        match = resolve('/' + version + '/manage-data/col1/exp1/channel1/')
+        self.assertEqual(match.func.__name__, ChannelLayerDetail.as_view().__name__)
+
     def test_manage_data_urls_coordinateframes_resolves(self):
         """
         Test that all manage_data urls for coordinateframes resolves correctly

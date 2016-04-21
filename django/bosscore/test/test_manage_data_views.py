@@ -222,7 +222,6 @@ class ManageDataViewsExperimentTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         collection_id = response.data['id']
-        print(collection_id)
 
         # Get the coordinate frame id
         url = '/' + version + '/manage-data/coordinateframes/cf1'
@@ -349,7 +348,6 @@ class ManageDataViewsExperimentTests(APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
-
 
     def test_delete_experiment_doesnotexist(self):
         """
@@ -525,7 +523,6 @@ class ManageDataViewsCoordinateTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
 
-
     def test_delete_coordinateframe_doesnotexist(self):
         """
         Delete a collection (invalid - The collection does not exist )
@@ -536,3 +533,354 @@ class ManageDataViewsCoordinateTests(APITestCase):
         # Get an existing collection
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
+
+
+class ManageDataViewsChannelTests(APITestCase):
+    """
+    Class to test the manage-data service
+    """
+
+    def setUp(self):
+        """
+        Initialize the database
+
+        """
+
+        dbsetup = setupTestDB()
+        user = dbsetup.create_super_user()
+        dbsetup.set_user(user)
+
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
+
+    def test_get_channel_doesnotexist(self):
+        """
+        Get a Channel that does not exist
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/channel55'
+
+        # Get an existing collection
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_channel_exist(self):
+        """
+        Get a valid experiment
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/channel1/'
+
+        # Get an existing experiment
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], 'channel1')
+
+    def test_post_channel(self):
+        """
+        Post a new channel (valid _ the post has all the required data and does not already exist)
+
+        """
+        # Get the experiment id
+        url = '/' + version + '/manage-data/col1/exp1/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        experiment_id = response.data['id']
+
+        # Post a new channel
+        url = '/' + version + '/manage-data/col1/exp1/channel10/'
+        data = {'description': 'This is a new channel', 'experiment': experiment_id,
+                'is_channel': True, 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_layer_no_experiment(self):
+        """
+        Post a new channel (valid - No experiment in the post data. This is picked up from the request)
+
+        """
+
+        # Post a new channel
+
+        url = '/' + version + '/manage-data/col1/exp1/channel10/'
+        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_exists(self):
+        """
+        Post a new channel (invalid - Collection,experiment, channel already exist)
+
+        """
+        # Get the experiment id
+        url = '/' + version + '/manage-data/col1/exp1/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        experiment_id = response.data['id']
+
+        # Post a new channel
+        url = '/' + version + '/manage-data/col1/exp1/channel1/'
+        data = {'description': 'This is a new channel', 'experiment': experiment_id,
+                'is_channel': True, 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 409)
+
+    def test_put_channel(self):
+        """
+        Update a channel or layer (Valid - The channel exists)
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/channel1'
+        data = {'description': 'A new channel for unit tests. Updated'}
+
+        # Get an existing collection
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_put_channel_doesnotexist(self):
+        """
+        Update a channel that does not exist
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/channel55/'
+        data = {'description': 'A new experiment for unit tests. Updated'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_put_channel_name(self):
+        """
+        Update channel name (valid)
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/channel1/'
+        data = {'name': 'channel10'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_channel(self):
+        """
+        Delete a experiment
+
+        """
+        # Post a new channel
+        url = '/' + version + '/manage-data/col1/exp1/channel10/'
+        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/manage-data/col1/exp1/channel10'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+
+    # TODO (manavpj1) - Set up this unit test
+    # def test_delete_channel_invalid(self):
+    #     """
+    #     Delete a channel (invalid - Violates integrity constraint)
+    #
+    #     """
+    #     url = '/' + version + '/manage-data/col1/exp1/channel1'
+    #
+    #     response = self.client.delete(url)
+    #     self.assertEqual(response.status_code, 404)
+
+    def test_delete_channel_doesnotexist(self):
+        """
+        Delete a channel (invalid - The channel does not exist )
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/channel10'
+
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_channels(self):
+        """
+        Get list of collections
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/channels/'
+
+        # Get an existing collection
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]['name'], 'channel1')
+
+
+class ManageDataViewsLayerTests(APITestCase):
+    """
+    Class to test the manage-data service
+    """
+
+    def setUp(self):
+        """
+        Initialize the database
+
+        """
+
+        dbsetup = setupTestDB()
+        user = dbsetup.create_super_user()
+        dbsetup.set_user(user)
+
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
+
+    def test_get_layer_doesnotexist(self):
+        """
+        Get a Layer that does not exist
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/layer55'
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_layer_exist(self):
+        """
+        Get a valid layer
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/layer1/'
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], 'layer1')
+
+    def test_post_layer(self):
+        """
+        Post a new layer (valid _ the post has all the required data and does not already exist)
+
+        """
+        # Get the experiment id
+        url = '/' + version + '/manage-data/col1/exp1/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        experiment_id = response.data['id']
+
+        # Get channelid
+        url = '/' + version + '/manage-data/col1/exp1/channel1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        channel_id = response.data['id']
+
+        # Post a new channel
+        url = '/' + version + '/manage-data/col1/exp1/layer10/'
+        data = {'description': 'This is a new layer', 'experiment': experiment_id,
+                'is_channel': False, 'datatype': 'uint8',
+                'channels': [1]}
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_layer_no_experiment(self):
+        """
+        Post a new layer (valid - No experiment in the post data. This is picked up from the request)
+
+        """
+
+        # Post a new layer
+
+        url = '/' + version + '/manage-data/col1/exp1/layer10/'
+        data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_layer_exists(self):
+        """
+        Post a new layer (invalid - Collection,experiment, layer already exist)
+
+        """
+        # Get the experiment id
+        url = '/' + version + '/manage-data/col1/exp1/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        experiment_id = response.data['id']
+
+        # Post a new layer
+        url = '/' + version + '/manage-data/col1/exp1/layer1/'
+        data = {'description': 'This is a new layer', 'experiment': experiment_id,
+                'is_channel': True, 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 409)
+
+    def test_put_layer(self):
+        """
+        Update a channel or layer (Valid - The layer exists)
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/layer1'
+        data = {'description': 'A new layer for unit tests. Updated'}
+
+        # Get an existing collection
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_put_layer_doesnotexist(self):
+        """
+        Update a layer that does not exist
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/layer55/'
+        data = {'description': 'A new layer for unit tests. Updated'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_put_layer_name(self):
+        """
+        Update layer name (valid)
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/layer1/'
+        data = {'name': 'layer10'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_layer(self):
+        """
+        Delete a layer
+
+        """
+        # Post a new layer
+        url = '/' + version + '/manage-data/col1/exp1/layer10/'
+        data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/manage-data/col1/exp1/layer10'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+
+    # TODO (manavpj1) - Set up this unit test
+    # def test_delete_channel_invalid(self):
+    #     """
+    #     Delete a channel (invalid - Violates integrity constraint)
+    #
+    #     """
+    #     url = '/' + version + '/manage-data/col1/exp1/channel1'
+    #
+    #     response = self.client.delete(url)
+    #     self.assertEqual(response.status_code, 404)
+
+    def test_delete_channel_doesnotexist(self):
+        """
+        Delete a channel (invalid - The channel does not exist )
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/layer10'
+
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_layers(self):
+        """
+        Get list of layers
+
+        """
+        url = '/' + version + '/manage-data/col1/exp1/layers/'
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]['name'], 'layer1')

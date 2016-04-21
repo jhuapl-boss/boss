@@ -59,9 +59,9 @@ class CoordinateFrame(models.Model):
     z_start = models.IntegerField()
     z_stop = models.IntegerField()
 
-    x_voxel_size = models.FloatField(default=1.0)
-    y_voxel_size = models.FloatField(default=1.0)
-    z_voxel_size = models.FloatField(default=1.0)
+    x_voxel_size = models.FloatField()
+    y_voxel_size = models.FloatField()
+    z_voxel_size = models.FloatField()
 
     VOXEL_UNIT_CHOICES = (
         ('nanometers', 'NANOMETERS'),
@@ -133,7 +133,7 @@ class ChannelLayer(models.Model):
     experiment = models.ForeignKey(Experiment, related_name='channellayer', on_delete=models.PROTECT)
     is_channel = models.BooleanField()
     base_resolution = models.IntegerField(default=0)
-    default_time_step = models.IntegerField()
+    default_time_step = models.IntegerField(default=0)
     DATATYPE_CHOICES = (
         ('uint8', 'UINT8'),
         ('uint16', 'UINT16'),
@@ -141,7 +141,7 @@ class ChannelLayer(models.Model):
         ('uint64', 'UINT64'),
     )
 
-    datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100, blank=True)
+    datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
 
     # channels = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False,
     # related_name='ref_channels')

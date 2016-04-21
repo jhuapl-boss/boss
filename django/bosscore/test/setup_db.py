@@ -65,14 +65,14 @@ class setupTestDB:
                                   experiment_name=exp.name,
                                   channel_layer_name=channel.name
                                   )
-        for time in range(0, max_time + 1):
-            lkup_key = base_lkup_key + '&' + str(time)
-            bs_key = base_bs_key + '&' + str(time)
-            BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key,
-                                      collection_name=col.name,
-                                      experiment_name=exp.name,
-                                      channel_layer_name=channel.name
-                                      )
+        # for time in range(0, max_time + 1):
+        #     lkup_key = base_lkup_key + '&' + str(time)
+        #     bs_key = base_bs_key + '&' + str(time)
+        #     BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key,
+        #                               collection_name=col.name,
+        #                               experiment_name=exp.name,
+        #                               channel_layer_name=channel.name
+        #                               )
 
         layer = ChannelLayer.objects.create(name='layer1', experiment=exp, is_channel=False,
                                             default_time_step=0, creator=self.user, base_resolution=0, datatype='uint8')
@@ -83,14 +83,14 @@ class setupTestDB:
                                   experiment_name=exp.name,
                                   channel_layer_name=channel.name
                                   )
-        for time in range(0, max_time + 1):
-            lkup_key = base_lkup_key + '&' + str(time)
-            bs_key = base_bs_key + '&' + str(time)
-            BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key,
-                                      collection_name=col.name,
-                                      experiment_name=exp.name,
-                                      channel_layer_name=layer.name
-                                      )
+        # for time in range(0, max_time + 1):
+        #     lkup_key = base_lkup_key + '&' + str(time)
+        #     bs_key = base_bs_key + '&' + str(time)
+        #     BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key,
+        #                               collection_name=col.name,
+        #                               experiment_name=exp.name,
+        #                               channel_layer_name=layer.name
+        #                               )
 
     def insert_additional_objects(self):
         max_time = 10

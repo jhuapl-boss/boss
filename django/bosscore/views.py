@@ -29,7 +29,6 @@ from .permissions import BossPermissionManager
 from .request import BossRequest
 
 
-
 class CollectionDetail(APIView):
     """
     View to access a collection object
@@ -270,9 +269,9 @@ class ExperimentDetail(APIView):
 
     @transaction.atomic
     def post(self, request, collection, experiment):
-        """Create a new collection
+        """Create a new experiment
 
-        View to create a new collection and an associated bosskey for that collection
+        View to create a new experiment and an associated bosskey for that experiment
         Args:
             request: DRF Request object
             collection : Collection name
@@ -379,7 +378,165 @@ class ExperimentDetail(APIView):
                                       "it.".format(experiment), 30000)
 
 
-class CollectionList(generics.ListCreateAPIView):
+class ChannelLayerDetail(APIView):
+    """
+    View to access a channel
+
+    """
+
+    def get(self, request, collection, experiment, channel_layer):
+        """
+        Retrieve information about a channel.
+        Args:
+            request: DRF Request object
+            collection: Collection name
+            experiment: Experiment name
+            channel_layer: Channel or Layer name
+
+        Returns :
+        """
+        try:
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
+
+            # Check for permissions
+            if request.user.has_perm("view_channellayer", channel_layer_obj):
+                serializer = ChannelLayerSerializer(channel_layer_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} is not found".format(collection), 30000)
+        except Experiment.DoesNotExist:
+            return BossHTTPError(404, "Experiment  with name {} is not found".format(experiment), 30000)
+        except ChannelLayer.DoesNotExist:
+            return BossHTTPError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
+
+    def post(self, request, collection, experiment, channel_layer):
+        """
+        Post a new Channel
+        Args:
+            request: DRF Request object
+            collection: Collection name
+            experiment: Experiment name
+            channel_layer: Channel or Layer name
+
+        Returns :
+        """
+        # TODO (pmanava1): Apply permissions here
+        channel_layer_data = request.data
+        channel_layer_data['name'] = channel_layer
+
+        try:
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+
+            # Confirm that the experiment for post data and request are the same
+            if 'experiment' in channel_layer_data:
+                if experiment_obj.pk != int(channel_layer_data['experiment']):
+                    return BossHTTPError(404, "The experiment name {} in the request does not match"
+                                              " the experiment in the post data".format(experiment), 30000)
+            else:
+                channel_layer_data['experiment'] = experiment_obj.pk
+
+            serializer = ChannelLayerSerializer(data=channel_layer_data)
+            if serializer.is_valid():
+                serializer.save(creator=self.request.user)
+
+
+
+                channel_layer_obj = ChannelLayer.objects.get(name=channel_layer_data['name'], experiment=experiment_obj)
+
+                # Assign permissions to the users primary group
+                BossPermissionManager.add_permissions_primary_group(self.request.user, channel_layer_obj,
+                                                                    'channellayer')
+
+                # Add Lookup key
+                lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' + str(channel_layer_obj.pk)
+                boss_key = collection_obj.name + '&' + experiment_obj.name + channel_layer_obj.name
+                LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name,
+                                     channel_layer_obj.name)
+
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return BossHTTPError(409, "{}".format(serializer.errors), 30000)
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection with name {} does not exist".format(collection), 30000)
+        except Experiment.DoesNotExist:
+            return BossHTTPError(404, "Experiment with name {} does not exist".format(experiment), 30000)
+        except ValueError:
+            return BossHTTPError(404, "Value Error.Collection id {} in post data needs to "
+                                      "be an integer".format(channel_layer_data['experiment']), 30000)
+
+    def put(self, request, collection, experiment, channel_layer):
+        """
+        Update new Channel or Layer
+        Args:
+            request: DRF Request object
+            collection: Collection name
+            experiment: Experiment name
+            channel_layer: Channel or Layer name
+
+        Returns :
+        """
+        channel_layer_data = request.data
+        channel_layer_data['name'] = channel_layer
+
+        # TODO :Check for permissions
+        try:
+            # Check if the object exists
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
+
+            serializer = ChannelLayerSerializer(channel_layer_obj, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                # TODO (pmanava1) -  Update boss key if the object name is updated?
+                return Response(serializer.data)
+            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+        except Experiment.DoesNotExist:
+            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+        except ChannelLayer.DoesNotExist:
+            return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
+
+    def delete(self, request, collection, experiment, channel_layer):
+        """
+        Delete a Channel
+        Args:
+            request: DRF Request object
+            collection: Collection name
+            experiment: Experiment name
+            channel_layer: Channel or Layer name
+
+        Returns :
+        """
+        try:
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
+
+            # TODO (pmanava1) _ delete bosslookup
+            if request.user.has_perm("delete_channellayer", channel_layer_obj):
+                channel_layer_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+        except Experiment.DoesNotExist:
+            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+        except ChannelLayer.DoesNotExist:
+            return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
+
+
+class CollectionList(generics.ListAPIView):
     """
     List all collections or create a new collection
 
@@ -403,34 +560,34 @@ class CollectionList(generics.ListCreateAPIView):
         serializer = CollectionSerializer(collections, many=True)
         return Response(serializer.data)
 
-    @transaction.atomic
-    def create(self, request, *args, **kwargs):
-        """Create a new collection
-
-        Create a new collection and an associated bosskey for that collection
-        Args:
-            request:
-            *args:
-            **kwargs:
-
-        Returns:
-
-        """
-        col_data = request.data
-        serializer = CollectionSerializer(data=col_data)
-        if serializer.is_valid():
-            serializer.save(creator=self.request.user)
-            collection = Collection.objects.get(name=col_data['name'])
-            # Assign permissions to the users primary group
-            BossPermissionManager.add_permissions_primary_group(self.request.user, collection, 'collection')
-
-            lookup_key = collection.pk
-            boss_key = collection.name
-            LookUpKey.add_lookup(lookup_key, boss_key, collection.name)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # @transaction.atomic
+    # def create(self, request, *args, **kwargs):
+    #     """Create a new collection
+    #
+    #     Create a new collection and an associated bosskey for that collection
+    #     Args:
+    #         request:
+    #         *args:
+    #         **kwargs:
+    #
+    #     Returns:
+    #
+    #     """
+    #     col_data = request.data
+    #     serializer = CollectionSerializer(data=col_data)
+    #     if serializer.is_valid():
+    #         serializer.save(creator=self.request.user)
+    #         collection = Collection.objects.get(name=col_data['name'])
+    #         # Assign permissions to the users primary group
+    #         BossPermissionManager.add_permissions_primary_group(self.request.user, collection, 'collection')
+    #
+    #         lookup_key = collection.pk
+    #         boss_key = collection.name
+    #         LookUpKey.add_lookup(lookup_key, boss_key, collection.name)
+    #
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ExperimentList(generics.ListAPIView):
@@ -485,58 +642,63 @@ class ExperimentList(generics.ListAPIView):
     #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ChannelList(generics.ListCreateAPIView):
+class ChannelList(generics.ListAPIView):
     """
     List all channels
     """
     queryset = ChannelLayer.objects.all()
     serializer_class = ChannelLayerSerializer
 
-    def list(self, request, *args, **kwargs):
+    def list(self,request, collection, experiment, *args, **kwargs):
         """
         Display only objects that a user has access to
         Args:
             request: DRF request
+            collection: Collection Name
+            experiment: Experiment Name
+
             *args:
             **kwargs:
 
         Returns: Channel_Layers that user has view permissions on
 
         """
+        collection_obj = Collection.objects.get(name=collection)
+        experiment_obj = Experiment.objects.get(name=experiment, collection= collection_obj)
         channel_layers = get_objects_for_user(request.user, 'view_channellayer',
-                                              klass=ChannelLayer).filter(is_channel=True)
+                                              klass=ChannelLayer).filter(is_channel=True, experiment=experiment_obj)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
 
-    @transaction.atomic
-    def create(self, request, *args, **kwargs):
-        channel_data = request.data
-        serializer = ChannelSerializer(data=channel_data)
+    # @transaction.atomic
+    # def create(self, request, *args, **kwargs):
+    #     channel_data = request.data
+    #     serializer = ChannelSerializer(data=channel_data)
+    #
+    #     if serializer.is_valid():
+    #         serializer.save(creator=self.request.user)
+    #
+    #         # Create the boss lookup entry
+    #         channel = ChannelLayer.objects.get(name=channel_data['name'])
+    #         experiment = channel.experiment
+    #         collection = experiment.collection
+    #         max_time_sample = experiment.max_time_sample
+    #
+    #         # Assign permissions to the users primary group
+    #         BossPermissionManager.add_permissions_primary_group(self.request.user, channel, 'channellayer')
+    #
+    #         # Create a new bosslookup key
+    #         boss_key = collection.name + '&' + experiment.name + '&' + channel.name
+    #         lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(channel.pk)
+    #         LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, channel.name, max_time_sample)
+    #
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if serializer.is_valid():
-            serializer.save(creator=self.request.user)
 
-            # Create the boss lookup entry
-            channel = ChannelLayer.objects.get(name=channel_data['name'])
-            experiment = channel.experiment
-            collection = experiment.collection
-            max_time_sample = experiment.max_time_sample
-
-            # Assign permissions to the users primary group
-            BossPermissionManager.add_permissions_primary_group(self.request.user, channel, 'channellayer')
-
-            # Create a new bosslookup key
-            boss_key = collection.name + '&' + experiment.name + '&' + channel.name
-            lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(channel.pk)
-            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, channel.name, max_time_sample)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class LayerList(generics.ListCreateAPIView):
+class LayerList(generics.ListAPIView):
     """
     List all layers
     """
@@ -559,31 +721,31 @@ class LayerList(generics.ListCreateAPIView):
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
 
-    @transaction.atomic
-    def create(self, request, *args, **kwargs):
-        layer_data = request.data
-        serializer = LayerSerializer(data=layer_data)
-
-        if serializer.is_valid():
-            serializer.save(creator=self.request.user)
-
-            # Create the boss lookup entry
-            layer = ChannelLayer.objects.get(name=layer_data['name'])
-            experiment = layer.experiment
-            collection = experiment.collection
-            max_time_sample = experiment.max_time_sample
-
-            # Assign permissions to the users primary group
-            BossPermissionManager.add_permissions_primary_group(self.request.user, layer, 'channellayer')
-
-            boss_key = collection.name + '&' + experiment.name + '&' + layer.name
-            lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(layer.pk)
-            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, layer.name, max_time_sample)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # @transaction.atomic
+    # def create(self, request, *args, **kwargs):
+    #     layer_data = request.data
+    #     serializer = LayerSerializer(data=layer_data)
+    #
+    #     if serializer.is_valid():
+    #         serializer.save(creator=self.request.user)
+    #
+    #         # Create the boss lookup entry
+    #         layer = ChannelLayer.objects.get(name=layer_data['name'])
+    #         experiment = layer.experiment
+    #         collection = experiment.collection
+    #         max_time_sample = experiment.max_time_sample
+    #
+    #         # Assign permissions to the users primary group
+    #         BossPermissionManager.add_permissions_primary_group(self.request.user, layer, 'channellayer')
+    #
+    #         boss_key = collection.name + '&' + experiment.name + '&' + layer.name
+    #         lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(layer.pk)
+    #         LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, layer.name, max_time_sample)
+    #
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CoordinateFrameList(generics.ListCreateAPIView):
@@ -752,4 +914,3 @@ class BossMeta(APIView):
         mdb = metadb.MetaDB()
         mdb.update_meta(lookup_key[0], mkey, value)
         return HttpResponse(status=201)
-

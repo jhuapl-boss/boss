@@ -83,7 +83,7 @@ class BossRequest:
         if service == 'meta' or service == 'manage-data':
             self.core_service = True
 
-        if service == 'meta' or service == 'manage-data':
+        if self.core_service:
             # The meta data service has different requirements from the cutout
 
             m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel_layer>\w+)?/?", webargs)
@@ -97,7 +97,7 @@ class BossRequest:
 
             if self.collection:
                 self.set_boss_key()
-
+                # Meta service requirements
                 if 'key' in request.query_params:
                     self.set_key(request.query_params['key'])
                 if 'value' in request.query_params:
