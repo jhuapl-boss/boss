@@ -45,19 +45,19 @@ from . import views
 urlpatterns = [
     url(r'^api-auth/', include('rest_framework.urls',namespace='rest_framework')),
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^v0.2/cutout/', include('bossspatialdb.urls', namespace='v0.2')),
-    url(r'^v0.3/cutout/', include('bossspatialdb.urls', namespace='v0.3')),
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
     url(r'^test/', views.Test.as_view()),
 
-
-    url(r'^v0.2/info/', include('bosscore.info_urls', namespace='v0.2')),
-    url(r'^v0.2/meta/', include('bosscore.meta_urls', namespace='v0.2')),
+    # API version 0.3
+    url(r'^v0.3/cutout/', include('bossspatialdb.urls', namespace='v0.3')),
     url(r'^v0.3/info/', include('bosscore.info_urls', namespace='v0.3')),
     url(r'^v0.3/meta/', include('bosscore.meta_urls', namespace='v0.3')),
 
+    # API version 0.4
+    url(r'^v0.4/meta/', include('bosscore.meta_urls', namespace='v0.4')),
     url(r'^v0.4/manage-data/', include('bosscore.manage_data_urls', namespace='v0.4')),
+    url(r'^v0.4/cutout/', include('bossspatialdb.urls', namespace='v0.4')),
 
 ]
 

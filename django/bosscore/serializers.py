@@ -26,9 +26,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CoordinateFrameSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='pk')
+
     class Meta:
         model = CoordinateFrame
-        fields = ('name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
+        fields = ('id', 'name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
                   'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit')
 
 
@@ -48,38 +50,41 @@ class NameOnlySerializer(serializers.ModelSerializer):
 
 
 class ChannelSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='pk')
     linked_channel_layers = NameOnlySerializer(many=True, read_only=True)
     is_channel = serializers.BooleanField(default=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
         model = ChannelLayer
-        fields = ('name', 'description', 'experiment', 'is_channel', 'default_time_step',
-                  'base_resolution', 'datatype', 'linked_channel_layers','creator')
+        fields = ('id', 'name', 'description', 'experiment', 'is_channel', 'default_time_step',
+                  'base_resolution', 'datatype', 'linked_channel_layers', 'creator')
 
 
 class LayerSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='pk')
     linked_channel_layers = NameOnlySerializer(many=True, read_only=True)
     is_channel = serializers.BooleanField(default=False, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
         model = ChannelLayer
-        fields = ('name', 'description', 'is_channel', 'experiment', 'default_time_step',
+        fields = ('id', 'name', 'description', 'is_channel', 'experiment', 'default_time_step',
                   'base_resolution', 'datatype', 'linked_channel_layers', 'creator')
 
 
 class ChannelLayerSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='pk')
     creator = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
         model = ChannelLayer
-        fields = ('name', 'description', 'experiment', 'is_channel', 'default_time_step', 'datatype',
+        fields = ('id', 'name', 'description', 'experiment', 'is_channel', 'default_time_step', 'datatype',
                   'base_resolution', 'linked_channel_layers', 'creator')
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
-
+    id = serializers.ReadOnlyField(source='pk')
     channel_layers = ChannelLayerSerializer(many=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 
@@ -90,26 +95,26 @@ class ExperimentSerializer(serializers.ModelSerializer):
             fields['collection'].queryset = collections
         return fields
 
-
     class Meta:
         model = Experiment
-        fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
+        fields = ('id', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
                   'max_time_sample', 'channel_layers', 'creator')
 
 
 class CollectionSerializer(serializers.ModelSerializer):
-
+    id = serializers.ReadOnlyField(source='pk')
     experiments = ExperimentSerializer(many=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
         model = Collection
-        fields = ('name', 'description', 'experiments', 'creator')
-        depth=1
+        fields = ('id', 'name', 'description', 'experiments', 'creator')
+        depth = 1
 
 
 class BossLookupSerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='pk')
 
     class Meta:
         model = BossLookup
-        fields = ('lookup_key', 'boss_key', 'collection_name', 'experiment_name', 'channel_layer_name')
+        fields = ('id', 'lookup_key', 'boss_key', 'collection_name', 'experiment_name', 'channel_layer_name')

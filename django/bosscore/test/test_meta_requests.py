@@ -24,6 +24,8 @@ from rest_framework.test import APIClient
 
 
 from django.conf import settings
+from django.contrib.auth.models import User
+
 version  = settings.BOSS_VERSION
 
 class BossCoreMetaRequestTests(APITestCase):
@@ -37,8 +39,16 @@ class BossCoreMetaRequestTests(APITestCase):
         :return:
         """
         self.rf = APIRequestFactory()
-        setupTestDB.insert_test_data()
-        self.user = User.objects.get(username='testuser')
+
+        self.user=User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        dbsetup = setupTestDB()
+        dbsetup.set_user(self.user)
+
+        self.client.force_login(self.user)
+        dbsetup.insert_test_data()
+
+
+
 
 
 

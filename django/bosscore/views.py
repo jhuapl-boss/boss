@@ -17,74 +17,17 @@ from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework import status
-from django.db import IntegrityError, transaction
+from django.db import transaction
+from guardian.shortcuts import get_objects_for_user
+from django.db.models.deletion import ProtectedError
 
 from .serializers import *
 from .lookup import LookUpKey
 from .error import BossError, BossHTTPError
-
 from . import metadb
 from .permissions import BossPermissionManager
 from .request import BossRequest
-from django.contrib.auth.models import User,Group
-from guardian.shortcuts import assign_perm,get_perms
-from guardian.shortcuts import get_objects_for_user, get_user_perms
-from bosscore.models import Collection
 
-
-class CollectionObj(APIView):
-    """
-    View to access a collection object
-
-    """
-    def get(self, request, collection):
-        """
-        View to handle GET requests for a Collection
-
-        :param request: DRF Request object
-        :param collection: Collection Name specifying the collection you want to get the meta data for
-        :return:
-        """
-        try:
-            collection_obj = Collection.objects.get(name=collection)
-            if request.user.has_perm("view_collection", collection_obj):
-                serializer = CollectionSerializer(collection_obj)
-                return Response(serializer.data)
-            else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
-        except Collection.DoesNotExist:
-            return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
-
-    def post(self, request, collection):
-        """
-        Post a new collection using django rest framework
-
-        :param request: DRF Request object
-        :param collection: Collection name
-        :return:
-        """
-        serializer = CollectionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    def delete(self, request, collection):
-        """
-        Delete a collection
-        :param request: DRF Request object
-        :param collection:  Name of collection to delete
-        :return:
-        """
-        try:
-            collection_obj = Collection.objects.get(name=collection)
-            if request.user.has_perm("delete_collection", collection_obj):
-                collection_obj.delete()
-                return HttpResponse(status=204)
-            else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
-        except Collection.DoesNotExist:
-            return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
 
 
 class CollectionDetail(APIView):
@@ -94,10 +37,10 @@ class CollectionDetail(APIView):
     """
     def get(self, request, collection):
         """
-        View to handle GET requests for a Collection
+        View to handle GET requests for a single instance of a collection
 
         :param request: DRF Request object
-        :param collection: Collection Name specifying the collection you want to get the meta data for
+        :param collection: Collection name specifying the collection you want
         :return:
         """
 
@@ -113,6 +56,39 @@ class CollectionDetail(APIView):
         except Collection.DoesNotExist:
             return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
 
+    @transaction.atomic
+    def post(self, request, collection):
+        """Create a new collection
+
+        View to create a new collection and an associated bosskey for that collection
+        Args:
+            request: DRF Request object
+            collection : Collection name
+        Returns:
+
+        """
+
+        # TODO (pmanava1): Apply permissions here
+        col_data = request.data
+        col_data['name'] = collection
+
+        serializer = CollectionSerializer(data=col_data)
+        if serializer.is_valid():
+            serializer.save(creator=self.request.user)
+            collection = Collection.objects.get(name=col_data['name'])
+
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, collection, 'collection')
+
+            lookup_key = collection.pk
+            boss_key = collection.name
+            LookUpKey.add_lookup(lookup_key, boss_key, collection.name)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return BossHTTPError(409, "{}".format(serializer.errors), 30000)
+
+    @transaction.atomic
     def put(self, request, collection):
         """
         Update a collection using django rest framework
@@ -121,12 +97,25 @@ class CollectionDetail(APIView):
         :param collection: Collection name
         :return:
         """
-        serializer = CollectionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+        col_data = request.data
+        col_data['name'] = collection
+        # TODO :Check for permissions
+        try:
+            # Check if the object exists
+            collection_obj = Collection.objects.get(name=collection)
 
+            serializer = CollectionSerializer(collection_obj, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+
+                # TODO (pmanava1) -  Update boss key if the object name is updated?
+                return Response(serializer.data)
+            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+
+    @transaction.atomic
     def delete(self, request, collection):
         """
         Delete a collection
@@ -138,135 +127,256 @@ class CollectionDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             if request.user.has_perm("delete_collection", collection_obj):
                 collection_obj.delete()
+
+                # delete the lookup key for this object
+                LookUpKey.delete_lookup_key(collection, None, None)
                 return HttpResponse(status=204)
             else:
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except Collection.DoesNotExist:
-            return HttpResponseBadRequest("[ERROR]- Collection  with name {} not found".format(collection))
+            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+        except ProtectedError:
+            return BossHTTPError(404, "Cannot delete {}. It has experiments that reference it.".format(collection),
+                                 30000)
 
-class ExperimentObj(APIView):
+
+class CoordinateFrameDetail(APIView):
     """
-    View to access an experiment object
+    View to access a collection object
 
     """
+    def get(self, request, coordframe):
+        """
+        View to handle GET requests for a single instance of a coordinateframe
 
+        :param request: DRF Request object
+        :param coordframe: Coordinate frame name specifying the coordinate frame you want
+        :return:
+        """
+        try:
+            coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
+            # Check for permissions
+            if request.user.has_perm("view_coordinateframe", coordframe_obj):
+                serializer = CoordinateFrameSerializer(coordframe_obj)
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+        except CoordinateFrame.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(coordframe), 30000)
+
+    @transaction.atomic
+    def post(self, request, coordframe):
+        """Create a new coordinate frame
+
+        View to create a new coordinate frame
+        Args:
+            request: DRF Request object
+            coordframe : Coordinate frame name
+        Returns:
+
+        """
+        # TODO (pmanava1): Apply permissions here
+        coordframe_data = request.data
+        coordframe_data['name'] = coordframe
+
+        serializer = CoordinateFrameSerializer(data=coordframe_data)
+        if serializer.is_valid():
+            serializer.save(creator=self.request.user)
+            coordframe_obj = CoordinateFrame.objects.get(name=coordframe_data['name'])
+
+            # Assign permissions to the users primary group
+            BossPermissionManager.add_permissions_primary_group(self.request.user, coordframe_obj, 'coordinateframe')
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return BossHTTPError(409, "{}".format(serializer.errors), 30000)
+
+    @transaction.atomic
+    def put(self, request, coordframe):
+        """
+        Update a coordinate frame using django rest framework
+
+        :param request: DRF Request object
+        :param coordframe: Coordinate frame name
+        :return:
+        """
+        coordframe_data = request.data
+        coordframe_data['name'] = coordframe
+        # TODO :Check for permissions
+        try:
+            # Check if the object exists
+            coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
+            serializer = CoordinateFrameSerializer(coordframe_obj, data=request.data, partial=True)
+            if serializer.is_valid():
+
+                serializer.save()
+                return Response(serializer.data)
+            else:
+                return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+
+        except CoordinateFrame.DoesNotExist:
+            return BossHTTPError(404, "Coordinate frame  with name {} not found".format(coordframe), 30000)
+
+    @transaction.atomic
+    def delete(self, request, coordframe):
+        """
+        Delete a coordinate frame
+        :param request: DRF Request object
+        :param coordframe:  Name of coordinateframe to delete
+        :return:
+        """
+        try:
+            coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
+            if request.user.has_perm("delete_coordinateframe", coordframe_obj):
+                coordframe_obj.delete()
+                return HttpResponse(status=204)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+        except CoordinateFrame.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(coordframe), 30000)
+        except ProtectedError:
+            return BossHTTPError(404, "Cannot delete {}. It has experiments that reference it.".format(coordframe),
+                                 30000)
+
+
+class ExperimentDetail(APIView):
+    """
+    View to access a collection object
+
+    """
     def get(self, request, collection, experiment):
         """
-        Retrieve information about a experiment.
-        :param request: DRF Request object
-        :param collection: Collection name
-        :param experiment: Experiment name
-        :return:
+        View to handle GET requests for a single instance of a experimen
+
+        Args:
+            request: DRF Request object
+            collection: Collection name specifying the collection you want
+            experiment: Experiment name specifying the experiment instance
+        Returns :
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            # Check for permissions
             if request.user.has_perm("view_experiment", experiment_obj):
                 serializer = ExperimentSerializer(experiment_obj)
                 return Response(serializer.data)
             else:
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
-        except (Collection.DoesNotExist, Experiment.DoesNotExist):
-            return HttpResponse(status=404)
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+        except Experiment.DoesNotExist:
+            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
 
+    @transaction.atomic
     def post(self, request, collection, experiment):
-        """
-        Post  a new experiment
-        :param request: DRF Request object
-        :param collection: Collection name
-        :param experiment: Experiment name
-        :return:
-        """
-        serializer = ExperimentSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
+        """Create a new collection
 
+        View to create a new collection and an associated bosskey for that collection
+        Args:
+            request: DRF Request object
+            collection : Collection name
+            experiment : Experiment name
+        Returns:
+
+        """
+
+        # TODO (pmanava1): Apply permissions here
+        experiment_data = request.data
+        experiment_data['name'] = experiment
+        try:
+            collection_obj = Collection.objects.get(name=collection)
+
+            # Confirm that the collection for post data and request are the same
+            if 'collection' in experiment_data:
+                if collection_obj.pk != int(experiment_data['collection']):
+                    return BossHTTPError(404, "The collection name {} in the request does not match"
+                                              " the collection in the post data".format(collection), 30000)
+            else:
+                experiment_data['collection'] = collection_obj.pk
+
+            serializer = ExperimentSerializer(data=experiment_data)
+            if serializer.is_valid():
+                serializer.save(creator=self.request.user)
+                experiment_obj = Experiment.objects.get(name=experiment_data['name'])
+
+                # Assign permissions to the users primary group
+                BossPermissionManager.add_permissions_primary_group(self.request.user, experiment_obj, 'experiment')
+
+                lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk)
+                boss_key = collection_obj.name + '&' + experiment_obj.name
+                LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name)
+
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            else:
+                return BossHTTPError(409, "{}".format(serializer.errors), 30000)
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection with name {} does not exist".format(collection), 30000)
+        except ValueError:
+            return BossHTTPError(404, "Value Error.Collection id {} in post data needs to "
+                                      "be an integer".format(experiment_data['collection']), 30000)
+
+    @transaction.atomic
+    def put(self, request, collection, experiment):
+        """
+        Update a experiment using django rest framework
+
+        Args:
+            request: DRF Request object
+            collection: Collection name
+            experiment : Experiment name for the new experiment
+
+        Returns:
+        """
+        experiment_data = request.data
+        experiment_data['name'] = experiment
+
+        # TODO :Check for permissions
+        try:
+            # Check if the object exists
+            collection_obj = Collection.objects.get(name=collection)
+            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+
+            serializer = ExperimentSerializer(experiment_obj, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                # TODO (pmanava1) -  Update boss key if the object name is updated?
+                return Response(serializer.data)
+            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+        except Experiment.DoesNotExist:
+            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+
+    @transaction.atomic
     def delete(self, request, collection, experiment):
         """
-        Delete an experiment object given the collection and experiment name
-        :param request: DRF Request object
-        :param collection: Collection Name
-        :param experiment: Experiment Name
-        :return:
+        Delete a experiment
+        Args:
+            request: DRF Request object
+            collection:  Name of collection
+            experiment: Experiment name to delete
+        Returns:
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             if request.user.has_perm("delete_experiment", experiment_obj):
                 experiment_obj.delete()
+
+                # delete the lookup key for this object
+                LookUpKey.delete_lookup_key(collection, experiment, None)
                 return HttpResponse(status=204)
             else:
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
-        except (Collection.DoesNotExist, Experiment.DoesNotExist):
-            return HttpResponse(status=404)
-
-
-class ChannelLayerObj(APIView):
-    """
-    View to access a channel
-
-    """
-
-    def get(self, request, collection, experiment, channel_layer):
-        """
-        Retrieve information about a channel.
-        :param request: DRF Request object
-        :param collection: Collection name
-        :param experiment: Experiment name
-        :param channel_layer: Channel or Layer name
-        :return:
-        """
-
-        try:
-            collection_obj = Collection.objects.get(name=collection)
-            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
-            if request.user.has_perm("view_channellayer", channel_layer_obj):
-                serializer = ChannelLayerSerializer(channel_layer_obj)
-                return Response(serializer.data)
-            else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
-        except (Collection.DoesNotExist, Experiment.DoesNotExist, ChannelLayer.DoesNotExist):
-            return HttpResponse(status=404)
-
-    def post(self, request, collection, experiment, channel_layer):
-        """
-        Post a new Channel
-        :param request: DRF Request object
-        :param collection: Collection
-        :param experiment: Experiment
-        :param channel_layer: Channel or Layer
-        :return:
-        """
-        serializer = ChannelLayerSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    def delete(self, request, collection, experiment, channel_layer):
-        """
-        Delete a Channel
-        :param request: DRF Request object
-        :param collection: Collection
-        :param experiment: Experiment
-        :param channel_layer: Channel or Layer
-        :return:
-        """
-        try:
-            collection_obj = Collection.objects.get(name=collection)
-            experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
-            if request.user.has_perm("delete_channellayer", channel_layer_obj):
-                channel_layer_obj.delete()
-                return HttpResponse(status=204)
-            else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
-
-        except (Collection.DoesNotExist, Experiment.DoesNotExist):
-            return HttpResponse(status=404)
+        except Collection.DoesNotExist:
+            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+        except Experiment.DoesNotExist:
+            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+        except ProtectedError:
+            return BossHTTPError(404, "Cannot delete {}. It has channels or layers that reference "
+                                      "it.".format(experiment), 30000)
 
 
 class CollectionList(generics.ListCreateAPIView):
@@ -312,7 +422,7 @@ class CollectionList(generics.ListCreateAPIView):
             serializer.save(creator=self.request.user)
             collection = Collection.objects.get(name=col_data['name'])
             # Assign permissions to the users primary group
-            BossPermissionManager.add_permissions_primary_group(self.request.user, collection,'collection')
+            BossPermissionManager.add_permissions_primary_group(self.request.user, collection, 'collection')
 
             lookup_key = collection.pk
             boss_key = collection.name
@@ -323,7 +433,7 @@ class CollectionList(generics.ListCreateAPIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class ExperimentList(generics.ListCreateAPIView):
+class ExperimentList(generics.ListAPIView):
     """
     List all experiments
     """
@@ -331,45 +441,48 @@ class ExperimentList(generics.ListCreateAPIView):
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, collection,  *args, **kwargs):
         """
-        Display only objects that a user has access to
+        return experiments for the collection that the user has permissions for
         Args:
             request: DRF request
+            collection : Collection name
             *args:
             **kwargs:
 
         Returns: Experiments that user has view permissions on
 
         """
-        experiments = get_objects_for_user(request.user, 'view_experiment', klass=Experiment)
+        collection_obj = Collection.objects.get(name=collection)
+        all_experiments = get_objects_for_user(request.user, 'view_experiment', klass=Experiment)
+        experiments = all_experiments.filter(collection=collection_obj)
         serializer = ExperimentSerializer(experiments, many=True)
         return Response(serializer.data)
 
-    @transaction.atomic
-    def create(self, request, *args, **kwargs):
-        exp_data = request.data
-        serializer = ExperimentSerializer(data=exp_data)
-
-        if serializer.is_valid():
-            serializer.save(creator=self.request.user)
-
-            # Create the boss lookup entry
-            experiment = Experiment.objects.get(name=exp_data['name'])
-            collection = experiment.collection
-            # TODO - Since we are only showing collections that we have access to, we do not need to check for
-            # permissions on the collection object
-
-            # Assign permissions to the users primary group
-            BossPermissionManager.add_permissions_primary_group(self.request.user, experiment, 'experiment')
-
-            boss_key = collection.name + '&' + experiment.name
-            lookup_key = str(collection.pk) + '&' + str(experiment.pk)
-            LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # @transaction.atomic
+    # def create(self, request, *args, **kwargs):
+    #     exp_data = request.data
+    #     serializer = ExperimentSerializer(data=exp_data)
+    #
+    #     if serializer.is_valid():
+    #         serializer.save(creator=self.request.user)
+    #
+    #         # Create the boss lookup entry
+    #         experiment = Experiment.objects.get(name=exp_data['name'])
+    #         collection = experiment.collection
+    #         # TODO - Since we are only showing collections that we have access to, we do not need to check for
+    #         # permissions on the collection object
+    #
+    #         # Assign permissions to the users primary group
+    #         BossPermissionManager.add_permissions_primary_group(self.request.user, experiment, 'experiment')
+    #
+    #         boss_key = collection.name + '&' + experiment.name
+    #         lookup_key = str(collection.pk) + '&' + str(experiment.pk)
+    #         LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name)
+    #
+    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #     else:
+    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChannelList(generics.ListCreateAPIView):
@@ -639,3 +752,4 @@ class BossMeta(APIView):
         mdb = metadb.MetaDB()
         mdb.update_meta(lookup_key[0], mkey, value)
         return HttpResponse(status=201)
+

@@ -23,6 +23,7 @@ import unittest
 
 
 from django.conf import settings
+from django.contrib.auth.models import User
 version  = settings.BOSS_VERSION
 
 # Get the table name from boss.config
@@ -40,7 +41,16 @@ class MetaServiceViewTestsMixin(object):
         Initialize the  database with a some objects to test
         :return:
         """
-        setupTestDB.insert_test_data()
+        """
+            Initialize the database
+            :return:
+            """
+        user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        dbsetup = setupTestDB()
+        dbsetup.set_user(user)
+
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
 
     def test_meta_data_service_collection(self):
         """

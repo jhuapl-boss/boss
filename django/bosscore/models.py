@@ -24,7 +24,8 @@ class Collection(models.Model):
     """
     Object representing a Boss Collection
     """
-    name = models.CharField(max_length=255, verbose_name="Name of the Collection",validators=[NameValidator()])
+    name = models.CharField(max_length=255, verbose_name="Name of the Collection",
+                            validators=[NameValidator()],unique=True)
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='collections')
 
@@ -46,9 +47,10 @@ class CoordinateFrame(models.Model):
     Coordinate Frame for Boss Experiments
 
     """
-    name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame",validators=[NameValidator()])
+    name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame",
+                            validators=[NameValidator()], unique = True)
     description = models.CharField(max_length=4096, blank=True)
-    #creator = models.ForeignKey('auth.User', related_name='coordinateframes')
+    creator = models.ForeignKey('auth.User', related_name='coordinateframes')
 
     x_start = models.IntegerField()
     x_stop = models.IntegerField()
@@ -80,6 +82,10 @@ class CoordinateFrame(models.Model):
     class Meta:
         db_table = u"coordinate_frame"
 
+        permissions = (
+            ('view_coordinateframe', 'Can view coordinate frame'),
+        )
+
     def __str__(self):
         return self.name
 
@@ -88,12 +94,12 @@ class Experiment(models.Model):
     """
     Object representing a BOSS experiment
     """
-    collection = models.ForeignKey(Collection, related_name='experiments')
+    collection = models.ForeignKey(Collection, related_name='experiments', on_delete = models.PROTECT)
     name = models.CharField(max_length=255, verbose_name="Name of the Experiment",validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='experiment')
 
-    coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord')
+    coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord', on_delete = models.PROTECT)
     num_hierarchy_levels = models.IntegerField(default=0)
 
     HIERARCHY_METHOD_CHOICES = (
@@ -106,6 +112,7 @@ class Experiment(models.Model):
 
     class Meta:
         db_table = u"experiment"
+        unique_together = ('collection', 'name')
         permissions = (
             ('view_experiment', 'Can view experiment'),
         )
@@ -123,7 +130,7 @@ class ChannelLayer(models.Model):
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='ChannelLayer')
 
-    experiment = models.ForeignKey(Experiment, related_name='channellayer')
+    experiment = models.ForeignKey(Experiment, related_name='channellayer', on_delete=models.PROTECT)
     is_channel = models.BooleanField()
     base_resolution = models.IntegerField(default=0)
     default_time_step = models.IntegerField()
@@ -143,6 +150,7 @@ class ChannelLayer(models.Model):
 
     class Meta:
         db_table = u"channel_layer"
+        unique_together = ('experiment', 'name')
         permissions = (
             ('view_channellayer', 'Can view channel or layer'),
         )
@@ -179,6 +187,7 @@ class BossLookup(models.Model):
 
     class Meta:
         db_table = u"lookup"
+        unique_together = ('lookup_key', 'boss_key')
 
     def __str__(self):
         return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key,self. boss_key)

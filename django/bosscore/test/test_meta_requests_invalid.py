@@ -21,6 +21,7 @@ from .setup_db import setupTestDB
 from ..error import BossError
 
 from django.conf import settings
+from django.contrib.auth.models import User
 
 version = settings.BOSS_VERSION
 
@@ -50,7 +51,13 @@ class BossCoreMetaRequestTests(APITestCase):
         #
         # channel = ChannelLayer.objects.create(name='channel2', experiment=exp, is_channel=True, default_time_step=1)
         # layer = ChannelLayer.objects.create(name='layer2', experiment=exp, is_channel=False, default_time_step=1)
-        setupTestDB.insert_test_data()
+
+        user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        dbsetup = setupTestDB()
+        dbsetup.set_user(user)
+
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
     def test_bossrequest_collection_not_found(self):
         """
         Test initialization of requests with a collection that does not exist

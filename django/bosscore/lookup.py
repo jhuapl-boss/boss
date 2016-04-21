@@ -14,6 +14,7 @@
 
 from .serializers import BossLookupSerializer
 from .models import BossLookup
+from .error import BossError
 
 
 class LookUpKey:
@@ -70,3 +71,32 @@ class LookUpKey:
         """
         lookup_obj = BossLookup.objects.get(boss_key=bkey)
         return lookup_obj
+
+    @staticmethod
+    def delete_lookup_key(collection,experiment=None,channel_layer=None):
+        """
+        Delete a lookupkey for a specific bosskey
+
+        Args:
+            bkey : Bosskey to be deleted
+        Returns:
+
+        """
+
+        try:
+            if channel_layer and experiment and collection:
+                lookup_objs = BossLookup.objects.get(collection_name=collection, experiment_name=experiment,
+                                                     channel_layer_name=channel_layer)
+                for lookup in lookup_objs:
+                    lookup.delete()
+            elif experiment and collection:
+                lookup_obj = BossLookup.objects.get(collection_name=collection, experiment_name=experiment)
+                lookup_obj.delete()
+            elif collection:
+                lookup_obj = BossLookup.objects.get(collection_name=collection)
+                lookup_obj.delete()
+            else:
+                raise BossError(404, "Cannot delete lookupkey", 30000)
+
+        except BossLookup.DoesNotExist:
+            raise BossError(404, "Cannot find a lookup key for bosskey", 30000)

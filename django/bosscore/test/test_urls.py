@@ -14,7 +14,7 @@
 
 from rest_framework.test import APITestCase
 from django.core.urlresolvers import resolve
-from ..views import BossMeta, CollectionList, CollectionObj
+from bosscore.views import *
 
 from django.conf import settings
 version = settings.BOSS_VERSION
@@ -53,4 +53,32 @@ class BossCoreManageDataRoutingTests(APITestCase):
         self.assertEqual(match.func.__name__, CollectionList.as_view().__name__)
 
         match = resolve('/' + version + '/manage-data/col1/')
-        self.assertEqual(match.func.__name__, Col.as_view().__name__)
+        self.assertEqual(match.func.__name__, CollectionDetail.as_view().__name__)
+
+    def test_manage_data_urls_experiment_resolves(self):
+        """
+        Test that all manage_data urls for experiments resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/manage-data/col1/experiments')
+        self.assertEqual(match.func.__name__, ExperimentList.as_view().__name__)
+
+        match = resolve('/' + version + '/manage-data/col1/exp1/')
+        self.assertEqual(match.func.__name__, ExperimentDetail.as_view().__name__)
+
+    def test_manage_data_urls_coordinateframes_resolves(self):
+        """
+        Test that all manage_data urls for coordinateframes resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/manage-data/coordinateframes')
+        self.assertEqual(match.func.__name__, CoordinateFrameList.as_view().__name__)
+
+        match = resolve('/' + version + '/manage-data/coordinateframes/cf1/')
+        self.assertEqual(match.func.__name__, CoordinateFrameDetail.as_view().__name__)

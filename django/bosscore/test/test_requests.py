@@ -19,6 +19,8 @@ from rest_framework.request import Request
 from ..request import BossRequest
 from ..models import *
 from django.conf import settings
+from django.contrib.auth.models import User
+
 version  = settings.BOSS_VERSION
 from .setup_db import setupTestDB
 
@@ -30,11 +32,15 @@ class BossCoreRequestTests(APITestCase):
 
     def setUp(self):
         """
-        Initialize the database
-        :return:
+            Initialize the database
+            :return:
         """
-        setupTestDB.insert_test_data()
+        user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        dbsetup = setupTestDB()
+        dbsetup.set_user(user)
 
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
 
     def test_request_cutout_init_channel(self):
         """

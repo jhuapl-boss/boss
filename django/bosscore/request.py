@@ -71,15 +71,19 @@ class BossRequest:
         # Make this private?
         self.version = request.version
         self.request = request
+        self.core_service = False
 
         # Parse the request for the service
         url = str(request.META['PATH_INFO'])
-
-        m = re.match("/v(?P<version>\d+\.\d+)/(?P<service>\w+)/(?P<webargs>.*)?/?", url)
+        m = re.match("/v(?P<version>\d+\.\d+)/(?P<service>[\w-]+)/(?P<webargs>.*)?/?", url)
 
         [version, service, webargs] = [arg for arg in m.groups()]
         self.set_service(service)
-        if service == 'meta':
+
+        if service == 'meta' or service == 'manage-data':
+            self.core_service = True
+
+        if service == 'meta' or service == 'manage-data':
             # The meta data service has different requirements from the cutout
 
             m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel_layer>\w+)?/?", webargs)
@@ -93,6 +97,7 @@ class BossRequest:
 
             if self.collection:
                 self.set_boss_key()
+
                 if 'key' in request.query_params:
                     self.set_key(request.query_params['key'])
                 if 'value' in request.query_params:
@@ -100,10 +105,10 @@ class BossRequest:
             else:
                 # We don't have a valid collection boss_key =""
                 self.boss_key = None
-
         elif 'view' in request.query_params:
             raise BossError(404, "Views not implemented. Specify the full request", 30000)
         else:
+
             m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<resolution>\d)/"
                          + "(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?(?P<rest>.*)?/?", webargs)
 
@@ -436,11 +441,11 @@ class BossRequest:
             boss_key = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR + self.channel_layer.name
             #   perm = BossPermissionManager.check_permissions_object(self.request.user,self.channel_layer,
             #                                                      self.request.method,'channellayer')
-        elif self.collection and self.experiment and self.service == 'meta':
+        elif self.collection and self.experiment and self.core_service:
             boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
             #perm = BossPermissionManager.check_permissions_object(self.request.user,self.experiment,
             #                                                      self.request.method,'experiment')
-        elif self.collection and self.service == 'meta':
+        elif self.collection and self.core_service:
             boss_key = self.collection.name
             #perm = BossPermissionManager.check_permissions_object(self.request.user,self.collection,
             #                                                      self.request.method,'collection')
@@ -451,7 +456,7 @@ class BossRequest:
         #    return BossHTTPError(404, "You do not have permissions", 30000)
 
         self.boss_key = []
-        if self.service == 'meta':
+        if self.core_service:
             self.boss_key.append(boss_key)
         else:
             for time_step in range(self.time_start, self.time_stop):
