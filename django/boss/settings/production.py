@@ -45,7 +45,7 @@ from bossutils.aws import *
 aws_mngr = get_aws_manager()
 
 INSTALLED_APPS.append("djangooidc")
-AUTHENTICATION_BACKENDS.insert(1, 'djangooidc.backends.OpenIdConnectBackend')
+AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend')
 
 REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
     'rest_framework.authentication.SessionAuthentication',
