@@ -560,35 +560,6 @@ class CollectionList(generics.ListAPIView):
         serializer = CollectionSerializer(collections, many=True)
         return Response(serializer.data)
 
-    # @transaction.atomic
-    # def create(self, request, *args, **kwargs):
-    #     """Create a new collection
-    #
-    #     Create a new collection and an associated bosskey for that collection
-    #     Args:
-    #         request:
-    #         *args:
-    #         **kwargs:
-    #
-    #     Returns:
-    #
-    #     """
-    #     col_data = request.data
-    #     serializer = CollectionSerializer(data=col_data)
-    #     if serializer.is_valid():
-    #         serializer.save(creator=self.request.user)
-    #         collection = Collection.objects.get(name=col_data['name'])
-    #         # Assign permissions to the users primary group
-    #         BossPermissionManager.add_permissions_primary_group(self.request.user, collection, 'collection')
-    #
-    #         lookup_key = collection.pk
-    #         boss_key = collection.name
-    #         LookUpKey.add_lookup(lookup_key, boss_key, collection.name)
-    #
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class ExperimentList(generics.ListAPIView):
     """
@@ -615,31 +586,6 @@ class ExperimentList(generics.ListAPIView):
         experiments = all_experiments.filter(collection=collection_obj)
         serializer = ExperimentSerializer(experiments, many=True)
         return Response(serializer.data)
-
-    # @transaction.atomic
-    # def create(self, request, *args, **kwargs):
-    #     exp_data = request.data
-    #     serializer = ExperimentSerializer(data=exp_data)
-    #
-    #     if serializer.is_valid():
-    #         serializer.save(creator=self.request.user)
-    #
-    #         # Create the boss lookup entry
-    #         experiment = Experiment.objects.get(name=exp_data['name'])
-    #         collection = experiment.collection
-    #         # TODO - Since we are only showing collections that we have access to, we do not need to check for
-    #         # permissions on the collection object
-    #
-    #         # Assign permissions to the users primary group
-    #         BossPermissionManager.add_permissions_primary_group(self.request.user, experiment, 'experiment')
-    #
-    #         boss_key = collection.name + '&' + experiment.name
-    #         lookup_key = str(collection.pk) + '&' + str(experiment.pk)
-    #         LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name)
-    #
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChannelList(generics.ListAPIView):
@@ -670,33 +616,6 @@ class ChannelList(generics.ListAPIView):
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
 
-    # @transaction.atomic
-    # def create(self, request, *args, **kwargs):
-    #     channel_data = request.data
-    #     serializer = ChannelSerializer(data=channel_data)
-    #
-    #     if serializer.is_valid():
-    #         serializer.save(creator=self.request.user)
-    #
-    #         # Create the boss lookup entry
-    #         channel = ChannelLayer.objects.get(name=channel_data['name'])
-    #         experiment = channel.experiment
-    #         collection = experiment.collection
-    #         max_time_sample = experiment.max_time_sample
-    #
-    #         # Assign permissions to the users primary group
-    #         BossPermissionManager.add_permissions_primary_group(self.request.user, channel, 'channellayer')
-    #
-    #         # Create a new bosslookup key
-    #         boss_key = collection.name + '&' + experiment.name + '&' + channel.name
-    #         lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(channel.pk)
-    #         LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, channel.name, max_time_sample)
-    #
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class LayerList(generics.ListAPIView):
     """
@@ -720,32 +639,6 @@ class LayerList(generics.ListAPIView):
                                               klass=ChannelLayer).filter(is_channel=False)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
-
-    # @transaction.atomic
-    # def create(self, request, *args, **kwargs):
-    #     layer_data = request.data
-    #     serializer = LayerSerializer(data=layer_data)
-    #
-    #     if serializer.is_valid():
-    #         serializer.save(creator=self.request.user)
-    #
-    #         # Create the boss lookup entry
-    #         layer = ChannelLayer.objects.get(name=layer_data['name'])
-    #         experiment = layer.experiment
-    #         collection = experiment.collection
-    #         max_time_sample = experiment.max_time_sample
-    #
-    #         # Assign permissions to the users primary group
-    #         BossPermissionManager.add_permissions_primary_group(self.request.user, layer, 'channellayer')
-    #
-    #         boss_key = collection.name + '&' + experiment.name + '&' + layer.name
-    #         lookup_key = str(experiment.collection.pk) + '&' + str(experiment.pk) + '&' + str(layer.pk)
-    #         LookUpKey.add_lookup(lookup_key, boss_key, collection.name, experiment.name, layer.name, max_time_sample)
-    #
-    #         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    #
-    #     else:
-    #         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CoordinateFrameList(generics.ListCreateAPIView):
