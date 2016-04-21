@@ -14,7 +14,7 @@
 
 from .models import *
 from .lookup import LookUpKey
-from .permissions import BossPermissionManager
+# from .permissions import BossPermissionManager
 
 import re
 from .error import BossHTTPError, BossError
@@ -49,7 +49,7 @@ class BossRequest:
         self.version = None
 
         # Boss key representing the datamodel for a valid request
-        self.boss_key = []
+        self.base_boss_key = None
 
         # Meta data key and value
         self.key = None
@@ -89,10 +89,6 @@ class BossRequest:
             m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel_layer>\w+)?/?", webargs)
             [collection_name, experiment_name, channel_layer_name] = [arg for arg in m.groups()]
 
-            # If optional args are specified without col, experiment and channel this is an error
-            # Note this only applies to the meta service because experiment and dataset are optional
-            # TODO
-
             self.initialize_request(collection_name, experiment_name, channel_layer_name)
 
             if self.collection:
@@ -124,8 +120,8 @@ class BossRequest:
                 else:
                     self.set_time(time)
 
-                self.set_boss_key()
                 self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
+                self.set_boss_key()
             else:
                 raise BossError(404, "Unable to parse the url.", 30000)
 
@@ -158,6 +154,7 @@ class BossRequest:
         Returns:
 
         """
+
         if resolution in range(0, self.experiment.num_hierarchy_levels):
             self.resolution = int(resolution)
 
@@ -196,7 +193,7 @@ class BossRequest:
         Returns:
 
         """
-        print (webargs)
+        print(webargs)
 
     def set_service(self, service):
         """
@@ -428,67 +425,62 @@ class BossRequest:
         return self.z_stop - self.z_start
 
     def set_boss_key(self):
-        """
-        Create the boss key for the request.
+        """ Set the base boss key for the request
 
-        The boss key concatenates the names of the datamodel stack to create a string represting the request
+        The boss key concatenates the names of the datamodel stack to create a string represting the request.
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-        boss_key = []
-
         if self.collection and self.experiment and self.channel_layer:
-            boss_key = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR + self.channel_layer.name
-            #   perm = BossPermissionManager.check_permissions_object(self.request.user,self.channel_layer,
-            #                                                      self.request.method,'channellayer')
+            self.base_boss_key = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR \
+                                 + self.channel_layer.name
         elif self.collection and self.experiment and self.core_service:
-            boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
-            #perm = BossPermissionManager.check_permissions_object(self.request.user,self.experiment,
-            #                                                      self.request.method,'experiment')
+            self.base_boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
         elif self.collection and self.core_service:
-            boss_key = self.collection.name
-            #perm = BossPermissionManager.check_permissions_object(self.request.user,self.collection,
-            #                                                      self.request.method,'collection')
+            self.base_boss_key = self.collection.name
         else:
             return BossHTTPError(404, "Error creating the boss key", 30000)
-
-        #if not perm:
-        #    return BossHTTPError(404, "You do not have permissions", 30000)
-
-        self.boss_key = []
-        if self.core_service:
-            self.boss_key.append(boss_key)
-        else:
-            for time_step in range(self.time_start, self.time_stop):
-                key = boss_key + '&' + str(time_step)
-                self.boss_key.append(key)
-
-        return self.boss_key
-
 
     def get_boss_key(self):
         """
         Get the boss_key for the current object
 
         Returns:
-            self.boss_key (str) : Boss key
+            self.boss_key (list) : List of boss keys for the request
         """
-        return self.boss_key
+        request_boss_keys = []
+
+        # For services that are not part of the core services, append resolution and time to the key
+        if self.core_service:
+            request_boss_keys = [self.base_boss_key]
+        else:
+            for time_step in range(self.time_start, self.time_stop):
+                request_boss_keys.append(self.base_boss_key + '&' + str(self.resolution) + '&' + str(time_step))
+
+        return request_boss_keys
 
     def get_lookup_key(self):
         """
-        Returns the lookup kefor the request
+        Returns the list of lookup keys for the request
 
         Returns:
             lookup (list(str))) : List of Lookup keys that correspond to the request
 
         """
-        lookup = []
-        for key in self.boss_key:
-            lkey = LookUpKey.get_lookup_key(key)
-            if lkey:
-                lookup.append(lkey.lookup_key)
-        return lookup
+        request_lookup_keys = []
+        if self.base_boss_key:
+            # Get the lookup key for the bosskey
+            base_lookup = LookUpKey.get_lookup_key(self.base_boss_key)
+
+            # If not a core service, append resolution and time
+            if self.core_service:
+                request_lookup_keys = [base_lookup.lookup_key]
+            else:
+                for time_step in range(self.time_start, self.time_stop):
+                    request_lookup_keys.append(base_lookup.lookup_key + '&' +
+                                               str(self.resolution) + '&' + str(time_step))
+
+        return request_lookup_keys
 
     def set_time(self, time):
         """
@@ -513,8 +505,8 @@ class BossRequest:
                 self.time_stop = int(tstop)
                 if self.time_stop > self.time_start or self.time_stop > self.experiment.max_time_sample + 1:
                     return BossHTTPError(404, "Invalid time range {}. End time is greater than the start time "
-                                              "or out of bouds with maximum time sample {}".format(time, str(
-                        self.experiment.max_time_sample)), 30000)
+                                              "or out of bouds with maximum time sample {}"
+                                         .format(time, str(self.experiment.max_time_sample)), 30000)
             else:
                 self.time_stop = self.time_start + 1
 

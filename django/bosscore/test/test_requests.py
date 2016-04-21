@@ -15,14 +15,13 @@
 from rest_framework.test import APITestCase
 from django.http import HttpRequest
 from rest_framework.request import Request
-
 from ..request import BossRequest
-from ..models import *
 from django.conf import settings
 from django.contrib.auth.models import User
 
-version  = settings.BOSS_VERSION
 from .setup_db import setupTestDB
+
+version = settings.BOSS_VERSION
 
 
 class BossCoreRequestTests(APITestCase):
@@ -51,7 +50,7 @@ class BossCoreRequestTests(APITestCase):
         col = 'col1'
         exp = 'exp1'
         channel = 'channel1'
-        boss_key = 'col1&exp1&channel1&0'
+        boss_key = 'col1&exp1&channel1&2&0'
 
         # Create the request
         req = HttpRequest()
@@ -74,7 +73,7 @@ class BossCoreRequestTests(APITestCase):
         col = 'col1'
         exp = 'exp1'
         layer = 'layer1'
-        boss_key = 'col1&exp1&layer1&0'
+        boss_key = 'col1&exp1&layer1&2&0'
 
         # Create the request
         req = HttpRequest()
@@ -88,17 +87,12 @@ class BossCoreRequestTests(APITestCase):
         self.assertEqual(ret.get_channel_layer(), layer)
         self.assertEqual(ret.get_boss_key()[0], boss_key)
 
-
     def test_request_cutout_init_cutoutargs_channel(self):
         """
         Test initialization of cutout arguments for a cutout request
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/'
-        col = 'col1'
-        exp = 'exp1'
-        channel = 'channel1'
-        boss_key = 'col1&exp1&channel0'
 
         res = 2
         (x_start, x_stop) = (0, 5)
@@ -131,10 +125,6 @@ class BossCoreRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/'
-        col = 'col1'
-        exp = 'exp1'
-        channel = 'channel1'
-        boss_key = 'col1&exp1&channel1'
 
         # Create the request
         req = HttpRequest()
@@ -143,19 +133,14 @@ class BossCoreRequestTests(APITestCase):
         drfrequest.version = version
         ret = BossRequest(drfrequest)
         time = ret.get_time()
-        self.assertEqual(time,range(0,1))
-
+        self.assertEqual(time, range(0, 1))
 
     def test_request_cutout_init_cutoutargs_time(self):
         """
-        Test initialization of timesample arguments  without a specific timesample
+        Test initialization of timesample arguments  with a single time
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1/'
-        col = 'col1'
-        exp = 'exp1'
-        channel = 'channel1'
-        boss_key = 'col1&exp1&channel1'
 
         # Create the request
         req = HttpRequest()
@@ -164,8 +149,7 @@ class BossCoreRequestTests(APITestCase):
         drfrequest.version = version
         ret = BossRequest(drfrequest)
         time = ret.get_time()
-        self.assertEqual(time,range(1,2))
-
+        self.assertEqual(time, range(1, 2))
 
     def test_request_cutout_init_cutoutargs_time_range(self):
         """
@@ -173,10 +157,10 @@ class BossCoreRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
-        col = 'col1'
-        exp = 'exp1'
-        channel = 'channel1'
-        exp_boss_keys = ['col1&exp1&channel1&1','col1&exp1&channel1&2','col1&exp1&channel1&3', 'col1&exp1&channel1&4']
+        exp_boss_keys = ['col1&exp1&channel1&2&1',
+                         'col1&exp1&channel1&2&2',
+                         'col1&exp1&channel1&2&3',
+                         'col1&exp1&channel1&2&4']
 
         # Create the request
         req = HttpRequest()
@@ -186,8 +170,8 @@ class BossCoreRequestTests(APITestCase):
         ret = BossRequest(drfrequest)
         time = ret.get_time()
         boss_keys = ret.get_boss_key()
-        self.assertEqual(time,range(1,5))
-        self.assertEqual(boss_keys,exp_boss_keys)
+        self.assertEqual(time, range(1, 5))
+        self.assertEqual(boss_keys, exp_boss_keys)
 
     def test_request_cutout_bosskey_time(self):
         """
@@ -195,10 +179,10 @@ class BossCoreRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
-        col = 'col1'
-        exp = 'exp1'
-        channel = 'channel1'
-        exp_boss_keys = ['col1&exp1&channel1&1','col1&exp1&channel1&2','col1&exp1&channel1&3', 'col1&exp1&channel1&4']
+        exp_boss_keys = ['col1&exp1&channel1&2&1',
+                         'col1&exp1&channel1&2&2',
+                         'col1&exp1&channel1&2&3',
+                         'col1&exp1&channel1&2&4']
 
         # Create the request
         req = HttpRequest()
@@ -207,13 +191,10 @@ class BossCoreRequestTests(APITestCase):
         drfrequest.version = version
         ret = BossRequest(drfrequest)
         boss_keys = ret.get_boss_key()
-        self.assertEqual(boss_keys,exp_boss_keys)
+        self.assertEqual(boss_keys, exp_boss_keys)
 
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/1:2/'
-        col = 'col1'
-        exp = 'exp1'
-        channel = 'channel1'
-        exp_boss_keys = ['col1&exp1&channel1&0']
+        exp_boss_keys = ['col1&exp1&channel1&2&0']
 
         # Create the request
         req = HttpRequest()
@@ -222,13 +203,10 @@ class BossCoreRequestTests(APITestCase):
         drfrequest.version = version
         ret = BossRequest(drfrequest)
         boss_keys = ret.get_boss_key()
-        self.assertEqual(boss_keys,exp_boss_keys)
+        self.assertEqual(boss_keys, exp_boss_keys)
 
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1/'
-        col = 'col1'
-        exp = 'exp1'
-        channel = 'channel1'
-        exp_boss_keys = ['col1&exp1&channel1&1']
+        exp_boss_keys = ['col1&exp1&channel1&2&1']
 
         # Create the request
         req = HttpRequest()
@@ -237,8 +215,7 @@ class BossCoreRequestTests(APITestCase):
         drfrequest.version = version
         ret = BossRequest(drfrequest)
         boss_keys = ret.get_boss_key()
-        self.assertEqual(boss_keys,exp_boss_keys)
-
+        self.assertEqual(boss_keys, exp_boss_keys)
 
     def test_request_cutout_lookupkey(self):
         """
@@ -246,10 +223,6 @@ class BossCoreRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
-        col = 'col1'
-        exp = 'exp1'
-        channel = 'channel1'
-        exp_boss_keys = ['col1&exp1&channel1&1','col1&exp1&channel1&2','col1&exp1&channel1&3', 'col1&exp1&channel1&4']
 
         # Create the request
         req = HttpRequest()
@@ -262,18 +235,11 @@ class BossCoreRequestTests(APITestCase):
         exp_id = ret.experiment.pk
         channel_layer_id = ret.channel_layer.pk
         base_lookup = str(col_id) + '&' + str(exp_id) + '&' + str(channel_layer_id)
-        exp_lookup_keys=[]
-        exp_lookup_keys.append(base_lookup+'&1')
-        exp_lookup_keys.append(base_lookup+'&2')
-        exp_lookup_keys.append(base_lookup+'&3')
-        exp_lookup_keys.append(base_lookup+'&4')
+        exp_lookup_keys = []
+        exp_lookup_keys.append(base_lookup+'&2&1')
+        exp_lookup_keys.append(base_lookup+'&2&2')
+        exp_lookup_keys.append(base_lookup+'&2&3')
+        exp_lookup_keys.append(base_lookup+'&2&4')
 
-        lookup_keys= ret.get_lookup_key()
-        self.assertEqual(lookup_keys,exp_lookup_keys)
-
-
-
-
-
-
-
+        lookup_keys = ret.get_lookup_key()
+        self.assertEqual(lookup_keys, exp_lookup_keys)
