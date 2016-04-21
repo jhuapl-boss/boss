@@ -56,5 +56,5 @@ auth_uri = vault.read('secret/endpoint/auth', 'url')
 client_id = vault.read('secret/endpoint/auth', 'client_id')
 public_uri = vault.read('secret/endpoint/auth', 'public_uri')
 
-from bossoidc.setting import *
+from bossoidc.settings import *
 configure_oidc(auth_uri, client_id, public_uri)
