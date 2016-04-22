@@ -56,7 +56,6 @@ class MockBossIntegrationConfig:
             return CONFIG_UNMOCKED[key]
 
 
-@unittest.skipIf(os.environ.get('UNIT_ONLY') is not None, "Only running unit tests")
 class CutoutViewIntegrationTests(APITestCase):
     # TODO: Add proper view tests once cache is integrated, currently just making sure you get the right statuscode back
 

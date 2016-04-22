@@ -244,11 +244,10 @@ class BossRequest:
         if Experiment.objects.filter(name=experiment_name, collection=self.collection).exists():
             self.experiment = Experiment.objects.get(name=experiment_name, collection=self.collection)
             self.coord_frame = self.experiment.coord_frame
-            return True
         else:
             raise BossError(404, "Experiment {} not found".format(experiment_name), 30000)
 
-        return false
+        return True
 
     def get_experiment(self):
         """
@@ -443,10 +442,25 @@ class BossRequest:
 
     def get_boss_key(self):
         """
-        Get the boss_key for the current object
+        Get the boss key for the current object
+
+        The boss key is the compound identifier using the "name" attribute of the data model resources used
+        in the request
 
         Returns:
-            self.boss_key (list) : List of boss keys for the request
+            self.boss_key (str) : The base boss key for the request
+        """
+        return self.base_boss_key
+
+    def get_boss_key_list(self):
+        """
+        Get the boss_key list for the current object including the resolution and time samples
+
+        The boss key is the compound identifier using the "name" attribute of the data model resources used
+        in the request
+
+        Returns:
+            self.boss_key (list(str)) : List of boss keys for the request
         """
         request_boss_keys = []
 
@@ -461,7 +475,23 @@ class BossRequest:
 
     def get_lookup_key(self):
         """
-        Returns the list of lookup keys for the request
+        Returns the base lookup key for the request, excluding the resolution and time sample
+
+        The lookup key is the compound identifier using the "id" attribute of the data model resources used
+        in the request
+
+        Returns:
+            lookup (str) : The base lookup key that correspond to the request
+
+        """
+        return LookUpKey.get_lookup_key(self.base_boss_key).lookup_key
+
+    def get_lookup_key_list(self):
+        """
+        Returns the list of lookup keys for the request when including the resolution and time sample
+
+        The lookup key is the compound identifier using the "id" attribute of the data model resources used
+        in the request
 
         Returns:
             lookup (list(str))) : List of Lookup keys that correspond to the request
