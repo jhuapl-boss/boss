@@ -69,7 +69,10 @@ class CutoutViewIntegrationTests(APITestCase):
         self.mock_tests = self.patcher.start()
 
         # Populate db with data model stuff
-        SetupTestDB.insert_test_data()
+        dbsetup = SetupTestDB()
+        user = dbsetup.create_super_user()
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
 
         # Make sure DB is clean before testing
         cache = spdb.spatialdb.SpatialDB()

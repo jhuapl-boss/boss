@@ -76,7 +76,10 @@ class CutoutInterfaceViewTests(APITestCase):
         :return:
         """
         # Populate db with data model stuff
-        SetupTestDB.insert_test_data()
+        dbsetup = SetupTestDB()
+        user = dbsetup.create_super_user()
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
 
         # Mock config parser so dummy params get loaded (redis is also mocked)
         self.patcher = patch('configparser.ConfigParser', MockBossConfig)
