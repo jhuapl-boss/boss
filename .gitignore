@@ -73,3 +73,5 @@ target/
 
 .idea
 bossspatialdb/migrations
+django/bosscore/migrations
+django/bosscore/integration_test/int_test_meta_views_updated.py

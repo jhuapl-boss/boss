@@ -45,25 +45,16 @@ from bossutils.aws import *
 aws_mngr = get_aws_manager()
 
 INSTALLED_APPS.append("djangooidc")
-AUTHENTICATION_BACKENDS.insert(1, 'djangooidc.backends.OpenIdConnectBackend')
+AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend')
 
-# bypass the djangooidc provided page and go directly to the keycloak page
-LOGIN_URL = "/openid/openid/KeyCloak"
+REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
+    'rest_framework.authentication.SessionAuthentication',
+    'oidc_auth.authentication.BearerTokenAuthentication',
+)
 
-OIDC_DEFAULT_BEHAVIOUR = {
-    'response_type': 'code',
-    'scope': ['openid', 'profile', 'email'],
-}
-
+auth_uri = vault.read('secret/endpoint/auth', 'url')
+client_id = vault.read('secret/endpoint/auth', 'client_id')
 public_uri = vault.read('secret/endpoint/auth', 'public_uri')
-OIDC_PROVIDERS = {
-    'KeyCloak': {
-        'srv_discovery_url': vault.read('secret/endpoint/auth', 'url'),
-        'behaviour': OIDC_DEFAULT_BEHAVIOUR,
-        'client_registration': {
-            'client_id': vault.read('secret/endpoint/auth', 'client_id'),
-            'redirect_uris': [public_uri + '/openid/callback/login/'],
-            'post_logout_redirect_uris': [public_uri + '/openid/callback/logout/'],
-        },
-    }
-}
+
+from bossoidc.settings import *
+configure_oidc(auth_uri, client_id, public_uri)
