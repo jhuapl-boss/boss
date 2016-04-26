@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from ..models import *
-from .setup_db import setupTestDB
+from boss.django.bosscore.models import *
+from boss.django.bosscore.test.setup_db import setupTestDB
 import bossutils
 import boto3
 import json

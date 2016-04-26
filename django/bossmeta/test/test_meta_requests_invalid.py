@@ -15,10 +15,10 @@
 from rest_framework.test import APITestCase
 from rest_framework.test import APIRequestFactory
 
-from ..request import BossRequest
-from ..views import BossMeta
-from .setup_db import setupTestDB
-from ..error import BossError
+from boss.django.bosscore.request import BossRequest
+from boss.django.bosscore.views import BossMeta
+from boss.django.bosscore.test.setup_db import setupTestDB
+from boss.django.bosscore.error import BossError
 
 from django.conf import settings
 from django.contrib.auth.models import User
