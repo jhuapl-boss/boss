@@ -42,9 +42,38 @@ class Ping(APIView):
         content = {'ip': socket.gethostbyname(socket.gethostname())}
         return Response(content)
 
-class Test(LoginRequiredMixin, APIView):
-    authentication_classes = (permissions.IsAuthenticated,)
+from django.http import HttpResponse, HttpResponseRedirect
+from django.views.generic import View
+from rest_framework.authtoken.models import Token
 
+class Token(LoginRequiredMixin, View):
     def get(self, request):
-        content = {"username": request.user.username}
-        return Response(content)
+        try:
+            token = Token.objects.get(user = request.user)
+            content = "<textarea>{}</textarea>".format(token)
+            button = "Revoke"
+        except:
+            content = ""
+            button = "Create"
+
+        html = """
+        <html>
+            <head><title>BOSS Token Management</title></head>
+            <body>
+                <form method="POST" enctype="multipart/form-data">
+                    {}
+                    <button>{}</button>
+                </form>
+            </body>
+        </html>
+        """.format(content, button)
+        return HttpResponse(html)
+
+    def post(self, request):
+        try:
+            token = Token.objects.get(user = request.user)
+            token.delete()
+        except:
+            token = Token.objects.create(user = request.user)
+
+        return HttpResponseRedirect("/token/")
