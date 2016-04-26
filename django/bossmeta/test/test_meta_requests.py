@@ -14,21 +14,17 @@
 
 from rest_framework.test import APITestCase
 from rest_framework.test import APIRequestFactory
-
-from boss.django.bosscore.request import BossRequest
-from boss.django.bosscore.views import BossMeta
-from boss.django.bosscore.models import *
-from boss.django.bosscore.test.setup_db import setupTestDB
-from django.contrib.auth.models import User
-from rest_framework.test import APIClient
-
-
 from django.conf import settings
-from django.contrib.auth.models import User
 
-version  = settings.BOSS_VERSION
+from bosscore.request import BossRequest
+from bosscore.test.setup_db import setupTestDB
+from bossmeta.views import BossMeta
+from bosscore.error import BossError
 
-class BossCoreMetaRequestTests(APITestCase):
+version = settings.BOSS_VERSION
+
+
+class BossCoreMetaValidRequestTests(APITestCase):
     """
     Class to test Meta data requests
     """
@@ -39,208 +35,228 @@ class BossCoreMetaRequestTests(APITestCase):
         :return:
         """
         self.rf = APIRequestFactory()
-
-        self.user=User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = setupTestDB()
+        self.user = dbsetup.create_super_user()
         dbsetup.set_user(self.user)
 
         self.client.force_login(self.user)
         dbsetup.insert_test_data()
 
-
-
-
-
-
-    def test_bossrequest_init_collection(self):
+    def test_collection_init(self):
         """
         Test initialization of requests from the meta data service with collection
         :return:
         """
         # create the request with collection name
-        url = '/' + version + '/meta/col1/?key=mkey'
-        expectedValue = 'col1'
+        url = '/' + version + '/meta/col1/?key=mkey&value=TestValue'
+        expected_col = 'col1'
+        expected_bosskey = 'col1'
+        expected_key = 'mkey'
+        expected_value = 'TestValue'
+        request = self.rf.get(url)
+        drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
+
+        # Datamodel object
+        ret = BossRequest(drfrequest)
+        self.assertEqual(ret.get_collection(), expected_col)
+
+        # Boss key
+        boss_key = ret.get_boss_key()
+        self.assertEqual(boss_key, expected_bosskey)
+
+        # Key and value
+        key = ret.get_key()
+        self.assertEqual(key, expected_key)
+        value = ret.get_value()
+        self.assertEqual(value, expected_value)
+
+    def test_experiment_init(self):
+        """
+        Test initialization of requests from the meta data service with valid collection and experiment
+        """
+        # create the request
+        url = '/' + version + '/meta/col1/exp1/?key=mkey&value=TestValue'
+        expected_col = 'col1'
+        expected_exp = 'exp1'
+        expected_bosskey = 'col1&exp1'
+        expected_key = 'mkey'
+        expected_value = 'TestValue'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
         ret = BossRequest(drfrequest)
-        self.assertEqual(ret.get_collection(), expectedValue)
 
-    def test_bossrequest_init_experiment(self):
-        """
-        Test initialization of requests from the meta data service with a valid collection and experiment
-        :return:
-        """
-        # create the request with collection name and experiment name
-        url = '/' + version + '/meta/col1/exp1/?key=mkey'
-        expectedCol = 'col1'
-        expectedExp = 'exp1'
-        request = self.rf.get(url)
-        drfrequest = BossMeta().initialize_request(request)
-        drfrequest.version = version
+        # Datamodel object
+        self.assertEqual(ret.get_collection(), expected_col)
+        self.assertEqual(ret.get_experiment(), expected_exp)
 
-        ret = BossRequest(drfrequest)
-        self.assertEqual(ret.get_collection(), expectedCol)
-        self.assertEqual(ret.get_experiment(), expectedExp)
+        # Boss key
+        boss_key = ret.get_boss_key()
+        self.assertEqual(boss_key, expected_bosskey)
+
+        # Key and value
+        key = ret.get_key()
+        self.assertEqual(key, expected_key)
+        value = ret.get_value()
+        self.assertEqual(value, expected_value)
 
     def test_bossrequest_init_channel(self):
         """
         Test initialization of requests from the meta data service with a valid collection and experiment and channel
-        :return:
+
         """
-        # create the request with collection name and experiment name and channel name
-        url = '/' + version + '/meta/col1/exp1/channel1/'
-        expectedCol = 'col1'
-        expectedExp = 'exp1'
-        expectedChannel = 'channel1'
+        # create the request
+        url = '/' + version + '/meta/col1/exp1/channel1/?key=mkey&value=TestValue'
+        expected_col = 'col1'
+        expected_exp = 'exp1'
+        expected_channel = 'channel1'
+        expected_bosskey = 'col1&exp1&channel1'
+        expected_key = 'mkey'
+        expected_value = 'TestValue'
 
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
+        # Data model Objects
         ret = BossRequest(drfrequest)
-        self.assertEqual(ret.get_collection(), expectedCol)
-        self.assertEqual(ret.get_experiment(), expectedExp)
-        self.assertEqual(ret.get_channel_layer(), expectedChannel)
+        self.assertEqual(ret.get_collection(), expected_col)
+        self.assertEqual(ret.get_experiment(), expected_exp)
+        self.assertEqual(ret.get_channel_layer(), expected_channel)
 
+        # Boss key
+        boss_key = ret.get_boss_key()
+        self.assertEqual(boss_key, expected_bosskey)
+
+        # Key and value
+        key = ret.get_key()
+        self.assertEqual(key, expected_key)
+        value = ret.get_value()
+        self.assertEqual(value, expected_value)
 
     def test_bossrequest_init_layer(self):
         """
-        Test initialization of requests from the meta data service with a valid collection and experiment and channel
-        :return:
+        Test initialization of requests from the meta data service with a valid collection and experiment and layer
         """
         # create the request with collection name and experiment name and channel name
-        url = '/' + version + '/meta/col1/exp1/layer1/'
-        expectedCol = 'col1'
-        expectedExp = 'exp1'
-        expectedLayer = 'layer1'
+        url = '/' + version + '/meta/col1/exp1/layer1/?key=mkey&value=TestValue'
+        expected_col = 'col1'
+        expected_exp = 'exp1'
+        expected_layer = 'layer1'
+
+        expected_bosskey = 'col1&exp1&layer1'
+        expected_key = 'mkey'
+        expected_value = 'TestValue'
 
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
+        # Datamodel object
         ret = BossRequest(drfrequest)
-        self.assertEqual(ret.get_collection(), expectedCol)
-        self.assertEqual(ret.get_experiment(), expectedExp)
-        self.assertEqual(ret.get_channel_layer(), expectedLayer)
+        self.assertEqual(ret.get_collection(), expected_col)
+        self.assertEqual(ret.get_experiment(), expected_exp)
+        self.assertEqual(ret.get_channel_layer(), expected_layer)
+
+        # Boss key
+        boss_key = ret.get_boss_key()
+        self.assertEqual(boss_key, expected_bosskey)
+
+        # Key and value
+        key = ret.get_key()
+        self.assertEqual(key, expected_key)
+        value = ret.get_value()
+        self.assertEqual(value, expected_value)
 
     def test_bossrequest_init_coordinateframe(self):
         """
         Test initialization of requests from the meta data service with a valid collection and experiment and dataset
-        :return:
         """
-        # create the request with collection name and experiment name and dataset name
+        # create the request
         url = '/' + version + '/meta/col1/exp1/channel1/?key=mkey'
-        expectedCol = 'col1'
-        expectedExp = 'exp1'
-        expectedChannel = 'channel1'
-        expectedCoord = 'cf1'
-
+        expected_col = 'col1'
+        expected_exp = 'exp1'
+        expected_channel = 'channel1'
+        expected_coord = 'cf1'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
         ret = BossRequest(drfrequest)
-        self.assertEqual(ret.get_collection(), expectedCol)
-        self.assertEqual(ret.get_experiment(), expectedExp)
-        self.assertEqual(ret.get_channel_layer(), expectedChannel)
+
+        # Data model objects
+        self.assertEqual(ret.get_collection(), expected_col)
+        self.assertEqual(ret.get_experiment(), expected_exp)
+        self.assertEqual(ret.get_channel_layer(), expected_channel)
 
         # Check coordinate frame
-        self.assertEqual(ret.get_coordinate_frame(), expectedCoord)
+        self.assertEqual(ret.get_coordinate_frame(), expected_coord)
 
 
+class BossCoreMetaInvalidRequestTests(APITestCase):
+    """
+    Class to test invalid requests for the meta data service
+    """
 
-    def test_get_bosskey_collection(self):
+    def setUp(self):
         """
-        Test retriving a bossmeta key from  BossRequest object with collection name
+        Initialize the test database with some objects
+        :return:
         """
-        # create the request
-        url = '/' +version + '/meta/col1/?key=mkey'
-        expectedValue = 'col1'
-        request = self.rf.get(url)
-        drfrequest = BossMeta().initialize_request(request)
-        drfrequest.version = version
-        drfrequest.user = self.user
+        self.rf = APIRequestFactory()
 
-        ret = BossRequest(drfrequest)
-        boss_key = ret.get_boss_key()
-        self.assertEqual(ret.get_collection(), expectedValue)
-        self.assertEqual(boss_key, expectedValue)
+        dbsetup = setupTestDB()
+        self.user = dbsetup.create_super_user()
+        dbsetup.set_user(self.user)
 
-    def test_get_boss_key_experiment(self):
+        self.client.force_login(self.user)
+        dbsetup.insert_test_data()
+
+    def test_bossrequest_collection_not_found(self):
         """
-        Test retriving a bossmeta key from  BossRequest object with collection name and experimentname
-        """
-        # create the request
-        url = '/' + version + '/meta/col1/exp1/?key=mkey'
-        expectedValue = 'col1&exp1'
-        request = self.rf.get(url)
-        drfrequest = BossMeta().initialize_request(request)
-        drfrequest.version = version
-        drfrequest.user = self.user
+        Test initialization of requests with a collection that does not exist
 
-        ret = BossRequest(drfrequest)
-        boss_key = ret.get_boss_key()
-        self.assertEqual(boss_key, expectedValue)
-
-    def test_get_boss_key_channel(self):
-        """
-        Test retriving a bossmeta key from  BossRequest object with collection name and experimentname
         """
         # create the request
-        url = '/' + version + '/meta/col1/exp1/channel1/?key=mkey'
-        expectedValue = 'col1&exp1&channel1'
+        url = '/' + version + '/meta/col2/?key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
-        drfrequest.user = self.user
 
-        ret = BossRequest(drfrequest)
-        boss_key = ret.get_boss_key()
-        self.assertEqual(boss_key, expectedValue)
+        try:
+            BossRequest(drfrequest)
+        except BossError as err:
+            assert err.args[0] == 404
 
-    def test_get_boss_key_layer(self):
+    def test_bossrequest_experiment_not_found(self):
         """
-        Test retriving a bossmeta key from  BossRequest object with collection name and experimentname
+        Test initialization of requests with a experiment that does not exist
+
         """
         # create the request
-        url = '/' + version + '/meta/col1/exp1/layer1/?key=mkey'
-        expectedValue = 'col1&exp1&layer1'
+        url = '/' + version + '/meta/col1/exp2/?key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
-        drfrequest.user = self.user
 
-        ret = BossRequest(drfrequest)
-        boss_key = ret.get_boss_key()
-        self.assertEqual(boss_key, expectedValue)
+        try:
+            BossRequest(drfrequest)
+        except BossError as err:
+            assert err.args[0] == 404
 
-    def test_get_key(self):
+    def test_bossrequest_channel_layer_not_found(self):
         """
-        Test the the get meta key method
+        Test initialization of requests with a channel that does not exist
+
         """
-        url = '/' + version + '/meta/col1/exp1/channel1/?key=mkey'
-        expectedValue = 'mkey'
+        # create the request
+        url = '/' + version + '/meta/col1/exp1/channel2/?key=mkey'
         request = self.rf.get(url)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
-        drfrequest.user = self.user
 
-        ret = BossRequest(drfrequest)
-        key = ret.get_key()
-        self.assertEqual(key, expectedValue)
-
-    def test_get_value(self):
-        """
-        Test the the get meta key method
-        """
-        url = '/' + version + '/meta/col1/exp1/layer1/?key=mkey&value=TestValue'
-        expectedValue = 'TestValue'
-        request = self.rf.get(url)
-        drfrequest = BossMeta().initialize_request(request)
-        drfrequest.version = version
-        drfrequest.user = self.user
-
-        ret = BossRequest(drfrequest)
-        value = ret.get_value()
-        self.assertEqual(value, expectedValue)
+        try:
+            BossRequest(drfrequest)
+        except BossError as err:
+            assert err.args[0] == 404
