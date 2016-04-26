@@ -19,7 +19,7 @@ from ..request import BossRequest
 from django.conf import settings
 from django.contrib.auth.models import User
 
-from .setup_db import setupTestDB
+from .setup_db import SetupTestDB
 
 version = settings.BOSS_VERSION
 
@@ -35,7 +35,7 @@ class BossCoreRequestTests(APITestCase):
             :return:
         """
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         dbsetup.set_user(user)
 
         self.client.force_login(user)

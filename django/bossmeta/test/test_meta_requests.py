@@ -17,7 +17,7 @@ from rest_framework.test import APIRequestFactory
 from django.conf import settings
 
 from bosscore.request import BossRequest
-from bosscore.test.setup_db import setupTestDB
+from bosscore.test.setup_db import SetupTestDB
 from bossmeta.views import BossMeta
 from bosscore.error import BossError
 
@@ -35,7 +35,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         :return:
         """
         self.rf = APIRequestFactory()
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         self.user = dbsetup.create_super_user()
         dbsetup.set_user(self.user)
 
@@ -206,7 +206,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         """
         self.rf = APIRequestFactory()
 
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         self.user = dbsetup.create_super_user()
         dbsetup.set_user(self.user)
 

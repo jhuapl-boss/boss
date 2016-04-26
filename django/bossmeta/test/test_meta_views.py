@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from boss.django.bosscore.models import *
-from boss.django.bosscore.test.setup_db import setupTestDB
+from bosscore.models import *
+from bosscore.test.setup_db import SetupTestDB
 import bossutils
 import boto3
 import json
@@ -46,7 +46,7 @@ class MetaServiceViewTestsMixin(object):
             :return:
             """
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         dbsetup.set_user(user)
 
         self.client.force_login(user)

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from .setup_db import setupTestDB
+from .setup_db import SetupTestDB
 from django.conf import settings
 
 version = settings.BOSS_VERSION
@@ -29,7 +29,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Initialize the database
         :return:
         """
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         user = dbsetup.create_super_user()
         dbsetup.set_user(user)
 
@@ -181,13 +181,12 @@ class ManageDataViewsExperimentTests(APITestCase):
 
         """
 
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         user = dbsetup.create_super_user()
         dbsetup.set_user(user)
 
         self.client.force_login(user)
         dbsetup.insert_test_data()
-        dbsetup.insert_additional_objects()
 
     def test_get_experiment_doesnotexist(self):
         """
@@ -384,7 +383,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
 
         """
 
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         user = dbsetup.create_super_user()
         dbsetup.set_user(user)
         self.client.force_login(user)
@@ -546,7 +545,7 @@ class ManageDataViewsChannelTests(APITestCase):
 
         """
 
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         user = dbsetup.create_super_user()
         dbsetup.set_user(user)
 
@@ -719,7 +718,7 @@ class ManageDataViewsLayerTests(APITestCase):
 
         """
 
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         user = dbsetup.create_super_user()
         dbsetup.set_user(user)
 
