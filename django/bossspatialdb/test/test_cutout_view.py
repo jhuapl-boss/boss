@@ -120,6 +120,7 @@ class CutoutInterfaceViewTests(APITestCase):
                                     y_range='0:300',
                                     z_range='0:20')
 
+        # TODO - commented out temporaily. To be fixed
         #self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     # TODO: Finish unit tests once mocking is properly configured so mockredis instance is persistent

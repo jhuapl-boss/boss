@@ -181,6 +181,7 @@ class TestDjangoResource(APITestCase):
         resource = BossResourceDjango(self.request_channel)
 
         assert resource.get_boss_key() == self.request_channel.get_boss_key()
+        # TODO - commented out temporaily. To be fixed
         #assert resource.get_boss_key() == ['col1&exp1&channel1&0']
 
     def test_basic_resource_get_lookup_key(self):

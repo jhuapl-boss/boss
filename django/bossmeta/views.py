@@ -44,13 +44,13 @@ class BossMeta(APIView):
             mdb = metadb.MetaDB()
             mdata = mdb.get_meta_list(lookup_key[0])
             if not mdata:
-                return BossHTTPError(404, "Cannot find keys that match this request", 30000)
+                data = {}
             else:
                 keys = []
                 for meta in mdata:
                     keys.append(meta['key'])
                 data = {'keys': keys}
-                return Response(data)
+            return Response(data)
 
         else:
 
