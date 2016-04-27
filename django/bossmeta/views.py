@@ -43,13 +43,11 @@ class BossMeta(APIView):
             # List all keys that are valid for the query
             mdb = metadb.MetaDB()
             mdata = mdb.get_meta_list(lookup_key[0])
-            if not mdata:
-                data = {}
-            else:
-                keys = []
+            keys = []
+            if mdata:
                 for meta in mdata:
                     keys.append(meta['key'])
-                data = {'keys': keys}
+            data = {'keys': keys}
             return Response(data)
 
         else:

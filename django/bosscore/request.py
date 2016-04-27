@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
 from .models import *
 from .lookup import LookUpKey
 # from .permissions import BossPermissionManager
-
-import re
 from .error import BossHTTPError, BossError
 
 META_CONNECTOR = "&"
@@ -29,7 +29,7 @@ class BossRequest:
 
     def __init__(self, request):
         """
-        Parse the request and initalize an instance of BossRequest
+        Parse the request and initialize an instance of BossRequest
         Args:
             request (stream): Django wsgi request
 

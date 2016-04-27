@@ -14,9 +14,8 @@
 
 from django.contrib.auth.models import Group
 
-from guardian.shortcuts import assign_perm,get_perms
-from .error import BossError, BossHTTPError
-
+from guardian.shortcuts import assign_perm, get_perms
+from .error import BossHTTPError
 
 
 class BossPermissionManager:
@@ -29,7 +28,7 @@ class BossPermissionManager:
         return Group.objects.get(name=group_name).user_set.filter(id=user.id).exists()
 
     @staticmethod
-    def add_permissions_primary_group(user,obj,obj_name):
+    def add_permissions_primary_group(user, obj, obj_name):
         """
         Grant permissions to the object for the user's primary group
         Args:
@@ -50,12 +49,12 @@ class BossPermissionManager:
         assign_perm('delete_'+obj_name, user_primary_group, obj)
 
     @staticmethod
-    def check_permissions_object(user,obj,method_type,obj_name):
+    def check_permissions_object(user, obj, method_type, obj_name):
         """
         Args:
             user:
             obj:
-            permission:
+            method_type:
             obj_name:
 
         Returns:
@@ -70,10 +69,9 @@ class BossPermissionManager:
         elif method_type == 'DELETE':
             permission = 'delete_' + obj_name
         else:
-            return BossHTTPError(404, "Unable to get permissions for this request".format(method_type), 30000)
+            return BossHTTPError(404, "Unable to get permissions for this request", 30000)
 
-        if permission in get_perms(user,obj):
+        if permission in get_perms(user, obj):
             return True
         else:
             return False
-

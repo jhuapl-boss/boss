@@ -563,7 +563,7 @@ class ExperimentList(generics.ListAPIView):
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
 
-    def list(self, request, collection,  *args, **kwargs):
+    def list(self, request, collection, *args, **kwargs):
         """
         return experiments for the collection that the user has permissions for
         Args:

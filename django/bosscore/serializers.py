@@ -13,9 +13,10 @@
 # limitations under the License.
 
 from rest_framework import serializers
-from .models import *
 from django.contrib.auth.models import User
 from guardian.shortcuts import get_objects_for_user
+from .models import *
+
 
 
 class UserSerializer(serializers.ModelSerializer):
