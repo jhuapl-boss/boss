@@ -21,7 +21,7 @@ from rest_framework import status
 
 from bossspatialdb.views import Cutout
 
-from .setup_db import SetupTestDB
+from bosscore.test.setup_db import SetupTestDB
 
 import unittest
 from unittest.mock import patch

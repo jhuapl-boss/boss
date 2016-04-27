@@ -22,7 +22,7 @@ from bosscore.request import BossRequest
 
 from spdb.project import BossResourceDjango
 
-from .setup_db import SetupTestDB
+from bosscore.test.setup_db import SetupTestDB
 
 
 version = settings.BOSS_VERSION
