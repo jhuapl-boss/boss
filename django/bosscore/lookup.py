@@ -73,12 +73,14 @@ class LookUpKey:
         return lookup_obj
 
     @staticmethod
-    def delete_lookup_key(collection,experiment=None,channel_layer=None):
+    def delete_lookup_key(collection, experiment=None, channel_layer=None):
         """
         Delete a lookupkey for a specific bosskey
 
         Args:
-            bkey : Bosskey to be deleted
+            collection: Collection Name
+            experiment : Experiment Name
+            channel_layer : Channel_layer name
         Returns:
 
         """
@@ -86,7 +88,7 @@ class LookUpKey:
         try:
             if channel_layer and experiment and collection:
                 lookup_obj = BossLookup.objects.get(collection_name=collection, experiment_name=experiment,
-                                                     channel_layer_name=channel_layer)
+                                                    channel_layer_name=channel_layer)
                 lookup_obj.delete()
             elif experiment and collection:
                 lookup_obj = BossLookup.objects.get(collection_name=collection, experiment_name=experiment)

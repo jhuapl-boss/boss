@@ -37,5 +37,3 @@ class BossCoreMetaServiceRoutingTests(APITestCase):
 
         match = resolve('/' + version + '/meta/col1/exp1/ch1/')
         self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
-
-

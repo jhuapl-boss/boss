@@ -44,7 +44,7 @@ class MetaDB:
             # Get table
             dynamodb = self.__session.resource('dynamodb')
             if 'test' in sys.argv:
-                tablename = 'test.'+ config["aws"]["meta-db"]
+                tablename = 'test.' + config["aws"]["meta-db"]
             else:
                 tablename = config["aws"]["meta-db"]
         else:
@@ -79,6 +79,7 @@ class MetaDB:
                 'metavalue': value,
             }
         )
+        return response
 
     def get_meta(self, lookup_key, key):
         """

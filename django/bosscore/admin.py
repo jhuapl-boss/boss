@@ -16,6 +16,7 @@ from django.contrib import admin
 from .models import *
 from guardian.admin import GuardedModelAdmin
 
+
 class CollectionAdmin(GuardedModelAdmin):
     model = Collection
 
@@ -36,8 +37,8 @@ class ChannelLayerMapAdmin(GuardedModelAdmin):
     model = ChannelLayerMap
 
 
-admin.site.register(Collection,CollectionAdmin)
-admin.site.register(Experiment,ExperimentAdmin)
-admin.site.register(ChannelLayer,ChannelLayerAdmin)
-admin.site.register(CoordinateFrame,CoordinateFrameAdmin)
-admin.site.register(ChannelLayerMap,ChannelLayerMapAdmin)
+admin.site.register(Collection, CollectionAdmin)
+admin.site.register(Experiment, ExperimentAdmin)
+admin.site.register(ChannelLayer, ChannelLayerAdmin)
+admin.site.register(CoordinateFrame, CoordinateFrameAdmin)
+admin.site.register(ChannelLayerMap, ChannelLayerMapAdmin)

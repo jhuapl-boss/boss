@@ -63,7 +63,7 @@ class BossMeta(APIView):
             else:
                 return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
 
-    def post(self, request, collection, experiment= None, channel_layer=None):
+    def post(self, request, collection, experiment=None, channel_layer=None):
         """
         View to handle POST requests for metadata
 

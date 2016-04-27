@@ -14,13 +14,13 @@
 
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse
 from rest_framework import generics
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .error import BossError, BossHTTPError
+from .error import BossHTTPError
 from .lookup import LookUpKey
 from .permissions import BossPermissionManager
 from .serializers import *
@@ -441,9 +441,6 @@ class ChannelLayerDetail(APIView):
             serializer = ChannelLayerSerializer(data=channel_layer_data)
             if serializer.is_valid():
                 serializer.save(creator=self.request.user)
-
-
-
                 channel_layer_obj = ChannelLayer.objects.get(name=channel_layer_data['name'], experiment=experiment_obj)
 
                 # Assign permissions to the users primary group
@@ -607,7 +604,7 @@ class ChannelList(generics.ListAPIView):
 
         """
         collection_obj = Collection.objects.get(name=collection)
-        experiment_obj = Experiment.objects.get(name=experiment, collection= collection_obj)
+        experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
         channel_layers = get_objects_for_user(request.user, 'view_channellayer',
                                               klass=ChannelLayer).filter(is_channel=True, experiment=experiment_obj)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
@@ -644,5 +641,3 @@ class CoordinateFrameList(generics.ListCreateAPIView):
     """
     queryset = CoordinateFrame.objects.all()
     serializer_class = CoordinateFrameSerializer
-
-

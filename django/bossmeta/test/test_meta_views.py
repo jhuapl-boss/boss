@@ -24,11 +24,12 @@ import unittest
 
 from django.conf import settings
 from django.contrib.auth.models import User
-version  = settings.BOSS_VERSION
+version = settings.BOSS_VERSION
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()
 testtablename = config["aws"]["meta-db"]
+
 
 class MetaServiceViewTestsMixin(object):
     """
@@ -189,7 +190,6 @@ class BossCoreMetaServiceViewTests(MetaServiceViewTestsMixin, APITestCase):
             TableName=testtablename, **tblcfg
         )
         cls.table.meta.client.get_waiter('table_exists').wait(TableName=testtablename)
-
 
     @classmethod
     def tearDownClass(cls):

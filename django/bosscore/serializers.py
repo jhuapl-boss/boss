@@ -17,6 +17,7 @@ from .models import *
 from django.contrib.auth.models import User
 from guardian.shortcuts import get_objects_for_user
 
+
 class UserSerializer(serializers.ModelSerializer):
     collections = serializers.PrimaryKeyRelatedField(many=True, queryset=Collection.objects.all())
 

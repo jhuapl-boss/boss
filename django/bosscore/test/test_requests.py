@@ -245,4 +245,3 @@ class BossCoreRequestTests(APITestCase):
         lookup_keys = ret.get_lookup_key_list()
         self.assertEqual(base_lookup, ret.get_lookup_key())
         self.assertEqual(lookup_keys, exp_lookup_keys)
-
