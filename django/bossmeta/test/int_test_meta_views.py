@@ -21,7 +21,7 @@ from rest_framework.test import APITestCase
 
 from bossmeta.test.test_meta_views import MetaServiceViewTestsMixin
 
-version  = settings.BOSS_VERSION
+version = settings.BOSS_VERSION
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()

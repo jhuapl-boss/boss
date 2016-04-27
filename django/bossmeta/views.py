@@ -1,8 +1,6 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import HttpResponse, HttpResponseBadRequest
-
 
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError
@@ -133,7 +131,7 @@ class BossMeta(APIView):
         else:
             return HttpResponseBadRequest("[ERROR]- Key {} not found ".format(mkey))
 
-    def put(self, request, collection, experiment=None, channel_layer = None):
+    def put(self, request, collection, experiment=None, channel_layer=None):
         """
         View to handle update requests for metadata
         Args:
