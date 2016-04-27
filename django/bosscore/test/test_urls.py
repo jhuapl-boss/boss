@@ -14,9 +14,11 @@
 
 from rest_framework.test import APITestCase
 from django.core.urlresolvers import resolve
-from bosscore.views import *
 
 from django.conf import settings
+
+from bosscore.views import *
+
 version = settings.BOSS_VERSION
 
 

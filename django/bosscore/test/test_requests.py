@@ -13,12 +13,12 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from django.http import HttpRequest
 from rest_framework.request import Request
-from ..request import BossRequest
+from django.http import HttpRequest
 from django.conf import settings
 from django.contrib.auth.models import User
 
+from ..request import BossRequest
 from .setup_db import SetupTestDB
 
 version = settings.BOSS_VERSION
