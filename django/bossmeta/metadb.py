@@ -44,7 +44,7 @@ class MetaDB:
             # Get table
             dynamodb = self.__session.resource('dynamodb')
             if 'test' in sys.argv:
-                tablename = config["aws"]["test-meta-db"]
+                tablename = 'test.'+ config["aws"]["meta-db"]
             else:
                 tablename = config["aws"]["meta-db"]
         else:
