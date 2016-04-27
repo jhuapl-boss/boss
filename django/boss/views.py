@@ -44,36 +44,39 @@ class Ping(APIView):
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import View
-from rest_framework.authtoken.models import Token
+
+# import as to deconflict with our Token class
+from rest_framework.authtoken.models import Token as TokenModel
 
 class Token(LoginRequiredMixin, View):
     def get(self, request):
+        action = request.GET.get('action', None)
+
         try:
-            token = Token.objects.get(user = request.user)
+            token = TokenModel.objects.get(user = request.user)
+            if action == "Revoke":
+                token.delete()
+                token = None
+        except:
+            if action == "Generate":
+                token = TokenModel.objects.create(user = request.user)
+            else:
+                token = None
+
+        if token is None:
+            content = ""
+            button = "Generate"
+        else:
             content = "<textarea>{}</textarea>".format(token)
             button = "Revoke"
-        except:
-            content = ""
-            button = "Create"
 
         html = """
         <html>
             <head><title>BOSS Token Management</title></head>
             <body>
-                <form method="POST" enctype="multipart/form-data">
-                    {}
-                    <button>{}</button>
-                </form>
+                    {1}
+                    <a href="{0}?action={2}">{2}</a>
             </body>
         </html>
-        """.format(content, button)
+        """.format(request.path_info, content, button)
         return HttpResponse(html)
-
-    def post(self, request):
-        try:
-            token = Token.objects.get(user = request.user)
-            token.delete()
-        except:
-            token = Token.objects.create(user = request.user)
-
-        return HttpResponseRedirect("/token/")
