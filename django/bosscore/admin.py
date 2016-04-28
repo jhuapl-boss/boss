@@ -13,9 +13,8 @@
 # limitations under the License.
 
 from django.contrib import admin
-from .models import *
 from guardian.admin import GuardedModelAdmin
-
+from .models import *
 
 class CollectionAdmin(GuardedModelAdmin):
     model = Collection

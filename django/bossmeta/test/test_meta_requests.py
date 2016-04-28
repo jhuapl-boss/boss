@@ -193,6 +193,30 @@ class BossCoreMetaValidRequestTests(APITestCase):
         # Check coordinate frame
         self.assertEqual(ret.get_coordinate_frame(), expected_coord)
 
+    def test_bossrequest_list_all_keys(self):
+        """
+        Test initialization of requests from the meta data service with a valid collection and experiment and channel
+        """
+        # create the request
+        url = '/' + version + '/meta/col1/exp1/channel1/'
+        expected_col = 'col1'
+        expected_exp = 'exp1'
+        expected_channel = 'channel1'
+        expected_coord = 'cf1'
+        request = self.rf.get(url)
+        drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
+        ret = BossRequest(drfrequest)
+
+        # Data model objects
+        self.assertEqual(ret.get_collection(), expected_col)
+        self.assertEqual(ret.get_experiment(), expected_exp)
+        self.assertEqual(ret.get_channel_layer(), expected_channel)
+
+        # Key and value should be empty
+        self.assertEqual(ret.get_key(), None)
+        self.assertEqual(ret.get_value(), None)
+
 
 class BossCoreMetaInvalidRequestTests(APITestCase):
     """

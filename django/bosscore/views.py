@@ -19,11 +19,14 @@ from rest_framework import generics
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from guardian.shortcuts import get_objects_for_user
 
 from .error import BossHTTPError
 from .lookup import LookUpKey
 from .permissions import BossPermissionManager
-from .serializers import *
+from .serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, ChannelLayerSerializer, \
+    LayerSerializer, CoordinateFrameSerializer
+from .models import Collection, Experiment, ChannelLayer, CoordinateFrame
 
 
 class CollectionDetail(APIView):

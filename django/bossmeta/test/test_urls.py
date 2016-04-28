@@ -14,9 +14,9 @@
 
 from rest_framework.test import APITestCase
 from django.core.urlresolvers import resolve
-from bossmeta.views import *
-
 from django.conf import settings
+from bossmeta.views import BossMeta
+
 version = settings.BOSS_VERSION
 
 

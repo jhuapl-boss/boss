@@ -15,7 +15,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from guardian.shortcuts import get_objects_for_user
-from .models import *
+from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap, BossLookup
+
 
 class UserSerializer(serializers.ModelSerializer):
     collections = serializers.PrimaryKeyRelatedField(many=True, queryset=Collection.objects.all())

@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.test import APITestCase
-from bosscore.models import *
-from bosscore.test.setup_db import SetupTestDB
 import bossutils
 import boto3
 import json
 import os
 import unittest
-
-
+from rest_framework.test import APITestCase
 from django.conf import settings
 from django.contrib.auth.models import User
+
+from bosscore.test.setup_db import SetupTestDB
+
 version = settings.BOSS_VERSION
 
 # Get the table name from boss.config
@@ -72,6 +71,11 @@ class MetaServiceViewTestsMixin(object):
         response = self.client.put(baseurl + argspost)
         self.assertEqual(response.status_code, 201)
 
+        # Get all the keys
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['keys'][0], 'testmkey')
+
         # Get the metadata
         response = self.client.get(baseurl + argsget)
         self.assertEqual(response.status_code, 200)
@@ -99,6 +103,11 @@ class MetaServiceViewTestsMixin(object):
         argspost = '?key=testmkey&value=TestStringModified'
         response = self.client.put(baseurl + argspost)
         self.assertEqual(response.status_code, 201)
+
+        # Get all the keys
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['keys'][0], 'testmkey')
 
         # Get the metadata
         response = self.client.get(baseurl + argsget)
@@ -128,6 +137,11 @@ class MetaServiceViewTestsMixin(object):
         argspost = '?key=testmkey&value=TestStringModified'
         response = self.client.put(baseurl + argspost)
         self.assertEqual(response.status_code, 201)
+
+        # Get all the keys
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['keys'][0], 'testmkey')
 
         # Get the metadata
         response = self.client.get(baseurl + argsget)
@@ -159,6 +173,11 @@ class MetaServiceViewTestsMixin(object):
         response = self.client.put(baseurl + argspost)
         self.assertEqual(response.status_code, 201)
 
+        # Get all the keys
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['keys'][0], 'testmkey')
+
         # Get the metadata
         response = self.client.get(baseurl + argsget)
         self.assertEqual(response.status_code, 200)
@@ -168,6 +187,125 @@ class MetaServiceViewTestsMixin(object):
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
         self.assertEqual(response.status_code, 201)
+
+    def test_meta_service_collection_list(self):
+        """
+        Test to make sure the meta URL for listing keys for a collection works
+        :return:
+        """
+
+        baseurl = '/' + version + '/meta/col1/'
+
+        # Get all the keys
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['keys'], [])
+
+    def test_meta_service_experiment_list(self):
+        """
+        Test meta URL for listing keys for a experiment
+        :return:
+        """
+
+        baseurl = '/' + version + '/meta/col1/exp1/'
+
+        # Get all the keys
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['keys'], [])
+
+    def test_meta_service_channel_layer_list(self):
+        """
+        Test meta URL for listing keys for a channel or layer
+        :return:
+        """
+
+        baseurl = '/' + version + '/meta/col1/exp1/channel1/'
+
+        # Get all the keys
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['keys'], [])
+
+    def test_meta_service_get_invalid(self):
+        """
+        Test invalid get requests to the meta data service
+        :return:
+        """
+
+        # data model object does not exist
+        baseurl = '/' + version + '/meta/col1/exp1/channel44/'
+
+        # Get all the keys
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 404)
+
+        # key does not exist
+        baseurl = '/' + version + '/meta/col1/exp1/channel44/?key=invalid'
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 404)
+
+    def test_meta_service_post_invalid(self):
+        """
+        Test invalid post requests to the meta data service
+        :return:
+        """
+
+        baseurl = '/' + version + '/meta/col1/exp1/layer1/'
+        response = self.client.post(baseurl)
+        self.assertEqual(response.status_code, 404)
+
+        # post the same key twice
+        baseurl = '/' + version + '/meta/col1/exp1/layer1/'
+        argspost = '?key=testmkey&value=TestString'
+        response = self.client.post(baseurl + argspost)
+        self.assertEqual(response.status_code, 201)
+        response = self.client.post(baseurl + argspost)
+        self.assertEqual(response.status_code, 404)
+
+    def test_meta_service_delete_invalid(self):
+        """
+        Test invalid post requests to the meta data service
+        """
+
+        baseurl = '/' + version + '/meta/col1/exp1/layer11/'
+        argsget = '?key=testmkey'
+
+        # delete the metadata for an invalid object
+        response = self.client.delete(baseurl + argsget)
+        self.assertEqual(response.status_code, 404)
+
+        baseurl = '/' + version + '/meta/col1/exp1/layer1/'
+
+        # delete the metadata without a key
+        response = self.client.delete(baseurl)
+        self.assertEqual(response.status_code, 404)
+
+        # delete the metadata for a key that does not exist
+        response = self.client.delete(baseurl + '?key=test')
+        self.assertEqual(response.status_code, 404)
+
+    def test_meta_service_put_invalid(self):
+        """
+        Test invalid update requests to the meta data service
+        """
+
+        baseurl = '/' + version + '/meta/col1/exp1/layer11/'
+        argsget = '?key=testmkey'
+
+        # Update the metadata for an invalid object
+        response = self.client.put(baseurl + argsget)
+        self.assertEqual(response.status_code, 404)
+
+        baseurl = '/' + version + '/meta/col1/exp1/layer1/'
+
+        # Update the metadata without a key
+        response = self.client.put(baseurl)
+        self.assertEqual(response.status_code, 404)
+
+        # Update the metadata for a key that does not exist
+        response = self.client.put(baseurl + '?key=test')
+        self.assertEqual(response.status_code, 404)
 
 
 # Assume there is no local DynamoDB unless the env variable set by jenkins.sh

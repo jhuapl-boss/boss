@@ -129,7 +129,7 @@ class BossMeta(APIView):
         if 'Attributes' in response:
             return HttpResponse(status=201)
         else:
-            return HttpResponseBadRequest("[ERROR]- Key {} not found ".format(mkey))
+            return BossHTTPError(404, "[ERROR]- Key {} not found ".format(mkey))
 
     def put(self, request, collection, experiment=None, channel_layer=None):
         """

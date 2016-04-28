@@ -14,7 +14,7 @@
 
 import re
 
-from .models import *
+from .models import Collection, Experiment, ChannelLayer, CoordinateFrame
 from .lookup import LookUpKey
 # from .permissions import BossPermissionManager
 from .error import BossHTTPError, BossError

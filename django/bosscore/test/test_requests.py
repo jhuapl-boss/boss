@@ -105,7 +105,7 @@ class BossCoreRequestTests(APITestCase):
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
-        drfrequest.version = version 
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
 
         self.assertEqual(ret.get_resolution(), res)

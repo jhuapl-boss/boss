@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from .setup_db import SetupTestDB
 from django.conf import settings
+from .setup_db import SetupTestDB
 
 version = settings.BOSS_VERSION
 

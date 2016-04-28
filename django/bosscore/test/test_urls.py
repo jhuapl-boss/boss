@@ -17,7 +17,9 @@ from django.core.urlresolvers import resolve
 
 from django.conf import settings
 
-from bosscore.views import *
+from bosscore.views import CollectionList, CollectionDetail, ExperimentList, ExperimentDetail, \
+    ChannelList, LayerList, ChannelLayerDetail, CoordinateFrameList, CoordinateFrameDetail
+
 
 version = settings.BOSS_VERSION
 

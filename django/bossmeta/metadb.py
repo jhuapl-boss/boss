@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import bossutils
-from bossutils.aws import *
+
 import bossutils
 import boto3
 import os
 import sys
+
+from bossutils.aws import *
 from boto3.dynamodb.conditions import Key
 
 # Get the table name from boss.config
