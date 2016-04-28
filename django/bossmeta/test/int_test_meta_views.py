@@ -25,7 +25,7 @@ version = settings.BOSS_VERSION
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()
-testtablename = config["aws"]["test-meta-db"]
+testtablename = "test." + config["aws"]["meta-db"]
 aws_mngr = get_aws_manager()
 
 
