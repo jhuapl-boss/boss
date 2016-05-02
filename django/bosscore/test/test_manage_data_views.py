@@ -230,7 +230,7 @@ class ManageDataViewsExperimentTests(APITestCase):
 
         # Post a new experiment
         url = '/' + version + '/manage-data/col1/exp2'
-        data = {'description': 'This is a new experiment', 'collection': collection_id, 'coord_frame': cf_id,
+        data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -250,7 +250,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/manage-data/col1/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -588,8 +588,7 @@ class ManageDataViewsChannelTests(APITestCase):
 
         # Post a new channel
         url = '/' + version + '/manage-data/col1/exp1/channel10/'
-        data = {'description': 'This is a new channel', 'experiment': experiment_id,
-                'is_channel': True, 'datatype': 'uint8'}
+        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -619,8 +618,7 @@ class ManageDataViewsChannelTests(APITestCase):
 
         # Post a new channel
         url = '/' + version + '/manage-data/col1/exp1/channel1/'
-        data = {'description': 'This is a new channel', 'experiment': experiment_id,
-                'is_channel': True, 'datatype': 'uint8'}
+        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 409)
 

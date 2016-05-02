@@ -284,15 +284,9 @@ class ExperimentDetail(APIView):
         experiment_data = request.data
         experiment_data['name'] = experiment
         try:
+            # Get the collection information
             collection_obj = Collection.objects.get(name=collection)
-
-            # Confirm that the collection for post data and request are the same
-            if 'collection' in experiment_data:
-                if collection_obj.pk != int(experiment_data['collection']):
-                    return BossHTTPError(404, "The collection name {} in the request does not match"
-                                              " the collection in the post data".format(collection), 30000)
-            else:
-                experiment_data['collection'] = collection_obj.pk
+            experiment_data['collection'] = collection_obj.pk
 
             serializer = ExperimentSerializer(data=experiment_data)
             if serializer.is_valid():
@@ -432,14 +426,7 @@ class ChannelLayerDetail(APIView):
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-
-            # Confirm that the experiment for post data and request are the same
-            if 'experiment' in channel_layer_data:
-                if experiment_obj.pk != int(channel_layer_data['experiment']):
-                    return BossHTTPError(404, "The experiment name {} in the request does not match"
-                                              " the experiment in the post data".format(experiment), 30000)
-            else:
-                channel_layer_data['experiment'] = experiment_obj.pk
+            channel_layer_data['experiment'] = experiment_obj.pk
 
             serializer = ChannelLayerSerializer(data=channel_layer_data)
             if serializer.is_valid():
