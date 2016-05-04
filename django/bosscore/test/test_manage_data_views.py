@@ -653,7 +653,6 @@ class ManageDataViewsChannelTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
-
     def test_delete_channel_invalid(self):
         """
         Delete a channel (invalid - Violates integrity constraint because layers are linked to it)
@@ -893,17 +892,6 @@ class ManageDataViewsLayerTests(APITestCase):
         url = '/' + version + '/manage-data/col1/exp1/layer10'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
-
-    # TODO (manavpj1) - Set up this unit test
-    # def test_delete_channel_invalid(self):
-    #     """
-    #     Delete a channel (invalid - Violates integrity constraint)
-    #
-    #     """
-    #     url = '/' + version + '/manage-data/col1/exp1/channel1'
-    #
-    #     response = self.client.delete(url)
-    #     self.assertEqual(response.status_code, 404)
 
     def test_delete_channel_doesnotexist(self):
         """
