@@ -69,7 +69,7 @@ class CollectionDetail(APIView):
         """
 
         # TODO (pmanava1): Apply permissions here
-        col_data = request.data
+        col_data = request.data.copy()
         col_data['name'] = collection
 
         serializer = CollectionSerializer(data=col_data)
@@ -97,19 +97,19 @@ class CollectionDetail(APIView):
         :param collection: Collection name
         :return:
         """
-        col_data = request.data
-        col_data['name'] = collection
         # TODO :Check for permissions
         try:
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
 
-            serializer = CollectionSerializer(collection_obj, data=request.data)
+            serializer = CollectionSerializer(collection_obj, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
 
                 # TODO (pmanava1) -  Update boss key if the object name is updated?
                 return Response(serializer.data)
+            else:
+                print (serializer.errors)
             return BossHTTPError(404, "{}".format(serializer.errors), 30000)
 
         except Collection.DoesNotExist:
@@ -176,7 +176,7 @@ class CoordinateFrameDetail(APIView):
 
         """
         # TODO (pmanava1): Apply permissions here
-        coordframe_data = request.data
+        coordframe_data = request.data.copy()
         coordframe_data['name'] = coordframe
 
         serializer = CoordinateFrameSerializer(data=coordframe_data)
@@ -200,8 +200,6 @@ class CoordinateFrameDetail(APIView):
         :param coordframe: Coordinate frame name
         :return:
         """
-        coordframe_data = request.data
-        coordframe_data['name'] = coordframe
         # TODO :Check for permissions
         try:
             # Check if the object exists
@@ -282,7 +280,7 @@ class ExperimentDetail(APIView):
         """
 
         # TODO (pmanava1): Apply permissions here
-        experiment_data = request.data
+        experiment_data = request.data.copy()
         experiment_data['name'] = experiment
         try:
             # Get the collection information
@@ -322,9 +320,6 @@ class ExperimentDetail(APIView):
 
         Returns:
         """
-        experiment_data = request.data
-        experiment_data['name'] = experiment
-
         # TODO :Check for permissions
         try:
             # Check if the object exists
@@ -446,7 +441,7 @@ class ChannelLayerDetail(APIView):
         Returns :
         """
         # TODO (pmanava1): Apply permissions here
-        channel_layer_data = request.data
+        channel_layer_data = request.data.copy()
         channels = channel_layer_data.getlist('channels')
         channel_layer_data['name'] = channel_layer
 
@@ -512,8 +507,7 @@ class ChannelLayerDetail(APIView):
 
         Returns :
         """
-        channel_layer_data = request.data
-        channel_layer_data['name'] = channel_layer
+        channel_layer_data = request.data.copy()
         if 'is_channel' in channel_layer_data:
             channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
 
