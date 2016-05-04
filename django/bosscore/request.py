@@ -14,9 +14,8 @@
 
 import re
 
-from .models import Collection, Experiment, ChannelLayer, CoordinateFrame
+from .models import Collection, Experiment, ChannelLayer
 from .lookup import LookUpKey
-# from .permissions import BossPermissionManager
 from .error import BossHTTPError, BossError
 
 META_CONNECTOR = "&"
@@ -31,9 +30,10 @@ class BossRequest:
         """
         Parse the request and initialize an instance of BossRequest
         Args:
-            request (stream): Django wsgi request
+            request (stream): Django Uwsgi request
 
-        Raises: BossError if the request is invalid
+        Raises:
+            BossError:  If the request is invalid
 
         """
         # Datamodel objects
@@ -127,7 +127,9 @@ class BossRequest:
 
     def initialize_request(self, collection_name, experiment_name, channel_layer_name):
         """
-        Initialize the datamodel objects of the class
+        Initialize the request
+
+        Parse and validate all the resource names in the request
 
         Args:
             collection_name: Collection name from the request
@@ -144,14 +146,15 @@ class BossRequest:
 
     def set_cutoutargs(self, resolution, x_range, y_range, z_range):
         """
-        Validate and initialize cutout arguments from the request
+        Validate and initialize cutout arguments in the request
         Args:
             resolution: Integer indicating the level in the resolution hierarchy (0 = native)
             x_range: Python style range indicating the X coordinates  (eg. 100:200)
             y_range: Python style range indicating the Y coordinates (eg. 100:200)
             z_range: Python style range indicating the Z coordinates (eg. 100:200)
 
-        Returns:
+        Raises:
+            BossError: For invalid requests
 
         """
 
@@ -186,20 +189,19 @@ class BossRequest:
 
     def initialize_view_request(self, webargs):
         """
-        Function to handle views
+        Validate and initialize views
         Args:
             webargs:
 
-        Returns:
 
         """
         print(webargs)
 
     def set_service(self, service):
         """
-        Set the service  variable. The service can be meta, view or cutout
+        Set the service variable. The service can be 'meta', 'view' or 'cutout'
         Args:
-            service: service requested in the request
+            service: Service requested in the request
 
         Returns: None
 
@@ -208,11 +210,12 @@ class BossRequest:
 
     def set_collection(self, collection_name):
         """
-        Validate the collection and set collection object.
+        Validate the collection and set collection object for a valid collection.
         Args:
             collection_name: Collection name from the request
 
-        Returns:None
+        Returns:
+            Bool : True
 
         Raises : BossError is the collection is not found.
 
@@ -226,7 +229,9 @@ class BossRequest:
     def get_collection(self):
         """
         Get the collection name for the current collection
+
         Returns:
+            collection_name : Name of the collection
 
         """
         if self.collection:

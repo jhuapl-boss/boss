@@ -162,13 +162,14 @@ class ChannelLayer(models.Model):
 
 class ChannelLayerMap(models.Model):
     """
-    Many to many mapping betweens clannels and layers
+    Many to many mapping between channels and layers
     """
-    channel = models.ForeignKey(ChannelLayer, related_name='channel')
+    channel = models.ForeignKey(ChannelLayer, related_name='channel', on_delete=models.PROTECT)
     layer = models.ForeignKey(ChannelLayer, related_name='layer')
 
     class Meta:
         db_table = u"channel_layer_map"
+        unique_together = ('channel', 'layer')
 
     def __str__(self):
         return 'Channel = {}, Layer = {}'.format(self.channel.name, self.layer.name)

@@ -20,13 +20,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
+from distutils.util import strtobool
 
 from .error import BossHTTPError
 from .lookup import LookUpKey
 from .permissions import BossPermissionManager
 from .serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, ChannelLayerSerializer, \
-    LayerSerializer, CoordinateFrameSerializer
-from .models import Collection, Experiment, ChannelLayer, CoordinateFrame
+    LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
+from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap
 
 
 class CollectionDetail(APIView):
@@ -377,6 +378,30 @@ class ChannelLayerDetail(APIView):
     View to access a channel
 
     """
+    @staticmethod
+    def get_bool(value):
+        """
+        Convert a string to a bool
+
+        Boolean variables in post data get converted to strings. This method converts the variables
+        back to a boolean if they are valid.
+
+        Args:
+            value:
+
+        Returns:
+            Boolean : True if the string is "True"
+
+        Raises:
+            BossError : If the value of the string is not a valid bool
+
+        """
+        if value == "true" or value == "True":
+            return True
+        elif value == "false" or value == "False":
+            return False
+        else:
+            return BossHTTPError(404, "Value Error in post data", 30000)
 
     def get(self, request, collection, experiment, channel_layer):
         """
@@ -408,6 +433,7 @@ class ChannelLayerDetail(APIView):
         except ChannelLayer.DoesNotExist:
             return BossHTTPError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
 
+    @transaction.atomic
     def post(self, request, collection, experiment, channel_layer):
         """
         Post a new Channel
@@ -421,17 +447,36 @@ class ChannelLayerDetail(APIView):
         """
         # TODO (pmanava1): Apply permissions here
         channel_layer_data = request.data
+        channels = channel_layer_data.getlist('channels')
         channel_layer_data['name'] = channel_layer
 
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_data['experiment'] = experiment_obj.pk
+            channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
+
+            # layers require at least 1 channel
+            if (channel_layer_data['is_channel'] is False) and (len(channels) == 0):
+                return BossHTTPError(404, "{Invalid Request.Please specify a valid channel for the layer}", 30000)
 
             serializer = ChannelLayerSerializer(data=channel_layer_data)
             if serializer.is_valid():
                 serializer.save(creator=self.request.user)
                 channel_layer_obj = ChannelLayer.objects.get(name=channel_layer_data['name'], experiment=experiment_obj)
+
+                # Layer?
+                if not channel_layer_obj.is_channel:
+                    # Layers must map to at least 1 channel
+
+                    for channel_id in channels:
+                        # Is this a valid channel?
+                        channel_obj = ChannelLayer.objects.get(pk=int(channel_id))
+                        if channel_obj:
+                            channel_layer_map = {'channel': channel_id, 'layer': channel_layer_obj.pk}
+                            serializer = ChannelLayerMapSerializer(data=channel_layer_map)
+                            if serializer.is_valid():
+                                serializer.save()
 
                 # Assign permissions to the users primary group
                 BossPermissionManager.add_permissions_primary_group(self.request.user, channel_layer_obj,
@@ -450,10 +495,12 @@ class ChannelLayerDetail(APIView):
             return BossHTTPError(404, "Collection with name {} does not exist".format(collection), 30000)
         except Experiment.DoesNotExist:
             return BossHTTPError(404, "Experiment with name {} does not exist".format(experiment), 30000)
+        except ChannelLayer.DoesNotExist:
+            return BossHTTPError(404, "Channel with id {} does not exist".format(channel_layer_data['channels']), 30000)
         except ValueError:
-            return BossHTTPError(404, "Value Error.Collection id {} in post data needs to "
-                                      "be an integer".format(channel_layer_data['experiment']), 30000)
+            return BossHTTPError(404, "Value Error in post data", 30000)
 
+    @transaction.atomic
     def put(self, request, collection, experiment, channel_layer):
         """
         Update new Channel or Layer
@@ -467,6 +514,8 @@ class ChannelLayerDetail(APIView):
         """
         channel_layer_data = request.data
         channel_layer_data['name'] = channel_layer
+        if 'is_channel' in channel_layer_data:
+            channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
 
         # TODO :Check for permissions
         try:
@@ -489,9 +538,10 @@ class ChannelLayerDetail(APIView):
         except ChannelLayer.DoesNotExist:
             return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
 
+    @transaction.atomic
     def delete(self, request, collection, experiment, channel_layer):
         """
-        Delete a Channel
+        Delete a Channel  or a Layer
         Args:
             request: DRF Request object
             collection: Collection name
@@ -508,6 +558,9 @@ class ChannelLayerDetail(APIView):
             # TODO (pmanava1) _ delete bosslookup
             if request.user.has_perm("delete_channellayer", channel_layer_obj):
                 channel_layer_obj.delete()
+
+                # delete the lookup key for this object
+                LookUpKey.delete_lookup_key(collection, experiment, channel_layer)
                 return HttpResponse(status=204)
             else:
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
@@ -518,6 +571,8 @@ class ChannelLayerDetail(APIView):
             return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
         except ChannelLayer.DoesNotExist:
             return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
+        except ProtectedError:
+            return BossHTTPError(404, "Cannot delete {}. It has layers that reference it.".format(channel_layer), 30000)
 
 
 class CollectionList(generics.ListAPIView):
