@@ -193,3 +193,19 @@ class BossLookup(models.Model):
 
     def __str__(self):
         return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key, self.boss_key)
+
+
+class Roles(models.Model):
+    """
+    Map user's to roles.
+    """
+    user = models.ForeignKey('auth.User', related_name='Role', on_delete=models.CASCADE)
+    role = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = u"roles"
+        unique_together = ('user', 'role')
+
+    def __str__(self):
+        return 'user = {}, role = {}'.format(self.user, self.role)
+
