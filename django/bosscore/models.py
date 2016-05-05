@@ -200,7 +200,14 @@ class Roles(models.Model):
     Map user's to roles.
     """
     user = models.ForeignKey('auth.User', related_name='Role', on_delete=models.CASCADE)
-    role = models.CharField(max_length=255)
+    DATATYPE_CHOICES = (
+        ('admin', 'ADMIN'),
+        ('user', 'USER'),
+        ('user-manager', 'USER-MANAGER'),
+        ('resource-manager', 'RESOURCE-MANAGER'),
+    )
+
+    role = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
 
     class Meta:
         db_table = u"roles"
