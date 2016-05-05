@@ -195,7 +195,7 @@ class BossLookup(models.Model):
         return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key, self.boss_key)
 
 
-class Roles(models.Model):
+class BossRole(models.Model):
     """
     Map user's to roles.
     """
@@ -210,7 +210,7 @@ class Roles(models.Model):
     role = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
 
     class Meta:
-        db_table = u"roles"
+        db_table = u"role"
         unique_together = ('user', 'role')
 
     def __str__(self):
