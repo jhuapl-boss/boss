@@ -69,7 +69,7 @@ class MetaServiceViewTestsMixin(object):
         # Update the metadata
         argspost = '?key=testmkey&value=TestStringModified'
         response = self.client.put(baseurl + argspost)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
         # Get all the keys
         response = self.client.get(baseurl)
@@ -84,7 +84,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
     def test_meta_service_experiment(self):
         """
@@ -102,7 +102,7 @@ class MetaServiceViewTestsMixin(object):
         # Update the metadata
         argspost = '?key=testmkey&value=TestStringModified'
         response = self.client.put(baseurl + argspost)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
         # Get all the keys
         response = self.client.get(baseurl)
@@ -117,7 +117,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
     def test_meta_service_channel(self):
         """
@@ -136,7 +136,7 @@ class MetaServiceViewTestsMixin(object):
         # Update the metadata
         argspost = '?key=testmkey&value=TestStringModified'
         response = self.client.put(baseurl + argspost)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
         # Get all the keys
         response = self.client.get(baseurl)
@@ -151,7 +151,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
     def test_meta_service_layer(self):
         """
@@ -171,7 +171,7 @@ class MetaServiceViewTestsMixin(object):
         # Update the metadata
         argspost = '?key=testmkey&value=TestStringModified'
         response = self.client.put(baseurl + argspost)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
         # Get all the keys
         response = self.client.get(baseurl)
@@ -186,7 +186,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 200)
 
     def test_meta_service_collection_list(self):
         """
