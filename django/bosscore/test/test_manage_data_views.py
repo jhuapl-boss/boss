@@ -30,7 +30,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         :return:
         """
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -192,7 +192,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -398,7 +398,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
         self.client.force_login(user)
         dbsetup.insert_test_data()
@@ -560,7 +560,7 @@ class ManageDataViewsChannelTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -718,7 +718,7 @@ class ManageDataViewsLayerTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
 
         self.client.force_login(user)

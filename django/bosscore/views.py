@@ -109,7 +109,8 @@ class CollectionDetail(APIView):
                     return Response(serializer.data)
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
-
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except Collection.DoesNotExist:
             return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
 
@@ -560,6 +561,7 @@ class ChannelLayerDetail(APIView):
 
             if request.user.has_perm("delete_channellayer", channel_layer_obj):
                 channel_layer_obj.delete()
+
                 # delete the lookup key for this object
                 LookUpKey.delete_lookup_key(collection, experiment, channel_layer)
                 return HttpResponse(status=204)
@@ -664,7 +666,7 @@ class LayerList(generics.ListAPIView):
     queryset = ChannelLayer.objects.filter(is_channel=False)
     serializer_class = LayerSerializer
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request,collection, experiment, *args, **kwargs):
         """
         Display only objects that a user has access to
         Args:
@@ -675,8 +677,10 @@ class LayerList(generics.ListAPIView):
         Returns: Channel_Layers that user has view permissions on
 
         """
+        collection_obj = Collection.objects.get(name=collection)
+        experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
         channel_layers = get_objects_for_user(request.user, 'read_channellayer',
-                                              klass=ChannelLayer).filter(is_channel=False)
+                                              klass=ChannelLayer).filter(is_channel=False, experiment=experiment_obj)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
 
