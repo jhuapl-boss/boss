@@ -43,7 +43,7 @@ class Cutout(APIView):
     # Set Parser and Renderer
 
     parser_classes = (BloscParser, BloscPythonParser)
-    renderer_classes = (BloscRenderer, BloscPythonRenderer, JSONRenderer, BrowsableAPIRenderer)
+    renderer_classes = (BloscRenderer, BloscPythonRenderer, BrowsableAPIRenderer)
 
     def get(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
         """
@@ -75,6 +75,7 @@ class Cutout(APIView):
         # Get the data out of the cache
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
         extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
+
         data = cache.cutout(resource, corner, extent, req.get_resolution())
 
         self.data_type = resource.get_data_type()

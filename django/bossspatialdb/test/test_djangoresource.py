@@ -159,17 +159,17 @@ class TestDjangoResource(APITestCase):
 
 #    """
 #    setup_data = self.get_image_dict()
-#    resource = BossResourceBasic(setup_data)
+#    resource8 = BossResourceBasic(setup_data)
 
-#    assert resource.is_channel() == True
+#    assert resource8.is_channel() == True
 
-#    assert resource.get_time_samples() == [0]
+#    assert resource8.get_time_samples() == [0]
 
-#    resource.set_time_samples([0, 1, 2, 3, 4, 5])
-#    assert resource.get_time_samples() == [0, 1, 2, 3, 4, 5]
+#    resource8.set_time_samples([0, 1, 2, 3, 4, 5])
+#    assert resource8.get_time_samples() == [0, 1, 2, 3, 4, 5]
 
-#    resource.set_time_samples(3)
-#    assert resource.get_time_samples() == [3]
+#    resource8.set_time_samples(3)
+#    assert resource8.get_time_samples() == [3]
 
     def test_basic_resource_get_boss_key(self):
         """Test basic get boss key interface

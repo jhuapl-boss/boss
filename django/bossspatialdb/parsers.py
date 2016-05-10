@@ -52,8 +52,8 @@ class BloscParser(BaseParser):
         datatype = resource.get_data_type().lower()
         if datatype == "uint8":
             bitdepth = np.uint8
-        elif datatype == "uint32":
-            bitdepth = np.uint32
+        elif datatype == "uint16":
+            bitdepth = np.uint16
         elif datatype == "uint64":
             bitdepth = np.uint64
         else:
