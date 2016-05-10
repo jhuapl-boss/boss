@@ -33,9 +33,18 @@ class Collection(models.Model):
     class Meta:
         db_table = u"collection"
         managed = True
+        default_permissions = ()
         permissions = (
 
-            ('view_collection', 'Can view collection'),
+            ('read_collection', 'Can view collection'),
+            ('update_collection', 'Can update collection'),
+            ('delete_collection', 'Can delete collection'),
+            ('add_collection', 'Can add resources for the collection'),
+            ('assign_group_collection', 'Can assign groups permissions for the collection'),
+            ('remove_group_collection', 'Can remove groups permissions for the collection'),
+            ('add_volumetric_data_collection', 'Can add volumetric data for the collection'),
+            ('read_volumetric_data_collection', 'Can read volumetric data for the collection'),
+            ('delete_volumetric_data_collection', 'Can delete volumetric data for the collection'),
 
         )
 
@@ -83,8 +92,17 @@ class CoordinateFrame(models.Model):
     class Meta:
         db_table = u"coordinate_frame"
 
+        default_permissions = ()
         permissions = (
-            ('view_coordinateframe', 'Can view coordinate frame'),
+
+            ('read_coordinateframe', 'Can view coordinate frame'),
+            ('update_coordinateframe', 'Can update coordinate frame'),
+            ('delete_coordinateframe', 'Can delete coordinate frame'),
+            ('add_coordinateframe', 'Can add resources for the coordinate frame'),
+            ('assign_group_coordinateframe', 'Can assign groups permissions for the coordinate frame'),
+            ('remove_group_coordinateframe', 'Can remove groups permissions for the coordinate frame'),
+
+
         )
 
     def __str__(self):
@@ -114,8 +132,16 @@ class Experiment(models.Model):
     class Meta:
         db_table = u"experiment"
         unique_together = ('collection', 'name')
+        default_permissions = ()
         permissions = (
-            ('view_experiment', 'Can view experiment'),
+
+            ('read_experiment', 'Can view experiment'),
+            ('update_experiment', 'Can update experiment'),
+            ('delete_experiment', 'Can delete experiment'),
+            ('add_experiment', 'Can add resources for the experiment'),
+            ('assign_group_experiment', 'Can assign groups permissions for the experiment'),
+            ('remove_group_experiment', 'Can remove groups permissions for the experiment'),
+
         )
 
     def __str__(self):
@@ -152,10 +178,20 @@ class ChannelLayer(models.Model):
     class Meta:
         db_table = u"channel_layer"
         unique_together = ('experiment', 'name')
+        default_permissions = ()
         permissions = (
-            ('view_channellayer', 'Can view channel or layer'),
-        )
 
+            ('read_channellayer', 'Can view channel or layer'),
+            ('update_channellayer', 'Can update channel or layer'),
+            ('delete_channellayer', 'Can delete channel or layer'),
+            ('add_channellayer', 'Can add resources for the channel or layer'),
+            ('assign_group_channellayer', 'Can assign groups permissions for the channel or layer'),
+            ('remove_group_channellayer', 'Can remove groups permissions for the channel or layer'),
+            ('add_volumetric_data_channellayer', 'Can add volumetric data for the channel or layer'),
+            ('read_volumetric_data_channellayer', 'Can read volumetric data for the channel or layer'),
+            ('delete_volumetric_data_channellayer', 'Can delete volumetric data for the channel or layer'),
+
+        )
     def __str__(self):
         return self.name
 

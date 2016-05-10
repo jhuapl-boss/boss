@@ -30,7 +30,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         :return:
         """
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user()
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -81,7 +81,17 @@ class ManageDataViewsCollectionTests(APITestCase):
 
         # Get an existing collection
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_collection_no_data(self):
+        """
+        Post a new collection (valid)
+
+        """
+        url = '/' + version + '/manage-data/col55/'
+        # Get an existing collection
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 201)
 
     def test_put_collection_exists(self):
         """
@@ -182,7 +192,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user()
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -272,7 +282,17 @@ class ManageDataViewsExperimentTests(APITestCase):
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
 
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_experiment_no_data(self):
+        """
+        Post a new experiment (invalid _ the post has no body)
+
+        """
+        # Post a new experiment
+        url = '/' + version + '/manage-data/col1/exp2'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_put_experiment_exists(self):
         """
@@ -378,7 +398,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user()
         dbsetup.set_user(user)
         self.client.force_login(user)
         dbsetup.insert_test_data()
@@ -448,7 +468,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
 
         # Get an existing collection
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
 
     def test_put_coorddinateframe_exists(self):
         """
@@ -540,7 +560,7 @@ class ManageDataViewsChannelTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user()
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -602,7 +622,7 @@ class ManageDataViewsChannelTests(APITestCase):
         url = '/' + version + '/manage-data/col1/exp1/channel1/'
         data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
 
     def test_put_channel(self):
         """
@@ -698,7 +718,7 @@ class ManageDataViewsLayerTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user()
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -819,7 +839,7 @@ class ManageDataViewsLayerTests(APITestCase):
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
                 'channels': [channel_id1, channel_id2]}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
 
     def test_put_layer(self):
         """

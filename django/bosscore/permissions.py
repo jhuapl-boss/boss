@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
 
 from guardian.shortcuts import assign_perm, get_perms
 from .error import BossHTTPError
@@ -28,7 +29,7 @@ class BossPermissionManager:
         return Group.objects.get(name=group_name).user_set.filter(id=user.id).exists()
 
     @staticmethod
-    def add_permissions_primary_group(user, obj, obj_name):
+    def add_permissions_user(user, obj):
         """
         Grant permissions to the object for the user's primary group
         Args:
@@ -39,14 +40,62 @@ class BossPermissionManager:
         Returns:
 
         """
+        # Get the type of model
+        ct = ContentType.objects.get_for_model(obj)
         group_name = user.username + "-primary"
         user_primary_group = Group.objects.get_or_create(name=group_name)[0]
         user.groups.add(user_primary_group.pk)
 
-        assign_perm('view_'+obj_name, user_primary_group, obj)
-        assign_perm('add_'+obj_name, user_primary_group, obj)
-        assign_perm('change_'+obj_name, user_primary_group, obj)
-        assign_perm('delete_'+obj_name, user_primary_group, obj)
+        assign_perm('read_' + ct.model, user_primary_group, obj)
+        assign_perm('add_' + ct.model, user_primary_group, obj)
+        assign_perm('update_' + ct.model, user_primary_group, obj)
+        assign_perm('delete_' + ct.model, user_primary_group, obj)
+
+    @staticmethod
+    def add_permissions_primary_group(user, obj):
+        """
+        Grant permissions to the object for the user's primary group
+        Args:
+            user: Current user
+            obj: Object that we are assigning permission for
+            obj_name :
+
+        Returns:
+
+        """
+        # Get the type of model
+        ct = ContentType.objects.get_for_model(obj)
+        group_name = user.username + "-primary"
+        user_primary_group = Group.objects.get_or_create(name=group_name)[0]
+        user.groups.add(user_primary_group.pk)
+
+        assign_perm('read_' + ct.model, user_primary_group, obj)
+        assign_perm('add_' + ct.model, user_primary_group, obj)
+        assign_perm('update_' + ct.model, user_primary_group, obj)
+        assign_perm('delete_' + ct.model, user_primary_group, obj)
+
+    @staticmethod
+    def add_permissions_admin_group(obj):
+        """
+        Grant permissions to the admin group for an object
+        Args:
+
+            obj: Object that we are assigning permission for
+
+        Returns:
+            None
+        """
+        # Get the type of model
+        try:
+            admin_group = Group.objects.get(name="admin")[0]
+            print (admin_group)
+            ct = ContentType.objects.get_for_model(obj)
+            assign_perm('read_' + ct.model, admin_group, obj)
+            assign_perm('add_' + ct.model, admin_group, obj)
+            assign_perm('update_' + ct.model, admin_group, obj)
+            assign_perm('delete_' + ct.model, admin_group, obj)
+        except Group.DoesNotExist:
+            BossHTTPError(404, "{Cannot assign permissions to the admin group because the group does not exist}", 30000)
 
     @staticmethod
     def check_permissions_object(user, obj, method_type, obj_name):
