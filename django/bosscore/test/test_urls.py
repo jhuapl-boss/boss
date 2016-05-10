@@ -14,29 +14,14 @@
 
 from rest_framework.test import APITestCase
 from django.core.urlresolvers import resolve
-from bosscore.views import *
 
 from django.conf import settings
+
+from bosscore.views import CollectionList, CollectionDetail, ExperimentList, ExperimentDetail, \
+    ChannelList, LayerList, ChannelLayerDetail, CoordinateFrameList, CoordinateFrameDetail
+
+
 version = settings.BOSS_VERSION
-
-
-class BossCoreMetaServiceRoutingTests(APITestCase):
-
-    def test_meta_urls_resolves_to_BossMeta_views(self):
-        """
-        Test to make sure the meta URL for get, post, delete and update with all
-        datamodel params resolves to the meta view
-
-        Returns: None
-        """
-        match = resolve('/' + version + '/meta/col1/')
-        self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
-
-        match = resolve('/' + version + '/meta/col1/exp1/')
-        self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
-
-        match = resolve('/' + version + '/meta/col1/exp1/ch1/')
-        self.assertEqual(match.func.__name__, BossMeta.as_view().__name__)
 
 
 class BossCoreManageDataRoutingTests(APITestCase):

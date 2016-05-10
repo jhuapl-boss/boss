@@ -13,13 +13,13 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from django.http import HttpRequest
 from rest_framework.request import Request
-from ..request import BossRequest
+from django.http import HttpRequest
 from django.conf import settings
 from django.contrib.auth.models import User
 
-from .setup_db import setupTestDB
+from ..request import BossRequest
+from .setup_db import SetupTestDB
 
 version = settings.BOSS_VERSION
 
@@ -35,7 +35,7 @@ class BossCoreRequestTests(APITestCase):
             :return:
         """
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
-        dbsetup = setupTestDB()
+        dbsetup = SetupTestDB()
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -105,7 +105,7 @@ class BossCoreRequestTests(APITestCase):
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
-        drfrequest.version = version 
+        drfrequest.version = version
         ret = BossRequest(drfrequest)
 
         self.assertEqual(ret.get_resolution(), res)
@@ -245,4 +245,3 @@ class BossCoreRequestTests(APITestCase):
         lookup_keys = ret.get_lookup_key_list()
         self.assertEqual(base_lookup, ret.get_lookup_key())
         self.assertEqual(lookup_keys, exp_lookup_keys)
-

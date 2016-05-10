@@ -47,15 +47,15 @@ urlpatterns = [
     url(r'^admin/', include(admin.site.urls)),
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
-    url(r'^test/', views.Test.as_view()),
+    url(r'^token/', views.Token.as_view()),
 
     # API version 0.3
     url(r'^v0.3/cutout/', include('bossspatialdb.urls', namespace='v0.3')),
     url(r'^v0.3/info/', include('bosscore.info_urls', namespace='v0.3')),
-    url(r'^v0.3/meta/', include('bosscore.meta_urls', namespace='v0.3')),
+    url(r'^v0.3/meta/', include('bossmeta.urls', namespace='v0.3')),
 
     # API version 0.4
-    url(r'^v0.4/meta/', include('bosscore.meta_urls', namespace='v0.4')),
+    url(r'^v0.4/meta/', include('bossmeta.urls', namespace='v0.4')),
     url(r'^v0.4/manage-data/', include('bosscore.manage_data_urls', namespace='v0.4')),
     url(r'^v0.4/cutout/', include('bossspatialdb.urls', namespace='v0.4')),
 

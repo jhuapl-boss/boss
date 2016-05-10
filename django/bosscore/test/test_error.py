@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from rest_framework.test import APITestCase
 from rest_framework import status
-import json
-import unittest
 
 from ..error import BossHTTPError, BossError
 

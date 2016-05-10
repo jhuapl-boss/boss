@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import bossutils
-from bossutils.aws import *
+
 import bossutils
 import boto3
 import os
 import sys
+
+from bossutils.aws import *
 from boto3.dynamodb.conditions import Key
 
 # Get the table name from boss.config
@@ -44,7 +45,7 @@ class MetaDB:
             # Get table
             dynamodb = self.__session.resource('dynamodb')
             if 'test' in sys.argv:
-                tablename = config["aws"]["test-meta-db"]
+                tablename = 'test.' + config["aws"]["meta-db"]
             else:
                 tablename = config["aws"]["meta-db"]
         else:
@@ -79,6 +80,7 @@ class MetaDB:
                 'metavalue': value,
             }
         )
+        return response
 
     def get_meta(self, lookup_key, key):
         """

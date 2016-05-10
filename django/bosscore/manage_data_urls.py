@@ -16,13 +16,6 @@ from django.conf.urls import url
 from bosscore import views
 
 urlpatterns = [
-    # All channels for an experiment
-    #url(r'(?P<collection>\w+)/(?P<experiment>\w+)/channels/?$', views.ChannelLayerObj.as_view()),
-    # All layers for an experiment
-    #url(r'(?P<collection>\w+)/(?P<experiment>\w+)/layers/?$', views.ChannelLayerObj.as_view()),
-    # An instance of a channel or layer
-    #url(r'(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/?', views.ChannelLayerObj.as_view()),
-
     # Specific coordinate frame
     url(r'coordinateframes/(?P<coordframe>[\w_-]+)/?$', views.CoordinateFrameDetail.as_view()),
     # All coordinate frames
@@ -33,7 +26,8 @@ urlpatterns = [
     # All layers for a experiment
     url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/layers/?', views.LayerList.as_view()),
     # An instance of a channel or layer
-    url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel_layer>[\w_-]+)/?', views.ChannelLayerDetail.as_view()),
+    url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel_layer>[\w_-]+)/?',
+        views.ChannelLayerDetail.as_view()),
 
     # All experiments for a collection
     url(r'(?P<collection>[\w_-]+)/experiments/?', views.ExperimentList.as_view()),
@@ -44,10 +38,5 @@ urlpatterns = [
     url(r'collections/?$', views.CollectionList.as_view()),
     # An instance of a collection
     url(r'(?P<collection>[\w_-]+)/?$', views.CollectionDetail.as_view()),
-
-
-    # An instance of a collection
-    #url(r'(?P<collection>[\w_-]+)/?$', views.CollectionDetail.as_view()),
-
 
 ]

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import patterns, include
+from django.apps import AppConfig
 
-urlpatterns = patterns('',
-                       (r'^v0.2/info/', include('bosscore.info_urls')),
-                       (r'^v0.2/meta/', include('bosscore.meta_urls')))
+
+class BosscoreConfig(AppConfig):
+    name = 'bosscore'

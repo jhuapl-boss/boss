@@ -45,16 +45,20 @@ from bossutils.aws import *
 aws_mngr = get_aws_manager()
 
 INSTALLED_APPS.append("djangooidc")
+INSTALLED_APPS.append("rest_framework.authtoken")
 AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend')
 
 REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
     'rest_framework.authentication.SessionAuthentication',
+    'rest_framework.authentication.TokenAuthentication',
     'oidc_auth.authentication.BearerTokenAuthentication',
 )
 
 auth_uri = vault.read('secret/endpoint/auth', 'url')
 client_id = vault.read('secret/endpoint/auth', 'client_id')
 public_uri = vault.read('secret/endpoint/auth', 'public_uri')
+
+OIDC_VERIFY_SSL = not (config['auth']['OIDC_VERIFY_SSL'] in ['False', 'false'])
 
 from bossoidc.settings import *
 configure_oidc(auth_uri, client_id, public_uri)

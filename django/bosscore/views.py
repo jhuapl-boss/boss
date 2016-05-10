@@ -12,21 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.http import HttpResponse, HttpResponseBadRequest
-from rest_framework.response import Response
-from rest_framework import generics
-from rest_framework.views import APIView
-from rest_framework import status
 from django.db import transaction
-from guardian.shortcuts import get_objects_for_user
 from django.db.models.deletion import ProtectedError
+from django.http import HttpResponse
+from rest_framework import generics
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from guardian.shortcuts import get_objects_for_user
+from distutils.util import strtobool
 
-from .serializers import *
+from .error import BossHTTPError
 from .lookup import LookUpKey
-from .error import BossError, BossHTTPError
-from . import metadb
 from .permissions import BossPermissionManager
-from .request import BossRequest
+from .serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, ChannelLayerSerializer, \
+    LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
+from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap
 
 
 class CollectionDetail(APIView):
@@ -68,7 +69,7 @@ class CollectionDetail(APIView):
         """
 
         # TODO (pmanava1): Apply permissions here
-        col_data = request.data
+        col_data = request.data.copy()
         col_data['name'] = collection
 
         serializer = CollectionSerializer(data=col_data)
@@ -96,19 +97,19 @@ class CollectionDetail(APIView):
         :param collection: Collection name
         :return:
         """
-        col_data = request.data
-        col_data['name'] = collection
         # TODO :Check for permissions
         try:
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
 
-            serializer = CollectionSerializer(collection_obj, data=request.data)
+            serializer = CollectionSerializer(collection_obj, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
 
                 # TODO (pmanava1) -  Update boss key if the object name is updated?
                 return Response(serializer.data)
+            else:
+                print (serializer.errors)
             return BossHTTPError(404, "{}".format(serializer.errors), 30000)
 
         except Collection.DoesNotExist:
@@ -175,7 +176,7 @@ class CoordinateFrameDetail(APIView):
 
         """
         # TODO (pmanava1): Apply permissions here
-        coordframe_data = request.data
+        coordframe_data = request.data.copy()
         coordframe_data['name'] = coordframe
 
         serializer = CoordinateFrameSerializer(data=coordframe_data)
@@ -199,8 +200,6 @@ class CoordinateFrameDetail(APIView):
         :param coordframe: Coordinate frame name
         :return:
         """
-        coordframe_data = request.data
-        coordframe_data['name'] = coordframe
         # TODO :Check for permissions
         try:
             # Check if the object exists
@@ -281,18 +280,12 @@ class ExperimentDetail(APIView):
         """
 
         # TODO (pmanava1): Apply permissions here
-        experiment_data = request.data
+        experiment_data = request.data.copy()
         experiment_data['name'] = experiment
         try:
+            # Get the collection information
             collection_obj = Collection.objects.get(name=collection)
-
-            # Confirm that the collection for post data and request are the same
-            if 'collection' in experiment_data:
-                if collection_obj.pk != int(experiment_data['collection']):
-                    return BossHTTPError(404, "The collection name {} in the request does not match"
-                                              " the collection in the post data".format(collection), 30000)
-            else:
-                experiment_data['collection'] = collection_obj.pk
+            experiment_data['collection'] = collection_obj.pk
 
             serializer = ExperimentSerializer(data=experiment_data)
             if serializer.is_valid():
@@ -327,9 +320,6 @@ class ExperimentDetail(APIView):
 
         Returns:
         """
-        experiment_data = request.data
-        experiment_data['name'] = experiment
-
         # TODO :Check for permissions
         try:
             # Check if the object exists
@@ -383,6 +373,30 @@ class ChannelLayerDetail(APIView):
     View to access a channel
 
     """
+    @staticmethod
+    def get_bool(value):
+        """
+        Convert a string to a bool
+
+        Boolean variables in post data get converted to strings. This method converts the variables
+        back to a boolean if they are valid.
+
+        Args:
+            value:
+
+        Returns:
+            Boolean : True if the string is "True"
+
+        Raises:
+            BossError : If the value of the string is not a valid bool
+
+        """
+        if value == "true" or value == "True":
+            return True
+        elif value == "false" or value == "False":
+            return False
+        else:
+            return BossHTTPError(404, "Value Error in post data", 30000)
 
     def get(self, request, collection, experiment, channel_layer):
         """
@@ -414,6 +428,7 @@ class ChannelLayerDetail(APIView):
         except ChannelLayer.DoesNotExist:
             return BossHTTPError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
 
+    @transaction.atomic
     def post(self, request, collection, experiment, channel_layer):
         """
         Post a new Channel
@@ -426,28 +441,37 @@ class ChannelLayerDetail(APIView):
         Returns :
         """
         # TODO (pmanava1): Apply permissions here
-        channel_layer_data = request.data
+        channel_layer_data = request.data.copy()
+        channels = channel_layer_data.getlist('channels')
         channel_layer_data['name'] = channel_layer
 
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            channel_layer_data['experiment'] = experiment_obj.pk
+            channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
 
-            # Confirm that the experiment for post data and request are the same
-            if 'experiment' in channel_layer_data:
-                if experiment_obj.pk != int(channel_layer_data['experiment']):
-                    return BossHTTPError(404, "The experiment name {} in the request does not match"
-                                              " the experiment in the post data".format(experiment), 30000)
-            else:
-                channel_layer_data['experiment'] = experiment_obj.pk
+            # layers require at least 1 channel
+            if (channel_layer_data['is_channel'] is False) and (len(channels) == 0):
+                return BossHTTPError(404, "{Invalid Request.Please specify a valid channel for the layer}", 30000)
 
             serializer = ChannelLayerSerializer(data=channel_layer_data)
             if serializer.is_valid():
                 serializer.save(creator=self.request.user)
-
-
-
                 channel_layer_obj = ChannelLayer.objects.get(name=channel_layer_data['name'], experiment=experiment_obj)
+
+                # Layer?
+                if not channel_layer_obj.is_channel:
+                    # Layers must map to at least 1 channel
+
+                    for channel_id in channels:
+                        # Is this a valid channel?
+                        channel_obj = ChannelLayer.objects.get(pk=int(channel_id))
+                        if channel_obj:
+                            channel_layer_map = {'channel': channel_id, 'layer': channel_layer_obj.pk}
+                            serializer = ChannelLayerMapSerializer(data=channel_layer_map)
+                            if serializer.is_valid():
+                                serializer.save()
 
                 # Assign permissions to the users primary group
                 BossPermissionManager.add_permissions_primary_group(self.request.user, channel_layer_obj,
@@ -466,10 +490,12 @@ class ChannelLayerDetail(APIView):
             return BossHTTPError(404, "Collection with name {} does not exist".format(collection), 30000)
         except Experiment.DoesNotExist:
             return BossHTTPError(404, "Experiment with name {} does not exist".format(experiment), 30000)
+        except ChannelLayer.DoesNotExist:
+            return BossHTTPError(404, "Channel with id {} does not exist".format(channel_layer_data['channels']), 30000)
         except ValueError:
-            return BossHTTPError(404, "Value Error.Collection id {} in post data needs to "
-                                      "be an integer".format(channel_layer_data['experiment']), 30000)
+            return BossHTTPError(404, "Value Error in post data", 30000)
 
+    @transaction.atomic
     def put(self, request, collection, experiment, channel_layer):
         """
         Update new Channel or Layer
@@ -481,8 +507,9 @@ class ChannelLayerDetail(APIView):
 
         Returns :
         """
-        channel_layer_data = request.data
-        channel_layer_data['name'] = channel_layer
+        channel_layer_data = request.data.copy()
+        if 'is_channel' in channel_layer_data:
+            channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
 
         # TODO :Check for permissions
         try:
@@ -505,9 +532,10 @@ class ChannelLayerDetail(APIView):
         except ChannelLayer.DoesNotExist:
             return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
 
+    @transaction.atomic
     def delete(self, request, collection, experiment, channel_layer):
         """
-        Delete a Channel
+        Delete a Channel  or a Layer
         Args:
             request: DRF Request object
             collection: Collection name
@@ -524,6 +552,9 @@ class ChannelLayerDetail(APIView):
             # TODO (pmanava1) _ delete bosslookup
             if request.user.has_perm("delete_channellayer", channel_layer_obj):
                 channel_layer_obj.delete()
+
+                # delete the lookup key for this object
+                LookUpKey.delete_lookup_key(collection, experiment, channel_layer)
                 return HttpResponse(status=204)
             else:
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
@@ -534,6 +565,8 @@ class ChannelLayerDetail(APIView):
             return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
         except ChannelLayer.DoesNotExist:
             return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
+        except ProtectedError:
+            return BossHTTPError(404, "Cannot delete {}. It has layers that reference it.".format(channel_layer), 30000)
 
 
 class CollectionList(generics.ListAPIView):
@@ -569,7 +602,7 @@ class ExperimentList(generics.ListAPIView):
     queryset = Experiment.objects.all()
     serializer_class = ExperimentSerializer
 
-    def list(self, request, collection,  *args, **kwargs):
+    def list(self, request, collection, *args, **kwargs):
         """
         return experiments for the collection that the user has permissions for
         Args:
@@ -610,7 +643,7 @@ class ChannelList(generics.ListAPIView):
 
         """
         collection_obj = Collection.objects.get(name=collection)
-        experiment_obj = Experiment.objects.get(name=experiment, collection= collection_obj)
+        experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
         channel_layers = get_objects_for_user(request.user, 'view_channellayer',
                                               klass=ChannelLayer).filter(is_channel=True, experiment=experiment_obj)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
@@ -647,163 +680,3 @@ class CoordinateFrameList(generics.ListCreateAPIView):
     """
     queryset = CoordinateFrame.objects.all()
     serializer_class = CoordinateFrameSerializer
-
-
-class BossMeta(APIView):
-    """
-    View to handle read,write,update and delete metadata queries
-    
-    """
-
-    def get(self, request, collection, experiment=None, channel_layer=None):
-        """
-        View to handle GET requests for metadata
-
-        Args:
-            request: DRF Request object
-            collection: Collection Name
-            experiment: Experiment name. default = None
-            channel_layer: Channel or Layer name
-
-        Returns:
-
-        """
-        try:
-            # Validate the request and get the lookup Key
-            req = BossRequest(request)
-            lookup_key = req.get_lookup_key()
-
-        except BossError as err:
-            return err.to_http()
-
-        if not lookup_key or lookup_key[0] == "":
-            return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
-
-        if 'key' not in request.query_params:
-            # List all keys that are valid for the query
-            mdb = metadb.MetaDB()
-            mdata = mdb.get_meta_list(lookup_key[0])
-            if not mdata:
-                return BossHTTPError(404, "Cannot find keys that match this request", 30000)
-            else:
-                keys = []
-                for meta in mdata:
-                    keys.append(meta['key'])
-                data = {'keys': keys}
-                return Response(data)
-
-        else:
-
-            mkey = request.query_params['key']
-            mdb = metadb.MetaDB()
-            mdata = mdb.get_meta(lookup_key[0], mkey)
-            if mdata:
-                data = {'key': mdata['key'], 'value': mdata['metavalue']}
-                return Response(data)
-            else:
-                return BossHTTPError(404, "Invalid request. Key {} Not found in the database".format(mkey), 30000)
-
-    def post(self, request, collection, experiment= None, channel_layer=None):
-        """
-        View to handle POST requests for metadata
-
-        Args:
-            request: DRF Request object
-            collection: Collection Name specifying the collection you want to get the meta data for
-            experiment: Experiment name. default = None
-            channel_layer: Channel or Layer name. Default = None
-
-        Returns:
-
-        """
-
-        if 'key' not in request.query_params or 'value' not in request.query_params:
-            return BossHTTPError(404, "Missing optional argument key/value in the request", 30000)
-
-        try:
-            req = BossRequest(request)
-            lookup_key = req.get_lookup_key()
-        except BossError as err:
-            return err.to_http()
-
-        if not lookup_key or not lookup_key[0]:
-            return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
-
-        mkey = request.query_params['key']
-        value = request.query_params['value']
-
-        # Post Metadata the dynamodb database
-        mdb = metadb.MetaDB()
-        if mdb.get_meta(lookup_key[0], mkey):
-            return BossHTTPError(404, "Invalid request. The key {} already exists".format(mkey), 30000)
-        mdb.write_meta(lookup_key[0], mkey, value)
-        return HttpResponse(status=201)
-
-    def delete(self, request, collection, experiment=None, channel_layer=None):
-        """
-        View to handle the delete requests for metadata
-        Args:
-            request: DRF Request object
-            collection: Collection name. Default = None
-            experiment: Experiment name. Default = None
-            channel_layer: Channel_layer name . Default = None
-
-        Returns:
-
-        """
-
-        if 'key' not in request.query_params:
-            return BossHTTPError(404, "Missing optional argument key in the request", 30000)
-
-        try:
-            req = BossRequest(request)
-            lookup_key = req.get_lookup_key()
-        except BossError as err:
-            return err.to_http()
-
-        if not lookup_key:
-            return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
-
-        mkey = request.query_params['key']
-
-        # Delete metadata from the dynamodb database
-        mdb = metadb.MetaDB()
-        response = mdb.delete_meta(lookup_key[0], mkey)
-
-        if 'Attributes' in response:
-            return HttpResponse(status=201)
-        else:
-            return HttpResponseBadRequest("[ERROR]- Key {} not found ".format(mkey))
-
-    def put(self, request, collection, experiment=None, channel_layer = None):
-        """
-        View to handle update requests for metadata
-        Args:
-            request: DRF Request object
-            collection: Collection Name. Default = None
-            experiment: Experiment Name. Default = None
-            channel_layer: Channel Name Default + None
-
-        Returns:
-
-        """
-
-        if 'key' not in request.query_params or 'value' not in request.query_params:
-            return BossHTTPError(404, "Missing optional argument key/value in the request", 30000)
-
-        try:
-            req = BossRequest(request)
-            lookup_key = req.get_lookup_key()
-        except BossError as err:
-            return err.to_http()
-
-        if not lookup_key:
-            return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
-
-        mkey = request.query_params['key']
-        value = request.query_params['value']
-
-        # Post Metadata the dynamodb database
-        mdb = metadb.MetaDB()
-        mdb.update_meta(lookup_key[0], mkey, value)
-        return HttpResponse(status=201)

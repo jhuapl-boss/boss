@@ -24,6 +24,7 @@ INSTALLED_APPS.insert(0, 'django_jenkins')
 # Calculate test coverage for apps listed here.
 PROJECT_APPS = [
     'bosscore',
+    'bossmeta',
     'bossspatialdb',
 ]
 

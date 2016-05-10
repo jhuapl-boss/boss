@@ -12,22 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.test import APITestCase
-from ..models import *
-from ..test.test_meta_views import MetaServiceViewTestsMixin
-from .setup_db import setupTestDB
-import bossutils
-import boto3
-from bossutils.aws import *
 import json
 
-
+import bossutils
+from bossutils.aws import *
 from django.conf import settings
-version  = settings.BOSS_VERSION
+from rest_framework.test import APITestCase
+
+from bossmeta.test.test_meta_views import MetaServiceViewTestsMixin
+
+version = settings.BOSS_VERSION
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()
-testtablename = config["aws"]["test-meta-db"]
+testtablename = "test." + config["aws"]["meta-db"]
 aws_mngr = get_aws_manager()
 
 

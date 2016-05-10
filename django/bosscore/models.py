@@ -15,6 +15,7 @@
 from django.db import models
 from django.core.validators import RegexValidator
 
+
 class NameValidator(RegexValidator):
     regex = "^[a-zA-Z0-9_-]*$"
     message = u'Invalid Name.'
@@ -25,7 +26,7 @@ class Collection(models.Model):
     Object representing a Boss Collection
     """
     name = models.CharField(max_length=255, verbose_name="Name of the Collection",
-                            validators=[NameValidator()],unique=True)
+                            validators=[NameValidator()], unique=True)
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='collections')
 
@@ -48,7 +49,7 @@ class CoordinateFrame(models.Model):
 
     """
     name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame",
-                            validators=[NameValidator()], unique = True)
+                            validators=[NameValidator()], unique=True)
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='coordinateframes')
 
@@ -94,12 +95,12 @@ class Experiment(models.Model):
     """
     Object representing a BOSS experiment
     """
-    collection = models.ForeignKey(Collection, related_name='experiments', on_delete = models.PROTECT)
-    name = models.CharField(max_length=255, verbose_name="Name of the Experiment",validators=[NameValidator()])
+    collection = models.ForeignKey(Collection, related_name='experiments', on_delete=models.PROTECT)
+    name = models.CharField(max_length=255, verbose_name="Name of the Experiment", validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='experiment')
 
-    coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord', on_delete = models.PROTECT)
+    coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord', on_delete=models.PROTECT)
     num_hierarchy_levels = models.IntegerField(default=0)
 
     HIERARCHY_METHOD_CHOICES = (
@@ -126,7 +127,7 @@ class ChannelLayer(models.Model):
     Object representing a channel or layer. For image datasets these are channels and for annotations datasets these
     are layers.
     """
-    name = models.CharField(max_length=255, verbose_name="Name of the Channel or Layer",validators=[NameValidator()])
+    name = models.CharField(max_length=255, verbose_name="Name of the Channel or Layer", validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='ChannelLayer')
 
@@ -161,13 +162,14 @@ class ChannelLayer(models.Model):
 
 class ChannelLayerMap(models.Model):
     """
-    Many to many mapping betweens clannels and layers
+    Many to many mapping between channels and layers
     """
-    channel = models.ForeignKey(ChannelLayer, related_name='channel')
+    channel = models.ForeignKey(ChannelLayer, related_name='channel', on_delete=models.PROTECT)
     layer = models.ForeignKey(ChannelLayer, related_name='layer')
 
     class Meta:
         db_table = u"channel_layer_map"
+        unique_together = ('channel', 'layer')
 
     def __str__(self):
         return 'Channel = {}, Layer = {}'.format(self.channel.name, self.layer.name)
@@ -190,4 +192,4 @@ class BossLookup(models.Model):
         unique_together = ('lookup_key', 'boss_key')
 
     def __str__(self):
-        return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key,self. boss_key)
+        return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key, self.boss_key)
