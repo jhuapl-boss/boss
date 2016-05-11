@@ -34,10 +34,10 @@ class BossCoreManageDataRoutingTests(APITestCase):
 
         """
 
-        match = resolve('/' + version + '/manage-data/collections/')
+        match = resolve('/' + version + '/resource/collections/')
         self.assertEqual(match.func.__name__, CollectionList.as_view().__name__)
 
-        match = resolve('/' + version + '/manage-data/col1/')
+        match = resolve('/' + version + '/resource/col1/')
         self.assertEqual(match.func.__name__, CollectionDetail.as_view().__name__)
 
     def test_manage_data_urls_experiment_resolves(self):
@@ -48,10 +48,10 @@ class BossCoreManageDataRoutingTests(APITestCase):
 
         """
 
-        match = resolve('/' + version + '/manage-data/col1/experiments')
+        match = resolve('/' + version + '/resource/col1/experiments')
         self.assertEqual(match.func.__name__, ExperimentList.as_view().__name__)
 
-        match = resolve('/' + version + '/manage-data/col1/exp1/')
+        match = resolve('/' + version + '/resource/col1/exp1/')
         self.assertEqual(match.func.__name__, ExperimentDetail.as_view().__name__)
 
     def test_manage_data_urls_channel_layer_resolves(self):
@@ -62,13 +62,13 @@ class BossCoreManageDataRoutingTests(APITestCase):
 
         """
 
-        match = resolve('/' + version + '/manage-data/col1/exp1/channels/')
+        match = resolve('/' + version + '/resource/col1/exp1/channels/')
         self.assertEqual(match.func.__name__, ChannelList.as_view().__name__)
 
-        match = resolve('/' + version + '/manage-data/col1/exp1/layers/')
+        match = resolve('/' + version + '/resource/col1/exp1/layers/')
         self.assertEqual(match.func.__name__, LayerList.as_view().__name__)
 
-        match = resolve('/' + version + '/manage-data/col1/exp1/channel1/')
+        match = resolve('/' + version + '/resource/col1/exp1/channel1/')
         self.assertEqual(match.func.__name__, ChannelLayerDetail.as_view().__name__)
 
     def test_manage_data_urls_coordinateframes_resolves(self):
@@ -79,8 +79,8 @@ class BossCoreManageDataRoutingTests(APITestCase):
 
         """
 
-        match = resolve('/' + version + '/manage-data/coordinateframes')
+        match = resolve('/' + version + '/resource/coordinateframes')
         self.assertEqual(match.func.__name__, CoordinateFrameList.as_view().__name__)
 
-        match = resolve('/' + version + '/manage-data/coordinateframes/cf1/')
+        match = resolve('/' + version + '/resource/coordinateframes/cf1/')
         self.assertEqual(match.func.__name__, CoordinateFrameDetail.as_view().__name__)

@@ -56,7 +56,7 @@ urlpatterns = [
 
     # API version 0.4
     url(r'^v0.4/meta/', include('bossmeta.urls', namespace='v0.4')),
-    url(r'^v0.4/manage-data/', include('bosscore.manage_data_urls', namespace='v0.4')),
+    url(r'^v0.4/resource/', include('bosscore.resource_urls', namespace='v0.4')),
     url(r'^v0.4/cutout/', include('bossspatialdb.urls', namespace='v0.4')),
 
 ]
