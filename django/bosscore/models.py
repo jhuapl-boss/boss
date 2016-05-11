@@ -192,6 +192,7 @@ class ChannelLayer(models.Model):
             ('delete_volumetric_data_channellayer', 'Can delete volumetric data for the channel or layer'),
 
         )
+
     def __str__(self):
         return self.name
 
@@ -251,4 +252,3 @@ class BossRole(models.Model):
 
     def __str__(self):
         return 'user = {}, role = {}'.format(self.user, self.role)
-

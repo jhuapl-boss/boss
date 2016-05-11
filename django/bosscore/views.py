@@ -20,14 +20,15 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
-from distutils.util import strtobool
 
 from .error import BossHTTPError
 from .lookup import LookUpKey
 from .permissions import BossPermissionManager
-from .serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, ChannelLayerSerializer, \
+from bossmeta.metadb import MetaDB
+
+from .serializers import CollectionSerializer, ExperimentSerializer,ChannelLayerSerializer,\
     LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
-from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap
+from .models import Collection, Experiment, ChannelLayer, CoordinateFrame
 
 
 class CollectionDetail(APIView):
@@ -703,6 +704,6 @@ class CoordinateFrameList(generics.ListCreateAPIView):
         Returns: Coordinate frames that user has view permissions on
 
         """
-        coords = get_objects_for_user(request.user, 'read_coordinateframe',klass=CoordinateFrame)
+        coords = get_objects_for_user(request.user, 'read_coordinateframe', klass=CoordinateFrame)
         serializer = CoordinateFrameSerializer(coords, many=True)
         return Response(serializer.data)
