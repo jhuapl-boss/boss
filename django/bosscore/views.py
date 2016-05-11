@@ -24,12 +24,11 @@ from guardian.shortcuts import get_objects_for_user
 from .error import BossHTTPError
 from .lookup import LookUpKey
 from .permissions import BossPermissionManager
-from bossmeta.metadb import MetaDB
 
-from .serializers import CollectionSerializer, ExperimentSerializer,ChannelLayerSerializer,\
+from .serializers import CollectionSerializer, ExperimentSerializer, ChannelLayerSerializer,\
     LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
 from .models import Collection, Experiment, ChannelLayer, CoordinateFrame
-
+from bossmeta.metadb import MetaDB
 
 class CollectionDetail(APIView):
     """
@@ -638,7 +637,7 @@ class ChannelList(generics.ListAPIView):
     queryset = ChannelLayer.objects.all()
     serializer_class = ChannelLayerSerializer
 
-    def list(self,request, collection, experiment, *args, **kwargs):
+    def list(self, request, collection, experiment, *args, **kwargs):
         """
         Display only objects that a user has access to
         Args:
@@ -667,7 +666,7 @@ class LayerList(generics.ListAPIView):
     queryset = ChannelLayer.objects.filter(is_channel=False)
     serializer_class = LayerSerializer
 
-    def list(self, request,collection, experiment, *args, **kwargs):
+    def list(self, request, collection, experiment, *args, **kwargs):
         """
         Display only objects that a user has access to
         Args:
