@@ -73,15 +73,15 @@ class CollectionDetail(APIView):
         serializer = CollectionSerializer(data=col_data)
         if serializer.is_valid():
             serializer.save(creator=self.request.user)
-            collection = Collection.objects.get(name=col_data['name'])
+            collection_obj = Collection.objects.get(name=col_data['name'])
 
             # Assign permissions to the users primary group
-            BossPermissionManager.add_permissions_primary_group(self.request.user, collection)
-            BossPermissionManager.add_permissions_admin_group(collection)
+            BossPermissionManager.add_permissions_primary_group(self.request.user, collection_obj)
+            BossPermissionManager.add_permissions_admin_group(collection_obj)
 
-            lookup_key = collection.pk
-            boss_key = collection.name
-            LookUpKey.add_lookup(lookup_key, boss_key, collection.name)
+            lookup_key = str(collection_obj.pk)
+            boss_key = collection_obj.name
+            LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
@@ -105,7 +105,13 @@ class CollectionDetail(APIView):
                 serializer = CollectionSerializer(collection_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
-                    # TODO (pmanava1) -  Update boss key if the object name is updated?
+
+                    # update the lookup key if you update the name
+                    if 'name' in request.data and request.data['name'] != collection:
+                        lookup_key = str(collection_obj.pk)
+                        boss_key = request.data['name']
+                        LookUpKey.update_lookup(lookup_key, boss_key, request.data['name'])
+
                     return Response(serializer.data)
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
@@ -329,7 +335,13 @@ class ExperimentDetail(APIView):
                 serializer = ExperimentSerializer(experiment_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
-                    # TODO (pmanava1) -  Update boss key if the object name is updated?
+
+                    # update the lookup key if you update the name
+                    if 'name' in request.data and request.data['name'] != experiment:
+                        lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk)
+                        boss_key = collection_obj.name + '&' + request.data['name']
+                        LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name, request.data['name'])
+
                     return Response(serializer.data)
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
@@ -484,7 +496,7 @@ class ChannelLayerDetail(APIView):
 
                     # Add Lookup key
                     lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' + str(channel_layer_obj.pk)
-                    boss_key = collection_obj.name + '&' + experiment_obj.name + channel_layer_obj.name
+                    boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + channel_layer_obj.name
                     LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name,
                                          channel_layer_obj.name)
 
@@ -528,7 +540,14 @@ class ChannelLayerDetail(APIView):
                 serializer = ChannelLayerSerializer(channel_layer_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
-                    # TODO (pmanava1) -  Update boss key if the object name is updated?
+                    # update the lookup key if you update the name
+                    if 'name' in request.data and request.data['name'] != channel_layer:
+                        lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' \
+                                     + str(channel_layer_obj.pk)
+                        boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + request.data['name']
+                        LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name,  experiment_obj.name,
+                                                request.data['name'])
+
                     return Response(serializer.data)
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
