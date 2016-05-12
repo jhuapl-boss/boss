@@ -815,6 +815,21 @@ class ResourceViewsLayerTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
+    def test_post_layer_invalid_channel_ids_types(self):
+        """
+        Post a new layer (Invalid - The layer is not  linked channels that do not exist)
+
+        """
+
+        # Post a new channel
+        url = '/' + version + '/resource/col1/exp1/layer10/'
+        data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
+                'channels': ['bad id', 'another bad id']}
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 404)
+
+
     def test_post_layer_no_experiment(self):
         """
         Post a new layer (valid - No experiment in the post data. This is picked up from the request)

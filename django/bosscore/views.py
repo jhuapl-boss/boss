@@ -435,8 +435,8 @@ class ChannelLayerDetail(APIView):
         list_ints = list_ints.replace('[', '')
         list_ints = list_ints.replace(']', '')
         list_ints = list_ints.split(',')
+        list_ints = [int(i) for i in list_ints]
         return list_ints
-
 
 
     def get(self, request, collection, experiment, channel_layer):
@@ -468,6 +468,8 @@ class ChannelLayerDetail(APIView):
             return BossHTTPError(404, "Experiment  with name {} is not found".format(experiment), 30000)
         except ChannelLayer.DoesNotExist:
             return BossHTTPError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
+        except ValueError:
+            return BossHTTPError(404, "Value Error in post data", 30000)
 
     @transaction.atomic
     def post(self, request, collection, experiment, channel_layer):
@@ -484,13 +486,12 @@ class ChannelLayerDetail(APIView):
 
         channel_layer_data = request.data.copy()
         channel_layer_data['name'] = channel_layer
-        if 'channels' in channel_layer_data:
-            channels = self.get_list(channel_layer_data['channels'])
-        else:
-            channels = []
-        # = channel_layer_data.getlist('channels')
 
         try:
+            if 'channels' in channel_layer_data:
+                channels = self.get_list(channel_layer_data['channels'])
+            else:
+                channels = []
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for add permissions
@@ -513,7 +514,7 @@ class ChannelLayerDetail(APIView):
                         # Layers must map to at least 1 channel
                         for channel_id in channels:
                             # Is this a valid channel?
-                            channel_obj = ChannelLayer.objects.get(pk=int(channel_id))
+                            channel_obj = ChannelLayer.objects.get(pk=channel_id)
                             if channel_obj:
                                 channel_layer_map = {'channel': channel_id, 'layer': channel_layer_obj.pk}
                                 serializer = ChannelLayerMapSerializer(data=channel_layer_map)
