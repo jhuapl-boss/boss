@@ -768,6 +768,26 @@ class ResourceViewsLayerTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
+    def test_post_layer_single_channel(self):
+        """
+        Post a new layer (valid _ the post has all the required data and does not already exist)
+
+        """
+        # Get channelid
+        url = '/' + version + '/resource/col1/exp1/channel1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        channel_id1 = response.data['id']
+
+
+        # Post a new channel
+        url = '/' + version + '/resource/col1/exp1/layer10/'
+        data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
+                'channels': [channel_id1]}
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
     def test_post_layer_no_channels(self):
         """
         Post a new layer (Invalid _ The layer is not  linked to any channel)
