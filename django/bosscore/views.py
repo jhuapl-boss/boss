@@ -47,7 +47,7 @@ class CollectionDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
 
             # Check for permissions
-            if request.user.has_perm("read_collection", collection_obj):
+            if request.user.has_perm("read", collection_obj):
                 serializer = CollectionSerializer(collection_obj)
                 return Response(serializer.data)
             else:
@@ -101,7 +101,7 @@ class CollectionDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
 
             # Check for permissions
-            if request.user.has_perm("update_collection", collection_obj):
+            if request.user.has_perm("update", collection_obj):
                 serializer = CollectionSerializer(collection_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
@@ -130,7 +130,7 @@ class CollectionDetail(APIView):
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
-            if request.user.has_perm("delete_collection", collection_obj):
+            if request.user.has_perm("delete", collection_obj):
                 collection_obj.delete()
 
                 # delete the lookup key for this object
@@ -161,7 +161,7 @@ class CoordinateFrameDetail(APIView):
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
             # Check for permissions
-            if request.user.has_perm("read_coordinateframe", coordframe_obj):
+            if request.user.has_perm("read", coordframe_obj):
                 serializer = CoordinateFrameSerializer(coordframe_obj)
                 return Response(serializer.data)
             else:
@@ -208,7 +208,7 @@ class CoordinateFrameDetail(APIView):
         try:
             # Check if the object exists
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
-            if request.user.has_perm("update_coordinateframe", coordframe_obj):
+            if request.user.has_perm("update", coordframe_obj):
                 serializer = CoordinateFrameSerializer(coordframe_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
@@ -230,7 +230,7 @@ class CoordinateFrameDetail(APIView):
         """
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
-            if request.user.has_perm("delete_coordinateframe", coordframe_obj):
+            if request.user.has_perm("delete", coordframe_obj):
                 coordframe_obj.delete()
                 return HttpResponse(status=204)
             else:
@@ -261,7 +261,7 @@ class ExperimentDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for permissions
-            if request.user.has_perm("read_experiment", experiment_obj):
+            if request.user.has_perm("read", experiment_obj):
                 serializer = ExperimentSerializer(experiment_obj)
                 return Response(serializer.data)
             else:
@@ -288,7 +288,7 @@ class ExperimentDetail(APIView):
         try:
             # Get the collection information
             collection_obj = Collection.objects.get(name=collection)
-            if request.user.has_perm("add_collection", collection_obj):
+            if request.user.has_perm("add", collection_obj):
                 experiment_data['collection'] = collection_obj.pk
 
                 serializer = ExperimentSerializer(data=experiment_data)
@@ -331,7 +331,7 @@ class ExperimentDetail(APIView):
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            if request.user.has_perm("update_experiment", experiment_obj):
+            if request.user.has_perm("update", experiment_obj):
                 serializer = ExperimentSerializer(experiment_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
@@ -366,7 +366,7 @@ class ExperimentDetail(APIView):
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            if request.user.has_perm("delete_experiment", experiment_obj):
+            if request.user.has_perm("delete", experiment_obj):
                 experiment_obj.delete()
 
                 # delete the lookup key for this object
@@ -456,7 +456,7 @@ class ChannelLayerDetail(APIView):
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
 
             # Check for permissions
-            if request.user.has_perm("read_channellayer", channel_layer_obj):
+            if request.user.has_perm("read", channel_layer_obj):
                 serializer = ChannelLayerSerializer(channel_layer_obj)
                 return Response(serializer.data)
             else:
@@ -495,7 +495,7 @@ class ChannelLayerDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for add permissions
-            if request.user.has_perm("add_experiment", experiment_obj):
+            if request.user.has_perm("add", experiment_obj):
                 channel_layer_data['experiment'] = experiment_obj.pk
                 channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
 
@@ -566,7 +566,7 @@ class ChannelLayerDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
-            if request.user.has_perm("update_channellayer", channel_layer_obj):
+            if request.user.has_perm("update", channel_layer_obj):
                 serializer = ChannelLayerSerializer(channel_layer_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
@@ -608,7 +608,7 @@ class ChannelLayerDetail(APIView):
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
 
-            if request.user.has_perm("delete_channellayer", channel_layer_obj):
+            if request.user.has_perm("delete", channel_layer_obj):
                 channel_layer_obj.delete()
 
                 # delete the lookup key for this object
@@ -647,7 +647,7 @@ class CollectionList(generics.ListAPIView):
 
         """
         # queryset = self.get_queryset()
-        collections = get_objects_for_user(request.user, 'read_collection', klass=Collection)
+        collections = get_objects_for_user(request.user, 'read', klass=Collection)
         serializer = CollectionSerializer(collections, many=True)
         return Response(serializer.data)
 
@@ -673,7 +673,7 @@ class ExperimentList(generics.ListAPIView):
 
         """
         collection_obj = Collection.objects.get(name=collection)
-        all_experiments = get_objects_for_user(request.user, 'read_experiment', klass=Experiment)
+        all_experiments = get_objects_for_user(request.user, 'read', klass=Experiment)
         experiments = all_experiments.filter(collection=collection_obj)
         serializer = ExperimentSerializer(experiments, many=True)
         return Response(serializer.data)
@@ -702,7 +702,7 @@ class ChannelList(generics.ListAPIView):
         """
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        channel_layers = get_objects_for_user(request.user, 'read_channellayer',
+        channel_layers = get_objects_for_user(request.user, 'read',
                                               klass=ChannelLayer).filter(is_channel=True, experiment=experiment_obj)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
@@ -728,7 +728,7 @@ class LayerList(generics.ListAPIView):
         """
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        channel_layers = get_objects_for_user(request.user, 'read_channellayer',
+        channel_layers = get_objects_for_user(request.user, 'read',
                                               klass=ChannelLayer).filter(is_channel=False, experiment=experiment_obj)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
@@ -752,6 +752,6 @@ class CoordinateFrameList(generics.ListCreateAPIView):
         Returns: Coordinate frames that user has view permissions on
 
         """
-        coords = get_objects_for_user(request.user, 'read_coordinateframe', klass=CoordinateFrame)
+        coords = get_objects_for_user(request.user, 'read', klass=CoordinateFrame)
         serializer = CoordinateFrameSerializer(coords, many=True)
         return Response(serializer.data)

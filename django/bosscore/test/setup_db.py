@@ -63,10 +63,10 @@ class SetupTestDB:
         ct = ContentType.objects.get_for_model(obj)
         user_primary_group, created = Group.objects.get_or_create(name=group)
 
-        assign_perm('read_' + ct.model, user_primary_group, obj)
-        assign_perm('add_' + ct.model, user_primary_group, obj)
-        assign_perm('update_' + ct.model, user_primary_group, obj)
-        assign_perm('delete_' + ct.model, user_primary_group, obj)
+        assign_perm('read', user_primary_group, obj)
+        assign_perm('add', user_primary_group, obj)
+        assign_perm('update', user_primary_group, obj)
+        assign_perm('delete', user_primary_group, obj)
 
     def add_collection(self, collection_name, description):
         """

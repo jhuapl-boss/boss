@@ -46,10 +46,10 @@ class BossPermissionManager:
         user_primary_group = Group.objects.get_or_create(name=group_name)[0]
         user.groups.add(user_primary_group.pk)
 
-        assign_perm('read_' + ct.model, user_primary_group, obj)
-        assign_perm('add_' + ct.model, user_primary_group, obj)
-        assign_perm('update_' + ct.model, user_primary_group, obj)
-        assign_perm('delete_' + ct.model, user_primary_group, obj)
+        assign_perm('read', user_primary_group, obj)
+        assign_perm('add', user_primary_group, obj)
+        assign_perm('update', user_primary_group, obj)
+        assign_perm('delete', user_primary_group, obj)
 
     @staticmethod
     def add_permissions_primary_group(user, obj):
@@ -69,10 +69,10 @@ class BossPermissionManager:
         user_primary_group = Group.objects.get_or_create(name=group_name)[0]
         user.groups.add(user_primary_group.pk)
 
-        assign_perm('read_' + ct.model, user_primary_group, obj)
-        assign_perm('add_' + ct.model, user_primary_group, obj)
-        assign_perm('update_' + ct.model, user_primary_group, obj)
-        assign_perm('delete_' + ct.model, user_primary_group, obj)
+        assign_perm('read', user_primary_group, obj)
+        assign_perm('add', user_primary_group, obj)
+        assign_perm('update', user_primary_group, obj)
+        assign_perm('delete', user_primary_group, obj)
 
     @staticmethod
     def add_permissions_admin_group(obj):
@@ -90,10 +90,10 @@ class BossPermissionManager:
             admin_group = Group.objects.get(name="admin")[0]
             print (admin_group)
             ct = ContentType.objects.get_for_model(obj)
-            assign_perm('read_' + ct.model, admin_group, obj)
-            assign_perm('add_' + ct.model, admin_group, obj)
-            assign_perm('update_' + ct.model, admin_group, obj)
-            assign_perm('delete_' + ct.model, admin_group, obj)
+            assign_perm('read', admin_group, obj)
+            assign_perm('add', admin_group, obj)
+            assign_perm('update', admin_group, obj)
+            assign_perm('delete', admin_group, obj)
         except Group.DoesNotExist:
             BossHTTPError(404, "{Cannot assign permissions to the admin group because the group does not exist}", 30000)
 
@@ -110,13 +110,13 @@ class BossPermissionManager:
 
         """
         if method_type == 'GET':
-            permission = 'view_' + obj_name
+            permission = 'read' + obj_name
         elif method_type == 'POST':
-            permission = 'add_' + obj_name
+            permission = 'add' + obj_name
         elif method_type == 'PUT':
-            permission = 'change_' + obj_name
+            permission = 'update' + obj_name
         elif method_type == 'DELETE':
-            permission = 'delete_' + obj_name
+            permission = 'delete' + obj_name
         else:
             return BossHTTPError(404, "Unable to get permissions for this request", 30000)
 

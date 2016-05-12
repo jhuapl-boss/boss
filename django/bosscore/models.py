@@ -36,15 +36,12 @@ class Collection(models.Model):
         default_permissions = ()
         permissions = (
 
-            ('read_collection', 'Can view collection'),
-            ('update_collection', 'Can update collection'),
-            ('delete_collection', 'Can delete collection'),
-            ('add_collection', 'Can add resources for the collection'),
-            ('assign_group_collection', 'Can assign groups permissions for the collection'),
-            ('remove_group_collection', 'Can remove groups permissions for the collection'),
-            ('add_volumetric_data_collection', 'Can add volumetric data for the collection'),
-            ('read_volumetric_data_collection', 'Can read volumetric data for the collection'),
-            ('delete_volumetric_data_collection', 'Can delete volumetric data for the collection'),
+            ('read', 'Can view resource'),
+            ('update', 'Can update resource'),
+            ('delete', 'Can delete resource'),
+            ('add', 'Can add resources '),
+            ('assign_group', 'Can assign groups permissions for the resource'),
+            ('remove_group', 'Can remove groups permissions for the resource'),
 
         )
 
@@ -95,12 +92,12 @@ class CoordinateFrame(models.Model):
         default_permissions = ()
         permissions = (
 
-            ('read_coordinateframe', 'Can view coordinate frame'),
-            ('update_coordinateframe', 'Can update coordinate frame'),
-            ('delete_coordinateframe', 'Can delete coordinate frame'),
-            ('add_coordinateframe', 'Can add resources for the coordinate frame'),
-            ('assign_group_coordinateframe', 'Can assign groups permissions for the coordinate frame'),
-            ('remove_group_coordinateframe', 'Can remove groups permissions for the coordinate frame'),
+            ('read', 'Can view resource'),
+            ('update', 'Can update resource'),
+            ('delete', 'Can delete resource'),
+            ('add', 'Can add resources '),
+            ('assign_group', 'Can assign groups permissions for the resource'),
+            ('remove_group', 'Can remove groups permissions for the resource'),
 
 
         )
@@ -135,13 +132,12 @@ class Experiment(models.Model):
         default_permissions = ()
         permissions = (
 
-            ('read_experiment', 'Can view experiment'),
-            ('update_experiment', 'Can update experiment'),
-            ('delete_experiment', 'Can delete experiment'),
-            ('add_experiment', 'Can add resources for the experiment'),
-            ('assign_group_experiment', 'Can assign groups permissions for the experiment'),
-            ('remove_group_experiment', 'Can remove groups permissions for the experiment'),
-
+            ('read', 'Can view resource'),
+            ('update', 'Can update resource'),
+            ('delete', 'Can delete resource'),
+            ('add', 'Can add resources '),
+            ('assign_group', 'Can assign groups permissions for the resource'),
+            ('remove_group', 'Can remove groups permissions for the resource'),
         )
 
     def __str__(self):
@@ -181,15 +177,15 @@ class ChannelLayer(models.Model):
         default_permissions = ()
         permissions = (
 
-            ('read_channellayer', 'Can view channel or layer'),
-            ('update_channellayer', 'Can update channel or layer'),
-            ('delete_channellayer', 'Can delete channel or layer'),
-            ('add_channellayer', 'Can add resources for the channel or layer'),
-            ('assign_group_channellayer', 'Can assign groups permissions for the channel or layer'),
-            ('remove_group_channellayer', 'Can remove groups permissions for the channel or layer'),
-            ('add_volumetric_data_channellayer', 'Can add volumetric data for the channel or layer'),
-            ('read_volumetric_data_channellayer', 'Can read volumetric data for the channel or layer'),
-            ('delete_volumetric_data_channellayer', 'Can delete volumetric data for the channel or layer'),
+            ('read', 'Can view resource'),
+            ('update', 'Can update resource'),
+            ('delete', 'Can delete resource'),
+            ('add', 'Can add resources '),
+            ('assign_group', 'Can assign groups permissions for the resource'),
+            ('remove_group', 'Can remove groups permissions for the resource'),
+            ('add_volumetric_data', 'Can add volumetric data for the channel or layer'),
+            ('read_volumetric_data', 'Can read volumetric data for the channel or layer'),
+            ('delete_volumetric_data', 'Can delete volumetric data for the channel or layer'),
 
         )
 
