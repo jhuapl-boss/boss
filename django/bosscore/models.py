@@ -33,9 +33,15 @@ class Collection(models.Model):
     class Meta:
         db_table = u"collection"
         managed = True
+        default_permissions = ()
         permissions = (
 
-            ('view_collection', 'Can view collection'),
+            ('read', 'Can view resource'),
+            ('update', 'Can update resource'),
+            ('delete', 'Can delete resource'),
+            ('add', 'Can add resources '),
+            ('assign_group', 'Can assign groups permissions for the resource'),
+            ('remove_group', 'Can remove groups permissions for the resource'),
 
         )
 
@@ -83,8 +89,17 @@ class CoordinateFrame(models.Model):
     class Meta:
         db_table = u"coordinate_frame"
 
+        default_permissions = ()
         permissions = (
-            ('view_coordinateframe', 'Can view coordinate frame'),
+
+            ('read', 'Can view resource'),
+            ('update', 'Can update resource'),
+            ('delete', 'Can delete resource'),
+            ('add', 'Can add resources '),
+            ('assign_group', 'Can assign groups permissions for the resource'),
+            ('remove_group', 'Can remove groups permissions for the resource'),
+
+
         )
 
     def __str__(self):
@@ -114,8 +129,15 @@ class Experiment(models.Model):
     class Meta:
         db_table = u"experiment"
         unique_together = ('collection', 'name')
+        default_permissions = ()
         permissions = (
-            ('view_experiment', 'Can view experiment'),
+
+            ('read', 'Can view resource'),
+            ('update', 'Can update resource'),
+            ('delete', 'Can delete resource'),
+            ('add', 'Can add resources '),
+            ('assign_group', 'Can assign groups permissions for the resource'),
+            ('remove_group', 'Can remove groups permissions for the resource'),
         )
 
     def __str__(self):
@@ -152,8 +174,19 @@ class ChannelLayer(models.Model):
     class Meta:
         db_table = u"channel_layer"
         unique_together = ('experiment', 'name')
+        default_permissions = ()
         permissions = (
-            ('view_channellayer', 'Can view channel or layer'),
+
+            ('read', 'Can view resource'),
+            ('update', 'Can update resource'),
+            ('delete', 'Can delete resource'),
+            ('add', 'Can add resources '),
+            ('assign_group', 'Can assign groups permissions for the resource'),
+            ('remove_group', 'Can remove groups permissions for the resource'),
+            ('add_volumetric_data', 'Can add volumetric data for the channel or layer'),
+            ('read_volumetric_data', 'Can read volumetric data for the channel or layer'),
+            ('delete_volumetric_data', 'Can delete volumetric data for the channel or layer'),
+
         )
 
     def __str__(self):
@@ -193,3 +226,25 @@ class BossLookup(models.Model):
 
     def __str__(self):
         return 'Lookup key = {}, Boss key = {}'.format(self.lookup_key, self.boss_key)
+
+
+class BossRole(models.Model):
+    """
+    Map user's to roles.
+    """
+    user = models.ForeignKey('auth.User', related_name='Role', on_delete=models.CASCADE)
+    DATATYPE_CHOICES = (
+        ('admin', 'ADMIN'),
+        ('user', 'USER'),
+        ('user-manager', 'USER-MANAGER'),
+        ('resource-manager', 'RESOURCE-MANAGER'),
+    )
+
+    role = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
+
+    class Meta:
+        db_table = u"role"
+        unique_together = ('user', 'role')
+
+    def __str__(self):
+        return 'user = {}, role = {}'.format(self.user, self.role)

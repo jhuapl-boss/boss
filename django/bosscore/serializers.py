@@ -27,7 +27,6 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CoordinateFrameSerializer(serializers.ModelSerializer):
-    #id = serializers.ReadOnlyField(source='pk')
 
     class Meta:
         model = CoordinateFrame
@@ -36,7 +35,6 @@ class CoordinateFrameSerializer(serializers.ModelSerializer):
 
 
 class ChannelLayerMapSerializer(serializers.ModelSerializer):
-    # Layers = TimeSampleSerializer(many=True, read_only=True)
 
     class Meta:
         model = ChannelLayerMap
@@ -51,7 +49,6 @@ class NameOnlySerializer(serializers.ModelSerializer):
 
 
 class ChannelSerializer(serializers.ModelSerializer):
-    #id = serializers.ReadOnlyField(source='pk')
     linked_channel_layers = NameOnlySerializer(many=True, read_only=True)
     is_channel = serializers.BooleanField(default=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
@@ -63,7 +60,6 @@ class ChannelSerializer(serializers.ModelSerializer):
 
 
 class LayerSerializer(serializers.ModelSerializer):
-    #id = serializers.ReadOnlyField(source='pk')
     linked_channel_layers = NameOnlySerializer(many=True, read_only=True)
     is_channel = serializers.BooleanField(default=False, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
@@ -75,7 +71,6 @@ class LayerSerializer(serializers.ModelSerializer):
 
 
 class ChannelLayerSerializer(serializers.ModelSerializer):
-    #id = serializers.ReadOnlyField(source='pk')
     creator = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
@@ -85,7 +80,6 @@ class ChannelLayerSerializer(serializers.ModelSerializer):
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
-    #id = serializers.ReadOnlyField(source='pk')
     channel_layers = ChannelLayerSerializer(many=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 
@@ -103,7 +97,6 @@ class ExperimentSerializer(serializers.ModelSerializer):
 
 
 class CollectionSerializer(serializers.ModelSerializer):
-    #id = serializers.ReadOnlyField(source='pk')
     experiments = ExperimentSerializer(many=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 

@@ -20,15 +20,15 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
-from distutils.util import strtobool
 
 from .error import BossHTTPError
 from .lookup import LookUpKey
 from .permissions import BossPermissionManager
-from .serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, ChannelLayerSerializer, \
-    LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
-from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap
 
+from .serializers import CollectionSerializer, ExperimentSerializer, ChannelLayerSerializer,\
+    LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
+from .models import Collection, Experiment, ChannelLayer, CoordinateFrame
+from bossmeta.metadb import MetaDB
 
 class CollectionDetail(APIView):
     """
@@ -43,15 +43,15 @@ class CollectionDetail(APIView):
         :param collection: Collection name specifying the collection you want
         :return:
         """
-
         try:
             collection_obj = Collection.objects.get(name=collection)
 
             # Check for permissions
-            if request.user.has_perm("view_collection", collection_obj):
+            if request.user.has_perm("read", collection_obj):
                 serializer = CollectionSerializer(collection_obj)
                 return Response(serializer.data)
             else:
+
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except Collection.DoesNotExist:
             return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
@@ -67,26 +67,25 @@ class CollectionDetail(APIView):
         Returns:
 
         """
-
-        # TODO (pmanava1): Apply permissions here
         col_data = request.data.copy()
         col_data['name'] = collection
 
         serializer = CollectionSerializer(data=col_data)
         if serializer.is_valid():
             serializer.save(creator=self.request.user)
-            collection = Collection.objects.get(name=col_data['name'])
+            collection_obj = Collection.objects.get(name=col_data['name'])
 
             # Assign permissions to the users primary group
-            BossPermissionManager.add_permissions_primary_group(self.request.user, collection, 'collection')
+            BossPermissionManager.add_permissions_primary_group(self.request.user, collection_obj)
+            BossPermissionManager.add_permissions_admin_group(collection_obj)
 
-            lookup_key = collection.pk
-            boss_key = collection.name
-            LookUpKey.add_lookup(lookup_key, boss_key, collection.name)
+            lookup_key = str(collection_obj.pk)
+            boss_key = collection_obj.name
+            LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return BossHTTPError(409, "{}".format(serializer.errors), 30000)
+            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
 
     @transaction.atomic
     def put(self, request, collection):
@@ -97,21 +96,27 @@ class CollectionDetail(APIView):
         :param collection: Collection name
         :return:
         """
-        # TODO :Check for permissions
         try:
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
 
-            serializer = CollectionSerializer(collection_obj, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
+            # Check for permissions
+            if request.user.has_perm("update", collection_obj):
+                serializer = CollectionSerializer(collection_obj, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
 
-                # TODO (pmanava1) -  Update boss key if the object name is updated?
-                return Response(serializer.data)
+                    # update the lookup key if you update the name
+                    if 'name' in request.data and request.data['name'] != collection:
+                        lookup_key = str(collection_obj.pk)
+                        boss_key = request.data['name']
+                        LookUpKey.update_lookup(lookup_key, boss_key, request.data['name'])
+
+                    return Response(serializer.data)
+                else:
+                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                print (serializer.errors)
-            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
-
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except Collection.DoesNotExist:
             return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
 
@@ -125,7 +130,7 @@ class CollectionDetail(APIView):
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
-            if request.user.has_perm("delete_collection", collection_obj):
+            if request.user.has_perm("delete", collection_obj):
                 collection_obj.delete()
 
                 # delete the lookup key for this object
@@ -156,7 +161,7 @@ class CoordinateFrameDetail(APIView):
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
             # Check for permissions
-            if request.user.has_perm("view_coordinateframe", coordframe_obj):
+            if request.user.has_perm("read", coordframe_obj):
                 serializer = CoordinateFrameSerializer(coordframe_obj)
                 return Response(serializer.data)
             else:
@@ -185,11 +190,11 @@ class CoordinateFrameDetail(APIView):
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe_data['name'])
 
             # Assign permissions to the users primary group
-            BossPermissionManager.add_permissions_primary_group(self.request.user, coordframe_obj, 'coordinateframe')
+            BossPermissionManager.add_permissions_primary_group(self.request.user, coordframe_obj)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return BossHTTPError(409, "{}".format(serializer.errors), 30000)
+            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
 
     @transaction.atomic
     def put(self, request, coordframe):
@@ -200,18 +205,18 @@ class CoordinateFrameDetail(APIView):
         :param coordframe: Coordinate frame name
         :return:
         """
-        # TODO :Check for permissions
         try:
             # Check if the object exists
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
-            serializer = CoordinateFrameSerializer(coordframe_obj, data=request.data, partial=True)
-            if serializer.is_valid():
-
-                serializer.save()
-                return Response(serializer.data)
+            if request.user.has_perm("update", coordframe_obj):
+                serializer = CoordinateFrameSerializer(coordframe_obj, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data)
+                else:
+                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(404, "{}".format(serializer.errors), 30000)
-
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except CoordinateFrame.DoesNotExist:
             return BossHTTPError(404, "Coordinate frame  with name {} not found".format(coordframe), 30000)
 
@@ -225,7 +230,7 @@ class CoordinateFrameDetail(APIView):
         """
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
-            if request.user.has_perm("delete_coordinateframe", coordframe_obj):
+            if request.user.has_perm("delete", coordframe_obj):
                 coordframe_obj.delete()
                 return HttpResponse(status=204)
             else:
@@ -256,7 +261,7 @@ class ExperimentDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for permissions
-            if request.user.has_perm("view_experiment", experiment_obj):
+            if request.user.has_perm("read", experiment_obj):
                 serializer = ExperimentSerializer(experiment_obj)
                 return Response(serializer.data)
             else:
@@ -278,30 +283,32 @@ class ExperimentDetail(APIView):
         Returns:
 
         """
-
-        # TODO (pmanava1): Apply permissions here
         experiment_data = request.data.copy()
         experiment_data['name'] = experiment
         try:
             # Get the collection information
             collection_obj = Collection.objects.get(name=collection)
-            experiment_data['collection'] = collection_obj.pk
+            if request.user.has_perm("add", collection_obj):
+                experiment_data['collection'] = collection_obj.pk
 
-            serializer = ExperimentSerializer(data=experiment_data)
-            if serializer.is_valid():
-                serializer.save(creator=self.request.user)
-                experiment_obj = Experiment.objects.get(name=experiment_data['name'])
+                serializer = ExperimentSerializer(data=experiment_data)
+                if serializer.is_valid():
+                    serializer.save(creator=self.request.user)
+                    experiment_obj = Experiment.objects.get(name=experiment_data['name'])
 
-                # Assign permissions to the users primary group
-                BossPermissionManager.add_permissions_primary_group(self.request.user, experiment_obj, 'experiment')
+                    # Assign permissions to the users primary group
+                    BossPermissionManager.add_permissions_primary_group(self.request.user, experiment_obj)
 
-                lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk)
-                boss_key = collection_obj.name + '&' + experiment_obj.name
-                LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name)
+                    lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk)
+                    boss_key = collection_obj.name + '&' + experiment_obj.name
+                    LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name)
 
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(409, "{}".format(serializer.errors), 30000)
+                return BossHTTPError(404, "{} does not have permissions to add an experiment for collection "
+                                          "with name {}".format(request.user, collection), 30000)
         except Collection.DoesNotExist:
             return BossHTTPError(404, "Collection with name {} does not exist".format(collection), 30000)
         except ValueError:
@@ -320,18 +327,26 @@ class ExperimentDetail(APIView):
 
         Returns:
         """
-        # TODO :Check for permissions
         try:
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+            if request.user.has_perm("update", experiment_obj):
+                serializer = ExperimentSerializer(experiment_obj, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
 
-            serializer = ExperimentSerializer(experiment_obj, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                # TODO (pmanava1) -  Update boss key if the object name is updated?
-                return Response(serializer.data)
-            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+                    # update the lookup key if you update the name
+                    if 'name' in request.data and request.data['name'] != experiment:
+                        lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk)
+                        boss_key = collection_obj.name + '&' + request.data['name']
+                        LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name, request.data['name'])
+
+                    return Response(serializer.data)
+                else:
+                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
 
         except Collection.DoesNotExist:
             return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
@@ -351,7 +366,7 @@ class ExperimentDetail(APIView):
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            if request.user.has_perm("delete_experiment", experiment_obj):
+            if request.user.has_perm("delete", experiment_obj):
                 experiment_obj.delete()
 
                 # delete the lookup key for this object
@@ -398,6 +413,32 @@ class ChannelLayerDetail(APIView):
         else:
             return BossHTTPError(404, "Value Error in post data", 30000)
 
+    @staticmethod
+    def get_list(list_ints):
+        """
+        Convert a string with integers to a list of integers
+
+        Lists in post data get converted to strings. This method converts the strings
+        back to a list if they are valid.
+
+        Args:
+            value: String of Integers
+
+        Returns:
+            List : Representing the string of integers
+
+        Raises:
+            BossError : If the string is not the right format or encounters a value error
+
+        """
+        # remove list braces if present
+        list_ints = list_ints.replace('[', '')
+        list_ints = list_ints.replace(']', '')
+        list_ints = list_ints.split(',')
+        list_ints = [int(i) for i in list_ints]
+        return list_ints
+
+
     def get(self, request, collection, experiment, channel_layer):
         """
         Retrieve information about a channel.
@@ -415,7 +456,7 @@ class ChannelLayerDetail(APIView):
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
 
             # Check for permissions
-            if request.user.has_perm("view_channellayer", channel_layer_obj):
+            if request.user.has_perm("read", channel_layer_obj):
                 serializer = ChannelLayerSerializer(channel_layer_obj)
                 return Response(serializer.data)
             else:
@@ -427,6 +468,8 @@ class ChannelLayerDetail(APIView):
             return BossHTTPError(404, "Experiment  with name {} is not found".format(experiment), 30000)
         except ChannelLayer.DoesNotExist:
             return BossHTTPError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
+        except ValueError:
+            return BossHTTPError(404, "Value Error in post data", 30000)
 
     @transaction.atomic
     def post(self, request, collection, experiment, channel_layer):
@@ -440,52 +483,59 @@ class ChannelLayerDetail(APIView):
 
         Returns :
         """
-        # TODO (pmanava1): Apply permissions here
+
         channel_layer_data = request.data.copy()
-        channels = channel_layer_data.getlist('channels')
         channel_layer_data['name'] = channel_layer
 
         try:
+            if 'channels' in channel_layer_data:
+                channels = self.get_list(channel_layer_data['channels'])
+            else:
+                channels = []
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            channel_layer_data['experiment'] = experiment_obj.pk
-            channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
+            # Check for add permissions
+            if request.user.has_perm("add", experiment_obj):
+                channel_layer_data['experiment'] = experiment_obj.pk
+                channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
 
-            # layers require at least 1 channel
-            if (channel_layer_data['is_channel'] is False) and (len(channels) == 0):
-                return BossHTTPError(404, "{Invalid Request.Please specify a valid channel for the layer}", 30000)
+                # layers require at least 1 channel
+                if (channel_layer_data['is_channel'] is False) and (len(channels) == 0):
+                    return BossHTTPError(404, "{Invalid Request.Please specify a valid channel for the layer}", 30000)
 
-            serializer = ChannelLayerSerializer(data=channel_layer_data)
-            if serializer.is_valid():
-                serializer.save(creator=self.request.user)
-                channel_layer_obj = ChannelLayer.objects.get(name=channel_layer_data['name'], experiment=experiment_obj)
+                serializer = ChannelLayerSerializer(data=channel_layer_data)
+                if serializer.is_valid():
+                    serializer.save(creator=self.request.user)
+                    channel_layer_obj = ChannelLayer.objects.get(name=channel_layer_data['name'],
+                                                                 experiment=experiment_obj)
 
-                # Layer?
-                if not channel_layer_obj.is_channel:
-                    # Layers must map to at least 1 channel
+                    # Layer?
+                    if not channel_layer_obj.is_channel:
+                        # Layers must map to at least 1 channel
+                        for channel_id in channels:
+                            # Is this a valid channel?
+                            channel_obj = ChannelLayer.objects.get(pk=channel_id)
+                            if channel_obj:
+                                channel_layer_map = {'channel': channel_id, 'layer': channel_layer_obj.pk}
+                                serializer = ChannelLayerMapSerializer(data=channel_layer_map)
+                                if serializer.is_valid():
+                                    serializer.save()
 
-                    for channel_id in channels:
-                        # Is this a valid channel?
-                        channel_obj = ChannelLayer.objects.get(pk=int(channel_id))
-                        if channel_obj:
-                            channel_layer_map = {'channel': channel_id, 'layer': channel_layer_obj.pk}
-                            serializer = ChannelLayerMapSerializer(data=channel_layer_map)
-                            if serializer.is_valid():
-                                serializer.save()
+                    # Assign permissions to the users primary group
+                    BossPermissionManager.add_permissions_primary_group(self.request.user, channel_layer_obj)
 
-                # Assign permissions to the users primary group
-                BossPermissionManager.add_permissions_primary_group(self.request.user, channel_layer_obj,
-                                                                    'channellayer')
+                    # Add Lookup key
+                    lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' + str(channel_layer_obj.pk)
+                    boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + channel_layer_obj.name
+                    LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name,
+                                         channel_layer_obj.name)
 
-                # Add Lookup key
-                lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' + str(channel_layer_obj.pk)
-                boss_key = collection_obj.name + '&' + experiment_obj.name + channel_layer_obj.name
-                LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name,
-                                     channel_layer_obj.name)
-
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
+                    return Response(serializer.data, status=status.HTTP_201_CREATED)
+                else:
+                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(409, "{}".format(serializer.errors), 30000)
+                return BossHTTPError(404, "{} does not have permissions to add resources for experiment "
+                                          "with name {}".format(request.user, experiment), 30000)
         except Collection.DoesNotExist:
             return BossHTTPError(404, "Collection with name {} does not exist".format(collection), 30000)
         except Experiment.DoesNotExist:
@@ -511,19 +561,28 @@ class ChannelLayerDetail(APIView):
         if 'is_channel' in channel_layer_data:
             channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
 
-        # TODO :Check for permissions
         try:
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
+            if request.user.has_perm("update", channel_layer_obj):
+                serializer = ChannelLayerSerializer(channel_layer_obj, data=request.data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    # update the lookup key if you update the name
+                    if 'name' in request.data and request.data['name'] != channel_layer:
+                        lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' \
+                                     + str(channel_layer_obj.pk)
+                        boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + request.data['name']
+                        LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name,  experiment_obj.name,
+                                                request.data['name'])
 
-            serializer = ChannelLayerSerializer(channel_layer_obj, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                # TODO (pmanava1) -  Update boss key if the object name is updated?
-                return Response(serializer.data)
-            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+                    return Response(serializer.data)
+                else:
+                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+            else:
+                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
 
         except Collection.DoesNotExist:
             return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
@@ -549,8 +608,7 @@ class ChannelLayerDetail(APIView):
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
 
-            # TODO (pmanava1) _ delete bosslookup
-            if request.user.has_perm("delete_channellayer", channel_layer_obj):
+            if request.user.has_perm("delete", channel_layer_obj):
                 channel_layer_obj.delete()
 
                 # delete the lookup key for this object
@@ -589,7 +647,7 @@ class CollectionList(generics.ListAPIView):
 
         """
         # queryset = self.get_queryset()
-        collections = get_objects_for_user(request.user, 'view_collection', klass=Collection)
+        collections = get_objects_for_user(request.user, 'read', klass=Collection)
         serializer = CollectionSerializer(collections, many=True)
         return Response(serializer.data)
 
@@ -615,7 +673,7 @@ class ExperimentList(generics.ListAPIView):
 
         """
         collection_obj = Collection.objects.get(name=collection)
-        all_experiments = get_objects_for_user(request.user, 'view_experiment', klass=Experiment)
+        all_experiments = get_objects_for_user(request.user, 'read', klass=Experiment)
         experiments = all_experiments.filter(collection=collection_obj)
         serializer = ExperimentSerializer(experiments, many=True)
         return Response(serializer.data)
@@ -628,7 +686,7 @@ class ChannelList(generics.ListAPIView):
     queryset = ChannelLayer.objects.all()
     serializer_class = ChannelLayerSerializer
 
-    def list(self,request, collection, experiment, *args, **kwargs):
+    def list(self, request, collection, experiment, *args, **kwargs):
         """
         Display only objects that a user has access to
         Args:
@@ -644,7 +702,7 @@ class ChannelList(generics.ListAPIView):
         """
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        channel_layers = get_objects_for_user(request.user, 'view_channellayer',
+        channel_layers = get_objects_for_user(request.user, 'read',
                                               klass=ChannelLayer).filter(is_channel=True, experiment=experiment_obj)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
@@ -657,7 +715,7 @@ class LayerList(generics.ListAPIView):
     queryset = ChannelLayer.objects.filter(is_channel=False)
     serializer_class = LayerSerializer
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, collection, experiment, *args, **kwargs):
         """
         Display only objects that a user has access to
         Args:
@@ -668,8 +726,10 @@ class LayerList(generics.ListAPIView):
         Returns: Channel_Layers that user has view permissions on
 
         """
-        channel_layers = get_objects_for_user(request.user, 'view_channellayer',
-                                              klass=ChannelLayer).filter(is_channel=False)
+        collection_obj = Collection.objects.get(name=collection)
+        experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+        channel_layers = get_objects_for_user(request.user, 'read',
+                                              klass=ChannelLayer).filter(is_channel=False, experiment=experiment_obj)
         serializer = ChannelLayerSerializer(channel_layers, many=True)
         return Response(serializer.data)
 
@@ -680,3 +740,18 @@ class CoordinateFrameList(generics.ListCreateAPIView):
     """
     queryset = CoordinateFrame.objects.all()
     serializer_class = CoordinateFrameSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Display only objects that a user has access to
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: Coordinate frames that user has view permissions on
+
+        """
+        coords = get_objects_for_user(request.user, 'read', klass=CoordinateFrame)
+        serializer = CoordinateFrameSerializer(coords, many=True)
+        return Response(serializer.data)

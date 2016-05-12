@@ -127,7 +127,7 @@ class BossMeta(APIView):
         response = mdb.delete_meta(lookup_key[0], mkey)
 
         if 'Attributes' in response:
-            return HttpResponse(status=201)
+            return HttpResponse(status=200)
         else:
             return BossHTTPError(404, "[ERROR]- Key {} not found ".format(mkey))
 
@@ -162,4 +162,4 @@ class BossMeta(APIView):
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
         mdb.update_meta(lookup_key[0], mkey, value)
-        return HttpResponse(status=201)
+        return HttpResponse(status=200)

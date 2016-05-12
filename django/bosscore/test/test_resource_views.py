@@ -19,9 +19,9 @@ from .setup_db import SetupTestDB
 version = settings.BOSS_VERSION
 
 
-class ManageDataViewsCollectionTests(APITestCase):
+class ResourceViewsCollectionTests(APITestCase):
     """
-    Class to test the manage-data service
+    Class to test the resource service
     """
 
     def setUp(self):
@@ -30,7 +30,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         :return:
         """
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -41,7 +41,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Get a collection that does not exist
 
         """
-        url = '/' + version + '/manage-data/col10/'
+        url = '/' + version + '/resource/col10/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -52,7 +52,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Get a valid collection
 
         """
-        url = '/' + version + '/manage-data/col1/'
+        url = '/' + version + '/resource/col1/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -64,7 +64,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Post a new collection (valid)
 
         """
-        url = '/' + version + '/manage-data/col55/'
+        url = '/' + version + '/resource/col55/'
         data = {'description': 'A new collection for unit tests'}
 
         # Get an existing collection
@@ -76,19 +76,29 @@ class ManageDataViewsCollectionTests(APITestCase):
         Post a new collection (invalid - Name already exists)
 
         """
-        url = '/' + version + '/manage-data/col1/'
+        url = '/' + version + '/resource/col1/'
         data = {'description': 'A new collection for unit tests'}
 
         # Get an existing collection
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_collection_no_data(self):
+        """
+        Post a new collection (valid)
+
+        """
+        url = '/' + version + '/resource/col55/'
+        # Get an existing collection
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 201)
 
     def test_put_collection_exists(self):
         """
         Update a collection (Valid - The collection exists)
 
         """
-        url = '/' + version + '/manage-data/col1/'
+        url = '/' + version + '/resource/col1/'
         data = {'description': 'A new collection for unit tests. Updated'}
 
         # Get an existing collection
@@ -100,7 +110,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Update a collection that does not exist
 
         """
-        url = '/' + version + '/manage-data/col55/'
+        url = '/' + version + '/resource/col55/'
         data = {'description': 'A new collection for unit tests. Updated'}
 
         # Get an existing collection
@@ -112,7 +122,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Update collection name (valid)
 
         """
-        url = '/' + version + '/manage-data/col1/'
+        url = '/' + version + '/resource/col1/'
         data = {'name': 'col10'}
 
         # Get an existing collection
@@ -124,7 +134,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Delete a collection (invalid - Violates integrity constraint)
 
         """
-        url = '/' + version + '/manage-data/col55/'
+        url = '/' + version + '/resource/col55/'
         data = {'description': 'A new collection for unit tests'}
 
         # Get an existing collection
@@ -140,7 +150,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Delete a collection (invalid - Violates integrity constraint)
 
         """
-        url = '/' + version + '/manage-data/col1/'
+        url = '/' + version + '/resource/col1/'
 
         # Get an existing collection
         response = self.client.delete(url)
@@ -151,7 +161,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Delete a collection (invalid - The collection does not exist )
 
         """
-        url = '/' + version + '/manage-data/col10/'
+        url = '/' + version + '/resource/col10/'
 
         # Get an existing collection
         response = self.client.delete(url)
@@ -162,7 +172,7 @@ class ManageDataViewsCollectionTests(APITestCase):
         Get list of collections
 
         """
-        url = '/' + version + '/manage-data/collections/'
+        url = '/' + version + '/resource/collections/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -170,9 +180,9 @@ class ManageDataViewsCollectionTests(APITestCase):
         self.assertEqual(response.data[0]['name'], 'col1')
 
 
-class ManageDataViewsExperimentTests(APITestCase):
+class ResourceViewsExperimentTests(APITestCase):
     """
-    Class to test the manage-data service
+    Class to test the resource service
     """
 
     def setUp(self):
@@ -182,7 +192,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -193,7 +203,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         Get a collection that does not exist
 
         """
-        url = '/' + version + '/manage-data/col1/exp10/'
+        url = '/' + version + '/resource/col1/exp10/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -204,7 +214,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         Get a valid experiment
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/'
+        url = '/' + version + '/resource/col1/exp1/'
 
         # Get an existing experiment
         response = self.client.get(url)
@@ -217,13 +227,13 @@ class ManageDataViewsExperimentTests(APITestCase):
 
         """
         # Get the coordinate frame id
-        url = '/' + version + '/manage-data/coordinateframes/cf1'
+        url = '/' + version + '/resource/coordinateframes/cf1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         cf_id = response.data['id']
 
         # Post a new experiment
-        url = '/' + version + '/manage-data/col1/exp2'
+        url = '/' + version + '/resource/col1/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
         response = self.client.post(url, data=data)
@@ -236,13 +246,13 @@ class ManageDataViewsExperimentTests(APITestCase):
         """
 
         # Get the coordinate frame id
-        url = '/' + version + '/manage-data/coordinateframes/cf1'
+        url = '/' + version + '/resource/coordinateframes/cf1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         cf_id = response.data['id']
 
         # Post a new experiment
-        url = '/' + version + '/manage-data/col1/exp2'
+        url = '/' + version + '/resource/col1/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
@@ -255,31 +265,41 @@ class ManageDataViewsExperimentTests(APITestCase):
         """
 
         # Get the collection id
-        url = '/' + version + '/manage-data/col1/'
+        url = '/' + version + '/resource/col1/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         collection_id = response.data['id']
 
         # Get the coordinate frame id
-        url = '/' + version + '/manage-data/coordinateframes/cf1'
+        url = '/' + version + '/resource/coordinateframes/cf1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         cf_id = response.data['id']
 
         # Post a new experiment
-        url = '/' + version + '/manage-data/col1/exp1'
+        url = '/' + version + '/resource/col1/exp1'
         data = {'description': 'This is a new experiment', 'collection': collection_id, 'coord_frame': cf_id,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
 
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
+
+    def test_post_experiment_no_data(self):
+        """
+        Post a new experiment (invalid _ the post has no body)
+
+        """
+        # Post a new experiment
+        url = '/' + version + '/resource/col1/exp2'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_put_experiment_exists(self):
         """
         Update a experiment (Valid - The experiment exists)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1'
+        url = '/' + version + '/resource/col1/exp1'
         data = {'description': 'A new experiment for unit tests. Updated'}
 
         # Get an existing collection
@@ -291,7 +311,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         Update a experiment that does not exist
 
         """
-        url = '/' + version + '/manage-data/col1/exp55'
+        url = '/' + version + '/resource/col1/exp55'
         data = {'description': 'A new experiment for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
@@ -302,7 +322,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         Update experiment name (valid)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1'
+        url = '/' + version + '/resource/col1/exp1'
         data = {'name': 'exp10'}
 
         response = self.client.put(url, data=data)
@@ -315,19 +335,19 @@ class ManageDataViewsExperimentTests(APITestCase):
         """
         # Post a new experiment
         # Get the coordinate frame id
-        url = '/' + version + '/manage-data/coordinateframes/cf1'
+        url = '/' + version + '/resource/coordinateframes/cf1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         cf_id = response.data['id']
 
         # Post a new experiment
-        url = '/' + version + '/manage-data/col1/exp2'
+        url = '/' + version + '/resource/col1/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        url = '/' + version + '/manage-data/col1/exp2'
+        url = '/' + version + '/resource/col1/exp2'
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
@@ -337,7 +357,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         Delete a experiment (invalid - Violates integrity constraint)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/'
+        url = '/' + version + '/resource/col1/exp1/'
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
@@ -347,7 +367,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         Delete a experiment (invalid - The experiment does not exist )
 
         """
-        url = '/' + version + '/manage-data/col1/exp10'
+        url = '/' + version + '/resource/col1/exp10'
 
         # Get an existing collection
         response = self.client.delete(url)
@@ -358,7 +378,7 @@ class ManageDataViewsExperimentTests(APITestCase):
         Get list of experiments for a collection
 
         """
-        url = '/' + version + '/manage-data/col1/experiments'
+        url = '/' + version + '/resource/col1/experiments'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -366,9 +386,9 @@ class ManageDataViewsExperimentTests(APITestCase):
         self.assertEqual(response.data[0]['name'], 'exp1')
 
 
-class ManageDataViewsCoordinateTests(APITestCase):
+class ResourceViewsCoordinateTests(APITestCase):
     """
-    Class to test the manage-data service for coordinate frame objects
+    Class to test the resource service for coordinate frame objects
     """
 
     def setUp(self):
@@ -378,7 +398,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
         self.client.force_login(user)
         dbsetup.insert_test_data()
@@ -389,7 +409,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Get list of coordinateframes
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/'
+        url = '/' + version + '/resource/coordinateframes/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -401,7 +421,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Get a coordinate frame that does not exist
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf10'
+        url = '/' + version + '/resource/coordinateframes/cf10'
 
         # Get an coordinate frame that does not exist
         response = self.client.get(url)
@@ -412,7 +432,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Get a valid coordinate frame
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf1'
+        url = '/' + version + '/resource/coordinateframes/cf1'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -425,7 +445,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Post a new coordinate frame (valid)
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf10'
+        url = '/' + version + '/resource/coordinateframes/cf10'
         data = {'description': 'This is a test coordinateframe', 'x_start': 0, 'x_stop': 1000,
                 'y_start': 0, 'y_stop': 1000, 'z_start': 0, 'z_stop': 1000,
                 'x_voxel_size': 4, 'y_voxel_size': 4, 'z_voxel_size': 4, 'voxel_unit': 'nanometers',
@@ -440,7 +460,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Post a new coordinate frame (invalid - Name already exists)
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf1'
+        url = '/' + version + '/resource/coordinateframes/cf1'
         data = {'description': 'This is a test coordinateframe', 'x_start': 0, 'x_stop': 1000,
                 'y_start': 0, 'y_stop': 1000, 'z_start': 0, 'z_stop': 1000,
                 'x_voxel_size': 4, 'y_voxel_size': 4, 'z_voxel_size': 4, 'voxel_unit': 'nanometers',
@@ -448,14 +468,14 @@ class ManageDataViewsCoordinateTests(APITestCase):
 
         # Get an existing collection
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
 
     def test_put_coorddinateframe_exists(self):
         """
         Update a coordinateframe (Valid - The coordinateframe exists)
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf1'
+        url = '/' + version + '/resource/coordinateframes/cf1'
         data = {'description': 'This is a test coordinateframe. Updated'}
 
         # Update an existing coordinate frame
@@ -467,7 +487,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Update a coordinateframe that does not exist
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf55'
+        url = '/' + version + '/resource/coordinateframes/cf55'
         data = {'description': 'This is a test coordinateframe. Updated'}
 
         # Get an existing collection
@@ -479,7 +499,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Update collection name (valid)
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf1'
+        url = '/' + version + '/resource/coordinateframes/cf1'
         data = {'name': 'cf10'}
 
         # Get an existing collection
@@ -491,7 +511,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Delete a coordinateframe (invalid - Violates integrity constraint)
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf55/'
+        url = '/' + version + '/resource/coordinateframes/cf55/'
         data = {'description': 'This is a test coordinateframe', 'x_start': 0, 'x_stop': 1000,
                 'y_start': 0, 'y_stop': 1000, 'z_start': 0, 'z_stop': 1000,
                 'x_voxel_size': 4, 'y_voxel_size': 4, 'z_voxel_size': 4, 'voxel_unit': 'nanometers',
@@ -510,7 +530,7 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Delete a collection (invalid - Violates integrity constraint)
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf1/'
+        url = '/' + version + '/resource/coordinateframes/cf1/'
 
         # Get an existing collection
         response = self.client.delete(url)
@@ -521,16 +541,16 @@ class ManageDataViewsCoordinateTests(APITestCase):
         Delete a collection (invalid - The collection does not exist )
 
         """
-        url = '/' + version + '/manage-data/coordinateframes/cf55/'
+        url = '/' + version + '/resource/coordinateframes/cf55/'
 
         # Get an existing collection
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
 
 
-class ManageDataViewsChannelTests(APITestCase):
+class ResourceViewsChannelTests(APITestCase):
     """
-    Class to test the manage-data service
+    Class to test the resource service
     """
 
     def setUp(self):
@@ -540,7 +560,7 @@ class ManageDataViewsChannelTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -551,7 +571,7 @@ class ManageDataViewsChannelTests(APITestCase):
         Get a Channel that does not exist
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/channel55'
+        url = '/' + version + '/resource/col1/exp1/channel55'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -562,7 +582,7 @@ class ManageDataViewsChannelTests(APITestCase):
         Get a valid experiment
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/channel1/'
+        url = '/' + version + '/resource/col1/exp1/channel1/'
 
         # Get an existing experiment
         response = self.client.get(url)
@@ -575,7 +595,7 @@ class ManageDataViewsChannelTests(APITestCase):
 
         """
         # Post a new channel
-        url = '/' + version + '/manage-data/col1/exp1/channel10/'
+        url = '/' + version + '/resource/col1/exp1/channel10/'
         data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -588,7 +608,7 @@ class ManageDataViewsChannelTests(APITestCase):
 
         # Post a new channel
 
-        url = '/' + version + '/manage-data/col1/exp1/channel10/'
+        url = '/' + version + '/resource/col1/exp1/channel10/'
         data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -599,17 +619,17 @@ class ManageDataViewsChannelTests(APITestCase):
 
         """
         # Post a new channel
-        url = '/' + version + '/manage-data/col1/exp1/channel1/'
+        url = '/' + version + '/resource/col1/exp1/channel1/'
         data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
 
     def test_put_channel(self):
         """
         Update a channel or layer (Valid - The channel exists)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/channel1'
+        url = '/' + version + '/resource/col1/exp1/channel1'
         data = {'description': 'A new channel for unit tests. Updated'}
 
         # Get an existing collection
@@ -621,7 +641,7 @@ class ManageDataViewsChannelTests(APITestCase):
         Update a channel that does not exist
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/channel55/'
+        url = '/' + version + '/resource/col1/exp1/channel55/'
         data = {'description': 'A new experiment for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
@@ -632,7 +652,7 @@ class ManageDataViewsChannelTests(APITestCase):
         Update channel name (valid)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/channel1/'
+        url = '/' + version + '/resource/col1/exp1/channel1/'
         data = {'name': 'channel10'}
 
         response = self.client.put(url, data=data)
@@ -644,12 +664,12 @@ class ManageDataViewsChannelTests(APITestCase):
 
         """
         # Post a new channel
-        url = '/' + version + '/manage-data/col1/exp1/channel10/'
+        url = '/' + version + '/resource/col1/exp1/channel10/'
         data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        url = '/' + version + '/manage-data/col1/exp1/channel10'
+        url = '/' + version + '/resource/col1/exp1/channel10'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
@@ -658,7 +678,7 @@ class ManageDataViewsChannelTests(APITestCase):
         Delete a channel (invalid - Violates integrity constraint because layers are linked to it)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/channel1'
+        url = '/' + version + '/resource/col1/exp1/channel1'
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
@@ -668,7 +688,7 @@ class ManageDataViewsChannelTests(APITestCase):
         Delete a channel (invalid - The channel does not exist )
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/channel10'
+        url = '/' + version + '/resource/col1/exp1/channel10'
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
@@ -678,7 +698,7 @@ class ManageDataViewsChannelTests(APITestCase):
         Get list of collections
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/channels/'
+        url = '/' + version + '/resource/col1/exp1/channels/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -686,9 +706,9 @@ class ManageDataViewsChannelTests(APITestCase):
         self.assertEqual(response.data[0]['name'], 'channel1')
 
 
-class ManageDataViewsLayerTests(APITestCase):
+class ResourceViewsLayerTests(APITestCase):
     """
-    Class to test the manage-data service
+    Class to test the Resource service
     """
 
     def setUp(self):
@@ -698,7 +718,7 @@ class ManageDataViewsLayerTests(APITestCase):
         """
 
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user('testuser')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -709,7 +729,7 @@ class ManageDataViewsLayerTests(APITestCase):
         Get a Layer that does not exist
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/layer55'
+        url = '/' + version + '/resource/col1/exp1/layer55'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
@@ -719,7 +739,7 @@ class ManageDataViewsLayerTests(APITestCase):
         Get a valid layer
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/layer1/'
+        url = '/' + version + '/resource/col1/exp1/layer1/'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -731,19 +751,39 @@ class ManageDataViewsLayerTests(APITestCase):
 
         """
         # Get channelid
-        url = '/' + version + '/manage-data/col1/exp1/channel1'
+        url = '/' + version + '/resource/col1/exp1/channel1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         channel_id1 = response.data['id']
-        url = '/' + version + '/manage-data/col1/exp1/channel2'
+        url = '/' + version + '/resource/col1/exp1/channel2'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         channel_id2 = response.data['id']
 
         # Post a new channel
-        url = '/' + version + '/manage-data/col1/exp1/layer10/'
+        url = '/' + version + '/resource/col1/exp1/layer10/'
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
                 'channels': [channel_id1, channel_id2]}
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_layer_single_channel(self):
+        """
+        Post a new layer (valid _ the post has all the required data and does not already exist)
+
+        """
+        # Get channelid
+        url = '/' + version + '/resource/col1/exp1/channel1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        channel_id1 = response.data['id']
+
+
+        # Post a new channel
+        url = '/' + version + '/resource/col1/exp1/layer10/'
+        data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
+                'channels': [channel_id1]}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -755,7 +795,7 @@ class ManageDataViewsLayerTests(APITestCase):
         """
 
         # Post a new channel
-        url = '/' + version + '/manage-data/col1/exp1/layer10/'
+        url = '/' + version + '/resource/col1/exp1/layer10/'
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8'}
 
         response = self.client.post(url, data=data)
@@ -768,12 +808,27 @@ class ManageDataViewsLayerTests(APITestCase):
         """
 
         # Post a new channel
-        url = '/' + version + '/manage-data/col1/exp1/layer10/'
+        url = '/' + version + '/resource/col1/exp1/layer10/'
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
                 'channels': [1, 200]}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
+
+    def test_post_layer_invalid_channel_ids_types(self):
+        """
+        Post a new layer (Invalid - The layer is not  linked channels that do not exist)
+
+        """
+
+        # Post a new channel
+        url = '/' + version + '/resource/col1/exp1/layer10/'
+        data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
+                'channels': ['bad id', 'another bad id']}
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 404)
+
 
     def test_post_layer_no_experiment(self):
         """
@@ -782,18 +837,18 @@ class ManageDataViewsLayerTests(APITestCase):
         """
 
         # Get channelid
-        url = '/' + version + '/manage-data/col1/exp1/channel1'
+        url = '/' + version + '/resource/col1/exp1/channel1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         channel_id1 = response.data['id']
-        url = '/' + version + '/manage-data/col1/exp1/channel2'
+        url = '/' + version + '/resource/col1/exp1/channel2'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         channel_id2 = response.data['id']
 
         # Post a new layer
 
-        url = '/' + version + '/manage-data/col1/exp1/layer10/'
+        url = '/' + version + '/resource/col1/exp1/layer10/'
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
                 'channels': [channel_id1, channel_id2]}
         response = self.client.post(url, data=data)
@@ -805,28 +860,28 @@ class ManageDataViewsLayerTests(APITestCase):
 
         """
         # Get channelid
-        url = '/' + version + '/manage-data/col1/exp1/channel1'
+        url = '/' + version + '/resource/col1/exp1/channel1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         channel_id1 = response.data['id']
-        url = '/' + version + '/manage-data/col1/exp1/channel2'
+        url = '/' + version + '/resource/col1/exp1/channel2'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         channel_id2 = response.data['id']
 
         # Post a new layer
-        url = '/' + version + '/manage-data/col1/exp1/layer1/'
+        url = '/' + version + '/resource/col1/exp1/layer1/'
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
                 'channels': [channel_id1, channel_id2]}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.status_code, 404)
 
     def test_put_layer(self):
         """
         Update a channel or layer (Valid - The layer exists)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/layer1'
+        url = '/' + version + '/resource/col1/exp1/layer1'
         data = {'description': 'A new layer for unit tests. Updated'}
 
         # Get an existing collection
@@ -838,7 +893,7 @@ class ManageDataViewsLayerTests(APITestCase):
         Update a layer that does not exist
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/layer55/'
+        url = '/' + version + '/resource/col1/exp1/layer55/'
         data = {'description': 'A new layer for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
@@ -849,7 +904,7 @@ class ManageDataViewsLayerTests(APITestCase):
         Update layer name (valid)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/layer1/'
+        url = '/' + version + '/resource/col1/exp1/layer1/'
         data = {'name': 'layer10'}
 
         response = self.client.put(url, data=data)
@@ -860,7 +915,7 @@ class ManageDataViewsLayerTests(APITestCase):
         Update layer name (valid)
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/layer1/'
+        url = '/' + version + '/resource/col1/exp1/layer1/'
         data = {'is_channel': True}
 
         response = self.client.put(url, data=data)
@@ -873,23 +928,23 @@ class ManageDataViewsLayerTests(APITestCase):
         """
 
         # Get channelid
-        url = '/' + version + '/manage-data/col1/exp1/channel1'
+        url = '/' + version + '/resource/col1/exp1/channel1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         channel_id1 = response.data['id']
-        url = '/' + version + '/manage-data/col1/exp1/channel2'
+        url = '/' + version + '/resource/col1/exp1/channel2'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         channel_id2 = response.data['id']
 
         # Post a new layer
-        url = '/' + version + '/manage-data/col1/exp1/layer10/'
+        url = '/' + version + '/resource/col1/exp1/layer10/'
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
                 'channels': [channel_id1, channel_id2]}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        url = '/' + version + '/manage-data/col1/exp1/layer10'
+        url = '/' + version + '/resource/col1/exp1/layer10'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
@@ -898,7 +953,7 @@ class ManageDataViewsLayerTests(APITestCase):
         Delete a channel (invalid - The channel does not exist )
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/layer10'
+        url = '/' + version + '/resource/col1/exp1/layer10'
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
@@ -908,7 +963,7 @@ class ManageDataViewsLayerTests(APITestCase):
         Get list of layers
 
         """
-        url = '/' + version + '/manage-data/col1/exp1/layers/'
+        url = '/' + version + '/resource/col1/exp1/layers/'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)

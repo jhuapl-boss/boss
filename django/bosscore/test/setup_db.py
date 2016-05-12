@@ -12,20 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from ..models import *
+
 from django.contrib.auth.models import User
+from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
+from guardian.shortcuts import assign_perm
+
+from ..models import Collection, Experiment, CoordinateFrame, ChannelLayer, ChannelLayerMap, BossLookup
+
+test_user = 'testuser'
+test_group = 'testuser-primary'
 
 
 class SetupTestDB:
     def __init__(self):
         self.user = None
 
-    def create_user(self):
-        self.user = User.objects.create_user(username='testuser', email='test@test.com', password='testuser')
+    def create_user(self, username=None):
+        if not username:
+            username = test_user
+
+        self.user = User.objects.create_user(username=username, email=username+'@test.com', password=username)
+        user_primary_group, created = Group.objects.get_or_create(name=username + '-primary')
+
+        self.user.groups.add(user_primary_group)
         return self.user
 
     def create_super_user(self):
-        self.user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        self.user = User.objects.create_superuser(username=test_user, email='test@test.com', password='testuser')
         return self.user
 
     def get_user(self):
@@ -42,7 +56,17 @@ class SetupTestDB:
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint8')
         self.add_layer('col1', 'exp1', 'layer1', 0, 0, 'uint16')
-        self.add_channel_layer_map('col1', 'exp1','channel1', 'layer1')
+        self.add_channel_layer_map('col1', 'exp1', 'channel1', 'layer1')
+
+    def add_permissions(self, group, obj):
+        # Get the type of model
+        ct = ContentType.objects.get_for_model(obj)
+        user_primary_group, created = Group.objects.get_or_create(name=group)
+
+        assign_perm('read', user_primary_group, obj)
+        assign_perm('add', user_primary_group, obj)
+        assign_perm('update', user_primary_group, obj)
+        assign_perm('delete', user_primary_group, obj)
 
     def add_collection(self, collection_name, description):
         """
@@ -52,7 +76,7 @@ class SetupTestDB:
             description: Description of the collection
 
         Returns:
-            None
+            Collection
 
         """
         col = Collection.objects.create(name=collection_name, description=description, creator=self.user)
@@ -61,6 +85,12 @@ class SetupTestDB:
         lkup_key = str(col.pk)
         bs_key = col.name
         BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key, collection_name=col.name)
+
+        # Give permissions to the users primary group
+        primary_group = self.user.username + '-primary'
+        self.add_permissions(primary_group, col)
+
+        return col
 
     def add_coordinate_frame(self, coordinate_frame, description, x_start, x_stop, y_start, y_stop, z_start, z_stop,
                              x_voxel_size, y_voxel_size, z_voxel_size, time_step):
@@ -81,14 +111,19 @@ class SetupTestDB:
             time_step:
 
         Returns:
-            None
+            Coordinate Frame
 
         """
-        CoordinateFrame.objects.create(name=coordinate_frame, description=description,
-                                       x_start=x_start, x_stop=x_stop, y_start=y_start, y_stop=y_stop,
-                                       z_start=z_start, z_stop=z_stop,
-                                       x_voxel_size=x_voxel_size, y_voxel_size=y_voxel_size, z_voxel_size=z_voxel_size,
-                                       time_step=time_step, creator=self.user)
+        cf = CoordinateFrame.objects.create(name=coordinate_frame, description=description,
+                                            x_start=x_start, x_stop=x_stop, y_start=y_start, y_stop=y_stop,
+                                            z_start=z_start, z_stop=z_stop,
+                                            x_voxel_size=x_voxel_size, y_voxel_size=y_voxel_size,
+                                            z_voxel_size=z_voxel_size, time_step=time_step, creator=self.user)
+        # Give permissions to the users primary group
+        primary_group = self.user.username + '-primary'
+        self.add_permissions(primary_group, cf)
+
+        return cf
 
     def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels, max_time_sample):
         """
@@ -101,6 +136,7 @@ class SetupTestDB:
             max_time_sample:
 
         Returns:
+            experiment
 
         """
         col = Collection.objects.get(name=collection_name)
@@ -114,6 +150,12 @@ class SetupTestDB:
         BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key, collection_name=col.name,
                                   experiment_name=exp.name)
 
+        # Give permissions to the users primary group
+        primary_group = self.user.username + '-primary'
+        self.add_permissions(primary_group, exp)
+
+        return exp
+
     def add_channel(self, collection_name, experiment_name, channel_name, default_time_step, base_resolution, datatype):
         """
 
@@ -126,6 +168,7 @@ class SetupTestDB:
             datatype:
 
         Returns:
+            Channel
 
         """
         col = Collection.objects.get(name=collection_name)
@@ -142,6 +185,12 @@ class SetupTestDB:
                                   channel_layer_name=channel.name
                                   )
 
+        # Give permissions to the users primary group
+        primary_group = self.user.username + '-primary'
+        self.add_permissions(primary_group, channel)
+
+        return channel
+
     def add_layer(self, collection_name, experiment_name, layer_name, default_time_step, base_resolution, datatype):
         """
 
@@ -154,6 +203,7 @@ class SetupTestDB:
             datatype:
 
         Returns:
+            Layer
 
         """
         col = Collection.objects.get(name=collection_name)
@@ -169,6 +219,11 @@ class SetupTestDB:
                                   experiment_name=exp.name,
                                   channel_layer_name=layer.name
                                   )
+        # Give permissions to the users primary group
+        primary_group = self.user.username + '-primary'
+        self.add_permissions(primary_group, layer)
+
+        return layer
 
     def add_channel_layer_map(self, collection_name, experiment_name, channel_name, layer_name):
         """
@@ -187,4 +242,3 @@ class SetupTestDB:
         ch = ChannelLayer.objects.get(name=channel_name, experiment=exp)
         layer = ChannelLayer.objects.get(name=layer_name, experiment=exp)
         ChannelLayerMap.objects.create(channel=ch, layer=layer)
-
