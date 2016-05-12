@@ -112,7 +112,7 @@ class TestDjangoResource(APITestCase):
         assert exp.num_hierarchy_levels == self.request_channel.experiment.num_hierarchy_levels
         assert exp.hierarchy_method == self.request_channel.experiment.hierarchy_method
 
-    def test_basic_resource_channel_no_time(self):
+    def test_basic_resource_channel(self):
         """Test basic get channel interface
 
         Returns:
@@ -131,7 +131,7 @@ class TestDjangoResource(APITestCase):
         assert channel.description == self.request_channel.channel_layer.description
         assert channel.datatype == self.request_channel.channel_layer.datatype
 
-    def test_basic_resource_layer_no_time(self):
+    def test_basic_resource_layer(self):
         """Test basic get layer interface
 
         Returns:
@@ -151,26 +151,6 @@ class TestDjangoResource(APITestCase):
         assert layer.base_resolution == self.request_layer.channel_layer.base_resolution
         assert layer.parent_channels == self.request_layer.channel_layer.linked_channel_layers
 
-#def test_basic_resource_time_samples(self):
-#    """Test basic get and set time samples interface
-
-#    Returns:
-#        None
-
-#    """
-#    setup_data = self.get_image_dict()
-#    resource8 = BossResourceBasic(setup_data)
-
-#    assert resource8.is_channel() == True
-
-#    assert resource8.get_time_samples() == [0]
-
-#    resource8.set_time_samples([0, 1, 2, 3, 4, 5])
-#    assert resource8.get_time_samples() == [0, 1, 2, 3, 4, 5]
-
-#    resource8.set_time_samples(3)
-#    assert resource8.get_time_samples() == [3]
-
     def test_basic_resource_get_boss_key(self):
         """Test basic get boss key interface
 
@@ -181,8 +161,7 @@ class TestDjangoResource(APITestCase):
         resource = BossResourceDjango(self.request_channel)
 
         assert resource.get_boss_key() == self.request_channel.get_boss_key()
-        # TODO - commented out temporaily. To be fixed
-        #assert resource.get_boss_key() == ['col1&exp1&channel1&0']
+        assert resource.get_boss_key() == 'col1&exp1&channel1'
 
     def test_basic_resource_get_lookup_key(self):
         """Test basic get lookup key interface
@@ -194,6 +173,7 @@ class TestDjangoResource(APITestCase):
         resource = BossResourceDjango(self.request_channel)
 
         assert resource.get_lookup_key() == self.request_channel.get_lookup_key()
+        assert resource.get_lookup_key() == '1&1&1'
 
     def test_basic_resource_get_data_type(self):
         """Test basic get datatype interface
@@ -203,6 +183,4 @@ class TestDjangoResource(APITestCase):
 
         """
         resource = BossResourceDjango(self.request_channel)
-
-        assert resource.get_data_type() == self.request_channel.channel_layer.datatype
         assert resource.get_data_type() == self.request_channel.channel_layer.datatype

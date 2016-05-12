@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from django.core.urlresolvers import resolve
-from ..views import CutoutView, Cutout
+from ..views import Cutout
 
 from rest_framework.test import APITestCase
 
@@ -39,10 +39,3 @@ class CutoutInterfaceRoutingTests(APITestCase):
         view_based_cutout = resolve('/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2')
         self.assertEqual(view_based_cutout.func.__name__, Cutout.as_view().__name__)
 
-    def test_view_token_cutout_resolves_to_cutoutview(self):
-        """
-        Test to make sure the cutout URL with just a view token resolves
-        :return:
-        """
-        view_based_cutout = resolve('/' + version + '/cutout/2/0:5/0:6/0:2?view=token1')
-        self.assertEqual(view_based_cutout.func.__name__, CutoutView.as_view().__name__)
