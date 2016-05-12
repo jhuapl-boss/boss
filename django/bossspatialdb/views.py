@@ -39,6 +39,7 @@ class Cutout(APIView):
     def __init__(self):
         super().__init__()
         self.data_type = None
+        self.bit_depth = None
 
     # Set Parser and Renderer
 
@@ -68,13 +69,15 @@ class Cutout(APIView):
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
+
+        # Make sure datatype is valid
         self.data_type = resource.get_data_type()
         if self.data_type == "uint8":
-            bitdepth = 8
+            self.bit_depth = 8
         elif self.data_type == "uint16":
-            bitdepth = 16
+            self.bit_depth = 16
         elif self.data_type == "uint64":
-            bitdepth = 64
+            self.bit_depth = 64
         else:
             return BossHTTPError(400, "Unsupported datatype provided to parser")
 
@@ -88,23 +91,8 @@ class Cutout(APIView):
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
 
-        # Currently, content negotiation is in the view. Serialize and compress
-        if request.accepted_media_type == 'application/blosc':
-            # TODO: Look into this extra copy.  Probably can ensure ndarray is c-order when created.
-            if not data.data.flags['C_CONTIGUOUS']:
-                data.data = data.data.copy(order='C')
-            compressed_data = blosc.compress(np.squeeze(data.data), typesize=bitdepth)
-
-        elif request.accepted_media_type == 'application/blosc-python':
-            # TODO: Look into this extra copy.  Probably can ensure ndarray is c-order when created.
-            if not data.data.flags['C_CONTIGUOUS']:
-                data.data = data.data.copy(order='C')
-            compressed_data = blosc.pack_array(np.squeeze(data.data))
-        else:
-            return BossHTTPError(400, "Unsupported datatype provided to renderer")
-
-        return Response(compressed_data)
-        return HttpResponse(compressed_data, content_type=request.accepted_media_type)
+        # Send data to renderer
+        return Response(data)
 
     def post(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
         """
@@ -139,5 +127,6 @@ class Cutout(APIView):
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
         cache.write_cuboid(resource, corner, req.get_resolution(), request.data, req.get_time()[0])
 
+        # Send data to renderer
         return Response(status=201)
 

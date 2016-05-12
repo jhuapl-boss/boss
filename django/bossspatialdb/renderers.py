@@ -22,7 +22,7 @@ from bosscore.error import BossHTTPError
 # TODO: Look into why renderers aren't getting called properly. Currently pass-throughs so you don't get 406 errors
 
 class BloscPythonRenderer(renderers.BaseRenderer):
-    """ A DRF renderer for a blosc encoded cube of data using the numpy inteface
+    """ A DRF renderer for a blosc encoded cube of data using the numpy interface
 
     Should only be used by applications written in python
     """
@@ -32,8 +32,12 @@ class BloscPythonRenderer(renderers.BaseRenderer):
     render_style = 'binary'
 
     def render(self, data, media_type=None, renderer_context=None):
-        #return blosc.pack_array(data.data)
-        pass
+
+        if not data.data.flags['C_CONTIGUOUS']:
+            data.data = data.data.copy(order='C')
+
+        return blosc.pack_array(np.squeeze(data.data))
+
 
 class BloscRenderer(renderers.BaseRenderer):
     """ A DRF renderer for a blosc encoded cube of data
@@ -46,18 +50,7 @@ class BloscRenderer(renderers.BaseRenderer):
 
     def render(self, data, media_type=None, renderer_context=None):
 
-        #if renderer_context['view'].data_type == "uint8":
-        #    bitdepth = 8
-        #elif renderer_context['view'].data_type == "uint32":
-        #    bitdepth = 32
-        #elif renderer_context['view'].data_type == "uint64":
-        #    bitdepth = 64
-        #else:
-        #    return BossHTTPError(400, "Unsupported datatype provided to parser")
+        if not data.data.flags['C_CONTIGUOUS']:
+            data.data = data.data.copy(order='C')
 
-        #if not data.flags['C_CONTIGUOUS']:
-        #    data = data.copy(order='C')
-
-        #compressed_data = blosc.compress(data, typesize=bitdepth)
-        #return Response(compressed_data, content_type='application/blosc')
-        pass
+        return blosc.compress(np.squeeze(data.data), typesize=renderer_context['view'].bit_depth)

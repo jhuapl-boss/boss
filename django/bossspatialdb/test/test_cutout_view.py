@@ -24,6 +24,7 @@ from rest_framework import status
 from bossspatialdb.views import Cutout
 
 from bosscore.test.setup_db import SetupTestDB
+from bosscore.error import BossError
 
 import numpy as np
 
@@ -141,7 +142,7 @@ class CutoutInterfaceViewTestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:32')
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:32').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -181,7 +182,7 @@ class CutoutInterfaceViewTestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -221,7 +222,7 @@ class CutoutInterfaceViewTestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -260,7 +261,7 @@ class CutoutInterfaceViewTestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -297,7 +298,7 @@ class CutoutInterfaceViewTestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:32')
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:32').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -334,7 +335,7 @@ class CutoutInterfaceViewTestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -371,7 +372,7 @@ class CutoutInterfaceViewTestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -379,91 +380,6 @@ class CutoutInterfaceViewTestMixin(object):
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
-
-
-    # TODO: Finish unit tests once mocking is properly configured so mockredis instance is persistent
-    #def test_get_full_url_channel_uint8_generic(self):
-    #    """ Test to make sure getting a block of data returns a 200 and is correct
-    #      operation - GET
-    #      args - Full
-    #      type - channel
-    #      bitdepth - uin8
-    #    :return:
-    #        None
-    #    """
-    #    a = np.random.randint(0, 254, (500, 300, 20))
-    #    a = a.astype(np.uint8)
-    #    h = a.tobytes()
-    #    bb = blosc.compress(h, typesize=8)
-#
-    #    factory = APIRequestFactory()
-    #    request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/1000:1500/1000:1300/0:20/', bb,
-    #                           content_type='application/blosc')
-#
-    #    response = Cutout.as_view()(request,
-    #                                collection='col1',
-    #                                experiment='exp1',
-    #                                dataset='channel1',
-    #                                resolution='0',
-    #                                x_range='1000:1500',
-    #                                y_range='1000:1300',
-    #                                z_range='0:20')
-#
-    #    self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#
-    #    factory = APIRequestFactory()
-    #    request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/1000:1500/1000:1300/0:20/',
-    #                          content_type='application/blosc')
-#
-    #    response = Cutout.as_view()(request,
-    #                                collection='col1',
-    #                                experiment='exp1',
-    #                                dataset='channel1',
-    #                                resolution='0',
-    #                                x_range='1000:1500',
-    #                                y_range='1000:1300',
-    #                                z_range='0:20')
-#
-    #    self.assertEqual(response.status_code, status.HTTP_200_OK)
-#
-    #    # Assuming came back generic blosc since we didn't specify
-    #    response_data = blosc.decompress(response.data)
-    #    response_mat = np.fromstring(response_data, dtype=np.uint8)
-    #    response_mat = np.reshape(response_mat, (500, 300, 20), order='C')
-
-
-    #def test_full_token_cutout_get(self):
-    #    """
-    #    Test to make sure getting a block of data returns a 200
-    #    :return:
-    #    """
-    #    response = self.client.get('/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2',
-    #                               content_type='application/octet-stream')
-#
-    #    self.assertEqual(response.status_code, status.HTTP_200_OK)
-#
-    #def test_view_token_cutout_get(self):
-    #    """
-    #    Test to make sure getting a block of data returns a 200
-    #    :return:
-    #    """
-    #    response = self.client.get('/' + version + '/cutout/2/0:5/0:6/0:2?view=token1',
-    #                               content_type='application/octet-stream')
-#
-    #    # TODO: Once views are implemented need to finish test and switch to 200
-    #    #self.assertEqual(response.status_code, status.HTTP_200_OK)
-    #    self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-#
-    #def test_view_token_cutout_get_missing_token_error(self):
-    #    """
-    #    Test to make sure you get an error
-    #    :return:
-    #    """
-    #    response = self.client.get('/' + version + '/cutout/2/0:5/0:6/0:2',
-    #                               content_type='application/octet-stream')
-#
-    #    self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-#
 
 
 @patch('redis.StrictRedis', mock_strict_redis_client)

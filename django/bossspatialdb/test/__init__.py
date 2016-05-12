@@ -1,0 +1,1 @@
+from .test_cutout_view import CutoutInterfaceViewTestMixin
