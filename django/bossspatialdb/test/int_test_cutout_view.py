@@ -59,14 +59,16 @@ class CutoutViewIntegrationTests(CutoutInterfaceViewTestMixin, APITestCase):
         Initialize the database
         :return:
         """
+
+        # Create a user
+        dbsetup = SetupTestDB()
+        self.user = dbsetup.create_super_user()
+
+        # Populate DB
+        dbsetup.insert_test_data()
+
         self.patcher = patch('configparser.ConfigParser', MockBossIntegrationConfig)
         self.mock_tests = self.patcher.start()
-
-        # Populate db with data model stuff
-        dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
-        self.client.force_login(user)
-        dbsetup.insert_test_data()
 
     def tearDown(self):
         # Stop mocking
