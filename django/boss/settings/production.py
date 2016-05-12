@@ -58,5 +58,7 @@ auth_uri = vault.read('secret/endpoint/auth', 'url')
 client_id = vault.read('secret/endpoint/auth', 'client_id')
 public_uri = vault.read('secret/endpoint/auth', 'public_uri')
 
+OIDC_VERIFY_SSL = not (config['auth']['OIDC_VERIFY_SSL'] in ['False', 'false'])
+
 from bossoidc.settings import *
 configure_oidc(auth_uri, client_id, public_uri)
