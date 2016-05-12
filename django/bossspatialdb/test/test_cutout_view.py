@@ -194,7 +194,10 @@ class CutoutInterfaceViewTestMixin(object):
         np.testing.assert_array_equal(data_mat, test_mat)
 
     def test_channel_uint8_cuboid_unaligned_offset_time_blosc(self):
-        """ Test uint8 data, not cuboid aligned, offset, time samples, blosc interface"""
+        """ Test uint8 data, not cuboid aligned, offset, time samples, blosc interface
+
+        Test Requires >=2GB of memory!
+        """
 
         test_mat = np.random.randint(0, 254, (7, 17, 300, 500))
         test_mat = test_mat.astype(np.uint8)
@@ -345,7 +348,10 @@ class CutoutInterfaceViewTestMixin(object):
         np.testing.assert_array_equal(data_mat, test_mat)
 
     def test_channel_uint8_cuboid_unaligned_offset_time_blosc_numpy(self):
-        """ Test uint8 data, not cuboid aligned, offset, time samples, blosc interface"""
+        """ Test uint8 data, not cuboid aligned, offset, time samples, blosc interface
+
+        Test Requires >=2GB of memory!
+        """
 
         test_mat = np.random.randint(0, 254, (7, 17, 300, 500))
         test_mat = test_mat.astype(np.uint8)
