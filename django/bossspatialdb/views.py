@@ -16,8 +16,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import authentication, permissions
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
-import blosc
-import numpy as np
 
 from .parsers import BloscParser, BloscPythonParser
 from .renderers import BloscRenderer, BloscPythonRenderer
@@ -128,5 +126,5 @@ class Cutout(APIView):
         cache.write_cuboid(resource, corner, req.get_resolution(), request.data, req.get_time()[0])
 
         # Send data to renderer
-        return Response(status=201)
+        return HttpResponse(status=201)
 

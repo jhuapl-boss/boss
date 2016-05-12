@@ -173,10 +173,7 @@ class TestDjangoResource(APITestCase):
         resource = BossResourceDjango(self.request_channel)
 
         assert resource.get_lookup_key() == self.request_channel.get_lookup_key()
-
-        # Note: This may be a bad test as this hard-coded value might change as more tests are added, but want to make
-        # sure that the format is correct since this has caused problems in the past
-        assert resource.get_lookup_key() == '94&95&281'
+        assert isinstance(resource.get_lookup_key(), str)
 
 
     def test_basic_resource_get_data_type(self):

@@ -15,11 +15,7 @@
 from rest_framework import renderers
 import blosc
 import numpy as np
-from django.http import HttpResponse
 
-from bosscore.error import BossHTTPError
-
-# TODO: Look into why renderers aren't getting called properly. Currently pass-throughs so you don't get 406 errors
 
 class BloscPythonRenderer(renderers.BaseRenderer):
     """ A DRF renderer for a blosc encoded cube of data using the numpy interface
