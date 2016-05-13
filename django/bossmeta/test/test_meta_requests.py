@@ -14,6 +14,7 @@
 
 from rest_framework.test import APITestCase
 from rest_framework.test import APIRequestFactory
+from rest_framework.test import force_authenticate
 from django.conf import settings
 
 from bosscore.request import BossRequest
@@ -36,7 +37,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         """
         self.rf = APIRequestFactory()
         dbsetup = SetupTestDB()
-        self.user = dbsetup.create_super_user()
+        self.user = dbsetup.create_user('testuser')
         dbsetup.set_user(self.user)
 
         self.client.force_login(self.user)
@@ -48,12 +49,17 @@ class BossCoreMetaValidRequestTests(APITestCase):
         :return:
         """
         # create the request with collection name
+        # log in user
+
+
         url = '/' + version + '/meta/col1/?key=mkey&value=TestValue'
         expected_col = 'col1'
         expected_bosskey = 'col1'
         expected_key = 'mkey'
         expected_value = 'TestValue'
+
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
@@ -83,6 +89,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         expected_key = 'mkey'
         expected_value = 'TestValue'
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
@@ -117,6 +124,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         expected_value = 'TestValue'
 
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
@@ -151,6 +159,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         expected_value = 'TestValue'
 
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
@@ -181,6 +190,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         expected_channel = 'channel1'
         expected_coord = 'cf1'
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
         ret = BossRequest(drfrequest)
@@ -204,6 +214,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         expected_channel = 'channel1'
         expected_coord = 'cf1'
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
         ret = BossRequest(drfrequest)
@@ -231,7 +242,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         self.rf = APIRequestFactory()
 
         dbsetup = SetupTestDB()
-        self.user = dbsetup.create_super_user()
+        self.user = dbsetup.create_user('testuser')
         dbsetup.set_user(self.user)
 
         self.client.force_login(self.user)
@@ -245,6 +256,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         # create the request
         url = '/' + version + '/meta/col2/?key=mkey'
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
@@ -261,6 +273,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         # create the request
         url = '/' + version + '/meta/col1/exp2/?key=mkey'
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
@@ -277,6 +290,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         # create the request
         url = '/' + version + '/meta/col1/exp1/channel2/?key=mkey'
         request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 

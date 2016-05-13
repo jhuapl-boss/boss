@@ -168,25 +168,49 @@ class BossPermissionManager:
             BossHTTPError(404, "{Cannot assign permissions to the admin group because the group does not exist}", 30000)
 
     @staticmethod
-    def check_permissions_object(user, obj, method_type, obj_name):
+    def check_resource_permissions(user, obj, method_type):
         """
         Args:
             user:
             obj:
             method_type:
-            obj_name:
 
         Returns:
 
         """
         if method_type == 'GET':
-            permission = 'read' + obj_name
+            permission = 'read'
         elif method_type == 'POST':
-            permission = 'add' + obj_name
+            permission = 'add'
         elif method_type == 'PUT':
-            permission = 'update' + obj_name
+            permission = 'update'
         elif method_type == 'DELETE':
-            permission = 'delete' + obj_name
+            permission = 'delete'
+        else:
+            return BossHTTPError(404, "Unable to get permissions for this request", 30000)
+
+        if permission in get_perms(user, obj):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def check_data_permissions(user, obj, method_type):
+        """
+        Args:
+            user:
+            obj:
+            method_type:
+
+        Returns:
+
+        """
+        if method_type == 'GET':
+            permission = 'read_volumetric_data'
+        elif method_type == 'POST':
+            permission = 'add_volumetric_data'
+        elif method_type == 'DELETE':
+            permission = 'delete_volumetric_data'
         else:
             return BossHTTPError(404, "Unable to get permissions for this request", 30000)
 

@@ -17,6 +17,7 @@ import re
 from .models import Collection, Experiment, ChannelLayer
 from .lookup import LookUpKey
 from .error import BossHTTPError, BossError
+from .permissions import BossPermissionManager
 
 META_CONNECTOR = "&"
 
@@ -73,6 +74,7 @@ class BossRequest:
         self.request = request
         self.core_service = False
 
+
         # Parse the request for the service
         url = str(request.META['PATH_INFO'])
         m = re.match("/v(?P<version>\d+\.\d+)/(?P<service>[\w-]+)/(?P<webargs>.*)?/?", url)
@@ -80,7 +82,7 @@ class BossRequest:
         [version, service, webargs] = [arg for arg in m.groups()]
         self.set_service(service)
 
-        if service == 'meta' or service == 'manage-data':
+        if service == 'meta' or service == 'resource':
             self.core_service = True
 
         if self.core_service:
@@ -90,6 +92,7 @@ class BossRequest:
             [collection_name, experiment_name, channel_layer_name] = [arg for arg in m.groups()]
 
             self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.check_permissions()
 
             if self.collection:
                 self.set_boss_key()
@@ -112,7 +115,9 @@ class BossRequest:
                 [collection_name, experiment_name, channel_layer_name, resolution, x_range, y_range, z_range] \
                     = [arg for arg in m.groups()[:-1]]
                 time = m.groups()[-1]
+
                 self.initialize_request(collection_name, experiment_name, channel_layer_name)
+                self.check_permissions()
                 if not time:
                     # get default time
                     self.time_start = self.channel_layer.default_time_step
@@ -122,6 +127,7 @@ class BossRequest:
 
                 self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
                 self.set_boss_key()
+
             else:
                 raise BossError(404, "Unable to parse the url.", 30000)
 
@@ -143,6 +149,7 @@ class BossRequest:
                 expstatus = self.set_experiment(experiment_name)
                 if channel_layer_name and expstatus:
                     self.set_channel_layer(channel_layer_name)
+
 
     def set_cutoutargs(self, resolution, x_range, y_range, z_range):
         """
@@ -444,6 +451,30 @@ class BossRequest:
             self.base_boss_key = self.collection.name
         else:
             return BossHTTPError(404, "Error creating the boss key", 30000)
+
+    def check_permissions(self):
+        """ Set the base boss key for the request
+
+        The boss key concatenates the names of the datamodel stack to create a string represting the request.
+        Returns:
+            self.bosskey(str) : String that represents the boss key for the current request
+        """
+        if self.service =='cutout':
+            perm = BossPermissionManager.check_data_permissions(self.request.user, self.channel_layer,
+                                                                  self.request.method)
+        elif self.service =='meta':
+            if self.collection and self.experiment and self.channel_layer:
+                obj = self.channel_layer
+            elif self.collection and self.experiment:
+                obj = self.experiment
+            elif self.collection:
+                obj = self.collection
+            else:
+                return BossHTTPError(404, "Error encountered while checking permissions for this request", 30000)
+            perm = BossPermissionManager.check_resource_permissions(self.request.user, obj,
+                                                                self.request.method)
+        if not perm:
+            return BossHTTPError(404, "This user does not have the required permissions", 30000)
 
     def get_boss_key(self):
         """

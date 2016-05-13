@@ -33,7 +33,7 @@ class TestDjangoResource(APITestCase):
     def setUp(self):
         """Setup test by inserting data model items into the database"""
         dbsetup = SetupTestDB()
-        user = dbsetup.create_super_user()
+        user = dbsetup.create_user()
         self.client.force_login(user)
         dbsetup.insert_test_data()
 
