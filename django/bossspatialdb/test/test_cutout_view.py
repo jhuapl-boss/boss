@@ -400,7 +400,7 @@ class TestCutoutInterfaceView(CutoutInterfaceViewTestMixin, APITestCase):
         """
         # Create a user
         dbsetup = SetupTestDB()
-        self.user = dbsetup.create_super_user()
+        self.user = dbsetup.create_user('testuser')
 
         # Populate DB
         dbsetup.insert_test_data()
