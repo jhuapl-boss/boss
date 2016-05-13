@@ -19,12 +19,13 @@ from django.conf import settings
 
 from bosscore.views import CollectionList, CollectionDetail, ExperimentList, ExperimentDetail, \
     ChannelList, LayerList, ChannelLayerDetail, CoordinateFrameList, CoordinateFrameDetail
+from bosscore.views_permission import ResourceUserPermission
 
 
 version = settings.BOSS_VERSION
 
 
-class BossCoreManageDataRoutingTests(APITestCase):
+class BossCoreResourceRoutingTests(APITestCase):
 
     def test_manage_data_urls_collection_resolves(self):
         """
@@ -84,3 +85,38 @@ class BossCoreManageDataRoutingTests(APITestCase):
 
         match = resolve('/' + version + '/resource/coordinateframes/cf1/')
         self.assertEqual(match.func.__name__, CoordinateFrameDetail.as_view().__name__)
+
+class BossCorePermissionRoutingTests(APITestCase):
+
+    def test_permission_collection_resolves(self):
+        """
+        Test that all permission urls for collections resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/permission/test/col1/')
+        self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
+
+    def test_permission_experiment_resolves(self):
+        """
+        Test that all permission urls for experiments resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/permission/test/col1/exp1/')
+        self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
+
+    def test_permission_channel_layer_resolves(self):
+        """
+        Test that all permission urls for channel or layers resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/permission/test/col1/exp1/ch1/')
+        self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)

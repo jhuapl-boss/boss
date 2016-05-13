@@ -15,7 +15,7 @@
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 
-from guardian.shortcuts import assign_perm, get_perms
+from guardian.shortcuts import assign_perm, get_perms, remove_perm
 from .error import BossHTTPError
 
 
@@ -28,33 +28,39 @@ class BossPermissionManager:
         """
         return Group.objects.get(name=group_name).user_set.filter(id=user.id).exists()
 
-    @staticmethod
-    def add_permissions_user(user, obj):
-        """
-        Grant permissions to the object for the user's primary group
-        Args:
-            user: Current user
-            obj: Object that we are assigning permission for
-            obj_name :
-
-        Returns:
-
-        """
-        # Get the type of model
-        ct = ContentType.objects.get_for_model(obj)
-        group_name = user.username + "-primary"
-        user_primary_group = Group.objects.get_or_create(name=group_name)[0]
-        user.groups.add(user_primary_group.pk)
-
-        assign_perm('read', user_primary_group, obj)
-        assign_perm('add', user_primary_group, obj)
-        assign_perm('update', user_primary_group, obj)
-        assign_perm('delete', user_primary_group, obj)
+    # @staticmethod
+    # def add_permissions_user(user, obj):
+    #     """
+    #     Grant permissions to the object for the user's primary group
+    #     Args:
+    #         user: Current user
+    #         obj: Object that we are assigning permission for
+    #         obj_name :
+    #
+    #     Returns:
+    #
+    #     """
+    #     # Get the type of model
+    #     ct = ContentType.objects.get_for_model(obj)
+    #     group_name = user.username + "-primary"
+    #     user_primary_group = Group.objects.get_or_create(name=group_name)[0]
+    #     user.groups.add(user_primary_group.pk)
+    #
+    #     assign_perm('read', user_primary_group, obj)
+    #     assign_perm('add', user_primary_group, obj)
+    #     assign_perm('update', user_primary_group, obj)
+    #     assign_perm('delete', user_primary_group, obj)
+    #     assign_perm('assign_group', user_primary_group, obj)
+    #     assign_perm('remove_group', user_primary_group, obj)
+    #     if ct.model == 'channellayer':
+    #         assign_perm('add_volumetric_data', user_primary_group, obj)
+    #         assign_perm('read_volumetric_data', user_primary_group, obj)
+    #         assign_perm('delete_volumetric_data', user_primary_group, obj)
 
     @staticmethod
     def add_permissions_primary_group(user, obj):
         """
-        Grant permissions to the object for the user's primary group
+        Grant  all permissions to the object for the user's primary group
         Args:
             user: Current user
             obj: Object that we are assigning permission for
@@ -73,6 +79,64 @@ class BossPermissionManager:
         assign_perm('add', user_primary_group, obj)
         assign_perm('update', user_primary_group, obj)
         assign_perm('delete', user_primary_group, obj)
+        assign_perm('assign_group', user_primary_group, obj)
+        assign_perm('remove_group', user_primary_group, obj)
+        if ct.model == 'channellayer':
+            assign_perm('add_volumetric_data', user_primary_group, obj)
+            assign_perm('read_volumetric_data', user_primary_group, obj)
+            assign_perm('delete_volumetric_data', user_primary_group, obj)
+
+
+
+    @staticmethod
+    def add_permissions_group(group_name, obj, perm_list):
+        """
+        Grant permissions to the object for the user's primary group
+        Args:
+            user: Current user
+            obj: Object that we are assigning permission for
+            obj_name :
+
+        Returns:
+
+        """
+        # Get the type of model
+        group = Group.objects.get(name=group_name)
+        for perm in perm_list:
+            assign_perm(perm, group, obj)
+
+    @staticmethod
+    def get_permissions_group(group_name, obj):
+        """
+        Return the permissions for a users group
+        Args:
+            group_name :
+            obj: Object that we are getting permission for
+            obj_name :
+
+        Returns:
+
+        """
+        # Get the type of model
+        group = Group.objects.get(name=group_name)
+        return get_perms(group,obj)
+
+    @staticmethod
+    def delete_permissions_group(group_name, obj, perm_list):
+        """
+        Return the permissions for a users group
+        Args:
+            group_name :
+            obj: Object that we are getting permission for
+            obj_name :
+
+        Returns:
+
+        """
+        # Get the type of model
+        group = Group.objects.get(name=group_name)
+        for perm in perm_list:
+            remove_perm(perm, group, obj)
 
     @staticmethod
     def add_permissions_admin_group(obj):
@@ -87,13 +151,19 @@ class BossPermissionManager:
         """
         # Get the type of model
         try:
-            admin_group = Group.objects.get(name="admin")[0]
-            print (admin_group)
+            admin_group = Group.objects.get(name="admin")
             ct = ContentType.objects.get_for_model(obj)
             assign_perm('read', admin_group, obj)
             assign_perm('add', admin_group, obj)
             assign_perm('update', admin_group, obj)
             assign_perm('delete', admin_group, obj)
+            assign_perm('assign_group', admin_group, obj)
+            assign_perm('remove_group', admin_group, obj)
+            if ct.model == 'channellayer':
+                assign_perm('add_volumetric_data', admin_group, obj)
+                assign_perm('read_volumetric_data', admin_group, obj)
+                assign_perm('delete_volumetric_data', admin_group, obj)
+
         except Group.DoesNotExist:
             BossHTTPError(404, "{Cannot assign permissions to the admin group because the group does not exist}", 30000)
 

@@ -48,6 +48,10 @@ class SetupTestDB:
     def set_user(self, user):
         self.user = user
 
+    def create_group(self,group_name):
+        group,created = Group.objects.get_or_create(name=group_name)
+        return created
+
     def insert_test_data(self):
 
         self.add_collection('col1', 'Description for collection1')
@@ -67,6 +71,12 @@ class SetupTestDB:
         assign_perm('add', user_primary_group, obj)
         assign_perm('update', user_primary_group, obj)
         assign_perm('delete', user_primary_group, obj)
+        assign_perm('assign_group', user_primary_group, obj)
+        assign_perm('remove_group', user_primary_group, obj)
+        if ct.model == 'channellayer':
+            assign_perm('add_volumetric_data', user_primary_group, obj)
+            assign_perm('read_volumetric_data', user_primary_group, obj)
+            assign_perm('delete_volumetric_data', user_primary_group, obj)
 
     def add_collection(self, collection_name, description):
         """
