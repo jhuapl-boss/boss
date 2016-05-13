@@ -44,16 +44,16 @@ class BloscParser(BaseParser):
             req = BossRequest(parser_context['request'])
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
-#
+
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
-#
+
         # Get datatype
         datatype = resource.get_data_type().lower()
         if datatype == "uint8":
             bitdepth = np.uint8
-        elif datatype == "uint32":
-            bitdepth = np.uint32
+        elif datatype == "uint16":
+            bitdepth = np.uint16
         elif datatype == "uint64":
             bitdepth = np.uint64
         else:
@@ -62,7 +62,13 @@ class BloscParser(BaseParser):
         # Decompress, reshape, and return
         raw_data = blosc.decompress(stream.read())
         data_mat = np.fromstring(raw_data, dtype=bitdepth)
-        return np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
+
+        if len(req.get_time()) > 1:
+            # Time series data
+            return np.reshape(data_mat, (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span()),
+                              order='C')
+        else:
+            return np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
 
 
 class BloscPythonParser(BaseParser):

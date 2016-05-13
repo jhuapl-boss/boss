@@ -538,7 +538,7 @@ class BossRequest:
                 return BossHTTPError(404, "Unable to parse time sample argument {}".format(time), 30000)
             if tstop:
                 self.time_stop = int(tstop)
-                if self.time_stop > self.time_start or self.time_stop > self.experiment.max_time_sample + 1:
+                if self.time_start > self.time_stop or self.time_stop > self.experiment.max_time_sample + 1:
                     return BossHTTPError(404, "Invalid time range {}. End time is greater than the start time "
                                               "or out of bouds with maximum time sample {}"
                                          .format(time, str(self.experiment.max_time_sample)), 30000)
