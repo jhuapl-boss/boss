@@ -34,13 +34,13 @@ class BossMeta(APIView):
         except BossError as err:
             return err.to_http()
 
-        if not lookup_key or lookup_key[0] == "":
+        if not lookup_key or lookup_key == "":
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         if 'key' not in request.query_params:
             # List all keys that are valid for the query
             mdb = metadb.MetaDB()
-            mdata = mdb.get_meta_list(lookup_key[0])
+            mdata = mdb.get_meta_list(lookup_key)
             keys = []
             if mdata:
                 for meta in mdata:
@@ -52,7 +52,7 @@ class BossMeta(APIView):
 
             mkey = request.query_params['key']
             mdb = metadb.MetaDB()
-            mdata = mdb.get_meta(lookup_key[0], mkey)
+            mdata = mdb.get_meta(lookup_key, mkey)
             if mdata:
                 data = {'key': mdata['key'], 'value': mdata['metavalue']}
                 return Response(data)
@@ -82,7 +82,7 @@ class BossMeta(APIView):
         except BossError as err:
             return err.to_http()
 
-        if not lookup_key or not lookup_key[0]:
+        if not lookup_key:
             return BossHTTPError(404, "Invalid request. Unable to parse the datamodel arguments", 30000)
 
         mkey = request.query_params['key']
@@ -90,9 +90,9 @@ class BossMeta(APIView):
 
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
-        if mdb.get_meta(lookup_key[0], mkey):
+        if mdb.get_meta(lookup_key, mkey):
             return BossHTTPError(404, "Invalid request. The key {} already exists".format(mkey), 30000)
-        mdb.write_meta(lookup_key[0], mkey, value)
+        mdb.write_meta(lookup_key, mkey, value)
         return HttpResponse(status=201)
 
     def delete(self, request, collection, experiment=None, channel_layer=None):
@@ -124,7 +124,7 @@ class BossMeta(APIView):
 
         # Delete metadata from the dynamodb database
         mdb = metadb.MetaDB()
-        response = mdb.delete_meta(lookup_key[0], mkey)
+        response = mdb.delete_meta(lookup_key, mkey)
 
         if 'Attributes' in response:
             return HttpResponse(status=200)
@@ -161,5 +161,5 @@ class BossMeta(APIView):
 
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
-        mdb.update_meta(lookup_key[0], mkey, value)
+        mdb.update_meta(lookup_key, mkey, value)
         return HttpResponse(status=200)
