@@ -1,1 +1,3 @@
-from .test_cutout_view import CutoutInterfaceViewTestMixin
+from .test_cutout_view_uint8 import CutoutInterfaceViewUint8TestMixin
+from .test_cutout_view_uint16 import CutoutInterfaceViewUint16TestMixin
+from .test_cutout_view_uint64 import CutoutInterfaceViewUint64TestMixin

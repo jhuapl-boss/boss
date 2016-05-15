@@ -62,6 +62,16 @@ class SetupTestDB:
         self.add_layer('col1', 'exp1', 'layer1', 0, 0, 'uint16')
         self.add_channel_layer_map('col1', 'exp1', 'channel1', 'layer1')
 
+    def insert_spatialdb_test_data(self):
+
+        self.add_collection('col1', 'Description for collection1')
+        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
+        self.add_experiment('col1', 'exp1', 'cf1', 10, 10)
+        self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8')
+        self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint16')
+        self.add_layer('col1', 'exp1', 'layer1', 0, 0, 'uint64')
+        self.add_channel_layer_map('col1', 'exp1', 'channel1', 'layer1')
+
     def add_permissions(self, group, obj):
         # Get the type of model
         ct = ContentType.objects.get_for_model(obj)

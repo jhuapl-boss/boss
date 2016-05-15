@@ -13,11 +13,9 @@
 # limitations under the License.
 
 from django.conf import settings
-import numpy as np
 import blosc
 
 from rest_framework.test import APITestCase, APIRequestFactory
-from rest_framework.test import APIClient
 from rest_framework.test import force_authenticate
 from rest_framework import status
 
@@ -28,7 +26,6 @@ from bosscore.error import BossError
 
 import numpy as np
 
-import unittest
 from unittest.mock import patch
 from mockredis import mock_strict_redis_client
 
@@ -37,6 +34,7 @@ import spdb
 version = settings.BOSS_VERSION
 
 _test_globals = {'kvio_engine': None}
+
 
 class MockBossConfig:
     """Basic mock for BossConfig so 'test databases' are used for redis (1) instead of the default where real data
@@ -71,199 +69,199 @@ class MockSpatialDB(spdb.spatialdb.SpatialDB):
         self.kvio = _test_globals['kvio_engine']
 
 
-class CutoutInterfaceViewTestMixin(object):
+class CutoutInterfaceViewUint16TestMixin(object):
 
-    def test_channel_uint8_cuboid_aligned_no_offset_no_time_blosc(self):
-        """ Test uint8 data, cuboid aligned, no offset, no time samples"""
+    def test_channel_uint16_cuboid_aligned_no_offset_no_time_blosc(self):
+        """ Test uint16 data, cuboid aligned, no offset, no time samples"""
 
-        test_mat = np.random.randint(0, 254, (16, 128, 128))
-        test_mat = test_mat.astype(np.uint8)
+        test_mat = np.random.randint(1, 2**16-1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint16)
         h = test_mat.tobytes()
-        bb = blosc.compress(h, typesize=8)
+        bb = blosc.compress(h, typesize=16)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/0:128/0:128/0:16/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/0:128/0:128/0:16/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/0:128/0:128/0:16/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/0:128/0:128/0:16/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
         raw_data = blosc.decompress(response.content)
-        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.fromstring(raw_data, dtype=np.uint16)
         data_mat = np.reshape(data_mat, (16, 128, 128), order='C')
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    def test_channel_uint8_cuboid_aligned_offset_no_time_blosc(self):
-        """ Test uint8 data, cuboid aligned, offset, no time samples, blosc interface"""
+    def test_channel_uint16_cuboid_aligned_offset_no_time_blosc(self):
+        """ Test uint16 data, cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(0, 254, (16, 128, 128))
-        test_mat = test_mat.astype(np.uint8)
+        test_mat = np.random.randint(1, 2**16-1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint16)
         h = test_mat.tobytes()
-        bb = blosc.compress(h, typesize=8)
+        bb = blosc.compress(h, typesize=16)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/128:256/256:384/16:32/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/128:256/256:384/16:32/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/128:256/256:384/16:32/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/128:256/256:384/16:32/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
         raw_data = blosc.decompress(response.content)
-        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.fromstring(raw_data, dtype=np.uint16)
         data_mat = np.reshape(data_mat, (16, 128, 128), order='C')
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    def test_channel_uint8_cuboid_unaligned_offset_no_time_blosc(self):
-        """ Test uint8 data, not cuboid aligned, offset, no time samples, blosc interface"""
+    def test_channel_uint16_cuboid_unaligned_offset_no_time_blosc(self):
+        """ Test uint16 data, not cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(0, 254, (17, 300, 500))
-        test_mat = test_mat.astype(np.uint8)
+        test_mat = np.random.randint(1, 2**16-1, (17, 300, 500))
+        test_mat = test_mat.astype(np.uint16)
         h = test_mat.tobytes()
-        bb = blosc.compress(h, typesize=8)
+        bb = blosc.compress(h, typesize=16)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/',
                               HTTP_ACCEPT='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
         raw_data = blosc.decompress(response.content)
-        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.fromstring(raw_data, dtype=np.uint16)
         data_mat = np.reshape(data_mat, (17, 300, 500), order='C')
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    def test_channel_uint8_cuboid_unaligned_offset_time_blosc(self):
-        """ Test uint8 data, not cuboid aligned, offset, time samples, blosc interface
+    def test_channel_uint16_cuboid_unaligned_offset_time_blosc(self):
+        """ Test uint16 data, not cuboid aligned, offset, time samples, blosc interface
 
         Test Requires >=2GB of memory!
         """
 
-        test_mat = np.random.randint(0, 254, (7, 17, 300, 500))
-        test_mat = test_mat.astype(np.uint8)
+        test_mat = np.random.randint(1, 2**16-1, (3, 17, 300, 500))
+        test_mat = test_mat.astype(np.uint16)
         h = test_mat.tobytes()
-        bb = blosc.compress(h, typesize=8)
+        bb = blosc.compress(h, typesize=16)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/0:7', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/0:3', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/0:7',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/0:3',
                               HTTP_ACCEPT='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
         raw_data = blosc.decompress(response.content)
-        data_mat = np.fromstring(raw_data, dtype=np.uint8)
-        data_mat = np.reshape(data_mat, (7, 17, 300, 500), order='C')
+        data_mat = np.fromstring(raw_data, dtype=np.uint16)
+        data_mat = np.reshape(data_mat, (3, 17, 300, 500), order='C')
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    def test_channel_uint8_cuboid_aligned_no_offset_no_time_blosc_numpy(self):
-        """ Test uint8 data, cuboid aligned, no offset, no time samples"""
+    def test_channel_uint16_cuboid_aligned_no_offset_no_time_blosc_numpy(self):
+        """ Test uint16 data, cuboid aligned, no offset, no time samples"""
 
-        test_mat = np.random.randint(0, 254, (16, 128, 128))
-        test_mat = test_mat.astype(np.uint8)
+        test_mat = np.random.randint(1, 2**16-1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint16)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/0:128/0:128/0:16/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/0:128/0:128/0:16/', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/0:128/0:128/0:16/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/0:128/0:128/0:16/',
                               HTTP_ACCEPT='application/blosc-python')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -273,34 +271,34 @@ class CutoutInterfaceViewTestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    def test_channel_uint8_cuboid_aligned_offset_no_time_blosc_numpy(self):
-        """ Test uint8 data, cuboid aligned, offset, no time samples, blosc interface"""
+    def test_channel_uint16_cuboid_aligned_offset_no_time_blosc_numpy(self):
+        """ Test uint16 data, cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(0, 254, (16, 128, 128))
-        test_mat = test_mat.astype(np.uint8)
+        test_mat = np.random.randint(1, 2**16-1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint16)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/128:256/256:384/16:32/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/128:256/256:384/16:32/', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/128:256/256:384/16:32/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/128:256/256:384/16:32/',
                               HTTP_ACCEPT='application/blosc-python')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -310,34 +308,34 @@ class CutoutInterfaceViewTestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    def test_channel_uint8_cuboid_unaligned_offset_no_time_blosc_numpy(self):
-        """ Test uint8 data, not cuboid aligned, offset, no time samples, blosc interface"""
+    def test_channel_uint16_cuboid_unaligned_offset_no_time_blosc_numpy(self):
+        """ Test uint16 data, not cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(0, 254, (17, 300, 500))
-        test_mat = test_mat.astype(np.uint8)
+        test_mat = np.random.randint(1, 2**16-1, (17, 300, 500))
+        test_mat = test_mat.astype(np.uint16)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/',
                               HTTP_ACCEPT='application/blosc-python')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -347,37 +345,34 @@ class CutoutInterfaceViewTestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    def test_channel_uint8_cuboid_unaligned_offset_time_blosc_numpy(self):
-        """ Test uint8 data, not cuboid aligned, offset, time samples, blosc interface
+    def test_channel_uint16_cuboid_unaligned_offset_time_blosc_numpy(self):
+        """ Test uint16 data, not cuboid aligned, offset, time samples, blosc interface"""
 
-        Test Requires >=2GB of memory!
-        """
-
-        test_mat = np.random.randint(0, 254, (7, 17, 300, 500))
-        test_mat = test_mat.astype(np.uint8)
+        test_mat = np.random.randint(1, 2**16-1, (3, 17, 300, 500))
+        test_mat = test_mat.astype(np.uint16)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/0:7', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/0:3', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/0:7',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/0:3',
                               HTTP_ACCEPT='application/blosc-python')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -391,7 +386,7 @@ class CutoutInterfaceViewTestMixin(object):
 @patch('redis.StrictRedis', mock_strict_redis_client)
 @patch('configparser.ConfigParser', MockBossConfig)
 @patch('spdb.spatialdb.kvio.KVIO', MockSpatialDB)
-class TestCutoutInterfaceView(CutoutInterfaceViewTestMixin, APITestCase):
+class TestCutoutInterfaceView(CutoutInterfaceViewUint16TestMixin, APITestCase):
 
     def setUp(self):
         """
@@ -403,7 +398,7 @@ class TestCutoutInterfaceView(CutoutInterfaceViewTestMixin, APITestCase):
         self.user = dbsetup.create_user('testuser')
 
         # Populate DB
-        dbsetup.insert_test_data()
+        dbsetup.insert_spatialdb_test_data()
 
         # Mock config parser so dummy params get loaded (redis is also mocked)
         self.patcher = patch('configparser.ConfigParser', MockBossConfig)

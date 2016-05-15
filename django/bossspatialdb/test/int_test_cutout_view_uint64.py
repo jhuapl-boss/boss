@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 from rest_framework.test import APITestCase
 
-from bossspatialdb.test import CutoutInterfaceViewTestMixin
+from bossspatialdb.test import CutoutInterfaceViewUint64TestMixin
 
 from bosscore.test.setup_db import SetupTestDB
 from bossutils import configuration
@@ -52,7 +52,7 @@ class MockBossIntegrationConfig:
 
 
 @patch('configparser.ConfigParser', MockBossIntegrationConfig)
-class CutoutViewIntegrationTests(CutoutInterfaceViewTestMixin, APITestCase):
+class CutoutViewIntegrationTests(CutoutInterfaceViewUint64TestMixin, APITestCase):
 
     def setUp(self):
         """
@@ -65,7 +65,7 @@ class CutoutViewIntegrationTests(CutoutInterfaceViewTestMixin, APITestCase):
         self.user = dbsetup.create_user()
 
         # Populate DB
-        dbsetup.insert_test_data()
+        dbsetup.insert_spatialdb_test_data()
 
         self.patcher = patch('configparser.ConfigParser', MockBossIntegrationConfig)
         self.mock_tests = self.patcher.start()
