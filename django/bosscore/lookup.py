@@ -58,6 +58,7 @@ class LookUpKey:
             bkey: Bosskey that corresponds to a request
 
         Returns:
+            Lookup key
 
         """
         lookup_obj = BossLookup.objects.get(boss_key=bkey)
@@ -73,6 +74,7 @@ class LookUpKey:
             experiment : Experiment Name
             channel_layer : Channel_layer name
         Returns:
+            None
 
         """
 

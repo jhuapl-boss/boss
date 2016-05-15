@@ -27,20 +27,21 @@ from .error import BossHTTPError, BossError
 
 class ResourceUserPermission(APIView):
     """
-    View to access a collection object
+    View to assign Permissions to resource instances
 
     """
 
     @staticmethod
     def get_object(collection, experiment=None, channel_layer=None):
-        """
+        """ Return the resource from the request
 
         Args:
-            collection:
-            experiment:
-            channel_layer:
+            collection: Collection name from the request
+            experiment: Experiment name from the request
+            channel_layer: Channel or layer name
 
         Returns:
+            Instance of the resource from the request
 
         """
         try:
@@ -51,6 +52,7 @@ class ResourceUserPermission(APIView):
                 obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
 
             elif collection and experiment:
+                # Experiment
                 collection_obj = Collection.objects.get(name=collection)
                 obj = Experiment.objects.get(name=experiment, collection=collection_obj)
 
@@ -68,16 +70,20 @@ class ResourceUserPermission(APIView):
             raise BossError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
 
     def get(self, request, group_name, collection, experiment=None, channel_layer=None):
-        """
+        """Return a list of permissions
+
+        Get the list of the permissions for a group on a resource. These determine the access for the users
+        in the group on the resource
 
         Args:
-           request:
-           group_name
-           collection:
-           experiment:
-           channel_layer:
+           request: Django Rest framework request
+           group_name: Group name of an existing group
+           collection: Collection name from the request
+           experiment: Experiment name from the request
+           channel_layer: Channel or Layer name from the request
 
        Returns:
+           List of permissions
 
         """
         try:
@@ -96,16 +102,19 @@ class ResourceUserPermission(APIView):
 
     @transaction.atomic
     def post(self, request, group_name, collection, experiment=None, channel_layer=None):
-        """
+        """ Add permissions to a resource
+
+        Add new permissions for a existing group and resource object
 
         Args:
-            request:
-            group_name
-            collection:
-            experiment:
-            channel_layer:
+            request: Django rest framework request
+            group_name: Group name of an existing group
+            collection: Collection name from the request
+            experiment: Experiment name from the request
+            channel_layer: Channel or layer name from the request
 
         Returns:
+            Http status code
 
         """
 
@@ -134,16 +143,18 @@ class ResourceUserPermission(APIView):
 
     @transaction.atomic
     def delete(self, request, group_name, collection, experiment=None, channel_layer=None):
-        """
+        """ Delete permissions for a resource object
 
-        Args:
-            request:
-            group_name
-            collection:
-            experiment:
-            channel_layer:
+       Remove specific permissions for a existing group and resource object
 
+       Args:
+            request: Django rest framework request
+            group_name: Group name of an existing group
+            collection: Collection name from the request
+            experiment: Experiment name from the request
+            channel_layer: Channel or layer name from the request
         Returns:
+            Http status code
 
         """
         if 'permissions' not in request.data:

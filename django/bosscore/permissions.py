@@ -28,34 +28,6 @@ class BossPermissionManager:
         """
         return Group.objects.get(name=group_name).user_set.filter(id=user.id).exists()
 
-    # @staticmethod
-    # def add_permissions_user(user, obj):
-    #     """
-    #     Grant permissions to the object for the user's primary group
-    #     Args:
-    #         user: Current user
-    #         obj: Object that we are assigning permission for
-    #         obj_name :
-    #
-    #     Returns:
-    #
-    #     """
-    #     # Get the type of model
-    #     ct = ContentType.objects.get_for_model(obj)
-    #     group_name = user.username + "-primary"
-    #     user_primary_group = Group.objects.get_or_create(name=group_name)[0]
-    #     user.groups.add(user_primary_group.pk)
-    #
-    #     assign_perm('read', user_primary_group, obj)
-    #     assign_perm('add', user_primary_group, obj)
-    #     assign_perm('update', user_primary_group, obj)
-    #     assign_perm('delete', user_primary_group, obj)
-    #     assign_perm('assign_group', user_primary_group, obj)
-    #     assign_perm('remove_group', user_primary_group, obj)
-    #     if ct.model == 'channellayer':
-    #         assign_perm('add_volumetric_data', user_primary_group, obj)
-    #         assign_perm('read_volumetric_data', user_primary_group, obj)
-    #         assign_perm('delete_volumetric_data', user_primary_group, obj)
 
     @staticmethod
     def add_permissions_primary_group(user, obj):
@@ -64,9 +36,9 @@ class BossPermissionManager:
         Args:
             user: Current user
             obj: Object that we are assigning permission for
-            obj_name :
 
         Returns:
+            None
 
         """
         # Get the type of model
@@ -91,13 +63,14 @@ class BossPermissionManager:
     @staticmethod
     def add_permissions_group(group_name, obj, perm_list):
         """
-        Grant permissions to the object for the user's primary group
+        Grant permissions to the object for a group
         Args:
-            user: Current user
-            obj: Object that we are assigning permission for
-            obj_name :
+            group_name: Name of an existing group
+            obj: Resource
+            perm_list: List of permissions to be assigned for the resource and group
 
         Returns:
+            None
 
         """
         # Get the type of model
@@ -108,13 +81,13 @@ class BossPermissionManager:
     @staticmethod
     def get_permissions_group(group_name, obj):
         """
-        Return the permissions for a users group
+        Return the permissions for a group
         Args:
-            group_name :
+            group_name : Name of existing group
             obj: Object that we are getting permission for
-            obj_name :
 
         Returns:
+            List of permissions
 
         """
         # Get the type of model
@@ -124,11 +97,11 @@ class BossPermissionManager:
     @staticmethod
     def delete_permissions_group(group_name, obj, perm_list):
         """
-        Return the permissions for a users group
+        Delete permissions for a resource
         Args:
-            group_name :
+            group_name : Name of existing group
             obj: Object that we are getting permission for
-            obj_name :
+            perm_list : List of permissions to be deleted
 
         Returns:
 
@@ -170,12 +143,14 @@ class BossPermissionManager:
     @staticmethod
     def check_resource_permissions(user, obj, method_type):
         """
+        Check user permissions for a resource object
         Args:
-            user:
-            obj:
-            method_type:
+            user: User name
+            obj: Obj
+            method_type: Method type specified in the request
 
         Returns:
+            bool. True if the user has the permission on the resource
 
         """
         if method_type == 'GET':
@@ -197,12 +172,14 @@ class BossPermissionManager:
     @staticmethod
     def check_data_permissions(user, obj, method_type):
         """
+        Check user permissions for a data
         Args:
-            user:
-            obj:
-            method_type:
+            user: User name
+            obj: resource
+            method_type: Mothod type specified in the post
 
         Returns:
+            bool. True if the user has the permission on the resource
 
         """
         if method_type == 'GET':

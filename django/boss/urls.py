@@ -58,6 +58,8 @@ urlpatterns = [
     url(r'^v0.4/meta/', include('bossmeta.urls', namespace='v0.4')),
     url(r'^v0.4/resource/', include('bosscore.resource_urls', namespace='v0.4')),
     url(r'^v0.4/permission/', include('bosscore.urls', namespace='v0.4')),
+    url(r'^v0.4/group/', include('bosscore.group-urls', namespace='v0.4')),
+    url(r'^v0.4/group-member/', include('bosscore.group-urls', namespace='v0.4')),
     url(r'^v0.4/cutout/', include('bossspatialdb.urls', namespace='v0.4')),
 
 ]
