@@ -113,7 +113,7 @@ class BossGroup(APIView):
         try:
             group = Group.objects.get(name=group_name)
             serializer = GroupSerializer(group)
-            return Response(group.name, status=200)
+            return Response(serializer.data, status=200)
 
         except Group.DoesNotExist:
             return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
