@@ -37,11 +37,13 @@ class CollectionDetail(APIView):
     """
     def get(self, request, collection):
         """
-        View to handle GET requests for a single instance of a collection
+        Get a single instance of a collection
 
-        :param request: DRF Request object
-        :param collection: Collection name specifying the collection you want
-        :return:
+        Args:
+            request: DRF Request object
+            collection: Collection name specifying the collection you want
+        Returns:
+            Collection
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
@@ -65,6 +67,7 @@ class CollectionDetail(APIView):
             request: DRF Request object
             collection : Collection name
         Returns:
+            Collection
 
         """
         col_data = request.data.copy()
@@ -91,10 +94,11 @@ class CollectionDetail(APIView):
     def put(self, request, collection):
         """
         Update a collection using django rest framework
-
-        :param request: DRF Request object
-        :param collection: Collection name
-        :return:
+        Args:
+            request: DRF Request object
+            collection: Collection name
+        Returns:
+            Collection
         """
         try:
             # Check if the object exists
@@ -124,9 +128,11 @@ class CollectionDetail(APIView):
     def delete(self, request, collection):
         """
         Delete a collection
-        :param request: DRF Request object
-        :param collection:  Name of collection to delete
-        :return:
+        Args:
+            request: DRF Request object
+            collection:  Name of collection to delete
+        Returns:
+            Http status
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
@@ -147,16 +153,18 @@ class CollectionDetail(APIView):
 
 class CoordinateFrameDetail(APIView):
     """
-    View to access a collection object
+    View to access a cordinate frame
 
     """
     def get(self, request, coordframe):
         """
-        View to handle GET requests for a single instance of a coordinateframe
+        GET requests for a single instance of a coordinateframe
+        Args:
 
-        :param request: DRF Request object
-        :param coordframe: Coordinate frame name specifying the coordinate frame you want
-        :return:
+            request: DRF Request object
+            coordframe: Coordinate frame name specifying the coordinate frame you want
+        Returns:
+            CoordinateFrame
         """
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
@@ -178,6 +186,7 @@ class CoordinateFrameDetail(APIView):
             request: DRF Request object
             coordframe : Coordinate frame name
         Returns:
+            CoordinateFrame
 
         """
         # TODO (pmanava1): Apply permissions here
@@ -201,9 +210,11 @@ class CoordinateFrameDetail(APIView):
         """
         Update a coordinate frame using django rest framework
 
-        :param request: DRF Request object
-        :param coordframe: Coordinate frame name
-        :return:
+        Args:
+            request: DRF Request object
+            coordframe: Coordinate frame name
+        Returns:
+            CoordinateFrame
         """
         try:
             # Check if the object exists
@@ -224,9 +235,11 @@ class CoordinateFrameDetail(APIView):
     def delete(self, request, coordframe):
         """
         Delete a coordinate frame
-        :param request: DRF Request object
-        :param coordframe:  Name of coordinateframe to delete
-        :return:
+        Args:
+            request: DRF Request object
+            coordframe:  Name of coordinateframe to delete
+        Returns:
+            Http status
         """
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
@@ -244,18 +257,19 @@ class CoordinateFrameDetail(APIView):
 
 class ExperimentDetail(APIView):
     """
-    View to access a collection object
+    View to access an experiment
 
     """
     def get(self, request, collection, experiment):
         """
-        View to handle GET requests for a single instance of a experimen
+        GET requests for a single instance of a experiment
 
         Args:
             request: DRF Request object
             collection: Collection name specifying the collection you want
             experiment: Experiment name specifying the experiment instance
         Returns :
+            Experiment
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
@@ -281,6 +295,7 @@ class ExperimentDetail(APIView):
             collection : Collection name
             experiment : Experiment name
         Returns:
+            Experiment
 
         """
         experiment_data = request.data.copy()
@@ -326,6 +341,7 @@ class ExperimentDetail(APIView):
             experiment : Experiment name for the new experiment
 
         Returns:
+            Experiment
         """
         try:
             # Check if the object exists
@@ -362,6 +378,7 @@ class ExperimentDetail(APIView):
             collection:  Name of collection
             experiment: Experiment name to delete
         Returns:
+            Http status
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
@@ -422,7 +439,7 @@ class ChannelLayerDetail(APIView):
         back to a list if they are valid.
 
         Args:
-            value: String of Integers
+            list_ints: String of Integers
 
         Returns:
             List : Representing the string of integers
@@ -449,6 +466,7 @@ class ChannelLayerDetail(APIView):
             channel_layer: Channel or Layer name
 
         Returns :
+            ChannelLayer
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
@@ -482,6 +500,7 @@ class ChannelLayerDetail(APIView):
             channel_layer: Channel or Layer name
 
         Returns :
+            ChannelLayer
         """
 
         channel_layer_data = request.data.copy()
@@ -556,6 +575,7 @@ class ChannelLayerDetail(APIView):
             channel_layer: Channel or Layer name
 
         Returns :
+            ChannelLayer
         """
         channel_layer_data = request.data.copy()
         if 'is_channel' in channel_layer_data:
@@ -602,6 +622,7 @@ class ChannelLayerDetail(APIView):
             channel_layer: Channel or Layer name
 
         Returns :
+            Http status
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
