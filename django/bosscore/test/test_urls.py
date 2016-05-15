@@ -20,6 +20,7 @@ from django.conf import settings
 from bosscore.views import CollectionList, CollectionDetail, ExperimentList, ExperimentDetail, \
     ChannelList, LayerList, ChannelLayerDetail, CoordinateFrameList, CoordinateFrameDetail
 from bosscore.views_permission import ResourceUserPermission
+from bosscore.views_group import BossGroupMember, BossGroup
 
 
 version = settings.BOSS_VERSION
@@ -120,3 +121,28 @@ class BossCorePermissionRoutingTests(APITestCase):
 
         match = resolve('/' + version + '/permission/test/col1/exp1/ch1/')
         self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
+
+class BossCoreGroupRoutingTests(APITestCase):
+
+    def test_group_resolves(self):
+        """
+        Test that all group urls resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/group/test/')
+        self.assertEqual(match.func.__name__, BossGroup.as_view().__name__)
+
+    def test_group_member_resolves(self):
+        """
+        Test that all group_member urls for experiments resolves correctly
+
+        Returns: None
+
+        """
+
+        match = resolve('/' + version + '/group-member/test/testuser/')
+        self.assertEqual(match.func.__name__, BossGroupMember.as_view().__name__)
+

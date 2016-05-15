@@ -27,20 +27,24 @@ from .error import BossHTTPError, BossError
 
 class ResourceUserPermission(APIView):
     """
-    View to access a collection object
+    View to assign Permissions to resource instances
 
     """
 
     @staticmethod
     def get_object(collection, experiment=None, channel_layer=None):
-        """
+        """ Return a list of permissions
+
+        Get the list of the permissions for a group on a resource. These determine the access for the users
+        in the group on the resource
 
         Args:
-            collection:
-            experiment:
-            channel_layer:
+            collection: Collection name from the request
+            experiment: Experiment name from the request
+            channel_layer: Channel or layer name
 
         Returns:
+            List of permissions
 
         """
         try:
@@ -51,6 +55,7 @@ class ResourceUserPermission(APIView):
                 obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
 
             elif collection and experiment:
+                # Experiment
                 collection_obj = Collection.objects.get(name=collection)
                 obj = Experiment.objects.get(name=experiment, collection=collection_obj)
 
@@ -68,7 +73,10 @@ class ResourceUserPermission(APIView):
             raise BossError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
 
     def get(self, request, group_name, collection, experiment=None, channel_layer=None):
-        """
+        """Return a list of permissions
+
+        Get the list of the permissions for a group on a resource. These determine the access for the users
+        in the group on the resource
 
         Args:
            request:
