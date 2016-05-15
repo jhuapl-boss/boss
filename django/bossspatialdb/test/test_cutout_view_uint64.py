@@ -30,6 +30,8 @@ from unittest.mock import patch
 from mockredis import mock_strict_redis_client
 
 import spdb
+import os
+import unittest
 
 version = settings.BOSS_VERSION
 
@@ -191,31 +193,32 @@ class CutoutInterfaceViewUint64TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
+    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
     def test_channel_uint64_cuboid_unaligned_offset_time_blosc(self):
         """ Test uint64 data, not cuboid aligned, offset, time samples, blosc interface
 
-        Test Requires >=2GB of memory!
+        Test Requires >=2.5GB of memory!
         """
 
-        test_mat = np.random.randint(1, 2**50, (3, 17, 300, 500))
+        test_mat = np.random.randint(1, 2**50, (2, 17, 300, 280))
         test_mat = test_mat.astype(np.uint64)
         h = test_mat.tobytes()
         bb = blosc.compress(h, typesize=64)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/0:3', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/100:380/450:750/20:37/0:2', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
+                                    resolution='0', x_range='100:380', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/0:3',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/100:380/450:750/20:37/0:2',
                               HTTP_ACCEPT='application/blosc')
 
         # log in user
@@ -223,13 +226,13 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
+                                    resolution='0', x_range='100:380', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
         raw_data = blosc.decompress(response.content)
         data_mat = np.fromstring(raw_data, dtype=np.uint64)
-        data_mat = np.reshape(data_mat, (3, 17, 300, 500), order='C')
+        data_mat = np.reshape(data_mat, (2, 17, 300, 280), order='C')
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
@@ -345,6 +348,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
+    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
     def test_channel_uint64_cuboid_unaligned_offset_time_blosc_numpy(self):
         """ Test uint64 data, not cuboid aligned, offset, time samples, blosc interface
 
