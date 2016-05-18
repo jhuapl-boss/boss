@@ -382,6 +382,43 @@ class CutoutInterfaceViewUint16TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
+    def test_channel_uint16_cuboid_unaligned_offset_time_offset_blosc_numpy(self):
+        """ Test uint16 data, not cuboid aligned, offset, time samples, blosc interface"""
+
+        test_mat = np.random.randint(1, 2**16-1, (3, 17, 300, 500))
+        test_mat = test_mat.astype(np.uint16)
+        bb = blosc.pack_array(test_mat)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/203:206/', bb,
+                               content_type='application/blosc-python')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel2/0/100:600/450:750/20:37/203:206/',
+                              HTTP_ACCEPT='application/blosc-python')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        data_mat = blosc.unpack_array(response.content)
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(data_mat, test_mat)
+
 
 @patch('redis.StrictRedis', mock_strict_redis_client)
 @patch('configparser.ConfigParser', MockBossConfig)

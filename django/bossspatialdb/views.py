@@ -123,7 +123,11 @@ class Cutout(APIView):
 
         # Write block to cache
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
-        cache.write_cuboid(resource, corner, req.get_resolution(), request.data, req.get_time()[0])
+
+        try:
+            cache.write_cuboid(resource, corner, req.get_resolution(), request.data, req.get_time()[0])
+        except BaseException as e:
+            return BossHTTPError(500, 'Error during write_cuboid: ' + str(e))
 
         # Send data to renderer
         return HttpResponse(status=201)
