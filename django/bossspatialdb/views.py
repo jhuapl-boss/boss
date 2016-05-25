@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import numpy as np
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -23,7 +24,7 @@ from .renderers import BloscRenderer, BloscPythonRenderer
 from django.http import HttpResponse
 
 from bosscore.request import BossRequest
-from bosscore.error import BossError, BossHTTPError
+from bosscore.error import BossError, BossHTTPError, BossParserError
 
 import spdb
 
@@ -42,7 +43,7 @@ class Cutout(APIView):
     # Set Parser and Renderer
 
     parser_classes = (BloscParser, BloscPythonParser)
-    renderer_classes = (BloscRenderer, BloscPythonRenderer, BrowsableAPIRenderer)
+    renderer_classes = (BloscRenderer, BloscPythonRenderer, JSONRenderer, BrowsableAPIRenderer)
 
     def get(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
         """
@@ -79,6 +80,11 @@ class Cutout(APIView):
         else:
             return BossHTTPError(400, "Unsupported datatype provided to parser")
 
+        # Make sure cutout request is under 1GB UNCOMPRESSED
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * self.bit_depth
+        if total_bytes > 10**9:
+            return BossHTTPError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
+
         # Get interface to SPDB cache
         cache = spdb.spatialdb.SpatialDB()
 
@@ -109,6 +115,10 @@ class Cutout(APIView):
         :param z_range: Python style range indicating the Z coordinates of where to post the cuboid (eg. 100:200)
         :return:
         """
+        # Check if parsing completed without error. If an error did occur, return to user.
+        if isinstance(request.data, BossParserError):
+            return request.data.to_http()
+
         # Process request and validate
         try:
             req = BossRequest(request)
@@ -117,6 +127,28 @@ class Cutout(APIView):
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
+
+        # Make sure datatype is valid
+        if resource.get_data_type() == "uint8":
+            if request.data.dtype != np.uint8:
+                return BossHTTPError(400, "Datatype does not match channel/layer")
+        elif resource.get_data_type() == "uint16":
+            if request.data.dtype != np.uint16:
+                return BossHTTPError(400, "Datatype does not match channel/layer")
+        elif resource.get_data_type() == "uint64":
+            if request.data.dtype != np.uint64:
+                return BossHTTPError(400, "Datatype does not match channel/layer")
+        else:
+            return BossHTTPError(400, "Unsupported datatype for post data")
+
+        # Make sure the dimensions of the data match the dimensions of the post URL
+        if len(request.data.shape) == 4:
+            expected_shape = (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span())
+        else:
+            expected_shape = (req.get_z_span(), req.get_y_span(), req.get_x_span())
+
+        if expected_shape != request.data.shape:
+            return BossHTTPError(400, "Data dimensions in URL do not match POSTed data.")
 
         # Get interface to SPDB cache
         cache = spdb.spatialdb.SpatialDB()
@@ -127,6 +159,7 @@ class Cutout(APIView):
         try:
             cache.write_cuboid(resource, corner, req.get_resolution(), request.data, req.get_time()[0])
         except BaseException as e:
+            # TODO: Eventually remove as this level of detail should not be sent to the user
             return BossHTTPError(500, 'Error during write_cuboid: ' + str(e))
 
         # Send data to renderer

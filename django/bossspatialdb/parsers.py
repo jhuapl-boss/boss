@@ -17,7 +17,7 @@ import blosc
 import numpy as np
 
 from bosscore.request import BossRequest
-from bosscore.error import BossError, BossHTTPError
+from bosscore.error import BossParserError, BossError
 
 import spdb
 
@@ -43,7 +43,7 @@ class BloscParser(BaseParser):
         try:
             req = BossRequest(parser_context['request'])
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return BossParserError(err.args[0], err.args[1], err.args[2])
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -57,18 +57,27 @@ class BloscParser(BaseParser):
         elif datatype == "uint64":
             bitdepth = np.uint64
         else:
-            return BossHTTPError(400, "Unsupported datatype provided to parser")
+            return BossParserError(400, "Unsupported datatype provided to parser: {}".format(datatype))
 
-        # Decompress, reshape, and return
-        raw_data = blosc.decompress(stream.read())
-        data_mat = np.fromstring(raw_data, dtype=bitdepth)
+        try:
+            # Decompress
+            raw_data = blosc.decompress(stream.read())
+            data_mat = np.fromstring(raw_data, dtype=bitdepth)
+        except:
+            return BossParserError(400, "Failed to decompress data. Verify the datatype/bitdepth of your data "
+                                      "matches the channel/layer.")
 
-        if len(req.get_time()) > 1:
-            # Time series data
-            return np.reshape(data_mat, (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span()),
-                              order='C')
-        else:
-            return np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
+        try:
+            # Reshape and return
+            if len(req.get_time()) > 1:
+                # Time series data
+                return np.reshape(data_mat, (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span()),
+                                  order='C')
+            else:
+                return np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
+        except ValueError:
+            return BossParserError(400, "Failed to unpack data. Verify the datatype of your POSTed data and "
+                                   "xyz dimensions used in the POST URL.")
 
 
 class BloscPythonParser(BaseParser):
@@ -89,4 +98,9 @@ class BloscPythonParser(BaseParser):
         :return:
         """
         # Decompress and return
-        return blosc.unpack_array(stream.read())
+        try:
+            return blosc.unpack_array(stream.read())
+        except EOFError:
+            return BossParserError(400, "Failed to unpack data. Verify the datatype of your POSTed data and "
+                                   "xyz dimensions used in the POST URL.")
+
