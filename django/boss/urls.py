@@ -56,11 +56,21 @@ urlpatterns = [
 
     # API version 0.4
     url(r'^v0.4/meta/', include('bossmeta.urls', namespace='v0.4')),
-    url(r'^v0.4/resource/', include('bosscore.resource_urls', namespace='v0.4')),
-    url(r'^v0.4/permission/', include('bosscore.urls', namespace='v0.4')),
-    url(r'^v0.4/group/', include('bosscore.group-urls', namespace='v0.4')),
-    url(r'^v0.4/group-member/', include('bosscore.group-urls', namespace='v0.4')),
+    url(r'^v0.4/resource/', include('bosscore.urls.resource_urls', namespace='v0.4')),
+    url(r'^v0.4/permission/', include('bosscore.urls.permission-urls', namespace='v0.4')),
+    url(r'^v0.4/group/', include('bosscore.urls.group-urls', namespace='v0.4')),
+    url(r'^v0.4/group-member/', include('bosscore.urls.group-urls', namespace='v0.4')),
     url(r'^v0.4/cutout/', include('bossspatialdb.urls', namespace='v0.4')),
+
+    # API version 0.5
+    url(r'^v0.5/meta/', include('bossmeta.urls', namespace='v0.5')),
+    url(r'^v0.5/resource/', include('bosscore.urls.resource_urls', namespace='v0.5')),
+    url(r'^v0.5/permission/', include('bosscore.urls.permission-urls', namespace='v0.5')),
+    url(r'^v0.5/group/', include('bosscore.urls.group-urls', namespace='v0.5')),
+    url(r'^v0.5/group-member/', include('bosscore.urls.group-urls', namespace='v0.5')),
+    url(r'^v0.5/cutout/', include('bossspatialdb.urls', namespace='v0.5')),
+    url(r'^v0.5/user/', include('bosscore.urls.user-urls', namespace='v0.5')),
+    url(r'^v0.5/user-role/', include('bosscore.urls.user-urls', namespace='v0.5')),
 
 ]
 

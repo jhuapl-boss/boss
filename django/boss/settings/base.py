@@ -139,4 +139,4 @@ REST_FRAMEWORK = {
 
 }
 # Version that unit tests are being run against
-BOSS_VERSION = 'v0.4'
+BOSS_VERSION = 'v0.5'

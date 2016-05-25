@@ -18,8 +18,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import HttpResponse
 
-from .error import BossHTTPError
-from .serializers import GroupSerializer
+from bosscore.error import BossHTTPError
+from bosscore.serializers import GroupSerializer
 
 
 class BossGroupMember(APIView):

@@ -20,9 +20,9 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from .models import Collection, Experiment, ChannelLayer
-from .permissions import BossPermissionManager
-from .error import BossHTTPError, BossError
+from bosscore.models import Collection, Experiment, ChannelLayer
+from bosscore.permissions import BossPermissionManager
+from bosscore.error import BossHTTPError, BossError
 
 
 class ResourceUserPermission(APIView):

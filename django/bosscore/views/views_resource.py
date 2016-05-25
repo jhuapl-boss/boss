@@ -21,13 +21,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
 
-from .error import BossHTTPError
-from .lookup import LookUpKey
-from .permissions import BossPermissionManager
+from bosscore.error import BossHTTPError
+from bosscore.lookup import LookUpKey
+from bosscore.permissions import BossPermissionManager
 
-from .serializers import CollectionSerializer, ExperimentSerializer, ChannelLayerSerializer,\
+from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelLayerSerializer,\
     LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
-from .models import Collection, Experiment, ChannelLayer, CoordinateFrame
+from bosscore.models import Collection, Experiment, ChannelLayer, CoordinateFrame
 from bossmeta.metadb import MetaDB
 
 class CollectionDetail(APIView):
