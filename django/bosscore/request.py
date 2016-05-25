@@ -42,6 +42,7 @@ class BossRequest:
         self.experiment = None
         self.channel_layer = None
 
+
         self.default_time = None
         self.coord_frame = None
 
@@ -184,7 +185,11 @@ class BossRequest:
             self.z_start = int(z_coords[0])
             self.z_stop = int(z_coords[1])
 
-            if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop):
+            # Check for valid arguments
+            if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop) or \
+                    (self.x_start < self.coord_frame.x_start) or (self.x_stop >= self.coord_frame.x_stop) or \
+                    (self.y_start < self.coord_frame.y_start) or (self.y_stop >= self.coord_frame.y_stop) or\
+                    (self.z_start < self.coord_frame.z_start) or (self.z_stop >= self.coord_frame.z_stop):
                 raise BossError(404,
                                 "Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                                 30000)
@@ -193,6 +198,7 @@ class BossRequest:
             raise BossError(404,
                             "Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                             30000)
+
 
     def initialize_view_request(self, webargs):
         """
