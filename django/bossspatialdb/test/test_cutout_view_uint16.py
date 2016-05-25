@@ -39,10 +39,9 @@ _test_globals = {'kvio_engine': None}
 class MockBossConfig:
     """Basic mock for BossConfig so 'test databases' are used for redis (1) instead of the default where real data
     can live (0)"""
-    def __init__(self):
+    def __init__(self, defaults=None):
         self.config = {}
         self.config["aws"] = {}
-        #self.config["aws"]["meta-db"] = {"https://meta.url.com"}
         self.config["aws"]["cache"] = {"https://some.url.com"}
         self.config["aws"]["cache-state"] = {"https://some.url2.com"}
         self.config["aws"]["cache-db"] = 1
@@ -70,6 +69,27 @@ class MockSpatialDB(spdb.spatialdb.SpatialDB):
 
 
 class CutoutInterfaceViewUint16TestMixin(object):
+    def test_channel_uint16_wrong_data_type(self):
+        """ Test uint16 data, cuboid aligned, no offset, no time samples"""
+
+        test_mat = np.random.randint(1, 2 ** 16 - 1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint8)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=8)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel2/0/0:128/0:128/0:16/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
 
     def test_channel_uint16_cuboid_aligned_no_offset_no_time_blosc(self):
         """ Test uint16 data, cuboid aligned, no offset, no time samples"""
