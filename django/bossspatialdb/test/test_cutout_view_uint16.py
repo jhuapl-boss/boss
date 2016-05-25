@@ -41,12 +41,9 @@ class MockBossConfig(bossutils.configuration.BossConfig):
     """Basic mock for BossConfig so 'test databases' are used for redis (1) instead of the default where real data
     can live (0)"""
     def __init__(self):
-        self.config = {}
-        self.config["aws"] = {}
-        self.config["aws"]["cache"] = {"https://some.url.com"}
-        self.config["aws"]["cache-state"] = {"https://some.url2.com"}
-        self.config["aws"]["cache-db"] = 1
-        self.config["aws"]["cache-state-db"] = 1
+        super().__init__()
+        self.config["aws"]["cache-db"] = "1"
+        self.config["aws"]["cache-state-db"] = "1"
 
     def read(self, filename):
         pass

@@ -13,6 +13,8 @@
 # limitations under the License.
 
 from rest_framework.parsers import BaseParser
+from django.conf import settings
+
 import blosc
 import numpy as np
 
@@ -48,27 +50,27 @@ class BloscParser(BaseParser):
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
 
-        # Get datatype
-        datatype = resource.get_data_type().lower()
-        if datatype == "uint8":
-            bitdepth = np.uint8
-        elif datatype == "uint16":
-            bitdepth = np.uint16
-        elif datatype == "uint64":
-            bitdepth = np.uint64
-        else:
-            return BossParserError(400, "Unsupported datatype provided to parser: {}".format(datatype))
+        # Get bit depth
+        try:
+            bit_depth = resource.get_bit_depth()
+        except ValueError:
+            return BossParserError(400, "Unsupported data type provided to parser: {}".format(resource.get_data_type()))
+
+        # Make sure cutout request is under 1GB UNCOMPRESSED
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth
+        if total_bytes > settings.CUTOUT_MAX_SIZE:
+            return BossParserError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
 
         try:
             # Decompress
             raw_data = blosc.decompress(stream.read())
-            data_mat = np.fromstring(raw_data, dtype=bitdepth)
+            data_mat = np.fromstring(raw_data, dtype=resource.get_numpy_data_type())
         except:
             return BossParserError(400, "Failed to decompress data. Verify the datatype/bitdepth of your data "
-                                      "matches the channel/layer.")
+                                        "matches the channel/layer.")
 
+        # Reshape and return
         try:
-            # Reshape and return
             if len(req.get_time()) > 1:
                 # Time series data
                 return np.reshape(data_mat, (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span()),
@@ -97,6 +99,26 @@ class BloscPythonParser(BaseParser):
         :param parser_context:
         :return:
         """
+        try:
+            req = BossRequest(parser_context['request'])
+        except BossError as err:
+            return BossParserError(err.args[0], err.args[1], err.args[2])
+
+        # Convert to Resource
+        resource = spdb.project.BossResourceDjango(req)
+
+        # Get bit depth
+        try:
+            bit_depth = resource.get_bit_depth()
+        except ValueError:
+            return BossParserError(400,
+                                   "Unsupported data type provided to parser: {}".format(resource.get_data_type()))
+
+        # Make sure cutout request is under 1GB UNCOMPRESSED
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth
+        if total_bytes > settings.CUTOUT_MAX_SIZE:
+            return BossParserError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
+
         # Decompress and return
         try:
             return blosc.unpack_array(stream.read())

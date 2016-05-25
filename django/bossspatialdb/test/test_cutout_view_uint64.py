@@ -30,6 +30,8 @@ from unittest.mock import patch
 from mockredis import mock_strict_redis_client
 
 import spdb
+import bossutils
+
 import os
 import unittest
 
@@ -38,17 +40,13 @@ version = settings.BOSS_VERSION
 _test_globals = {'kvio_engine': None}
 
 
-class MockBossConfig:
+class MockBossConfig(bossutils.configuration.BossConfig):
     """Basic mock for BossConfig so 'test databases' are used for redis (1) instead of the default where real data
     can live (0)"""
     def __init__(self):
-        self.config = {}
-        self.config["aws"] = {}
-        #self.config["aws"]["meta-db"] = {"https://meta.url.com"}
-        self.config["aws"]["cache"] = {"https://some.url.com"}
-        self.config["aws"]["cache-state"] = {"https://some.url2.com"}
-        self.config["aws"]["cache-db"] = 1
-        self.config["aws"]["cache-state-db"] = 1
+        super().__init__()
+        self.config["aws"]["cache-db"] = "1"
+        self.config["aws"]["cache-state-db"] = "1"
 
     def read(self, filename):
         pass
@@ -60,7 +58,7 @@ class MockBossConfig:
 class MockSpatialDB(spdb.spatialdb.SpatialDB):
     """mock for redis kvio so the actual server isn't used during unit testing, but a static mockredis-py instead"""
 
-    @patch('configparser.ConfigParser', MockBossConfig)
+    @patch('bossutils.configuration.BossConfig', MockBossConfig)
     @patch('redis.StrictRedis', mock_strict_redis_client)
     def __init__(self):
         super().__init__()
@@ -72,6 +70,100 @@ class MockSpatialDB(spdb.spatialdb.SpatialDB):
 
 
 class CutoutInterfaceViewUint64TestMixin(object):
+
+    def test_channel_uint64_wrong_data_type(self):
+        """ Test posting the wrong bitdepth data """
+
+        test_mat = np.random.randint(1, 2 ** 16 - 1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint8)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=8)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:16/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_channel_uint64_wrong_data_type_numpy(self):
+        """ Test posting the wrong bitdepth data using the blosc-numpy interface"""
+        test_mat = np.random.randint(1, 2 ** 16 - 1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint8)
+        bb = blosc.pack_array(test_mat)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:16/', bb,
+                               content_type='application/blosc-python')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_channel_uint64_wrong_dimensions(self):
+        """ Test posting with the wrong xyz dims"""
+
+        test_mat = np.random.randint(1, 2 ** 16 - 1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint64)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=64)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:100/0:128/0:16/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+                                    resolution='0', x_range='0:100', y_range='0:128', z_range='0:16')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_channel_uint64_wrong_dimensions_numpy(self):
+        """ Test posting with the wrong xyz dims using the numpy interface"""
+
+        test_mat = np.random.randint(1, 2 ** 16 - 1, (16, 128, 128))
+        test_mat = test_mat.astype(np.uint64)
+        bb = blosc.pack_array(test_mat)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:100/0:128/0:16/', bb,
+                               content_type='application/blosc-python')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+                                    resolution='0', x_range='0:100', y_range='0:128', z_range='0:16')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_channel_uint64_get_too_big(self):
+        """ Test getting a cutout that is over 1GB uncompressed"""
+        # Create request
+        factory = APIRequestFactory()
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:100000/0:100000/0:10000/',
+                              accepts='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+        self.assertEqual(response.status_code, status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
 
     def test_channel_uint64_cuboid_aligned_no_offset_no_time_blosc(self):
         """ Test uint64 data, cuboid aligned, no offset, no time samples"""
@@ -432,7 +524,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
 
 @patch('redis.StrictRedis', mock_strict_redis_client)
-@patch('configparser.ConfigParser', MockBossConfig)
+@patch('bossutils.configuration.BossConfig', MockBossConfig)
 @patch('spdb.spatialdb.kvio.KVIO', MockSpatialDB)
 class TestCutoutInterfaceView(CutoutInterfaceViewUint64TestMixin, APITestCase):
 
@@ -449,7 +541,7 @@ class TestCutoutInterfaceView(CutoutInterfaceViewUint64TestMixin, APITestCase):
         dbsetup.insert_spatialdb_test_data()
 
         # Mock config parser so dummy params get loaded (redis is also mocked)
-        self.patcher = patch('configparser.ConfigParser', MockBossConfig)
+        self.patcher = patch('bossutils.configuration.BossConfig', MockBossConfig)
         self.mock_tests = self.patcher.start()
 
         self.spdb_patcher = patch('spdb.spatialdb.SpatialDB', MockSpatialDB)

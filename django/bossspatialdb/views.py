@@ -22,6 +22,7 @@ from .parsers import BloscParser, BloscPythonParser
 from .renderers import BloscRenderer, BloscPythonRenderer
 
 from django.http import HttpResponse
+from django.conf import settings
 
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, BossParserError
@@ -60,6 +61,10 @@ class Cutout(APIView):
         :param z_range: Python style range indicating the Z coordinates of where to post the cuboid (eg. 100:200)
         :return:
         """
+        # Check if parsing completed without error. If an error did occur, return to user.
+        if isinstance(request.data, BossParserError):
+            return request.data.to_http()
+
         # Process request and validate
         try:
             req = BossRequest(request)
@@ -69,20 +74,15 @@ class Cutout(APIView):
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
 
-        # Make sure datatype is valid
-        self.data_type = resource.get_data_type()
-        if self.data_type == "uint8":
-            self.bit_depth = 8
-        elif self.data_type == "uint16":
-            self.bit_depth = 16
-        elif self.data_type == "uint64":
-            self.bit_depth = 64
-        else:
-            return BossHTTPError(400, "Unsupported datatype provided to parser")
+        # Get bit depth
+        try:
+            self.bit_depth = resource.get_bit_depth()
+        except ValueError:
+            return BossHTTPError(400, "Unsupported data type: {}".format(resource.get_data_type()))
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
         total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * self.bit_depth
-        if total_bytes > 10**9:
+        if total_bytes > settings.CUTOUT_MAX_SIZE:
             return BossHTTPError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
 
         # Get interface to SPDB cache
@@ -128,18 +128,15 @@ class Cutout(APIView):
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
 
+        # Get bit depth
+        try:
+            expected_data_type = resource.get_numpy_data_type()
+        except ValueError:
+            return BossHTTPError(400, "Unsupported data type: {}".format(resource.get_data_type()))
+
         # Make sure datatype is valid
-        if resource.get_data_type() == "uint8":
-            if request.data.dtype != np.uint8:
-                return BossHTTPError(400, "Datatype does not match channel/layer")
-        elif resource.get_data_type() == "uint16":
-            if request.data.dtype != np.uint16:
-                return BossHTTPError(400, "Datatype does not match channel/layer")
-        elif resource.get_data_type() == "uint64":
-            if request.data.dtype != np.uint64:
-                return BossHTTPError(400, "Datatype does not match channel/layer")
-        else:
-            return BossHTTPError(400, "Unsupported datatype for post data")
+        if expected_data_type != request.data.dtype:
+            return BossHTTPError(400, "Datatype does not match channel/layer")
 
         # Make sure the dimensions of the data match the dimensions of the post URL
         if len(request.data.shape) == 4:

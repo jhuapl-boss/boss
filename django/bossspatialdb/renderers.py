@@ -32,7 +32,12 @@ class BloscPythonRenderer(renderers.BaseRenderer):
         if not data.data.flags['C_CONTIGUOUS']:
             data.data = data.data.copy(order='C')
 
-        return blosc.pack_array(np.squeeze(data.data))
+        # Return data, squeezing time dimension if only a single point
+        try:
+            return blosc.pack_array(np.squeeze(data.data, axis=(0,)))
+        except ValueError:
+            # The are more than 1 time points so don't squeeze.
+            return blosc.pack_array(data.data)
 
 
 class BloscRenderer(renderers.BaseRenderer):
@@ -49,4 +54,10 @@ class BloscRenderer(renderers.BaseRenderer):
         if not data.data.flags['C_CONTIGUOUS']:
             data.data = data.data.copy(order='C')
 
-        return blosc.compress(np.squeeze(data.data), typesize=renderer_context['view'].bit_depth)
+        # Return data, squeezing time dimension if only a single point
+        try:
+            return blosc.compress(np.squeeze(data.data, axis=(0,)), typesize=renderer_context['view'].bit_depth)
+        except ValueError:
+            # The are more than 1 time points so don't squeeze.
+            return blosc.compress(data.data, typesize=renderer_context['view'].bit_depth)
+
