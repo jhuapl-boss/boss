@@ -536,9 +536,9 @@ class ChannelLayerDetail(APIView):
                             channel_obj = ChannelLayer.objects.get(pk=channel_id)
                             if channel_obj:
                                 channel_layer_map = {'channel': channel_id, 'layer': channel_layer_obj.pk}
-                                serializer = ChannelLayerMapSerializer(data=channel_layer_map)
-                                if serializer.is_valid():
-                                    serializer.save()
+                                map_serializer = ChannelLayerMapSerializer(data=channel_layer_map)
+                                if map_serializer.is_valid():
+                                    map_serializer.save()
 
                     # Assign permissions to the users primary group
                     BossPermissionManager.add_permissions_primary_group(self.request.user, channel_layer_obj)
