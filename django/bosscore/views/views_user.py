@@ -18,8 +18,14 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import HttpResponse
 
-from ..error import BossHTTPError
-from ..serializers import GroupSerializer, UserSerializer
+from bosscore.error import BossHTTPError
+from bosscore.models import BossRole
+from bosscore.serializers import GroupSerializer, UserSerializer, BossRoleSerializer
+
+# GROUP NAMES
+PUBLIC_GROUP = 'boss-public'
+PRIMARY_GROUP = '-primary'
+
 
 class BossUser(APIView):
     """
@@ -36,7 +42,7 @@ class BossUser(APIView):
             User if the user exists
         """
         try:
-            user = User.objects.get(name=user_name)
+            user = User.objects.get(username=user_name)
             serializer = UserSerializer(user)
             return Response(serializer.data, status=200)
 
@@ -54,9 +60,26 @@ class BossUser(APIView):
             Http status of the request
 
         """
-        user, created = User.objects.get_or_create(name=user_name)
+        user_data = request.data.copy()
+        user, created = User.objects.get_or_create(username=user_name, **user_data)
+
         if not created:
-            return BossHTTPError(404, "A user  with name {} already exist".format(user_name), 30000)
+            return BossHTTPError(404, "A user with username {} already exist".format(user_name), 30000)
+        else:
+            # create the user's primary group
+            group_name = user_name + PRIMARY_GROUP
+            primary_group, created = Group.objects.get_or_create(name=group_name)
+            if not created:
+                # delete the user and return an error
+                User.objects.get(username=user_name).delete()
+                return BossHTTPError(404, "The primary group for this username already exists".format(group_name),
+                                     30000)
+            else:
+                # TODO (pmanava1) - If the public group does not exist,create it . This should be
+                # created in setup instead
+                public_group, created = Group.objects.get_or_create(name=PUBLIC_GROUP)
+                public_group.user_set.add(user)
+
         return Response(status=201)
 
     def delete(self, request, user_name):
@@ -71,56 +94,69 @@ class BossUser(APIView):
 
         """
         try:
-
-            User.objects.get(name=user_name).delete()
+            Group.objects.get(name=user_name + PRIMARY_GROUP).delete()
+            User.objects.get(username=user_name).delete()
             return Response(status=200)
 
-        except Group.DoesNotExist:
+        except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
+        except Group.DoesNotExist:
+            return BossHTTPError(404, "Could not find the primary group for the user".format(user_name), 30000)
+
 
 class BossUserRole(APIView):
     """
     View to assign role to users
     """
-    def get(self, request, user_name):
+    def get(self, request, user_name, role_name):
         """
-        Get the user information
+        Check if the user has a specific role
         Args:
            request: Django rest framework request
-           user_name: User name from the request
+           user_name: User name
+           role_name:
 
        Returns:
-            User if the user exists
+            True if the user has the role
         """
         try:
-            user = User.objects.get(name=user_name)
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status=200)
+            if role_name not in ['admin', 'user-manager', 'resource-manager']:
+                return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)
 
+            user = User.objects.get(username=user_name)
+            status = BossRole.objects.filter(user=user, role=role_name).exists()
+            return Response(status, status=200)
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
 
-    def post(self, request, user_name,roles):
+    def post(self, request, user_name, role_name):
         """
-        Create a new user if the user does not exist
+        Assign a role to a user
         Args:
             request: Django rest framework request
-            user_name: User name from the request
+            user_name: User name
+            role_name : Role name
 
         Returns:
             Http status of the request
 
         """
         try:
-            user = User.objects.get(name=user_name)
-            print (roles)
-            serializer = UserSerializer(user)
+            user = User.objects.get(username=user_name)
+            if role_name not in ['admin', 'user-manager', 'resource-manager']:
+                return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)
+
+            data = {'user': user.pk, 'role': role_name}
+            serializer = BossRoleSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+
             return Response(serializer.data, status=200)
 
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
 
-    def delete(self, request, user_name):
+    def delete(self, request, user_name, role_name):
         """
         Delete a user
         Args:
@@ -133,9 +169,15 @@ class BossUserRole(APIView):
         """
         try:
 
-            User.objects.get(name=user_name).delete()
+            user = User.objects.get(username=user_name)
+            if role_name not in ['admin', 'user-manager', 'resource-manager']:
+                return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)
+            role = BossRole.objects.get(user=user, role=role_name)
+            role.delete()
+
             return Response(status=200)
 
-        except Group.DoesNotExist:
+        except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
-
+        except BossRole.DoesNotExist:
+            return BossHTTPError(404, "The user {} does not have the role {} ".format(user_name, role_name), 30000)

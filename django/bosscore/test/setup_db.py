@@ -18,7 +18,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from guardian.shortcuts import assign_perm
 
-from ..models import Collection, Experiment, CoordinateFrame, ChannelLayer, ChannelLayerMap, BossLookup
+from ..models import Collection, Experiment, CoordinateFrame, ChannelLayer, ChannelLayerMap, BossLookup, BossRole
 
 test_user = 'testuser'
 test_group = 'testuser-primary'
@@ -37,6 +37,10 @@ class SetupTestDB:
 
         self.user.groups.add(user_primary_group)
         return self.user
+
+    def add_role(self,role_name):
+        user_id = self.user.pk
+        role = BossRole.objects.create(user = self.user, role=role_name)
 
     def create_super_user(self):
         self.user = User.objects.create_superuser(username=test_user, email='test@test.com', password='testuser')
