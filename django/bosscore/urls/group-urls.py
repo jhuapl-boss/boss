@@ -17,9 +17,6 @@ from bosscore.views import views_group
 
 urlpatterns = [
 
-    # URLS to add a user to a group
-    url(r'(?P<group_name>[\w_-]+)/(?P<user_name>[\w_-]+)/?',views_group.BossGroupMember.as_view()),
-
     # urls to manage creation and deletion of groups
     url(r'(?P<group_name>[\w_-]+)/?',views_group.BossGroup.as_view()),
 

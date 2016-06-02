@@ -21,6 +21,7 @@ from django.http import HttpResponse
 from bosscore.error import BossHTTPError
 from bosscore.models import BossRole
 from bosscore.serializers import GroupSerializer, UserSerializer, BossRoleSerializer
+from bosscore.privileges import BossPrivilegeManager
 
 # GROUP NAMES
 PUBLIC_GROUP = 'boss-public'
@@ -108,7 +109,7 @@ class BossUserRole(APIView):
     """
     View to assign role to users
     """
-    def get(self, request, user_name, role_name):
+    def get(self, request, user_name, role_name=None):
         """
         Check if the user has a specific role
         Args:
@@ -120,6 +121,11 @@ class BossUserRole(APIView):
             True if the user has the role
         """
         try:
+            if role_name == None:
+                # List all roles that the user has
+                bpm = BossPrivilegeManager(user_name)
+                return bpm.get_user_roles()
+
             if role_name not in ['admin', 'user-manager', 'resource-manager']:
                 return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)
 
@@ -175,7 +181,7 @@ class BossUserRole(APIView):
             role = BossRole.objects.get(user=user, role=role_name)
             role.delete()
 
-            return Response(status=200)
+            return Response(status=204)
 
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)

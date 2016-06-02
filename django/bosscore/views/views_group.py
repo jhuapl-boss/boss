@@ -88,7 +88,7 @@ class BossGroupMember(APIView):
         try:
             usr = User.objects.get(username=user_name)
             Group.objects.get(name=group_name).user_set.remove(usr)
-            return HttpResponse(status=200)
+            return HttpResponse(status=204)
 
         except Group.DoesNotExist:
             return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
@@ -110,13 +110,9 @@ class BossGroup(APIView):
        Returns:
             Group if the group exists
         """
-        try:
-            group = Group.objects.get(name=group_name)
-            serializer = GroupSerializer(group)
-            return Response(serializer.data, status=200)
+        exists = Group.objects.filter(name=group_name).exists()
+        return Response(exists, status=200)
 
-        except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
 
     def post(self, request, group_name):
         """
@@ -148,7 +144,7 @@ class BossGroup(APIView):
         try:
 
             Group.objects.get(name=group_name).delete()
-            return Response(status=200)
+            return Response(status=204)
 
         except Group.DoesNotExist:
             return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)

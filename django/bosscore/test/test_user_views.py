@@ -88,7 +88,7 @@ class UserRoleTests(APITestCase):
         # Remove role from the user
         url = '/' + version + '/user-role/testuser/user-manager/'
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
         # Check if user has the role
         url = '/' + version + '/user-role/testuser/user-manager/'

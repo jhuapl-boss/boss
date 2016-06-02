@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from django.db import transaction
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
@@ -117,13 +118,15 @@ class ResourceUserPermission(APIView):
             Http status code
 
         """
+        # print(request.data)
+        # perm = request.data.copy()
+        # perm = dict(perm)
+        # print(type(perm['permissions']))
 
         if 'permissions' not in request.data:
             return BossHTTPError(404, "Permission are not included in the request", 30000)
         else:
-            perm_list = (request.data['permissions']).split(',')
-
-
+            perm_list = dict(request.data)['permissions']
 
         try:
             obj = self.get_object(collection, experiment, channel_layer)
@@ -160,7 +163,7 @@ class ResourceUserPermission(APIView):
         if 'permissions' not in request.data:
             return BossHTTPError(404, "Permission are not included in the request", 30000)
         else:
-            perm_list = (request.data['permissions']).split(',')
+            perm_list = dict(request.data)['permissions']
 
         try:
             obj = self.get_object(collection, experiment, channel_layer)

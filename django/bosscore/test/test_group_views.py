@@ -74,7 +74,7 @@ class GroupMemberTests(APITestCase):
         # Remove user from the group
         url = '/' + version + '/group-member/unittest/testuser/'
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
         # Check if user is a member of the group
         url = '/' + version + '/group-member/unittest/testuser/'
@@ -148,6 +148,7 @@ class GroupTests(APITestCase):
         url = '/' + version + '/group/unittestnew/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
 
     def test_delete_group(self):
         """ Add a new member to a group. """
@@ -161,14 +162,17 @@ class GroupTests(APITestCase):
         url = '/' + version + '/group/unittestnew/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
 
         # delete
         url = '/' + version + '/group/unittestnew/'
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
         # get a group
         url = '/' + version + '/group/unittestnew/'
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, False)
+
 
