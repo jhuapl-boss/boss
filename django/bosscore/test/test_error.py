@@ -16,7 +16,7 @@ import json
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-from ..error import BossHTTPError, BossError
+from ..error import BossHTTPError, BossError, BossParserError
 
 
 class BossHTTPErrorTests(APITestCase):
@@ -71,4 +71,31 @@ class TestBossError(APITestCase):
         except BossError as err:
             http_err = err.to_http()
             assert isinstance(http_err, BossHTTPError)
+
+
+class TestBossParserError(APITestCase):
+    def test_creation(self):
+        err = BossParserError(404, "test", 10000)
+        assert err.args[0] == 404
+        assert err.args[1] == "test"
+        assert err.args[2] == 10000
+
+    def test_creation_no_code(self):
+        err = BossParserError(404, "test")
+        assert err.args[0] == 404
+        assert err.args[1] == "test"
+        assert err.args[2] == 0
+
+    def test_to_http(self):
+        err = BossParserError(404, "test", 10000)
+        http_err = err.to_http()
+        assert isinstance(http_err, BossHTTPError)
+
+        self.assertEqual(http_err.status_code, status.HTTP_404_NOT_FOUND)
+
+        response_json = json.loads(http_err.content.decode('utf-8'))
+
+        assert response_json['message'] == 'test'
+        assert response_json['code'] == 10000
+        assert response_json['status'] == 404
 

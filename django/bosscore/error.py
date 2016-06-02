@@ -35,6 +35,50 @@ class BossError(Exception):
         # Set status code
         self.args = args
 
+        if len(args) == 2:
+            temp = list(args)
+            temp.append(0)
+            self.args = tuple(temp)
+
+    def to_http(self):
+        """
+        Convert error to an HTTP error so you can return to the user if in a view
+        :return: bosscore.error.BossHTTPError
+        """
+        return BossHTTPError(self.args[0], self.args[1], self.args[2])
+
+
+class BossParserError(object):
+    """
+    Custom Error class to capture the same information as a BossError without being an Exception so DRF doesn't empty
+    the parsed response
+
+    When you reach a point in a DRF parser where you want to stop execution and return an error to the user:
+
+        return BossParserError(409, "Key already exists", 20001)
+
+    In your view's POST handler you can then check if request.data is of type BossParserError and then return the error
+    to the user if it is:
+
+        if isinstance(request.data, BossParserError):
+            return request.data.to_http()
+
+    """
+
+    def __init__(self, *args):
+        """
+        Custom HTTP error class
+        :param args: A tuple of (http_status_code, message, error_code)
+        :return:
+        """
+        # Set status code
+        self.args = args
+
+        if len(args) == 2:
+            temp = list(args)
+            temp.append(0)
+            self.args = tuple(temp)
+
     def to_http(self):
         """
         Convert error to an HTTP error so you can return to the user if in a view

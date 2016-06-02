@@ -30,6 +30,10 @@ python3 manage.py migrate
 
 python3 manage.py collectstatic --noinput
 
+# Set PYTHONPATH most current spdb used.  This is built by another Jenkins
+# project.
+export PYTHONPATH=$WORKSPACE/../../spdb/workspace
+
 # Run tests.
 python3 manage.py jenkins --enable-coverage --noinput
 
