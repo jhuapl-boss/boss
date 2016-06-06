@@ -89,10 +89,8 @@ class BossUser(APIView):
         Args:
             request: Django rest framework request
             user_name: User name from the request
-
         Returns:
             Http status of the request
-
         """
         try:
             Group.objects.get(name=user_name + PRIMARY_GROUP).delete()
@@ -103,6 +101,30 @@ class BossUser(APIView):
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
         except Group.DoesNotExist:
             return BossHTTPError(404, "Could not find the primary group for the user".format(user_name), 30000)
+
+class BossUserGroups(APIView):
+    """
+    View to list a users group
+    """
+
+    def get(self, request, user_name):
+        """
+        Get the user information
+        Args:
+            request: Django rest framework request
+            user_name: User name from the request
+
+        Returns:
+            User if the user exists
+        """
+        try:
+            user = User.objects.get(username=user_name)
+            groups = user.groups.all()
+            serializer = GroupSerializer(groups, many=True)
+            return Response(serializer.data, status=200)
+
+        except User.DoesNotExist:
+            return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
 
 
 class BossUserRole(APIView):

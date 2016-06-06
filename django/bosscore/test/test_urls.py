@@ -21,7 +21,7 @@ from bosscore.views.views_resource import CollectionList, CollectionDetail, Expe
     ChannelList, LayerList, ChannelLayerDetail, CoordinateFrameList, CoordinateFrameDetail
 from bosscore.views.views_permission import ResourceUserPermission
 from bosscore.views.views_group import BossGroupMember, BossGroup
-from bosscore.views.views_user import BossUserRole, BossUser
+from bosscore.views.views_user import BossUserRole, BossUser, BossUserGroups
 
 
 version = settings.BOSS_VERSION
@@ -162,6 +162,9 @@ class BossCoreUserRoutingTests(APITestCase):
 
         match = resolve('/' + version + '/user/test-user/')
         self.assertEqual(match.func.__name__, BossUser.as_view().__name__)
+
+        match = resolve('/' + version + '/user/test-user/groups')
+        self.assertEqual(match.func.__name__, BossUserGroups.as_view().__name__)
 
     def test_user_role_resolves(self):
         """

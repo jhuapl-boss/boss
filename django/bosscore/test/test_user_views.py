@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from rest_framework.test import APITestCase
 from django.conf import settings
 from .setup_db import SetupTestDB
@@ -133,9 +134,9 @@ class UserRoleTests(APITestCase):
         self.assertEqual(response.status_code, 404)
 
 
-class GroupTests(APITestCase):
+class UserTests(APITestCase):
     """
-    Class to test the manage-data service
+    Class to test the API for managing Boss Users
     """
 
     def setUp(self):
@@ -179,7 +180,7 @@ class GroupTests(APITestCase):
     def test_delete_user(self):
         """ Add a user. """
 
-        # Create a new group
+        # Create a new user
         url = '/' + version + '/user/eee/'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 201)
@@ -223,4 +224,45 @@ class GroupTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, True)
+
+
+class UserGroupsTests(APITestCase):
+    """
+    Class to test the API for Listing a users group
+    """
+
+    def setUp(self):
+        """
+        Initialize the database
+        :return:
+        """
+        dbsetup = SetupTestDB()
+        user = dbsetup.create_user('testuser')
+        dbsetup.create_group('unittest')
+        dbsetup.set_user(user)
+
+        self.client.force_login(user)
+
+    def test_get_user_groups(self):
+        """ Get a user """
+
+        # Get the user
+        url = '/' + version + '/user/testuser/groups'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(resp), 2)
+        self.assertEqual(resp[0]['name'], 'testuser-primary')
+
+        # Add user to the group
+        url = '/' + version + '/group-member/unittest/testuser/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/user/testuser/groups'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(resp), 3)
+
 
