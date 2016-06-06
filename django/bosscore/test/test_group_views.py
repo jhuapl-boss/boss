@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from rest_framework.test import APITestCase
 from django.conf import settings
 from .setup_db import SetupTestDB
@@ -37,6 +38,36 @@ class GroupMemberTests(APITestCase):
         self.client.force_login(user)
         dbsetup.insert_test_data()
 
+    def test_get_member_group(self):
+        """ Check for usermember ship in a group. """
+
+        # Check if user is a member of the group
+        url = '/' + version + '/group-member/testuser-primary/testuser/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+        url = '/' + version + '/group-member/boss-public/testuser/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+        # Check if user is a member of the group
+        url = '/' + version + '/group-member/unittest/testuser/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, False)
+
+    def test_get_all_group_member(self):
+        """ Get a list of all members in the group """
+
+        url = '/' + version + '/group-member/testuser-primary/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(resp), 1)
+        self.assertEqual(resp[0]['username'], 'testuser')
+
     def test_add_member_group(self):
         """ Add a new member to a group. """
 
@@ -56,6 +87,14 @@ class GroupMemberTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, True)
+
+        # List all members of the group
+        url = '/' + version + '/group-member/unittest/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(resp), 1)
+        self.assertEqual(resp[0]['username'], 'testuser')
 
     def test_remove_member_group(self):
         """ Remove a member from the group. """
@@ -118,6 +157,7 @@ class GroupMemberTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
 
+
 class GroupTests(APITestCase):
     """
     Class to test the manage-data service
@@ -174,5 +214,3 @@ class GroupTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, False)
-
-

@@ -147,6 +147,9 @@ class BossCoreGroupRoutingTests(APITestCase):
         match = resolve('/' + version + '/group-member/test/testuser/')
         self.assertEqual(match.func.__name__, BossGroupMember.as_view().__name__)
 
+        match = resolve('/' + version + '/group-member/test/')
+        self.assertEqual(match.func.__name__, BossGroupMember.as_view().__name__)
+
 class BossCoreUserRoutingTests(APITestCase):
 
     def test_user_resolves(self):

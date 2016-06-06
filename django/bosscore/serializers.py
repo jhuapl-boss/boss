@@ -113,6 +113,7 @@ class BossLookupSerializer(serializers.ModelSerializer):
         model = BossLookup
         fields = ('id', 'lookup_key', 'boss_key', 'collection_name', 'experiment_name', 'channel_layer_name')
 
+
 class BossRoleSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -122,13 +123,13 @@ class BossRoleSerializer(serializers.ModelSerializer):
 
 class GroupSerializer(serializers.ModelSerializer):
 
-   class Meta:
+    class Meta:
         model = Group
         fields = '__all__'
 
 
 class UserSerializer(serializers.ModelSerializer):
 
-   class Meta:
+    class Meta:
         model = User
-        fields = '__all__'
+        fields = ('id','username', 'first_name', 'last_name', 'email')

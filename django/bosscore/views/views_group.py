@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 
 from bosscore.error import BossHTTPError
-from bosscore.serializers import GroupSerializer
+from bosscore.serializers import GroupSerializer, UserSerializer
 
 
 class BossGroupMember(APIView):
@@ -28,7 +28,7 @@ class BossGroupMember(APIView):
 
     """
 
-    def get(self, request, group_name, user_name):
+    def get(self, request, group_name, user_name=None):
         """
         Gets the membership status of a user for a group
         Args:
@@ -41,10 +41,18 @@ class BossGroupMember(APIView):
 
         """
         try:
-
-            usr = User.objects.get(username=user_name)
-            data = Group.objects.get(name=group_name).user_set.filter(id=usr.id).exists()
-            return Response(data, status=200)
+            group = Group.objects.get(name=group_name)
+            if user_name:
+                # Check the membership status for a user
+                usr = User.objects.get(username=user_name)
+                data = group.user_set.filter(id=usr.id).exists()
+                return Response(data, status=200)
+            else:
+                # Return all the users in the group
+                # TODO (pmanava1) - Check if the user has the role to do this
+                users = group.user_set.all()
+                serializer = UserSerializer(users, many=True)
+                return Response(serializer.data, status=200)
 
         except Group.DoesNotExist:
             return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
@@ -114,7 +122,7 @@ class BossGroup(APIView):
         return Response(exists, status=200)
 
 
-    def post(self, request, group_name):
+    def post(self,request,group_name):
         """
         Create a new group is the group does not exist
         Args:
@@ -142,7 +150,6 @@ class BossGroup(APIView):
 
         """
         try:
-
             Group.objects.get(name=group_name).delete()
             return Response(status=204)
 
