@@ -81,7 +81,8 @@ class BossUser(APIView):
                 public_group, created = Group.objects.get_or_create(name=PUBLIC_GROUP)
                 public_group.user_set.add(user)
 
-        return Response(status=201)
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=201)
 
     def delete(self, request, user_name):
         """
@@ -146,7 +147,8 @@ class BossUserRole(APIView):
             if role_name == None:
                 # List all roles that the user has
                 bpm = BossPrivilegeManager(user_name)
-                return bpm.get_user_roles()
+                roles = list(bpm.get_user_roles())
+                return Response(roles, status=200)
 
             if role_name not in ['admin', 'user-manager', 'resource-manager']:
                 return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)

@@ -177,6 +177,9 @@ class BossCoreUserRoutingTests(APITestCase):
         match = resolve('/' + version + '/user-role/test/user-manager/')
         self.assertEqual(match.func.__name__, BossUserRole.as_view().__name__)
 
+        match = resolve('/' + version + '/user-role/test/')
+        self.assertEqual(match.func.__name__, BossUserRole.as_view().__name__)
+
 
 
 
