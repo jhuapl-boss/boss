@@ -103,6 +103,7 @@ class BossUser(APIView):
         except Group.DoesNotExist:
             return BossHTTPError(404, "Could not find the primary group for the user".format(user_name), 30000)
 
+
 class BossUserGroups(APIView):
     """
     View to list a users group
@@ -144,7 +145,7 @@ class BossUserRole(APIView):
             True if the user has the role
         """
         try:
-            if role_name == None:
+            if role_name is None:
                 # List all roles that the user has
                 bpm = BossPrivilegeManager(user_name)
                 roles = list(bpm.get_user_roles())
@@ -192,6 +193,7 @@ class BossUserRole(APIView):
         Args:
             request: Django rest framework request
             user_name: User name from the request
+            role_name: Role name from the request
 
         Returns:
             Http status of the request

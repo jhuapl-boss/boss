@@ -430,32 +430,6 @@ class ChannelLayerDetail(APIView):
         else:
             return BossHTTPError(404, "Value Error in post data", 30000)
 
-    @staticmethod
-    def get_list(list_ints):
-        """
-        Convert a string with integers to a list of integers
-
-        Lists in post data get converted to strings. This method converts the strings
-        back to a list if they are valid.
-
-        Args:
-            list_ints: String of Integers
-
-        Returns:
-            List : Representing the string of integers
-
-        Raises:
-            BossError : If the string is not the right format or encounters a value error
-
-        """
-        # remove list braces if present
-        list_ints = list_ints.replace('[', '')
-        list_ints = list_ints.replace(']', '')
-        list_ints = list_ints.split(',')
-        list_ints = [int(i) for i in list_ints]
-        return list_ints
-
-
     def get(self, request, collection, experiment, channel_layer):
         """
         Retrieve information about a channel.
@@ -508,7 +482,7 @@ class ChannelLayerDetail(APIView):
 
         try:
             if 'channels' in channel_layer_data:
-                channels = self.get_list(channel_layer_data['channels'])
+                channels = dict(channel_layer_data)['channels']
             else:
                 channels = []
             collection_obj = Collection.objects.get(name=collection)
