@@ -32,6 +32,7 @@ class GroupMemberTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.create_group('unittest')
         dbsetup.set_user(user)
 
@@ -170,6 +171,7 @@ class GroupTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role("resource-manager")
         dbsetup.create_group('unittest')
         dbsetup.set_user(user)
 

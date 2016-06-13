@@ -59,8 +59,6 @@ class UserRoleTests(APITestCase):
         url = '/' + version + '/user-role/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        print (response.data)
-
 
     def test_add_user_role(self):
         """ Add a new member to a group. """
@@ -195,7 +193,7 @@ class UserTests(APITestCase):
         response = self.client.post(url)
         self.assertEqual(response.status_code, 201)
 
-        #Get the user
+        # Get the user
         url = '/' + version + '/user/eee/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -248,6 +246,7 @@ class UserGroupsTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role("resource-manager")
         dbsetup.create_group('unittest')
         dbsetup.set_user(user)
 
@@ -274,6 +273,3 @@ class UserGroupsTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(resp), 3)
-        print (resp)
-
-

@@ -24,7 +24,7 @@ from rest_framework.response import Response
 from bosscore.models import Collection, Experiment, ChannelLayer
 from bosscore.permissions import BossPermissionManager
 from bosscore.error import BossHTTPError, BossError
-
+from bosscore.privileges import check_role
 
 class ResourceUserPermission(APIView):
     """

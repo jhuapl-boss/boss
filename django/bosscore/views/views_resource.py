@@ -20,17 +20,24 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
+from functools import wraps
 
 from bosscore.error import BossHTTPError
 from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
+from bosscore.privileges import check_role
 
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelLayerSerializer,\
     LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
 from bosscore.models import Collection, Experiment, ChannelLayer, CoordinateFrame
 from bossmeta.metadb import MetaDB
 
+
+
+
+
 class CollectionDetail(APIView):
+
     """
     View to access a collection object
 
@@ -59,6 +66,7 @@ class CollectionDetail(APIView):
             return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
 
     @transaction.atomic
+    @check_role("resource-manager")
     def post(self, request, collection):
         """Create a new collection
 
@@ -125,6 +133,7 @@ class CollectionDetail(APIView):
             return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
 
     @transaction.atomic
+    @check_role("resource-manager")
     def delete(self, request, collection):
         """
         Delete a collection
@@ -138,9 +147,14 @@ class CollectionDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             if request.user.has_perm("delete", collection_obj):
                 collection_obj.delete()
+                # # get the lookup key and delete all the meta data for this object
+                # lkey = LookUpKey.get_lookup_key(collection)
+                # mdb = MetaDB()
+                # mdb.delete_meta_keys(lkey)
 
                 # delete the lookup key for this object
                 LookUpKey.delete_lookup_key(collection, None, None)
+
                 return HttpResponse(status=204)
             else:
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
@@ -178,6 +192,7 @@ class CoordinateFrameDetail(APIView):
             return BossHTTPError(404, "Collection  with name {} not found".format(coordframe), 30000)
 
     @transaction.atomic
+    @check_role("resource-manager")
     def post(self, request, coordframe):
         """Create a new coordinate frame
 
@@ -232,6 +247,7 @@ class CoordinateFrameDetail(APIView):
             return BossHTTPError(404, "Coordinate frame  with name {} not found".format(coordframe), 30000)
 
     @transaction.atomic
+    @check_role("resource-manager")
     def delete(self, request, coordframe):
         """
         Delete a coordinate frame
@@ -286,6 +302,7 @@ class ExperimentDetail(APIView):
             return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
 
     @transaction.atomic
+    @check_role("resource-manager")
     def post(self, request, collection, experiment):
         """Create a new experiment
 
@@ -370,6 +387,7 @@ class ExperimentDetail(APIView):
             return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
 
     @transaction.atomic
+    @check_role("resource-manager")
     def delete(self, request, collection, experiment):
         """
         Delete a experiment
@@ -385,6 +403,11 @@ class ExperimentDetail(APIView):
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             if request.user.has_perm("delete", experiment_obj):
                 experiment_obj.delete()
+                # # get the lookup key and delete all the meta data for this object
+                # bosskey = collection + '&' + experiment
+                # lkey = LookUpKey.get_lookup_key(bosskey)
+                # mdb = MetaDB()
+                # mdb.delete_meta_keys(lkey)
 
                 # delete the lookup key for this object
                 LookUpKey.delete_lookup_key(collection, experiment, None)
@@ -464,6 +487,7 @@ class ChannelLayerDetail(APIView):
             return BossHTTPError(404, "Value Error in post data", 30000)
 
     @transaction.atomic
+    @check_role("resource-manager")
     def post(self, request, collection, experiment, channel_layer):
         """
         Post a new Channel
@@ -586,6 +610,7 @@ class ChannelLayerDetail(APIView):
             return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
 
     @transaction.atomic
+    @check_role("resource-manager")
     def delete(self, request, collection, experiment, channel_layer):
         """
         Delete a Channel  or a Layer

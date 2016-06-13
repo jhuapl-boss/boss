@@ -24,6 +24,7 @@ class UserPermissionsCollection(APITestCase):
 
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user2)
         self.client.force_login(user2)
         dbsetup.add_collection("unittestcol", "testcollection")
@@ -147,6 +148,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
 
             # Create a new user with different objects
             user2 = dbsetup.create_user('testuser1')
+            dbsetup.add_role('resource-manager')
             dbsetup.set_user(user2)
             self.client.force_login(user2)
             dbsetup.add_coordinate_frame('unittestcf', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
@@ -261,6 +263,7 @@ class UserPermissionsExperiment(APITestCase):
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
         dbsetup.set_user(user2)
+        dbsetup.add_role('resource-manager')
         self.client.force_login(user2)
         dbsetup.add_collection("unittestcol", "testcollection")
         dbsetup.add_coordinate_frame('unittestcf', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
@@ -410,6 +413,7 @@ class UserPermissionsChannelLayer(APITestCase):
 
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user2)
         self.client.force_login(user2)
         dbsetup.add_collection("unittestcol", "testcollection")

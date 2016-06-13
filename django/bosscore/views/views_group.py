@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import HttpResponse
 
+from bosscore.privileges import check_role
 from bosscore.error import BossHTTPError
 from bosscore.serializers import GroupSerializer, UserSerializer
 
@@ -28,6 +29,7 @@ class BossGroupMember(APIView):
 
     """
 
+    @check_role("resource-manager")
     def get(self, request, group_name, user_name=None):
         """
         Gets the membership status of a user for a group
@@ -59,6 +61,7 @@ class BossGroupMember(APIView):
         except User.DoesNotExist:
             return BossHTTPError(404, "User {} not found".format(user_name), 30000)
 
+    @check_role("resource-manager")
     def post(self, request, group_name, user_name):
         """
         Adds a user to a group
@@ -81,6 +84,7 @@ class BossGroupMember(APIView):
         except User.DoesNotExist:
             return BossHTTPError(404, "User {} not found".format(user_name), 30000)
 
+    @check_role("resource-manager")
     def delete(self, request, group_name, user_name):
         """
         Removes a user from a group
@@ -108,6 +112,8 @@ class BossGroup(APIView):
     """
     View to manage group memberships
     """
+
+    @check_role("resource-manager")
     def get(self, request, group_name):
         """
         Get the group information
@@ -121,7 +127,7 @@ class BossGroup(APIView):
         exists = Group.objects.filter(name=group_name).exists()
         return Response(exists, status=200)
 
-
+    @check_role("resource-manager")
     def post(self,request,group_name):
         """
         Create a new group is the group does not exist
@@ -138,6 +144,7 @@ class BossGroup(APIView):
             return BossHTTPError(404, "A group  with name {} already exist".format(group_name), 30000)
         return Response(status=201)
 
+    @check_role("resource-manager")
     def delete(self, request, group_name):
         """
         Delete a group

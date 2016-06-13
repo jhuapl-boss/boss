@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
+from django.test import TestCase
 from django.conf import settings
 from .setup_db import SetupTestDB
 from bosscore.privileges import BossPrivilegeManager
@@ -20,7 +21,7 @@ from bosscore.privileges import BossPrivilegeManager
 version = settings.BOSS_VERSION
 
 
-class UserPrivilegeTests(APITestCase):
+class UserPrivilegeTests(TestCase):
     """
     Class to test a users privilege
     """
@@ -33,22 +34,36 @@ class UserPrivilegeTests(APITestCase):
         self.dbsetup = SetupTestDB()
         user = self.dbsetup.create_user('testuser')
         self.dbsetup.add_role('user-manager')
-        self.dbsetup.set_user(user)
+        #self.dbsetup.set_user(user)
 
         self.client.force_login(user)
 
     def test_get_all_roles(self):
+
         bpm = BossPrivilegeManager('testuser')
         roles = bpm.get_user_roles()
         self.assertEqual('default' in roles, True)
         self.assertEqual('resource-manager' in roles, False)
+
         self.dbsetup.add_role('resource-manager')
         roles = bpm.get_user_roles()
         self.assertEqual('resource-manager' in roles, True)
 
-    def test_get_all_privileges(self):
+    # def test_get_all_privileges(self):
+    #     bpm = BossPrivilegeManager('testuser')
+    #     all_privileges = bpm.get_user_privileges()
+    #     self.assertEqual('create user' in all_privileges, True)
+    #     self.assertEqual('list groups' in all_privileges, True)
+    #
+    # def test_has_privilege(self):
+    #     bpm = BossPrivilegeManager('testuser')
+    #     self.assertEqual(bpm.has_privilege('list groups'),True)
+
+    def test_has_role(self):
+
         bpm = BossPrivilegeManager('testuser')
-        bpm.get_user_privileges()
+        self.assertEqual(bpm.has_role('user-manager'), True)
+        self.assertEqual(bpm.has_role('resource-manager'), False)
 
 
 
