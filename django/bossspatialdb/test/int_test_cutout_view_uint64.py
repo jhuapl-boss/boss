@@ -20,38 +20,28 @@ from rest_framework.test import APITestCase
 from bossspatialdb.test import CutoutInterfaceViewUint64TestMixin
 
 from bosscore.test.setup_db import SetupTestDB
-from bossutils import configuration
+import bossutils
 
 
 version = settings.BOSS_VERSION
 
 
-CONFIG_UNMOCKED = configuration.BossConfig()
-
-
-class MockBossIntegrationConfig:
-    """A mock for BossConfig so that redis writes go to db 1 instead of the normal db 0"""
+class MockBossIntegrationConfig(bossutils.configuration.BossConfig):
+    """Basic mock for BossConfig so 'test databases' are used for redis (1) instead of the default where real data
+    can live (0)"""
     def __init__(self):
-        self.mocked_config = {}
-        self.mocked_config["aws"] = {}
-        self.mocked_config["aws"]["db"] = CONFIG_UNMOCKED["aws"]["cache"]
-        self.mocked_config["aws"]["meta-db"] = CONFIG_UNMOCKED["aws"]["cache"]
-        self.mocked_config["aws"]["cache"] = CONFIG_UNMOCKED["aws"]["cache"]
-        self.mocked_config["aws"]["cache-state"] = CONFIG_UNMOCKED["aws"]["cache-state"]
-        self.mocked_config["aws"]["cache-db"] = 1
-        self.mocked_config["aws"]["cache-state-db"] = 1
+        super().__init__()
+        self.config["aws"]["cache-db"] = "1"
+        self.config["aws"]["cache-state-db"] = "1"
 
     def read(self, filename):
         pass
 
     def __getitem__(self, key):
-        if key == 'aws':
-            return self.mocked_config[key]
-        else:
-            return CONFIG_UNMOCKED[key]
+        return self.config[key]
 
 
-@patch('configparser.ConfigParser', MockBossIntegrationConfig)
+@patch('bossutils.configuration.BossConfig', MockBossIntegrationConfig)
 class CutoutViewIntegrationTests(CutoutInterfaceViewUint64TestMixin, APITestCase):
 
     def setUp(self):
@@ -67,7 +57,7 @@ class CutoutViewIntegrationTests(CutoutInterfaceViewUint64TestMixin, APITestCase
         # Populate DB
         dbsetup.insert_spatialdb_test_data()
 
-        self.patcher = patch('configparser.ConfigParser', MockBossIntegrationConfig)
+        self.patcher = patch('bossutils.configuration.BossConfig', MockBossIntegrationConfig)
         self.mock_tests = self.patcher.start()
 
     def tearDown(self):
