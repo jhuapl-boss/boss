@@ -22,6 +22,8 @@ from bosscore.error import BossHTTPError
 from bosscore.models import BossRole
 from bosscore.serializers import GroupSerializer, UserSerializer, BossRoleSerializer
 from bosscore.privileges import BossPrivilegeManager
+from bosscore.privileges import check_role
+
 
 # GROUP NAMES
 PUBLIC_GROUP = 'boss-public'
@@ -50,6 +52,7 @@ class BossUser(APIView):
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
 
+    @check_role("user-manager")
     def post(self, request, user_name):
         """
         Create a new user if the user does not exist
@@ -84,6 +87,7 @@ class BossUser(APIView):
         serializer = UserSerializer(user)
         return Response(serializer.data, status=201)
 
+    @check_role("user-manager")
     def delete(self, request, user_name):
         """
         Delete a user
@@ -109,6 +113,7 @@ class BossUserGroups(APIView):
     View to list a users group
     """
 
+
     def get(self, request, user_name):
         """
         Get the user information
@@ -133,6 +138,8 @@ class BossUserRole(APIView):
     """
     View to assign role to users
     """
+
+    @check_role("user-manager")
     def get(self, request, user_name, role_name=None):
         """
         Check if the user has a specific role
@@ -160,6 +167,7 @@ class BossUserRole(APIView):
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
 
+    @check_role("user-manager")
     def post(self, request, user_name, role_name):
         """
         Assign a role to a user
@@ -187,6 +195,7 @@ class BossUserRole(APIView):
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
 
+    @check_role("user-manager")
     def delete(self, request, user_name, role_name):
         """
         Delete a user

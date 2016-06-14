@@ -34,8 +34,6 @@ class UserPrivilegeTests(TestCase):
         self.dbsetup = SetupTestDB()
         user = self.dbsetup.create_user('testuser')
         self.dbsetup.add_role('user-manager')
-        #self.dbsetup.set_user(user)
-
         self.client.force_login(user)
 
     def test_get_all_roles(self):
@@ -48,16 +46,6 @@ class UserPrivilegeTests(TestCase):
         self.dbsetup.add_role('resource-manager')
         roles = bpm.get_user_roles()
         self.assertEqual('resource-manager' in roles, True)
-
-    # def test_get_all_privileges(self):
-    #     bpm = BossPrivilegeManager('testuser')
-    #     all_privileges = bpm.get_user_privileges()
-    #     self.assertEqual('create user' in all_privileges, True)
-    #     self.assertEqual('list groups' in all_privileges, True)
-    #
-    # def test_has_privilege(self):
-    #     bpm = BossPrivilegeManager('testuser')
-    #     self.assertEqual(bpm.has_privilege('list groups'),True)
 
     def test_has_role(self):
 

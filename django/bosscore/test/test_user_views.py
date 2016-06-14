@@ -32,6 +32,7 @@ class UserRoleTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('admin')
         dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
 
@@ -154,6 +155,7 @@ class UserTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('user-manager')
         dbsetup.create_group('unittest')
         dbsetup.set_user(user)
 

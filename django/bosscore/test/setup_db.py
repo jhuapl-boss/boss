@@ -39,9 +39,10 @@ class SetupTestDB:
         public_group.user_set.add(self.user)
         return self.user
 
-    def add_role(self,role_name):
-        user_id = self.user.pk
-        role = BossRole.objects.create(user = self.user, role=role_name)
+    def add_role(self, role_name, user=None):
+        if user is None:
+            user = self.user
+        BossRole.objects.create(user=user, role=role_name)
 
     def create_super_user(self):
         self.user = User.objects.create_superuser(username=test_user, email='test@test.com', password='testuser')
@@ -53,8 +54,8 @@ class SetupTestDB:
     def set_user(self, user):
         self.user = user
 
-    def create_group(self,group_name):
-        group,created = Group.objects.get_or_create(name=group_name)
+    def create_group(self, group_name):
+        group, created = Group.objects.get_or_create(name=group_name)
         return created
 
     def insert_test_data(self):
