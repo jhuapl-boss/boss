@@ -190,7 +190,7 @@ class BossUserRole(APIView):
             if serializer.is_valid():
                 serializer.save()
 
-            return Response(serializer.data, status=200)
+            return Response(serializer.data, status=201)
 
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
