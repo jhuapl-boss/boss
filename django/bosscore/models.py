@@ -235,7 +235,6 @@ class BossRole(models.Model):
     user = models.ForeignKey('auth.User', related_name='Role', on_delete=models.CASCADE)
     DATATYPE_CHOICES = (
         ('admin', 'ADMIN'),
-        ('user', 'USER'),
         ('user-manager', 'USER-MANAGER'),
         ('resource-manager', 'RESOURCE-MANAGER'),
     )
