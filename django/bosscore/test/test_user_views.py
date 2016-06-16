@@ -73,7 +73,7 @@ class UserRoleTests(APITestCase):
         # Assign role to the user
         url = '/' + version + '/user-role/testuser/user-manager/'
         response = self.client.post(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
 
         # Check if user has the role
         url = '/' + version + '/user-role/testuser/user-manager/'
@@ -87,7 +87,7 @@ class UserRoleTests(APITestCase):
         # Assign role to the user
         url = '/' + version + '/user-role/testuser/user-manager/'
         response = self.client.post(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 201)
 
         # Check if user has the role
         url = '/' + version + '/user-role/testuser/user-manager/'
