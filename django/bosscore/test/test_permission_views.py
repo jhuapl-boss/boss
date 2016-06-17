@@ -15,6 +15,7 @@ import json
 from rest_framework.test import APITestCase
 from django.conf import settings
 from .setup_db import SetupTestDB
+import json
 
 version = settings.BOSS_VERSION
 
@@ -31,6 +32,7 @@ class PermissionViewsCollectionTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -43,7 +45,7 @@ class PermissionViewsCollectionTests(APITestCase):
 
         """
         url = '/' + version + '/permission/test/col1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -53,7 +55,7 @@ class PermissionViewsCollectionTests(APITestCase):
         Post  invalid  permissions strings
         """
         url = '/' + version + '/permission/test/col1'
-        data = {'permissions': 'readeeee,add,update'}
+        data = {'permissions': ['readeeee', 'add', 'update']}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
@@ -65,13 +67,13 @@ class PermissionViewsCollectionTests(APITestCase):
         """
         # Resource does not exist
         url = '/' + version + '/permission/test/col1eee'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
         # group does not exist
         url = '/' + version + '/permission/testee/col1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
@@ -80,7 +82,7 @@ class PermissionViewsCollectionTests(APITestCase):
         Get permissions for a collection
         """
         url = '/' + version + '/permission/test/col1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         self.client.post(url, data=data)
 
         url = '/' + version + '/permission/test/col1'
@@ -111,7 +113,7 @@ class PermissionViewsCollectionTests(APITestCase):
 
         """
         url = '/' + version + '/permission/test/col1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         self.client.post(url, data=data)
 
         url = '/' + version + '/permission/test/col1'
@@ -119,7 +121,7 @@ class PermissionViewsCollectionTests(APITestCase):
         self.assertEqual(response.status_code, 201)
 
         url = '/' + version + '/permission/test/col1'
-        data = {'permissions': 'update'}
+        data = {'permissions': ['update']}
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
 
@@ -140,6 +142,7 @@ class PermissionViewsExperimentTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -152,7 +155,7 @@ class PermissionViewsExperimentTests(APITestCase):
 
         """
         url = '/' + version + '/permission/test/col1/exp1'
-        data = {'permissions': 'read'}
+        data = {'permissions': ['read']}
 
         # Get an existing collection
         response = self.client.post(url, data=data)
@@ -163,7 +166,7 @@ class PermissionViewsExperimentTests(APITestCase):
         Post  invalid  permissions strings
         """
         url = '/' + version + '/permission/test/col1/exp1'
-        data = {'permissions': 'readeeee,add,update'}
+        data = {'permissions': ['readeeee', 'add', 'update']}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
@@ -175,13 +178,13 @@ class PermissionViewsExperimentTests(APITestCase):
         """
         # Resource does not exist
         url = '/' + version + '/permission/test/col1/exp1ee'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
         # group does not exist
         url = '/' + version + '/permission/testee/col1/exp1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
@@ -190,7 +193,7 @@ class PermissionViewsExperimentTests(APITestCase):
         Get permissions for a experiment
         """
         url = '/' + version + '/permission/test/col1/exp1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         self.client.post(url, data=data)
 
         url = '/' + version + '/permission/test/col1/exp1'
@@ -207,7 +210,7 @@ class PermissionViewsExperimentTests(APITestCase):
         """
         # Post some permissions
         url = '/' + version + '/permission/test/col1/exp1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         self.client.post(url, data=data)
 
         response = self.client.get(url)
@@ -216,7 +219,7 @@ class PermissionViewsExperimentTests(APITestCase):
         self.assertEqual(len(resp['permissions']), 3)
 
         # delete a subset of permissions
-        data = {'permissions': 'update'}
+        data = {'permissions': ['update']}
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
 
@@ -226,7 +229,7 @@ class PermissionViewsExperimentTests(APITestCase):
         self.assertEqual(len(resp['permissions']), 2)
 
         # delete all permissions
-        data = {'permissions': 'read,update,add'}
+        data = {'permissions': ['read', 'update', 'add']}
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
 
@@ -248,6 +251,7 @@ class PermissionViewsChannelLayerTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -260,7 +264,7 @@ class PermissionViewsChannelLayerTests(APITestCase):
 
         """
         url = '/' + version + '/permission/test/col1/exp1/channel1/'
-        data = {'permissions': 'read'}
+        data = {'permissions': ['read']}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -270,7 +274,7 @@ class PermissionViewsChannelLayerTests(APITestCase):
         Post  invalid  permissions
         """
         url = '/' + version + '/permission/test/col1/exp1/channel1'
-        data = {'permissions': 'readeeee,add,update'}
+        data = {'permissions': ['readeeee', 'add', 'update']}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
@@ -282,13 +286,13 @@ class PermissionViewsChannelLayerTests(APITestCase):
         """
         # Resource does not exist
         url = '/' + version + '/permission/test/col1/exp1/cheeeee'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
         # group does not exist
         url = '/' + version + '/permission/testee/col1/exp1/channel1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
@@ -298,7 +302,7 @@ class PermissionViewsChannelLayerTests(APITestCase):
 
         """
         url = '/' + version + '/permission/test/col1/exp1/channel1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         self.client.post(url, data=data)
 
         response = self.client.get(url)
@@ -313,7 +317,7 @@ class PermissionViewsChannelLayerTests(APITestCase):
         """
         # Post some permissions
         url = '/' + version + '/permission/test/col1/exp1/channel1'
-        data = {'permissions': 'read,add,update'}
+        data = {'permissions': ['read', 'add', 'update']}
         self.client.post(url, data=data)
 
         response = self.client.get(url)
@@ -322,7 +326,7 @@ class PermissionViewsChannelLayerTests(APITestCase):
         self.assertEqual(len(resp['permissions']), 3)
 
         # delete a subset of permissions
-        data = {'permissions': 'update'}
+        data = {'permissions': ['update']}
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
 
@@ -332,7 +336,7 @@ class PermissionViewsChannelLayerTests(APITestCase):
         self.assertEqual(len(resp['permissions']), 2)
 
         # delete all permissions
-        data = {'permissions': 'read,update,add'}
+        data = {'permissions': ['read', 'update', 'add']}
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
 

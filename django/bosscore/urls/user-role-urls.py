@@ -13,15 +13,12 @@
 # limitations under the License.
 
 from django.conf.urls import url
-from bosscore import views_group
+from bosscore.views import views_user
 
 urlpatterns = [
 
-    # URLS to add a user to a group
-    url(r'(?P<group_name>[\w_-]+)/(?P<user_name>[\w_-]+)/?',views_group.BossGroupMember.as_view()),
-
-    # urls to manage creation and deletion of groups
-    url(r'(?P<group_name>[\w_-]+)/?',views_group.BossGroup.as_view()),
+    # URLS to add role
+    url(r'(?P<user_name>[\w_-]+)/(?P<role_name>[\w_-]+)?/?',views_user.BossUserRole.as_view()),
 
 
 ]

@@ -161,5 +161,7 @@ class BossMeta(APIView):
 
         # Post Metadata the dynamodb database
         mdb = metadb.MetaDB()
+        if not mdb.get_meta(lookup_key, mkey):
+            return BossHTTPError(404, "Invalid request. The key {} does not exists".format(mkey), 30000)
         mdb.update_meta(lookup_key, mkey, value)
         return HttpResponse(status=200)

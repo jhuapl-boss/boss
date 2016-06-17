@@ -15,7 +15,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User, Group
 from guardian.shortcuts import get_objects_for_user
-from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap, BossLookup
+from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap, BossLookup, BossRole
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -114,8 +114,22 @@ class BossLookupSerializer(serializers.ModelSerializer):
         fields = ('id', 'lookup_key', 'boss_key', 'collection_name', 'experiment_name', 'channel_layer_name')
 
 
+class BossRoleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = BossRole
+        fields = ('user', 'role')
+
+
 class GroupSerializer(serializers.ModelSerializer):
 
-   class Meta:
+    class Meta:
         model = Group
-        fields = '__all__'
+        fields = ('id','name')
+
+
+class UserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('id','username', 'first_name', 'last_name', 'email')

@@ -19,6 +19,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 
 from ..request import BossRequest
+from bosscore.error import BossError
 from .setup_db import SetupTestDB
 
 version = settings.BOSS_VERSION
@@ -245,3 +246,57 @@ class BossCoreRequestTests(APITestCase):
         lookup_keys = ret.get_lookup_key_list()
         self.assertEqual(base_lookup, ret.get_lookup_key())
         self.assertEqual(lookup_keys, exp_lookup_keys)
+
+    def test_request_cutout_invalid_xargs(self):
+        """
+        Test initialization of cutout arguments for a invalid cutout request. The x-args are outside the coordinate
+        frame
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/0/990:1010/0:6/0:2/'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest)
+
+    def test_request_cutout_invalid_yargs(self):
+        """
+        Test initialization of cutout arguments for a invalid cutout request. The x-args are outside the coordinate
+        frame
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/0/0:6/0:1010/0:2/'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest)
+
+    def test_request_cutout_invalid_zargs(self):
+        """
+        Test initialization of cutout arguments for a invalid cutout request. The x-args are outside the coordinate
+        frame
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/0/0:6/0:6/0:1040/'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest)
+
+
+

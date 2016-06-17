@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import include, url
-from django.contrib import admin
-from django.conf.urls import include
-from django.conf import settings
-
-from . import views
-
 """boss URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -34,7 +27,7 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-
+from django.conf import settings
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.conf.urls import include
@@ -43,7 +36,7 @@ from . import views
 
 
 urlpatterns = [
-    url(r'^api-auth/', include('rest_framework.urls',namespace='rest_framework')),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
@@ -56,11 +49,21 @@ urlpatterns = [
 
     # API version 0.4
     url(r'^v0.4/meta/', include('bossmeta.urls', namespace='v0.4')),
-    url(r'^v0.4/resource/', include('bosscore.resource_urls', namespace='v0.4')),
-    url(r'^v0.4/permission/', include('bosscore.urls', namespace='v0.4')),
-    url(r'^v0.4/group/', include('bosscore.group-urls', namespace='v0.4')),
-    url(r'^v0.4/group-member/', include('bosscore.group-urls', namespace='v0.4')),
+    url(r'^v0.4/resource/', include('bosscore.urls.resource_urls', namespace='v0.4')),
+    url(r'^v0.4/permission/', include('bosscore.urls.permission-urls', namespace='v0.4')),
+    url(r'^v0.4/group/', include('bosscore.urls.group-urls', namespace='v0.4')),
+    url(r'^v0.4/group-member/', include('bosscore.urls.group-urls', namespace='v0.4')),
     url(r'^v0.4/cutout/', include('bossspatialdb.urls', namespace='v0.4')),
+
+    # API version 0.5
+    url(r'^v0.5/meta/', include('bossmeta.urls', namespace='v0.5')),
+    url(r'^v0.5/resource/', include('bosscore.urls.resource_urls', namespace='v0.5')),
+    url(r'^v0.5/permission/', include('bosscore.urls.permission-urls', namespace='v0.5')),
+    url(r'^v0.5/group/', include('bosscore.urls.group-urls', namespace='v0.5')),
+    url(r'^v0.5/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.5')),
+    url(r'^v0.5/cutout/', include('bossspatialdb.urls', namespace='v0.5')),
+    url(r'^v0.5/user/', include('bosscore.urls.user-urls', namespace='v0.5')),
+    url(r'^v0.5/user-role/', include('bosscore.urls.user-role-urls', namespace='v0.5')),
 
 ]
 

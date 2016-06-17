@@ -31,6 +31,7 @@ class ResourceViewsCollectionTests(APITestCase):
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -193,6 +194,7 @@ class ResourceViewsExperimentTests(APITestCase):
 
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -399,6 +401,7 @@ class ResourceViewsCoordinateTests(APITestCase):
 
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
         self.client.force_login(user)
         dbsetup.insert_test_data()
@@ -561,6 +564,7 @@ class ResourceViewsChannelTests(APITestCase):
 
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
 
         self.client.force_login(user)
@@ -719,6 +723,7 @@ class ResourceViewsLayerTests(APITestCase):
 
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
 
         self.client.force_login(user)

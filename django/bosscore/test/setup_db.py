@@ -18,7 +18,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from guardian.shortcuts import assign_perm
 
-from ..models import Collection, Experiment, CoordinateFrame, ChannelLayer, ChannelLayerMap, BossLookup
+from ..models import Collection, Experiment, CoordinateFrame, ChannelLayer, ChannelLayerMap, BossLookup, BossRole
 
 test_user = 'testuser'
 test_group = 'testuser-primary'
@@ -34,9 +34,15 @@ class SetupTestDB:
 
         self.user = User.objects.create_user(username=username, email=username+'@test.com', password=username)
         user_primary_group, created = Group.objects.get_or_create(name=username + '-primary')
-
+        public_group, created = Group.objects.get_or_create(name='boss-public')
         self.user.groups.add(user_primary_group)
+        public_group.user_set.add(self.user)
         return self.user
+
+    def add_role(self, role_name, user=None):
+        if user is None:
+            user = self.user
+        BossRole.objects.create(user=user, role=role_name)
 
     def create_super_user(self):
         self.user = User.objects.create_superuser(username=test_user, email='test@test.com', password='testuser')
@@ -48,8 +54,8 @@ class SetupTestDB:
     def set_user(self, user):
         self.user = user
 
-    def create_group(self,group_name):
-        group,created = Group.objects.get_or_create(name=group_name)
+    def create_group(self, group_name):
+        group, created = Group.objects.get_or_create(name=group_name)
         return created
 
     def insert_test_data(self):
@@ -65,7 +71,7 @@ class SetupTestDB:
     def insert_spatialdb_test_data(self):
 
         self.add_collection('col1', 'Description for collection1')
-        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4, 1)
+        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100001, 0, 100001, 0, 100001, 4, 4, 4, 1)
         self.add_experiment('col1', 'exp1', 'cf1', 10, 500)
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint16')

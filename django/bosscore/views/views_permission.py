@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from django.db import transaction
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
@@ -20,10 +21,10 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from .models import Collection, Experiment, ChannelLayer
-from .permissions import BossPermissionManager
-from .error import BossHTTPError, BossError
-
+from bosscore.models import Collection, Experiment, ChannelLayer
+from bosscore.permissions import BossPermissionManager
+from bosscore.error import BossHTTPError, BossError
+from bosscore.privileges import check_role
 
 class ResourceUserPermission(APIView):
     """
@@ -69,6 +70,7 @@ class ResourceUserPermission(APIView):
         except ChannelLayer.DoesNotExist:
             raise BossError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
 
+    @check_role("resource-manager")
     def get(self, request, group_name, collection, experiment=None, channel_layer=None):
         """Return a list of permissions
 
@@ -101,6 +103,7 @@ class ResourceUserPermission(APIView):
             return err.to_http()
 
     @transaction.atomic
+    @check_role("resource-manager")
     def post(self, request, group_name, collection, experiment=None, channel_layer=None):
         """ Add permissions to a resource
 
@@ -117,13 +120,15 @@ class ResourceUserPermission(APIView):
             Http status code
 
         """
+        # print(request.data)
+        # perm = request.data.copy()
+        # perm = dict(perm)
+        # print(type(perm['permissions']))
 
         if 'permissions' not in request.data:
             return BossHTTPError(404, "Permission are not included in the request", 30000)
         else:
-            perm_list = (request.data['permissions']).split(',')
-
-
+            perm_list = dict(request.data)['permissions']
 
         try:
             obj = self.get_object(collection, experiment, channel_layer)
@@ -142,6 +147,7 @@ class ResourceUserPermission(APIView):
             return err.to_http()
 
     @transaction.atomic
+    @check_role("resource-manager")
     def delete(self, request, group_name, collection, experiment=None, channel_layer=None):
         """ Delete permissions for a resource object
 
@@ -160,7 +166,7 @@ class ResourceUserPermission(APIView):
         if 'permissions' not in request.data:
             return BossHTTPError(404, "Permission are not included in the request", 30000)
         else:
-            perm_list = (request.data['permissions']).split(',')
+            perm_list = dict(request.data)['permissions']
 
         try:
             obj = self.get_object(collection, experiment, channel_layer)

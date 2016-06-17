@@ -18,8 +18,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import HttpResponse
 
-from .error import BossHTTPError
-from .serializers import GroupSerializer
+from bosscore.privileges import check_role
+from bosscore.error import BossHTTPError
+from bosscore.serializers import GroupSerializer, UserSerializer
 
 
 class BossGroupMember(APIView):
@@ -28,7 +29,8 @@ class BossGroupMember(APIView):
 
     """
 
-    def get(self, request, group_name, user_name):
+    @check_role("resource-manager")
+    def get(self, request, group_name, user_name=None):
         """
         Gets the membership status of a user for a group
         Args:
@@ -41,16 +43,25 @@ class BossGroupMember(APIView):
 
         """
         try:
-
-            usr = User.objects.get(username=user_name)
-            data = Group.objects.get(name=group_name).user_set.filter(id=usr.id).exists()
-            return Response(data, status=200)
+            group = Group.objects.get(name=group_name)
+            if user_name:
+                # Check the membership status for a user
+                usr = User.objects.get(username=user_name)
+                data = group.user_set.filter(id=usr.id).exists()
+                return Response(data, status=200)
+            else:
+                # Return all the users in the group
+                # TODO (pmanava1) - Check if the user has the role to do this
+                users = group.user_set.all()
+                serializer = UserSerializer(users, many=True)
+                return Response(serializer.data, status=200)
 
         except Group.DoesNotExist:
             return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
         except User.DoesNotExist:
             return BossHTTPError(404, "User {} not found".format(user_name), 30000)
 
+    @check_role("resource-manager")
     def post(self, request, group_name, user_name):
         """
         Adds a user to a group
@@ -73,6 +84,7 @@ class BossGroupMember(APIView):
         except User.DoesNotExist:
             return BossHTTPError(404, "User {} not found".format(user_name), 30000)
 
+    @check_role("resource-manager")
     def delete(self, request, group_name, user_name):
         """
         Removes a user from a group
@@ -88,7 +100,7 @@ class BossGroupMember(APIView):
         try:
             usr = User.objects.get(username=user_name)
             Group.objects.get(name=group_name).user_set.remove(usr)
-            return HttpResponse(status=200)
+            return HttpResponse(status=204)
 
         except Group.DoesNotExist:
             return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
@@ -100,6 +112,8 @@ class BossGroup(APIView):
     """
     View to manage group memberships
     """
+
+    @check_role("resource-manager")
     def get(self, request, group_name):
         """
         Get the group information
@@ -110,15 +124,11 @@ class BossGroup(APIView):
        Returns:
             Group if the group exists
         """
-        try:
-            group = Group.objects.get(name=group_name)
-            serializer = GroupSerializer(group)
-            return Response(serializer.data, status=200)
+        exists = Group.objects.filter(name=group_name).exists()
+        return Response(exists, status=200)
 
-        except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
-
-    def post(self, request, group_name):
+    @check_role("resource-manager")
+    def post(self,request,group_name):
         """
         Create a new group is the group does not exist
         Args:
@@ -134,6 +144,7 @@ class BossGroup(APIView):
             return BossHTTPError(404, "A group  with name {} already exist".format(group_name), 30000)
         return Response(status=201)
 
+    @check_role("resource-manager")
     def delete(self, request, group_name):
         """
         Delete a group
@@ -146,9 +157,8 @@ class BossGroup(APIView):
 
         """
         try:
-
             Group.objects.get(name=group_name).delete()
-            return Response(status=200)
+            return Response(status=204)
 
         except Group.DoesNotExist:
             return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
