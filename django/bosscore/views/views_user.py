@@ -114,7 +114,7 @@ class BossUser(APIView):
         try:
             Group.objects.get(name=user_name + PRIMARY_GROUP).delete()
             User.objects.get(username=user_name).delete()
-            return Response(status=200)
+            return Response(status=204)
 
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
