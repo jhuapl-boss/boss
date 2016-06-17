@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from django.contrib.auth.models import Group, User
+from django.db import transaction
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -53,6 +54,7 @@ class BossUser(APIView):
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
 
     @check_role("user-manager")
+    @transaction.atomic
     def post(self, request, user_name):
         """
         Create a new user if the user does not exist
@@ -65,11 +67,23 @@ class BossUser(APIView):
 
         """
         user_data = request.data.copy()
-        user, created = User.objects.get_or_create(username=user_name, **user_data)
-
+        user, created = User.objects.get_or_create(username=user_name)
         if not created:
             return BossHTTPError(404, "A user with username {} already exist".format(user_name), 30000)
         else:
+            if 'first_name' in user_data:
+                user.first_name = user_data.get('first_name')
+
+            if 'last_name' in user_data:
+                user.last_name = user_data.get('last_name')
+
+            if 'email' in user_data:
+                user.email = user_data.get('email')
+
+            if 'password' in user_data:
+                user.password = user_data.get('password')
+            user.save()
+
             # create the user's primary group
             group_name = user_name + PRIMARY_GROUP
             primary_group, created = Group.objects.get_or_create(name=group_name)

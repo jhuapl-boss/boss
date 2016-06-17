@@ -30,10 +30,6 @@ from bosscore.privileges import check_role
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelLayerSerializer,\
     LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
 from bosscore.models import Collection, Experiment, ChannelLayer, CoordinateFrame
-from bossmeta.metadb import MetaDB
-
-
-
 
 
 class CollectionDetail(APIView):
@@ -58,7 +54,7 @@ class CollectionDetail(APIView):
             # Check for permissions
             if request.user.has_perm("read", collection_obj):
                 serializer = CollectionSerializer(collection_obj)
-                return Response(serializer.data)
+                return Response(serializer.data, status=200)
             else:
 
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
@@ -150,7 +146,7 @@ class CollectionDetail(APIView):
                 # # get the lookup key and delete all the meta data for this object
                 # lkey = LookUpKey.get_lookup_key(collection)
                 # mdb = MetaDB()
-                # mdb.delete_meta_keys(lkey)
+                # mdb.delete_meta_keys(lkey.lookup_key)
 
                 # delete the lookup key for this object
                 LookUpKey.delete_lookup_key(collection, None, None)
@@ -204,7 +200,6 @@ class CoordinateFrameDetail(APIView):
             CoordinateFrame
 
         """
-        # TODO (pmanava1): Apply permissions here
         coordframe_data = request.data.copy()
         coordframe_data['name'] = coordframe
 
@@ -234,6 +229,7 @@ class CoordinateFrameDetail(APIView):
         try:
             # Check if the object exists
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
+
             if request.user.has_perm("update", coordframe_obj):
                 serializer = CoordinateFrameSerializer(coordframe_obj, data=request.data, partial=True)
                 if serializer.is_valid():
@@ -320,6 +316,7 @@ class ExperimentDetail(APIView):
         try:
             # Get the collection information
             collection_obj = Collection.objects.get(name=collection)
+
             if request.user.has_perm("add", collection_obj):
                 experiment_data['collection'] = collection_obj.pk
 

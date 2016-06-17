@@ -178,6 +178,11 @@ class UserTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
+        # Get the user
+        url = '/' + version + '/user/eee/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
     def test_post_user_exists(self):
         """Add a new user """
 
