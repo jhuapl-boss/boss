@@ -14,6 +14,31 @@
 
 from django.http import JsonResponse
 from bossutils.logger import BossLogger
+from enum import IntEnum
+
+
+class ErrorCodes(IntEnum):
+    """
+    Enumeration of Error codes to support consistency
+    """
+    # Url Validation
+    INVALID_URL = 1000
+    INVALID_CUTOUT_ARGS = 1001
+
+    # Privileges
+    MISSING_PRIVILEGE = 2000
+
+    # Permissions
+    MISSING_PERMISSION = 3000
+
+    # Object Not Found
+    OBJECT_NOT_FOUND = 4000
+
+    # IO Errors
+    IO_ERROR = 5000
+    UNSUPPORTED_TRANSPORT_FORMAT = 5001
+    SERIALIZATION_ERROR = 5002
+    DESERIALIZATION_ERROR = 5003
 
 
 class BossError(Exception):
@@ -117,5 +142,26 @@ class BossHTTPError(JsonResponse):
         # Return
         data = {'status': status, 'code': code, 'message': message}
         super(BossHTTPError, self).__init__(data)
+     
+        
+class BossPermissionError(BossHTTPError):
+    """
+    Custom HTTP Error class for permission based errors
+
+    """
+
+    def __init__(self, permission, object):
+        """
+        Custom HTTP Error class for permission based errors
+        Args:
+            permission (str): Name of missing permission that caused the error
+            object (str): Name of resource that user is trying to access/manipulate
+        """
+        super(BossPermissionError, self).__init__(403,
+                                                  "Missing {} permissions on the resource {}".format(permission,
+                                                                                                     object),
+                                                  ErrorCodes.MISSING_PERMISSION)
+
+
 
 
