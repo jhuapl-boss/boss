@@ -236,7 +236,7 @@ class CoordinateFrameDetail(APIView):
                     serializer.save()
                     return Response(serializer.data)
                 else:
-                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+                    return BossHTTPError(405, "{}".format(serializer.errors), 30000)
             else:
                 return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
         except CoordinateFrame.DoesNotExist:
