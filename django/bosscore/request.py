@@ -42,7 +42,6 @@ class BossRequest:
         self.experiment = None
         self.channel_layer = None
 
-
         self.default_time = None
         self.coord_frame = None
 
@@ -75,7 +74,6 @@ class BossRequest:
         self.request = request
         self.core_service = False
 
-
         # Parse the request for the service
         url = str(request.META['PATH_INFO'])
         m = re.match("/v(?P<version>\d+\.\d+)/(?P<service>[\w-]+)/(?P<webargs>.*)?/?", url)
@@ -87,50 +85,106 @@ class BossRequest:
             self.core_service = True
 
         if self.core_service:
-            # The meta data service has different requirements from the cutout
+            self.validate_core_service(webargs)
+            if 'key' in request.query_params:
+                self.set_key(request.query_params['key'])
+            if 'value' in request.query_params:
+                self.set_value(request.query_params['value'])
 
-            m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel_layer>\w+)?/?", webargs)
+        elif 'view' in request.query_params:
+            raise BossError(404, "Views not implemented. Specify the full request", 30000)
+
+        elif service == 'tiles':
+            self.validate_tile_service(webargs)
+
+        else:
+            self.validate_cutout_service(webargs)
+
+    def validate_core_service(self,webargs):
+        """
+
+        Args:
+            webargs:
+
+        Returns:
+
+        """
+        m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel_layer>\w+)?/?", webargs)
+        if m:
             [collection_name, experiment_name, channel_layer_name] = [arg for arg in m.groups()]
 
             self.initialize_request(collection_name, experiment_name, channel_layer_name)
             self.check_permissions()
-
-            if self.collection:
-                self.set_boss_key()
-                # Meta service requirements
-                if 'key' in request.query_params:
-                    self.set_key(request.query_params['key'])
-                if 'value' in request.query_params:
-                    self.set_value(request.query_params['value'])
-            else:
-                # We don't have a valid collection boss_key =""
-                self.boss_key = None
-        elif 'view' in request.query_params:
-            raise BossError(404, "Views not implemented. Specify the full request", 30000)
+            self.set_boss_key()
         else:
+            raise BossError(404, "Unable to parse the url.", 30000)
 
-            m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<resolution>\d)/"
-                         + "(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?(?P<rest>.*)?/?", webargs)
+    def validate_cutout_service(self,webargs):
+        """
 
-            if m:
-                [collection_name, experiment_name, channel_layer_name, resolution, x_range, y_range, z_range] \
-                    = [arg for arg in m.groups()[:-1]]
-                time = m.groups()[-1]
+        Args:
+            webargs:
 
-                self.initialize_request(collection_name, experiment_name, channel_layer_name)
-                self.check_permissions()
-                if not time:
-                    # get default time
-                    self.time_start = self.channel_layer.default_time_step
-                    self.time_stop = self.channel_layer.default_time_step + 1
-                else:
-                    self.set_time(time)
+        Returns:
 
-                self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
-                self.set_boss_key()
+        """
+        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<resolution>\d)/"
+                     + "(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?(?P<rest>.*)?/?", webargs)
 
+        if m:
+            [collection_name, experiment_name, channel_layer_name, resolution, x_range, y_range, z_range] \
+                = [arg for arg in m.groups()[:-1]]
+            time = m.groups()[-1]
+
+            self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.check_permissions()
+            if not time:
+                # get default time
+                self.time_start = self.channel_layer.default_time_step
+                self.time_stop = self.channel_layer.default_time_step + 1
             else:
-                raise BossError(404, "Unable to parse the url.", 30000)
+                self.set_time(time)
+
+            self.set_cutoutargs(int(resolution), x_range, y_range, z_range)
+            self.set_boss_key()
+
+        else:
+            raise BossError(404, "Unable to parse the url.", 30000)
+
+
+    def validate_tile_service(self, webargs):
+        """
+
+        Args:
+            webargs:
+
+        Returns:
+
+        """
+        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<orientation>xy|yz|xz)/"
+                     + "(?P<resolution>\d)/(?P<x_args>\d+:?\d*)/(?P<y_args>\d+:?\d*)/(?P<z_args>\d+:?\d*)"
+                     + "/?(?P<rest>.*)?/?", webargs)
+
+        if m:
+            [collection_name, experiment_name, channel_layer_name, orientation, resolution, x_args, y_args,
+            z_args] = [arg for arg in m.groups()[:-1]]
+            time = m.groups()[-1]
+
+            self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.check_permissions()
+            if not time:
+                # get default time
+                self.time_start = self.channel_layer.default_time_step
+                self.time_stop = self.channel_layer.default_time_step + 1
+            else:
+                self.set_time(time)
+
+            self.set_tileargs(orientation, int(resolution), x_args, y_args, z_args)
+            self.set_boss_key()
+
+        else:
+            raise BossError(404, "Unable to parse the url.", 30000)
+
 
     def initialize_request(self, collection_name, experiment_name, channel_layer_name):
         """
@@ -199,6 +253,64 @@ class BossRequest:
                             "Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                             30000)
 
+    def set_tileargs(self, orientation, resolution, x_args, y_args, z_args):
+        """
+        Validate and initialize tile service arguments in the request
+        Args:
+            resolution: Integer indicating the level in the resolution hierarchy (0 = native)
+            x_range: Python style range indicating the X coordinates  (eg. 100:200)
+            y_range: Python style range indicating the Y coordinates (eg. 100:200)
+            z_range: Python style range indicating the Z coordinates (eg. 100:200)
+
+        Raises:
+            BossError: For invalid requests
+
+        """
+
+        try:
+
+            if resolution in range(0, self.experiment.num_hierarchy_levels):
+                self.resolution = int(resolution)
+
+            # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG
+
+            if orientation == 'xy':
+                x_coords = x_args.split(":")
+                y_coords = y_args.split(":")
+                z_coords = [int(z_args) , int(z_args)+1]
+
+            elif orientation == 'xz':
+                x_coords = x_args.split(":")
+                y_coords = [int(y_args), int(y_args) + 1]
+                z_coords = z_args.split(":")
+
+            elif orientation == 'yz':
+                x_coords = [int(x_args), int(x_args) + 1]
+                y_coords = y_args.split(":")
+                z_coords = z_args.split(":")
+            else:
+                raise BossError(404, "Incorrect orientation {}".format(orientation),30000)
+
+            self.x_start = int(x_coords[0])
+            self.x_stop = int(x_coords[1])
+
+            self.y_start = int(y_coords[0])
+            self.y_stop = int(y_coords[1])
+
+            self.z_start = int(z_coords[0])
+            self.z_stop = int(z_coords[1])
+
+            # Check for valid arguments
+            if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop) or \
+                    (self.x_start < self.coord_frame.x_start) or (self.x_stop > self.coord_frame.x_stop) or \
+                    (self.y_start < self.coord_frame.y_start) or (self.y_stop > self.coord_frame.y_stop) or \
+                    (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
+                raise BossError(404,"Incorrect cutout arguments {}/{}/{}/{}".
+                                format(resolution, x_args, y_args, z_args),30000)
+
+        except TypeError:
+            raise BossError(404,"Type error in cutout argument{}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
+                            30000)
 
     def initialize_view_request(self, webargs):
         """
@@ -465,7 +577,7 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-        if self.service =='cutout':
+        if self.service =='cutout' or self.service == 'tiles':
             perm = BossPermissionManager.check_data_permissions(self.request.user, self.channel_layer,
                                                                   self.request.method)
         elif self.service =='meta':
@@ -581,6 +693,7 @@ class BossRequest:
                                          .format(time, str(self.experiment.max_time_sample)), 30000)
             else:
                 self.time_stop = self.time_start + 1
+
 
     def get_time(self):
         """
