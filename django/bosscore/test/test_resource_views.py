@@ -496,10 +496,7 @@ class ResourceViewsCoordinateTests(APITestCase):
 
         # Update an existing coordinate frame
         response = self.client.put(url, data=data)
-        self.assertEqual(response.status_code, 404)
-        print (response.json())
-
-
+        self.assertEqual(response.status_code, 405)
 
     def test_put_coordinateframe_doesnotexist(self):
         """
