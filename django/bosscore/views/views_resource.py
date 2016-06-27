@@ -28,7 +28,7 @@ from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
 
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelLayerSerializer,\
-    LayerSerializer, CoordinateFrameSerializer, ChannelLayerMapSerializer
+    LayerSerializer, CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ChannelLayerMapSerializer
 from bosscore.models import Collection, Experiment, ChannelLayer, CoordinateFrame
 
 
@@ -231,7 +231,7 @@ class CoordinateFrameDetail(APIView):
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
 
             if request.user.has_perm("update", coordframe_obj):
-                serializer = CoordinateFrameSerializer(coordframe_obj, data=request.data, partial=True)
+                serializer = CoordinateFrameUpdateSerializer(coordframe_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
                     return Response(serializer.data)

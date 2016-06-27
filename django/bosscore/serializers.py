@@ -33,6 +33,27 @@ class CoordinateFrameSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
                   'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit')
 
+class CoordinateFrameUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CoordinateFrame
+        fields = ('name', 'description')
+
+    def is_valid(self, raise_exception=False):
+        super().is_valid(False)
+
+        fields_keys = set(self.fields.keys())
+        input_keys = set(self.initial_data.keys())
+
+        additional_fields = input_keys - fields_keys
+
+        if bool(additional_fields):
+            self._errors['fields'] = ['Additional fields not allowed: {}.'.format(list(additional_fields))]
+
+        if self._errors and raise_exception:
+            raise serializers.ValidationError(self.errors)
+
+        return not bool(self._errors)
 
 class ChannelLayerMapSerializer(serializers.ModelSerializer):
 

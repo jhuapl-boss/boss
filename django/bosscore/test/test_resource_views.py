@@ -485,6 +485,22 @@ class ResourceViewsCoordinateTests(APITestCase):
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
 
+
+    def test_put_coorddinateframe_extrafields(self):
+        """
+        Update a coordinateframe (Valid - The coordinateframe exists)
+
+        """
+        url = '/' + version + '/resource/coordinateframes/cf1'
+        data = {'description': 'This is a test coordinateframe. Updated', 'x_start': 22}
+
+        # Update an existing coordinate frame
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 404)
+        print (response.json())
+
+
+
     def test_put_coordinateframe_doesnotexist(self):
         """
         Update a coordinateframe that does not exist
