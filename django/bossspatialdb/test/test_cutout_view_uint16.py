@@ -32,6 +32,9 @@ from mockredis import mock_strict_redis_client
 import spdb
 import bossutils
 
+import os
+import unittest
+
 version = settings.BOSS_VERSION
 
 _test_globals = {'kvio_engine': None}
@@ -472,6 +475,7 @@ class CutoutInterfaceViewUint16TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
+    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
     def test_channel_uint16_cuboid_unaligned_offset_time_offset_blosc_numpy(self):
         """ Test uint16 data, not cuboid aligned, offset, time samples, blosc interface"""
 
