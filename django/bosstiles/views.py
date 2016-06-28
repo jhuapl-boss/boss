@@ -41,7 +41,7 @@ class Tiles(APIView):
         self.bit_depth = None
 
     # Set Parser and Renderer
-    renderer_classes = PNGImageXYRenderer,
+    #renderer_classes = PNGImageXYRenderer,
 
     def get(self, request, collection, experiment, dataset, orientation, resolution, x_args, y_args, z_args):
         """
@@ -89,7 +89,9 @@ class Tiles(APIView):
 
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
-
+        data.xy_image()
+        
+        return HttpResponse(data.xy_image(), content_type="image/png")
         # Send data to renderer
-        return Response(data, content_type='image/png')
+        # return Response(data, content_type='image/png')
 
