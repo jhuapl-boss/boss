@@ -11,15 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import numpy as np
-
+import io
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import authentication, permissions
-from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 
-#from .parsers import BloscParser, BloscPythonParser
-from .renderers import PNGImageXYRenderer, JPEGRenderer
 from django.http import HttpResponse
 from django.conf import settings
 
@@ -39,9 +34,6 @@ class Tiles(APIView):
         super().__init__()
         self.data_type = None
         self.bit_depth = None
-
-    # Set Parser and Renderer
-    renderer_classes = JPEGRenderer,
 
     def get(self, request, collection, experiment, dataset, orientation, resolution, x_args, y_args, z_args):
         """
@@ -89,15 +81,11 @@ class Tiles(APIView):
 
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
-        #print(type(data))
-        img = data.xy_image()
-        # img.show()
-        # import io
-        # fileobj = io.BytesIO()
-        # img.save(fileobj, "PNG")
-        # fileobj.seek(0)
-        #return fileobj.read()
-        #return Response(fileobj.read(), content_type="image/png")
-        # Send data to renderer
-        return Response(img)
 
+        # Covert the cutout back to an image and return it
+        img = data.xy_image()
+        fileobj = io.BytesIO()
+        img.save(fileobj, "PNG")
+        fileobj.seek(0)
+
+        return HttpResponse(fileobj.read(), content_type="image/png")
