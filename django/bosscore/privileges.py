@@ -34,7 +34,7 @@ def check_role(role_name):
             if check_role:
                 bpm = BossPrivilegeManager(self.request.user)
                 if not bpm.has_role(role_name) and not bpm.has_role('admin'):
-                    return BossHTTPError(404, "{} does not have the required role {}"
+                    return BossHTTPError(403, "{} does not have the required role {}"
                                          .format(self.request.user, role_name), 30000)
             return func(self, *args, **kwargs)
 

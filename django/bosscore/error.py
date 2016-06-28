@@ -144,6 +144,7 @@ class BossHTTPError(JsonResponse):
         super(BossHTTPError, self).__init__(data)
      
         
+
 class BossPermissionError(BossHTTPError):
     """
     Custom HTTP Error class for permission based errors
@@ -162,6 +163,21 @@ class BossPermissionError(BossHTTPError):
                                                                                                      object),
                                                   ErrorCodes.MISSING_PERMISSION)
 
+
+class BossObjectNotFoundError(BossHTTPError):
+    """
+    Custom HTTP Error class for Object not found errors
+
+    """
+
+    def __init__(self, object):
+        """
+        Custom HTTP Error class for object not found errors
+        Args:
+            object (str): Name of resource/object that user is trying to access/manipulate
+        """
+        super(BossObjectNotFoundError, self).__init__(404, "{} does not exist.".format(object),
+                                                      ErrorCodes.OBJECT_NOT_FOUND)
 
 
 

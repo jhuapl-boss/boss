@@ -22,7 +22,7 @@ from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
 from functools import wraps
 
-from bosscore.error import BossHTTPError
+from bosscore.error import BossHTTPError, BossPermissionError, BossObjectNotFoundError
 from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
@@ -56,10 +56,9 @@ class CollectionDetail(APIView):
                 serializer = CollectionSerializer(collection_obj)
                 return Response(serializer.data, status=200)
             else:
-
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('read', collection)
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -124,9 +123,9 @@ class CollectionDetail(APIView):
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('update', collection)
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -153,9 +152,9 @@ class CollectionDetail(APIView):
 
                 return HttpResponse(status=204)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('delete', collection)
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except ProtectedError:
             return BossHTTPError(404, "Cannot delete {}. It has experiments that reference it.".format(collection),
                                  30000)
@@ -183,9 +182,9 @@ class CoordinateFrameDetail(APIView):
                 serializer = CoordinateFrameSerializer(coordframe_obj)
                 return Response(serializer.data)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('read', coordframe)
         except CoordinateFrame.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(coordframe), 30000)
+            return BossObjectNotFoundError(coordframe)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -238,9 +237,9 @@ class CoordinateFrameDetail(APIView):
                 else:
                     return BossHTTPError(405, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('update', coordframe)
         except CoordinateFrame.DoesNotExist:
-            return BossHTTPError(404, "Coordinate frame  with name {} not found".format(coordframe), 30000)
+            return BossObjectNotFoundError(coordframe)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -259,9 +258,9 @@ class CoordinateFrameDetail(APIView):
                 coordframe_obj.delete()
                 return HttpResponse(status=204)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('delete', coordframe)
         except CoordinateFrame.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(coordframe), 30000)
+            return BossObjectNotFoundError(coordframe)
         except ProtectedError:
             return BossHTTPError(404, "Cannot delete {}. It has experiments that reference it.".format(coordframe),
                                  30000)
@@ -291,11 +290,11 @@ class ExperimentDetail(APIView):
                 serializer = ExperimentSerializer(experiment_obj)
                 return Response(serializer.data)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('read', experiment)
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+            return BossObjectNotFoundError(experiment)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -336,10 +335,9 @@ class ExperimentDetail(APIView):
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(404, "{} does not have permissions to add an experiment for collection "
-                                          "with name {}".format(request.user, collection), 30000)
+                return BossPermissionError('add', collection)
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection with name {} does not exist".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except ValueError:
             return BossHTTPError(404, "Value Error.Collection id {} in post data needs to "
                                       "be an integer".format(experiment_data['collection']), 30000)
@@ -376,12 +374,12 @@ class ExperimentDetail(APIView):
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('update', experiment)
 
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+            return BossObjectNotFoundError(experiment)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -410,11 +408,11 @@ class ExperimentDetail(APIView):
                 LookUpKey.delete_lookup_key(collection, experiment, None)
                 return HttpResponse(status=204)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('delete', experiment)
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+            return BossObjectNotFoundError(experiment)
         except ProtectedError:
             return BossHTTPError(404, "Cannot delete {}. It has channels or layers that reference "
                                       "it.".format(experiment), 30000)
@@ -472,14 +470,14 @@ class ChannelLayerDetail(APIView):
                 serializer = ChannelLayerSerializer(channel_layer_obj)
                 return Response(serializer.data)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('read', channel_layer)
 
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} is not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossHTTPError(404, "Experiment  with name {} is not found".format(experiment), 30000)
+            return BossObjectNotFoundError(experiment)
         except ChannelLayer.DoesNotExist:
-            return BossHTTPError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
+            return BossObjectNotFoundError(channel_layer)
         except ValueError:
             return BossHTTPError(404, "Value Error in post data", 30000)
 
@@ -548,14 +546,13 @@ class ChannelLayerDetail(APIView):
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(404, "{} does not have permissions to add resources for experiment "
-                                          "with name {}".format(request.user, experiment), 30000)
+                return BossPermissionError('add', experiment)
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection with name {} does not exist".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossHTTPError(404, "Experiment with name {} does not exist".format(experiment), 30000)
+            return BossObjectNotFoundError(experiment)
         except ChannelLayer.DoesNotExist:
-            return BossHTTPError(404, "Channel with id {} does not exist".format(channel_layer_data['channels']), 30000)
+            return BossObjectNotFoundError(channel_layer)
         except ValueError:
             return BossHTTPError(404, "Value Error in post data", 30000)
 
@@ -597,14 +594,14 @@ class ChannelLayerDetail(APIView):
                 else:
                     return BossHTTPError(404, "{}".format(serializer.errors), 30000)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('update', channel_layer)
 
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+            return BossObjectNotFoundError(experiment)
         except ChannelLayer.DoesNotExist:
-            return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
+            return BossObjectNotFoundError(channel_layer)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -632,14 +629,14 @@ class ChannelLayerDetail(APIView):
                 LookUpKey.delete_lookup_key(collection, experiment, channel_layer)
                 return HttpResponse(status=204)
             else:
-                return BossHTTPError(404, "{} does not have the required permissions".format(request.user), 30000)
+                return BossPermissionError('delete', channel_layer)
 
         except Collection.DoesNotExist:
-            return BossHTTPError(404, "Collection  with name {} not found".format(collection), 30000)
+            return BossObjectNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossHTTPError(404, "Experiment  with name {} not found".format(experiment), 30000)
+            return BossObjectNotFoundError(experiment)
         except ChannelLayer.DoesNotExist:
-            return BossHTTPError(404, "Experiment  with name {} not found".format(channel_layer), 30000)
+            return BossObjectNotFoundError(channel_layer)
         except ProtectedError:
             return BossHTTPError(404, "Cannot delete {}. It has layers that reference it.".format(channel_layer), 30000)
 
