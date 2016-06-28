@@ -19,7 +19,7 @@ from rest_framework import authentication, permissions
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 
 #from .parsers import BloscParser, BloscPythonParser
-from .renderers import PNGImageXYRenderer
+from .renderers import PNGImageXYRenderer, JPEGRenderer
 from django.http import HttpResponse
 from django.conf import settings
 
@@ -41,7 +41,7 @@ class Tiles(APIView):
         self.bit_depth = None
 
     # Set Parser and Renderer
-    #renderer_classes = PNGImageXYRenderer,
+    renderer_classes = JPEGRenderer,
 
     def get(self, request, collection, experiment, dataset, orientation, resolution, x_args, y_args, z_args):
         """
@@ -89,15 +89,15 @@ class Tiles(APIView):
 
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
-        print(type(data))
+        #print(type(data))
         img = data.xy_image()
-        img.show()
-        import io
-        fileobj = io.BytesIO()
-        img.save(fileobj, "PNG")
-        fileobj.seek(0)
+        # img.show()
+        # import io
+        # fileobj = io.BytesIO()
+        # img.save(fileobj, "PNG")
+        # fileobj.seek(0)
         #return fileobj.read()
         #return Response(fileobj.read(), content_type="image/png")
         # Send data to renderer
-        return HttpResponse(fileobj.read(), content_type='image/png')
+        return Response(img)
 
