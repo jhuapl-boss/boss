@@ -38,7 +38,7 @@ class UserPermissionsCollection(APITestCase):
 
         # Get an existing collection
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_get_collection_valid_permission(self):
         """
@@ -64,7 +64,7 @@ class UserPermissionsCollection(APITestCase):
 
         # Get an existing collection
         response = self.client.put(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_put_collection_valid_permission(self):
         """
@@ -98,7 +98,7 @@ class UserPermissionsCollection(APITestCase):
         url = '/' + version + '/resource/col1/'
         # Get an existing collection
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_delete_collection_valid_permission(self):
         """
@@ -161,7 +161,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
             url = '/' + version + '/resource/coordinateframes/cf1/'
 
             response = self.client.get(url)
-            self.assertEqual(response.status_code, 404)
+            self.assertEqual(response.status_code, 403)
 
         def test_get_coordinate_frame_valid_permission(self):
             """
@@ -187,7 +187,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
 
             # Get an existing collection
             response = self.client.put(url, data=data)
-            self.assertEqual(response.status_code, 404)
+            self.assertEqual(response.status_code, 403)
 
         def test_put_coordinate_frames_valid_permission(self):
             """
@@ -218,7 +218,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
             """
             url = '/' + version + '/resource/coordinateframes/cf1/'
             response = self.client.delete(url)
-            self.assertEqual(response.status_code, 404)
+            self.assertEqual(response.status_code, 403)
 
         def test_delete_coordinate_frame_valid_permission(self):
             """
@@ -277,7 +277,7 @@ class UserPermissionsExperiment(APITestCase):
         url = '/' + version + '/resource/col1/exp1/'
 
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_get_experiment_valid_permission(self):
         """
@@ -326,7 +326,7 @@ class UserPermissionsExperiment(APITestCase):
         data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_put_experiment_no_permissions(self):
         """
@@ -337,7 +337,7 @@ class UserPermissionsExperiment(APITestCase):
         data = {'description': 'A new experiment for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_put_experiment_valid_permission(self):
         """
@@ -357,7 +357,7 @@ class UserPermissionsExperiment(APITestCase):
         """
         url = '/' + version + '/resource/col1/exp1/'
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_delete_experiment_valid_permissions(self):
         """
@@ -432,7 +432,7 @@ class UserPermissionsChannelLayer(APITestCase):
         url = '/' + version + '/resource/col1/exp1/channel1'
 
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_get_channel_valid_permission(self):
         """
@@ -463,7 +463,7 @@ class UserPermissionsChannelLayer(APITestCase):
         url = '/' + version + '/resource/col1/exp1/unittestchannelnew/'
         data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_put_channel_no_permissions(self):
         """
@@ -474,7 +474,7 @@ class UserPermissionsChannelLayer(APITestCase):
         data = {'description': 'A new channel for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_put_channel_valid_permission(self):
         """
@@ -494,7 +494,7 @@ class UserPermissionsChannelLayer(APITestCase):
         """
         url = '/' + version + '/resource/col1/exp1/channel1'
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 403)
 
     def test_delete_layer_valid_permissions(self):
         """
