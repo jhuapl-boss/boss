@@ -101,15 +101,6 @@ class TileInterfaceViewUint8TestMixin(object):
                                     orientation='xy', resolution='0', x_args='0:128', y_args='0:128', z_args='1')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # # Decompress
-        # raw_data = blosc.decompress(response.content)
-        # data_mat = np.fromstring(raw_data, dtype=np.uint8)
-        # data_mat = np.reshape(data_mat, (16, 128, 128), order='C')
-        #
-        # # Test for data equality (what you put in is what you got back!)
-        # np.testing.assert_array_equal(data_mat, test_mat)
-
-
 
 
 @patch('redis.StrictRedis', mock_strict_redis_client)

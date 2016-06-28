@@ -44,7 +44,7 @@ class Tiles(APIView):
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
         :param dataset: Dataset identifier, indicating which channel or layer you want to access
-        :param orientation: Integer indicating the level in the resolution hierarchy (0 = native)
+        :param orientation: Image plane requested. Vaid options include xy,xz or yz
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_args: Python style range indicating the X coordinates of where to post the cuboid (eg. 100:200)
         :param y_args: Python style range indicating the Y coordinates of where to post the cuboid (eg. 100:200)
@@ -91,6 +91,7 @@ class Tiles(APIView):
             img = data.xz_image()
         else:
             return BossHTTPError(400, "Invalid orientation")
+
         fileobj = io.BytesIO()
         img.save(fileobj, "PNG")
         fileobj.seek(0)
