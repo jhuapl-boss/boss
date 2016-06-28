@@ -98,7 +98,7 @@ class TileInterfaceViewUint8TestMixin(object):
 
         # Make request
         response = Tiles.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    orientation='xy', resolution='0', x_args='0:128', y_args='0:128', z_args='1').render()
+                                    orientation='xy', resolution='0', x_args='0:128', y_args='0:128', z_args='1')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # # Decompress

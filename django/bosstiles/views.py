@@ -89,9 +89,15 @@ class Tiles(APIView):
 
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
-        data.xy_image()
-        
-        return HttpResponse(data.xy_image(), content_type="image/png")
+        print(type(data))
+        img = data.xy_image()
+        img.show()
+        import io
+        fileobj = io.BytesIO()
+        img.save(fileobj, "PNG")
+        fileobj.seek(0)
+        #return fileobj.read()
+        #return Response(fileobj.read(), content_type="image/png")
         # Send data to renderer
-        # return Response(data, content_type='image/png')
+        return HttpResponse(fileobj.read(), content_type='image/png')
 
