@@ -83,7 +83,14 @@ class Tiles(APIView):
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
 
         # Covert the cutout back to an image and return it
-        img = data.xy_image()
+        if orientation == 'xy':
+            img = data.xy_image()
+        elif orientation == 'yz':
+            img = data.yz_image()
+        elif orientation == 'xz':
+            img = data.xz_image()
+        else:
+            return BossHTTPError(400, "Invalid orientation")
         fileobj = io.BytesIO()
         img.save(fileobj, "PNG")
         fileobj.seek(0)
