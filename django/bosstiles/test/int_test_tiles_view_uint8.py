@@ -17,7 +17,7 @@ from unittest.mock import patch
 
 from rest_framework.test import APITestCase
 
-from bosstiles.test import TileInterfaceViewUint8TestMixin
+from bosstiles.test.test_tiles_view_uint8 import TileInterfaceViewUint8TestMixin
 
 from bosscore.test.setup_db import SetupTestDB
 import bossutils
