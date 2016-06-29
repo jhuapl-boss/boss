@@ -16,7 +16,7 @@ import re
 
 from .models import Collection, Experiment, ChannelLayer
 from .lookup import LookUpKey
-from .error import BossHTTPError, BossError
+from .error import BossHTTPError, BossError, ErrorCodes, BossRestArgsError
 from .permissions import BossPermissionManager
 
 META_CONNECTOR = "&"
@@ -80,6 +80,7 @@ class BossRequest:
 
         [version, service, webargs] = [arg for arg in m.groups()]
         self.set_service(service)
+        self.webargs = webargs
 
         if service == 'meta' or service == 'resource':
             self.core_service = True
@@ -117,7 +118,7 @@ class BossRequest:
             self.check_permissions()
             self.set_boss_key()
         else:
-            raise BossError(404, "Unable to parse the url.", 30000)
+            raise BossError(400, "Unable to parse the url.", ErrorCodes.INVALID_URL)
 
     def validate_cutout_service(self,webargs):
         """
@@ -149,7 +150,7 @@ class BossRequest:
             self.set_boss_key()
 
         else:
-            raise BossError(404, "Unable to parse the url.", 30000)
+            raise BossError(400, "Unable to parse the url.", ErrorCodes.INVALID_URL)
 
 
     def validate_tile_service(self, webargs):
@@ -183,7 +184,7 @@ class BossRequest:
             self.set_boss_key()
 
         else:
-            raise BossError(404, "Unable to parse the url.", 30000)
+            raise BossError(400, "Unable to parse the url.", ErrorCodes.INVALID_URL)
 
 
     def initialize_request(self, collection_name, experiment_name, channel_layer_name):
@@ -244,14 +245,14 @@ class BossRequest:
                     (self.x_start < self.coord_frame.x_start) or (self.x_stop > self.coord_frame.x_stop) or \
                     (self.y_start < self.coord_frame.y_start) or (self.y_stop > self.coord_frame.y_stop) or\
                     (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
-                raise BossError(404,
+                raise BossError(400,
                                 "Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
-                                30000)
+                                ErrorCodes.INVALID_CUTOUT_ARGS)
 
         except TypeError:
-            raise BossError(404,
+            raise BossError(400,
                             "Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
-                            30000)
+                            ErrorCodes.TYPE_ERROR)
 
     def set_tileargs(self, orientation, resolution, x_args, y_args, z_args):
         """
@@ -305,12 +306,12 @@ class BossRequest:
                     (self.x_start < self.coord_frame.x_start) or (self.x_stop > self.coord_frame.x_stop) or \
                     (self.y_start < self.coord_frame.y_start) or (self.y_stop > self.coord_frame.y_stop) or \
                     (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
-                raise BossError(404,"Incorrect cutout arguments {}/{}/{}/{}".
-                                format(resolution, x_args, y_args, z_args),30000)
-
+                raise BossError(400,
+                                "Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
+                                ErrorCodes.INVALID_CUTOUT_ARGS)
         except TypeError:
             raise BossError(404,"Type error in cutout argument{}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
-                            30000)
+                            ErrorCodes.TYPE_ERROR)
 
     def initialize_view_request(self, webargs):
         """
@@ -349,7 +350,7 @@ class BossRequest:
             self.collection = Collection.objects.get(name=collection_name)
             return True
         else:
-            raise BossError(404, "Collection {} not found".format(collection_name), 30000)
+            raise BossError(404, "Collection {} not found".format(collection_name), ErrorCodes.OBJECT_NOT_FOUND)
 
     def get_collection(self):
         """
@@ -375,7 +376,7 @@ class BossRequest:
             self.experiment = Experiment.objects.get(name=experiment_name, collection=self.collection)
             self.coord_frame = self.experiment.coord_frame
         else:
-            raise BossError(404, "Experiment {} not found".format(experiment_name), 30000)
+            raise BossError(404, "Experiment {} not found".format(experiment_name), ErrorCodes.OBJECT_NOT_FOUND)
 
         return True
 
@@ -403,7 +404,7 @@ class BossRequest:
             self.channel_layer = ChannelLayer.objects.get(name=channel_layer_name, experiment=self.experiment)
             return True
         else:
-            raise BossError(404, "Dataset {} not found".format(channel_layer_name), 30000)
+            raise BossError(404, "Channel/Layer {} not found".format(channel_layer_name), ErrorCodes.OBJECT_NOT_FOUND)
 
     def get_channel_layer(self):
         """

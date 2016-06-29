@@ -24,6 +24,7 @@ class ErrorCodes(IntEnum):
     # Url Validation
     INVALID_URL = 1000
     INVALID_CUTOUT_ARGS = 1001
+    TYPE_ERROR =1002
 
     # Privileges
     MISSING_PRIVILEGE = 2000
@@ -179,5 +180,20 @@ class BossObjectNotFoundError(BossHTTPError):
         super(BossObjectNotFoundError, self).__init__(404, "{} does not exist.".format(object),
                                                       ErrorCodes.OBJECT_NOT_FOUND)
 
+
+class BossRestArgsError(BossHTTPError):
+    """
+    Custom HTTP Error class for Invalid rest args
+
+    """
+
+    def __init__(self, service, args):
+        """
+        Custom HTTP Error class for Invalid rest args
+        Args:
+            object (str): Name of resource/object that user is trying to access/manipulate
+        """
+        super(BossRestArgsError, self).__init__(400, "Invalid {} arguments in request {}.".format(service, args),
+                                                      ErrorCodes.INVALID_URL)
 
 

@@ -128,7 +128,7 @@ class BossGroup(APIView):
         return Response(exists, status=200)
 
     @check_role("resource-manager")
-    def post(self,request,group_name):
+    def post(self, request, group_name):
         """
         Create a new group is the group does not exist
         Args:

@@ -23,7 +23,7 @@ from rest_framework.response import Response
 
 from bosscore.models import Collection, Experiment, ChannelLayer
 from bosscore.permissions import BossPermissionManager
-from bosscore.error import BossHTTPError, BossError
+from bosscore.error import BossHTTPError, BossError, BossObjectNotFoundError
 from bosscore.privileges import check_role
 
 class ResourceUserPermission(APIView):
@@ -96,7 +96,7 @@ class ResourceUserPermission(APIView):
             return Response(data, status=status.HTTP_201_CREATED, content_type='application/json')
 
         except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
+            return BossObjectNotFoundError(group_name)
         except Permission.DoesNotExist:
             return BossHTTPError(404, "Invalid permissions in post".format(request.data['permissions']), 30000)
         except BossError as err:
