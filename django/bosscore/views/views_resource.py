@@ -177,12 +177,8 @@ class CoordinateFrameDetail(APIView):
         """
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
-            # Check for permissions
-            if request.user.has_perm("read", coordframe_obj):
-                serializer = CoordinateFrameSerializer(coordframe_obj)
-                return Response(serializer.data)
-            else:
-                return BossPermissionError('read', coordframe)
+            serializer = CoordinateFrameSerializer(coordframe_obj)
+            return Response(serializer.data)
         except CoordinateFrame.DoesNotExist:
             return BossObjectNotFoundError(coordframe)
 

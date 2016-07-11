@@ -161,7 +161,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
             url = '/' + version + '/resource/coordinateframes/cf1/'
 
             response = self.client.get(url)
-            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.status_code, 200)
 
         def test_get_coordinate_frame_valid_permission(self):
             """
