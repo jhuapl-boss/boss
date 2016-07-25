@@ -39,7 +39,7 @@ class MetaDB:
         self.__local_dynamo = os.environ.get('USING_DJANGO_TESTRUNNER') is not None
         if not self.__local_dynamo:
             session = get_session()
-            dynamodb = boto3.resource('dynamodb')
+            dynamodb = session.resource('dynamodb')
             if 'test' in sys.argv:
                 tablename = 'test.' + config["aws"]["meta-db"]
             else:
