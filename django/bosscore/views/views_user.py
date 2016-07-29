@@ -84,6 +84,14 @@ class BossUser(APIView):
             data = json.dumps(data)
             response = kc.create_user(data)
 
+            # Create a temporary password for the user
+            data = {
+                "type": "password",
+                "temporary": True,
+                "value": user_name
+            }
+            kc.reset_password(user_name, data)
+
         except Exception as e:
             print(e)
             return BossHTTPError(404, "Error adding the user {} to keycloak.{}".format(user_name, e) \
