@@ -124,7 +124,7 @@ class BossPermissionManager:
         """
         # Get the type of model
         try:
-            admin_group = Group.objects.get(name="admin")
+            admin_group, created = Group.objects.get_or_create(name="admin")
             ct = ContentType.objects.get_for_model(obj)
             assign_perm('read', admin_group, obj)
             assign_perm('add', admin_group, obj)

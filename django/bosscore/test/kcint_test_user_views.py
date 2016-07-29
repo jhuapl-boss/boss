@@ -196,17 +196,17 @@ class UserTests(APITestCase):
         """ Add a user. """
 
         # Create a new user
-        url = '/' + version + '/user/eee/'
+        url = '/' + version + '/user/eeee/'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 201)
 
         # Get the user
-        url = '/' + version + '/user/eee/'
+        url = '/' + version + '/user/eeee/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
         # Delete the user
-        url = '/' + version + '/user/eee/'
+        url = '/' + version + '/user/eeee/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 

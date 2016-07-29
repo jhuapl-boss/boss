@@ -15,8 +15,23 @@ from django.contrib.auth.models import User
 from functools import wraps
 from bosscore.error import BossHTTPError
 from .models import BossRole
+from bossutils.keycloak import KeyCloakClient
 
 def load_user_role(user, user_name,roles):
+    """
+
+    Args:
+        user:
+        user_name:
+        roles:
+
+    Returns:
+
+    """
+
+    kc = KeyCloakClient('BOSS')
+    kc.login('admin-cli').json()
+    roles = kc.get_realm_roles(user_name,'BOSS')
     print (roles)
     print(user_name)
 

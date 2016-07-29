@@ -78,11 +78,12 @@ class BossUser(APIView):
                 "username": user_name,
                 "firstName": user_data.get('first_name'),
                 "lastName": user_data.get('last_name'),
-                "email": user_data.get('email')
+                "email": user_data.get('email'),
+                "enabled": True
             }
             data = json.dumps(data)
             response = kc.create_user(data)
-            print(response)
+
         except Exception as e:
             print(e)
             return BossHTTPError(404, "Error adding the user {} to keycloak.{}".format(user_name, e) \
