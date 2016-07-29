@@ -16,6 +16,9 @@ from functools import wraps
 from bosscore.error import BossHTTPError
 from .models import BossRole
 
+def load_user_role(user, user_name,roles):
+    print (roles)
+    print(user_name)
 
 # Decorators to check that the user has the right role
 def check_role(role_name):

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from django.contrib.auth.models import Group, User
 from django.db import transaction
 
@@ -25,6 +26,7 @@ from bosscore.serializers import GroupSerializer, UserSerializer, BossRoleSerial
 from bosscore.privileges import BossPrivilegeManager
 from bosscore.privileges import check_role
 
+from bossutils.keycloak import KeyCloakClient
 
 # GROUP NAMES
 PUBLIC_GROUP = 'boss-public'
@@ -67,6 +69,25 @@ class BossUser(APIView):
 
         """
         user_data = request.data.copy()
+
+        try:
+            # Add the user to keycloak
+            kc = KeyCloakClient('BOSS')
+            kc.login('admin-cli').json()
+            data = {
+                "username": user_name,
+                "firstName": user_data.get('first_name'),
+                "lastName": user_data.get('last_name'),
+                "email": user_data.get('email')
+            }
+            data = json.dumps(data)
+            response = kc.create_user(data)
+            print(response)
+        except Exception as e:
+            print(e)
+            return BossHTTPError(404, "Error adding the user {} to keycloak.{}".format(user_name, e) \
+                                 , 30000)
+
         user, created = User.objects.get_or_create(username=user_name)
         if not created:
             return BossHTTPError(404, "A user with username {} already exist".format(user_name), 30000)
