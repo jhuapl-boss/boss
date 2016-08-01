@@ -21,6 +21,11 @@ cd django
 # Ensure migrations generated for a clean slate.
 rm -rf */migrations
 
+# Set PYTHONPATH to the most current spdb and bossutils.  spdb is built by 
+# another Jenkins project.  Likewise, bossutils is downloaded via the
+# boss-tools Jenkins project.
+export PYTHONPATH=$WORKSPACE/../../spdb/workspace:$WORKSPACE/../../boss-tools/workspace
+
 python3 manage.py makemigrations --noinput
 
 # Force create migrations for the bosscore app.
@@ -29,10 +34,6 @@ python3 manage.py makemigrations bosscore --noinput
 python3 manage.py migrate
 
 python3 manage.py collectstatic --noinput
-
-# Set PYTHONPATH most current spdb used.  This is built by another Jenkins
-# project.
-export PYTHONPATH=$WORKSPACE/../../spdb/workspace
 
 # Run tests.
 python3 manage.py jenkins --enable-coverage --noinput
