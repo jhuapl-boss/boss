@@ -60,5 +60,7 @@ public_uri = vault.read('secret/endpoint/auth', 'public_uri')
 
 OIDC_VERIFY_SSL = not (config['auth']['OIDC_VERIFY_SSL'] in ['False', 'false'])
 
+LOAD_USER_ROLE = 'bosscore.privileges.load_user_role'
 from bossoidc.settings import *
 configure_oidc(auth_uri, client_id, public_uri)
+

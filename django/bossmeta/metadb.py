@@ -38,12 +38,8 @@ class MetaDB:
         """
         self.__local_dynamo = os.environ.get('USING_DJANGO_TESTRUNNER') is not None
         if not self.__local_dynamo:
-            # Get a session from AWS manager
-            aws_mngr = get_aws_manager()
-            self.__session = aws_mngr.get_session()
-
-            # Get table
-            dynamodb = self.__session.resource('dynamodb')
+            session = get_session()
+            dynamodb = session.resource('dynamodb')
             if 'test' in sys.argv:
                 tablename = 'test.' + config["aws"]["meta-db"]
             else:
@@ -54,12 +50,6 @@ class MetaDB:
             dynamodb = session.resource('dynamodb', region_name='us-east-1', endpoint_url='http://localhost:8000')
 
         self.table = dynamodb.Table(tablename)
-
-    def __del__(self):
-        # Clean up session by returning it to the pool
-        if not self.__local_dynamo:
-            aws_mngr = get_aws_manager()
-            aws_mngr.put_session(self.__session)
 
     def write_meta(self, lookup_key, key, value):
         """

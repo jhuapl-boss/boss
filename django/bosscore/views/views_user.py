@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 from django.contrib.auth.models import Group, User
 from django.db import transaction
 
@@ -25,6 +26,7 @@ from bosscore.serializers import GroupSerializer, UserSerializer, BossRoleSerial
 from bosscore.privileges import BossPrivilegeManager
 from bosscore.privileges import check_role
 
+from bossutils.keycloak import KeyCloakClient
 
 # GROUP NAMES
 PUBLIC_GROUP = 'boss-public'
@@ -67,6 +69,34 @@ class BossUser(APIView):
 
         """
         user_data = request.data.copy()
+
+        try:
+            # Add the user to keycloak
+            kc = KeyCloakClient('BOSS')
+            kc.login('admin-cli').json()
+            data = {
+                "username": user_name,
+                "firstName": user_data.get('first_name'),
+                "lastName": user_data.get('last_name'),
+                "email": user_data.get('email'),
+                "enabled": True
+            }
+            data = json.dumps(data)
+            response = kc.create_user(data)
+
+            # Create a temporary password for the user
+            data = {
+                "type": "password",
+                "temporary": True,
+                "value": user_name
+            }
+            kc.reset_password(user_name, data)
+
+        except Exception as e:
+            print(e)
+            return BossHTTPError(404, "Error adding the user {} to keycloak.{}".format(user_name, e) \
+                                 , 30000)
+
         user, created = User.objects.get_or_create(username=user_name)
         if not created:
             return BossHTTPError(404, "A user with username {} already exist".format(user_name), 30000)
@@ -114,13 +144,20 @@ class BossUser(APIView):
         try:
             Group.objects.get(name=user_name + PRIMARY_GROUP).delete()
             User.objects.get(username=user_name).delete()
+
+            # Delete from Keycloak
+            kc = KeyCloakClient('BOSS')
+            kc.login('admin-cli').json()
+            response = kc.delete_user(user_name, 'BOSS')
+
             return Response(status=204)
 
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
         except Group.DoesNotExist:
             return BossHTTPError(404, "Could not find the primary group for the user".format(user_name), 30000)
-
+        except Exception as e:
+            return BossHTTPError(404, "Error deleting user {} from keycloak.{}".format(user_name, e), 30000)
 
 class BossUserGroups(APIView):
     """
@@ -203,11 +240,19 @@ class BossUserRole(APIView):
             serializer = BossRoleSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
+                # Add role to keycloak
+                kc = KeyCloakClient('BOSS')
+                kc.login('admin-cli').json()
+                response = kc.map_role_to_user(user_name, role_name, 'BOSS')
+                return Response(serializer.data, status=201)
 
-            return Response(serializer.data, status=201)
+            return Response(serializer.errors)
 
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
+        except Exception as e:
+            return BossHTTPError(404, "Unable to map role {} to user {} in keycloak.{}".
+                                 format(role_name, user_name, e), 30000)
 
     @check_role("user-manager")
     def delete(self, request, user_name, role_name):
@@ -229,10 +274,17 @@ class BossUserRole(APIView):
                 return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)
             role = BossRole.objects.get(user=user, role=role_name)
             role.delete()
-
+            # Remove role to keycloak
+            kc = KeyCloakClient('BOSS')
+            kc.login('admin-cli').json()
+            response = kc.remove_role_from_user(user_name, role_name, 'BOSS')
             return Response(status=204)
 
         except User.DoesNotExist:
             return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
         except BossRole.DoesNotExist:
             return BossHTTPError(404, "The user {} does not have the role {} ".format(user_name, role_name), 30000)
+        except Exception as e:
+            return BossHTTPError(404,
+                                 "Unable to remove role {} from user {} in keycloak.{}".format(role_name, user_name, e),
+                                 30000)

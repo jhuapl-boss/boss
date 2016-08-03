@@ -14,8 +14,39 @@
 from django.contrib.auth.models import User
 from functools import wraps
 from bosscore.error import BossHTTPError
+from bosscore.serializers import BossRoleSerializer
 from .models import BossRole
+from bossutils.keycloak import KeyCloakClient
 
+def load_user_role(user, user_name,roles):
+    """
+        Loads user roles from keycloak to django on user login
+        Args:
+            user: (Not user. Could remove)
+            user_name: user_name of user
+            roles: List of keycloak roles
+
+        Returns: None
+
+        """
+    # TODO : Currently getting the roles from the library. Change this to get it from the token instead
+
+    kc = KeyCloakClient('BOSS')
+    kc.login('admin-cli').json()
+    roles = kc.get_realm_roles(user_name, 'BOSS')
+
+    if roles:
+        try:
+            user = User.objects.get(username=user_name)
+            for role in roles:
+                # only take the Boss roles. Ignore all others
+                if role['name'] in ['admin', 'user-manager', 'resource-manager']:
+                    data = {'user': user.pk, 'role': role['name']}
+                    serializer = BossRoleSerializer(data=data)
+                    if serializer.is_valid():
+                        serializer.save()
+        except User.DoesNotExist:
+            return BossHTTPError(404, "A user  with name {} is not found".format(user_name), 30000)
 
 # Decorators to check that the user has the right role
 def check_role(role_name):

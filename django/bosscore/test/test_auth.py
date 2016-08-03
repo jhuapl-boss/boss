@@ -130,117 +130,117 @@ class UserPermissionsCollection(APITestCase):
 
 
 class UserPermissionsCoordinateFrame(APITestCase):
+    """
+    Class to test the resource service
+    """
+
+    def setUp(self):
         """
-        Class to test the resource service
+        Initialize the database
+        :return:
         """
+        dbsetup = SetupTestDB()
+        user1 = dbsetup.create_user()
+        dbsetup.set_user(user1)
 
-        def setUp(self):
-            """
-            Initialize the database
-            :return:
-            """
-            dbsetup = SetupTestDB()
-            user1 = dbsetup.create_user()
-            dbsetup.set_user(user1)
+        self.client.force_login(user1)
+        dbsetup.insert_test_data()
 
-            self.client.force_login(user1)
-            dbsetup.insert_test_data()
+        # Create a new user with different objects
+        user2 = dbsetup.create_user('testuser1')
+        dbsetup.add_role('resource-manager')
+        dbsetup.set_user(user2)
+        self.client.force_login(user2)
+        dbsetup.add_coordinate_frame('unittestcf', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
 
-            # Create a new user with different objects
-            user2 = dbsetup.create_user('testuser1')
-            dbsetup.add_role('resource-manager')
-            dbsetup.set_user(user2)
-            self.client.force_login(user2)
-            dbsetup.add_coordinate_frame('unittestcf', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
+    def test_get_coordinate_frame_no_permission(self):
+        """
+        Get a coordinate frame that the user has no permissions for
 
-        def test_get_coordinate_frame_no_permission(self):
-            """
-            Get a coordinate frame that the user has no permissions for
+        """
+        url = '/' + version + '/resource/coordinateframes/cf1/'
 
-            """
-            url = '/' + version + '/resource/coordinateframes/cf1/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
 
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
+    def test_get_coordinate_frame_valid_permission(self):
+        """
+        Get a valid coordinate_frame
 
-        def test_get_coordinate_frame_valid_permission(self):
-            """
-            Get a valid coordinate_frame
+        """
+        url = '/' + version + '/resource/coordinateframes/unittestcf/'
 
-            """
-            url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        # Get an existing collection
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], 'unittestcf')
 
-            # Get an existing collection
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.data['name'], 'unittestcf')
+    # TODO Add unit test for POST ??
 
-        # TODO Add unit test for POST ??
+    def test_put_coordinate_frame_no_permissions(self):
+        """
+        Update a coordinate frame for which the user does not have update permissions on
 
-        def test_put_coordinate_frame_no_permissions(self):
-            """
-            Update a coordinate frame for which the user does not have update permissions on
+        """
+        url = '/' + version + '/resource/coordinateframes/cf1'
+        data = {'description': 'A new collection for unit tests. Updated'}
 
-            """
-            url = '/' + version + '/resource/coordinateframes/cf1'
-            data = {'description': 'A new collection for unit tests. Updated'}
+        # Get an existing collection
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
 
-            # Get an existing collection
-            response = self.client.put(url, data=data)
-            self.assertEqual(response.status_code, 403)
+    def test_put_coordinate_frames_valid_permission(self):
+        """
+        Update a coordinate frames that  the user has permissions on
 
-        def test_put_coordinate_frames_valid_permission(self):
-            """
-            Update a coordinate frames that  the user has permissions on
+        """
+        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        data = {'description': 'A new coordinate frame for unit tests. Updated'}
 
-            """
-            url = '/' + version + '/resource/coordinateframes/unittestcf/'
-            data = {'description': 'A new coordinate frame for unit tests. Updated'}
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
 
-            response = self.client.put(url, data=data)
-            self.assertEqual(response.status_code, 200)
+    def test_put_coordinate_frame_name_valid_permission(self):
+        """
+        Update coordinate frame name (valid)
 
-        def test_put_coordinate_frame_name_valid_permission(self):
-            """
-            Update coordinate frame name (valid)
+        """
+        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        data = {'name': 'unittestcfnew'}
 
-            """
-            url = '/' + version + '/resource/coordinateframes/unittestcf/'
-            data = {'name': 'unittestcfnew'}
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
 
-            response = self.client.put(url, data=data)
-            self.assertEqual(response.status_code, 200)
+    def test_delete_coordinate_frames_no_permissions(self):
+        """
+        Delete a coordinate frame that the user does not have permission for
 
-        def test_delete_coordinate_frames_no_permissions(self):
-            """
-            Delete a coordinate frame that the user does not have permission for
+        """
+        url = '/' + version + '/resource/coordinateframes/cf1/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)
 
-            """
-            url = '/' + version + '/resource/coordinateframes/cf1/'
-            response = self.client.delete(url)
-            self.assertEqual(response.status_code, 403)
+    def test_delete_coordinate_frame_valid_permission(self):
+        """
+        Delete a coordinate frame that the user has permission for
 
-        def test_delete_coordinate_frame_valid_permission(self):
-            """
-            Delete a coordinate frame that the user has permission for
+        """
+        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
 
-            """
-            url = '/' + version + '/resource/coordinateframes/unittestcf/'
-            response = self.client.delete(url)
-            self.assertEqual(response.status_code, 204)
+    def test_get_coordinate_frames(self):
+        """
+        Get list of coordinateframes
 
-        def test_get_coordinate_frames(self):
-            """
-            Get list of coordinateframes
+        """
+        url = '/' + version + '/resource/coordinateframes/'
 
-            """
-            url = '/' + version + '/resource/coordinateframes/'
-
-            # Get an existing collection
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.data[0]['name'], 'unittestcf')
-            self.assertEqual(len(response.data), 1)
+        # Get an existing collection
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]['name'], 'unittestcf')
+        self.assertEqual(len(response.data), 1)
 
 
 class UserPermissionsExperiment(APITestCase):
