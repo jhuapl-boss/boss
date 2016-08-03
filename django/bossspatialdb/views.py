@@ -81,7 +81,7 @@ class Cutout(APIView):
             return BossHTTPError(400, "Unsupported data type: {}".format(resource.get_data_type()))
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * self.bit_depth
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth / 8)
         if total_bytes > settings.CUTOUT_MAX_SIZE:
             return BossHTTPError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
 
