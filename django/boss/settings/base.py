@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'bosscore',
     'bossmeta',
     'bossspatialdb',
@@ -76,6 +77,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 )
 
 ROOT_URLCONF = 'boss.urls'
@@ -142,3 +144,6 @@ REST_FRAMEWORK = {
 BOSS_VERSION = 'v0.5'
 # Maximum number of bytes in an uncompressed matrix supported by the Cutout Service
 CUTOUT_MAX_SIZE = 10 ** 9
+
+# Allow all cross site origins
+CORS_ORIGIN_ALLOW_ALL = True
