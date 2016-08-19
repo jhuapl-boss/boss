@@ -12,3 +12,4 @@ uWSGI==2.0.12
 -e git+http://github.com/jhuapl-boss/django-oidc.git#egg=django-oidc
 -e git+http://github.com/jhuapl-boss/boss-oidc.git#egg=boss-oidc
 django-guardian
+django-cors-headers
