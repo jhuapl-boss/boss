@@ -168,25 +168,25 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_aligned_no_offset_no_time_blosc(self):
         """ Test uint64 data, cuboid aligned, no offset, no time samples"""
 
-        test_mat = np.random.randint(1, 2**50, (16, 128, 128))
+        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         h = test_mat.tobytes()
         bb = blosc.compress(h, typesize=64)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:16/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:16/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/',
                               accepts='application/blosc')
 
         # log in user
@@ -194,13 +194,13 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16').render()
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
         raw_data = blosc.decompress(response.content)
         data_mat = np.fromstring(raw_data, dtype=np.uint64)
-        data_mat = np.reshape(data_mat, (16, 128, 128), order='C')
+        data_mat = np.reshape(data_mat, (4, 128, 128), order='C')
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
@@ -208,25 +208,26 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_aligned_offset_no_time_blosc(self):
         """ Test uint64 data, cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(1, 2**50, (16, 128, 128))
+        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         h = test_mat.tobytes()
         bb = blosc.compress(h, typesize=64)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:32/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:32')
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20')
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:32/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/',
                               accepts='application/blosc')
 
         # log in user
@@ -234,13 +235,13 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:32').render()
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
         raw_data = blosc.decompress(response.content)
         data_mat = np.fromstring(raw_data, dtype=np.uint64)
-        data_mat = np.reshape(data_mat, (16, 128, 128), order='C')
+        data_mat = np.reshape(data_mat, (4, 128, 128), order='C')
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
@@ -264,6 +265,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
+        print(response)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
@@ -333,24 +335,24 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_aligned_no_offset_no_time_blosc_numpy(self):
         """ Test uint64 data, cuboid aligned, no offset, no time samples"""
 
-        test_mat = np.random.randint(1, 2**50, (16, 128, 128))
+        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:16/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:16/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/',
                               HTTP_ACCEPT='application/blosc-python')
 
         # log in user
@@ -358,7 +360,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16').render()
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -370,24 +372,24 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_aligned_offset_no_time_blosc_numpy(self):
         """ Test uint64 data, cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(1, 2**50, (16, 128, 128))
+        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:32/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:32')
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:32/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/',
                               HTTP_ACCEPT='application/blosc-python')
 
         # log in user
@@ -395,7 +397,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:32').render()
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -407,24 +409,24 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_unaligned_offset_no_time_blosc_numpy(self):
         """ Test uint64 data, not cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(1, 2**50, (17, 300, 500))
+        test_mat = np.random.randint(1, 2**50, (4, 300, 500))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:24/', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:24')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:24/',
                               HTTP_ACCEPT='application/blosc-python')
 
         # log in user
@@ -432,7 +434,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:24').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress

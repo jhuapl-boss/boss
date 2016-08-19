@@ -56,7 +56,7 @@ class TestDjangoResource(APITestCase):
 
         self.request_layer = BossRequest(drfrequest)
 
-    def test_basic_resource_col(self):
+    def test_django_resource_col(self):
         """Test basic get collection interface
 
         Returns:
@@ -70,7 +70,7 @@ class TestDjangoResource(APITestCase):
         assert col.name == self.request_channel.collection.name
         assert col.description == self.request_channel.collection.description
 
-    def test_basic_resource_coord_frame(self):
+    def test_django_resource_coord_frame(self):
         """Test basic get coordinate frame interface
 
         Returns:
@@ -96,7 +96,7 @@ class TestDjangoResource(APITestCase):
         assert coord.time_step == self.request_channel.coord_frame.time_step
         assert coord.time_step_unit == self.request_channel.coord_frame.time_step_unit
 
-    def test_basic_resource_experiment(self):
+    def test_django_resource_experiment(self):
         """Test basic get experiment interface
 
         Returns:
@@ -112,7 +112,7 @@ class TestDjangoResource(APITestCase):
         assert exp.num_hierarchy_levels == self.request_channel.experiment.num_hierarchy_levels
         assert exp.hierarchy_method == self.request_channel.experiment.hierarchy_method
 
-    def test_basic_resource_channel(self):
+    def test_django_resource_channel(self):
         """Test basic get channel interface
 
         Returns:
@@ -131,7 +131,7 @@ class TestDjangoResource(APITestCase):
         assert channel.description == self.request_channel.channel_layer.description
         assert channel.datatype == self.request_channel.channel_layer.datatype
 
-    def test_basic_resource_layer(self):
+    def test_django_resource_layer(self):
         """Test basic get layer interface
 
         Returns:
@@ -151,7 +151,7 @@ class TestDjangoResource(APITestCase):
         assert layer.base_resolution == self.request_layer.channel_layer.base_resolution
         assert layer.parent_channels == self.request_layer.channel_layer.linked_channel_layers
 
-    def test_basic_resource_get_boss_key(self):
+    def test_django_resource_get_boss_key(self):
         """Test basic get boss key interface
 
         Returns:
@@ -163,7 +163,7 @@ class TestDjangoResource(APITestCase):
         assert resource.get_boss_key() == self.request_channel.get_boss_key()
         assert resource.get_boss_key() == 'col1&exp1&channel1'
 
-    def test_basic_resource_get_lookup_key(self):
+    def test_django_resource_get_lookup_key(self):
         """Test basic get lookup key interface
 
         Returns:
@@ -175,8 +175,7 @@ class TestDjangoResource(APITestCase):
         assert resource.get_lookup_key() == self.request_channel.get_lookup_key()
         assert isinstance(resource.get_lookup_key(), str)
 
-
-    def test_basic_resource_get_data_type(self):
+    def test_django_resource_get_data_type(self):
         """Test basic get datatype interface
 
         Returns:
@@ -185,3 +184,31 @@ class TestDjangoResource(APITestCase):
         """
         resource = BossResourceDjango(self.request_channel)
         assert resource.get_data_type() == self.request_channel.channel_layer.datatype
+
+    def test_django_resource_to_dict_channel(self):
+        """Test basic get datatype interface
+
+        Returns:
+            None
+
+        """
+        resource = BossResourceDjango(self.request_channel)
+        data = resource.to_dict()
+        assert "channel_layer" in data
+        assert "collection" in data
+        assert "experiment" in data
+        assert data["lookup_key"] == "1&1&1"
+
+    def test_django_resource_to_dict_layer(self):
+        """Test basic get datatype interface
+
+        Returns:
+            None
+
+        """
+        resource = BossResourceDjango(self.request_layer)
+        data = resource.to_dict()
+        assert "channel_layer" in data
+        assert "collection" in data
+        assert "experiment" in data
+        assert data["lookup_key"] == "1&1&3"

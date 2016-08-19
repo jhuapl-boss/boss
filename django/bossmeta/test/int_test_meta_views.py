@@ -20,13 +20,13 @@ from django.conf import settings
 from rest_framework.test import APITestCase
 
 from bossmeta.test.test_meta_views import MetaServiceViewTestsMixin
+from botocore.exceptions import ClientError
 
 version = settings.BOSS_VERSION
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()
 testtablename = "test." + config["aws"]["meta-db"]
-aws_mngr = get_aws_manager()
 
 
 class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITestCase):
@@ -37,18 +37,26 @@ class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITest
     """
     @classmethod
     def setUpClass(cls):
-        cls.__session = aws_mngr.get_session()
-
         # Load table info
         cfgfile = open('bosscore/dynamo_schema.json', 'r')
         tblcfg = json.load(cfgfile)
 
         # Get table
-        dynamodb = cls.__session.resource('dynamodb')
-        cls.table = dynamodb.create_table(TableName=testtablename, **tblcfg)
-        cls.table.meta.client.get_waiter('table_exists').wait(TableName=testtablename)
+        client = boto3.client('dynamodb', region_name=get_region())
+        try:
+            client.create_table(TableName=testtablename, **tblcfg)
+        except ClientError:
+            client.delete_table(TableName=testtablename)
+            waiter = client.get_waiter('table_not_exists')
+            waiter.wait(TableName=testtablename)
+            client.create_table(TableName=testtablename, **tblcfg)
+
+        waiter = client.get_waiter('table_exists')
+        waiter.wait(TableName=testtablename)
 
     @classmethod
     def tearDownClass(cls):
-        cls.table.delete()
-        cls.table.meta.client.get_waiter('table_not_exists').wait(TableName=testtablename)
+        client = boto3.client('dynamodb', region_name=get_region())
+        client.delete_table(TableName=testtablename)
+        waiter = client.get_waiter('table_not_exists')
+        waiter.wait(TableName=testtablename)

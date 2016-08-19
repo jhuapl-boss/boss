@@ -64,3 +64,19 @@ LOAD_USER_ROLE = 'bosscore.privileges.load_user_role'
 from bossoidc.settings import *
 configure_oidc(auth_uri, client_id, public_uri)
 
+# Load params for spatialDB once during settings.py
+# kvio settings
+KVIO_SETTINGS = {"cache_host": config['aws']['cache'],
+                 "cache_db": int(config['aws']['cache-db']),
+                 "read_timeout": 86400}
+
+# state settings
+STATEIO_CONFIG = {"cache_state_host": config['aws']['cache-state'],
+                  "cache_state_db": int(config['aws']['cache-state-db'])}
+
+# object store settings
+OBJECTIO_CONFIG = {"s3_flush_queue": config['aws']['s3-flush-queue'],
+                   "cuboid_bucket": config['aws']['cuboid_bucket'],
+                   "page_in_lambda_function": config['lambda']['page_in_function'],
+                   "page_out_lambda_function": config['lambda']['flush_function'],
+                   "s3_index_table": config['aws']['s3-index-table']}

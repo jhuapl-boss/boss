@@ -13,52 +13,121 @@
 # limitations under the License.
 
 from django.conf import settings
-from unittest.mock import patch
+from django.test.utils import override_settings
+import time
+import redis
 
 from rest_framework.test import APITestCase
 
-from bosstiles.test.test_tiles_view_uint8 import TileInterfaceViewUint8TestMixin
+from bosstiles.test.tiles_view_uint8 import TileInterfaceViewUint8TestMixin
 
 from bosscore.test.setup_db import SetupTestDB
 import bossutils
+from spdb.spatialdb.test.setup import SetupTests
+from botocore.exceptions import ClientError
 
 version = settings.BOSS_VERSION
 
+config = bossutils.configuration.BossConfig()
+KVIO_SETTINGS = {"cache_host": config['aws']['cache'],
+                 "cache_db": 1,
+                 "read_timeout": 86400}
 
-class MockBossIntegrationConfig(bossutils.configuration.BossConfig):
-    """Basic mock for BossConfig so 'test databases' are used for redis (1) instead of the default where real data
-    can live (0)"""
-    def __init__(self):
-        super().__init__()
-        self.config["aws"]["cache-db"] = "1"
-        self.config["aws"]["cache-state-db"] = "1"
+# state settings
+STATEIO_CONFIG = {"cache_state_host": config['aws']['cache-state'],
+                  "cache_state_db": 1}
 
-    def read(self, filename):
-        pass
+# object store settings
+OBJECTIO_CONFIG = {"s3_flush_queue": None,
+                   "cuboid_bucket": "intTest.{}".format(config['aws']['cuboid_bucket']),
+                   "page_in_lambda_function": config['lambda']['page_in_function'],
+                   "page_out_lambda_function": config['lambda']['flush_function'],
+                   "s3_index_table": "intTest.{}".format(config['aws']['s3-index-table'])}
 
-    def __getitem__(self, key):
-        return self.config[key]
+config = bossutils.configuration.BossConfig()
+_, domain = config['aws']['cuboid_bucket'].split('.', 1)
+print("domain {}".format(domain))
+FLUSH_QUEUE_NAME = "intTest.S3FlushQueue.{}".format(domain).replace('.', '-')
 
 
-@patch('bossutils.configuration.BossConfig', MockBossIntegrationConfig)
+@override_settings(KVIO_SETTINGS=KVIO_SETTINGS)
+@override_settings(STATEIO_CONFIG=STATEIO_CONFIG)
+@override_settings(OBJECTIO_CONFIG=OBJECTIO_CONFIG)
 class TileViewIntegrationTests(TileInterfaceViewUint8TestMixin, APITestCase):
-
     def setUp(self):
-        """
-        Initialize the database
-        :return:
-        """
-
-        # Create a user
-        dbsetup = SetupTestDB()
-        self.user = dbsetup.create_user()
-
-        # Populate DB
-        dbsetup.insert_spatialdb_test_data()
-
-        self.patcher = patch('bossutils.configuration.BossConfig', MockBossIntegrationConfig)
-        self.mock_tests = self.patcher.start()
+        """Setup to run before every test"""
+        self.client.force_login(self.user)
 
     def tearDown(self):
-        # Stop mocking
-        self.mock_tests = self.patcher.stop()
+        """Clean kv store in between tests"""
+        client = redis.StrictRedis(host=settings.KVIO_SETTINGS["cache_host"],
+                                   port=6379, db=1, decode_responses=False)
+        client.flushdb()
+        client = redis.StrictRedis(host=settings.STATEIO_CONFIG["cache_state_host"],
+                                   port=6379, db=1, decode_responses=False)
+        client.flushdb()
+
+    @classmethod
+    def setUpClass(cls):
+        """ get_some_resource() is slow, to avoid calling it for each test use setUpClass()
+            and store the result as class variable
+        """
+        super(TileViewIntegrationTests, cls).setUpClass()
+
+        # Setup the helper to create temporary AWS resources
+        cls.setup_helper = SetupTests()
+        cls.setup_helper.mock = False
+
+        # Create a user in django
+        dbsetup = SetupTestDB()
+        cls.user = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
+        dbsetup.set_user(cls.user)
+
+        # Populate django models DB
+        dbsetup.insert_spatialdb_test_data()
+
+        try:
+            cls.setup_helper.create_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+        except ClientError:
+            cls.setup_helper.delete_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.create_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+
+        try:
+            cls.setup_helper.create_cuboid_bucket(OBJECTIO_CONFIG["cuboid_bucket"])
+        except ClientError:
+            cls.setup_helper.delete_cuboid_bucket(OBJECTIO_CONFIG["cuboid_bucket"])
+            cls.setup_helper.create_cuboid_bucket(OBJECTIO_CONFIG["cuboid_bucket"])
+
+        try:
+
+            OBJECTIO_CONFIG["s3_flush_queue"] = cls.setup_helper.create_flush_queue(FLUSH_QUEUE_NAME)
+        except ClientError:
+            try:
+                cls.setup_helper.delete_flush_queue(OBJECTIO_CONFIG["s3_flush_queue"])
+            except:
+                pass
+            time.sleep(61)
+            OBJECTIO_CONFIG["s3_flush_queue"] = cls.setup_helper.create_flush_queue(FLUSH_QUEUE_NAME)
+
+    @classmethod
+    def tearDownClass(cls):
+        super(TileViewIntegrationTests, cls).tearDownClass()
+        try:
+            cls.setup_helper.delete_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+        except Exception as e:
+            print("Failed to cleanup S3 Index Table: {}".format(e))
+            pass
+
+        try:
+            cls.setup_helper.delete_cuboid_bucket(OBJECTIO_CONFIG["cuboid_bucket"])
+        except Exception as e:
+            print("Failed to cleanup S3 bucket: {}".format(e))
+            pass
+
+        try:
+            cls.setup_helper.delete_flush_queue(OBJECTIO_CONFIG["s3_flush_queue"])
+        except Exception as e:
+            print("Failed to cleanup S3 flush queue: {}".format(e))
+            pass
+
