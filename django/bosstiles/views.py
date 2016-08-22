@@ -81,21 +81,25 @@ class Tiles(APIView):
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
         extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
 
-        # Get a Cube instance with all time samples
-        data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
+        try:
+            # Get a Cube instance with all time samples
+            data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
 
-        # Covert the cutout back to an image and return it
-        if orientation == 'xy':
-            img = data.xy_image()
-        elif orientation == 'yz':
-            img = data.yz_image()
-        elif orientation == 'xz':
-            img = data.xz_image()
-        else:
-            return BossHTTPError(400, "Invalid orientation")
+            # Covert the cutout back to an image and return it
+            if orientation == 'xy':
+                img = data.xy_image()
+            elif orientation == 'yz':
+                img = data.yz_image()
+            elif orientation == 'xz':
+                img = data.xz_image()
+            else:
+                return BossHTTPError(400, "Invalid orientation")
 
-        fileobj = io.BytesIO()
-        img.save(fileobj, "PNG")
-        fileobj.seek(0)
+            fileobj = io.BytesIO()
+            img.save(fileobj, "PNG")
+            fileobj.seek(0)
+        except Exception as e:
+            # TODO: Eventually remove as this level of detail should not be sent to the user
+            return BossHTTPError(500, 'Error during tiles cutout: {}'.format(e))
 
         return HttpResponse(fileobj.read(), content_type="image/png")
