@@ -143,8 +143,18 @@ class BossHTTPError(JsonResponse):
         # Return
         data = {'status': status, 'code': code, 'message': message}
         super(BossHTTPError, self).__init__(data)
-     
-        
+
+    @staticmethod
+    def from_exception(error, status, message, code):
+        try:
+            # Attach the HTTP response's body for more context, if data exists
+            message += ". Error Message: " + error.response.text
+        except:
+            pass
+
+        return BossHTTPError(status, message, code)
+
+
 
 class BossPermissionError(BossHTTPError):
     """

@@ -29,7 +29,7 @@ from bosscore.privileges import check_role
 from bossutils.keycloak import KeyCloakClient
 
 # GROUP NAMES
-PUBLIC_GROUP = 'boss-public'
+PUBLIC_GROUP = 'boss-public' # DP TODO: Add to BOSS.realm file in boss-manage
 PRIMARY_GROUP = '-primary'
 
 
@@ -69,38 +69,66 @@ class BossUser(APIView):
         """
         user_data = request.data.copy()
 
+        # Keep track of what has been created, so in the catch block we can
+        # delete them when there is an error in another step of create user
+        user_created = False
+        primary_created = False
+
+        primary_group = user_name + PRIMARY_GROUP
+
         try:
-            # Add the user to keycloak
-            kc = KeyCloakClient('BOSS')
-            kc.login()
-            data = {
-                "username": user_name,
-                "firstName": user_data.get('first_name'),
-                "lastName": user_data.get('last_name'),
-                "email": user_data.get('email'),
-                "enabled": True
-            }
-            data = json.dumps(data)
-            response = kc.create_user(data)
-
-            try:
-                # Create a temporary password for the user
+            with KeyCloakClient('BOSS') as kc:
+                # Automatically create the user's primary group
                 data = {
-                    "type": "password",
-                    "temporary": False,
-                    "value": user_data.get('password')
+                    "name": primary_group
                 }
-                kc.reset_password(user_name, data)
+                data = json.dumps(data)
+                kc.create_group(data)
+                primary_created = True
 
-                # DP TODO: create group user_name + PRIMARY_GROUP
-            except:
-                kc.delete_user(user_name)
-                raise
- 
-            return Response(response, status=201)
+                # Create the user account, attached to the default groups
+                data = {
+                    "username": user_name,
+                    "firstName": user_data.get('first_name'),
+                    "lastName": user_data.get('last_name'),
+                    "email": user_data.get('email'),
+                    "enabled": True,
+                    "credentials": [{
+                        "type": "password",
+                        "temporary": True,
+                        "value": user_data.get('password')
+                    }],
+                    "groups": [
+                        primary_group,
+                        PUBLIC_GROUP
+                    ]
+                }
+                data = json.dumps(data)
+                response = kc.create_user(data)
+                user_create = True
+
+                return Response(response, status=201)
         except Exception as e:
-            return BossHTTPError(404, "Error adding the user {} to keycloak.{}".format(user_name, e) \
-                                 , 30000)
+            # cleanup created objects
+            if user_created or primary_created:
+                try:
+                    with KeyCloakClient('BOSS') as kc:
+                        try:
+                            if user_created:
+                                kc.delete_user(user_name)
+                        except:
+                            LOG.exception("Error deleting user '{}'".format(user_name))
+
+                        try:
+                            if primary_created:
+                                kc.delete_group(primary_group)
+                        except:
+                            LOG.exception("Error deleting group '{}'".format(primary_group))
+                except:
+                    LOG.exception("Error communicating with Keycloak to delete created user and primary group")
+
+            msg = "Error addng user '{}' to Keycloak".format(user_name)
+            return BossHTTPError.from_exception(e, 404, msg, 30000)
 
     @check_role("user-manager")
     def delete(self, request, user_name):
@@ -161,7 +189,7 @@ class BossUserRole(APIView):
         Args:
            request: Django rest framework request
            user_name: User name
-           role_name: 
+           role_name:
 
         Returns:
             True if the user has the role
