@@ -27,6 +27,9 @@ from bosscore.privileges import BossPrivilegeManager
 from bosscore.privileges import check_role
 
 from bossutils.keycloak import KeyCloakClient
+from bossutils.logger import BossLogger
+
+LOG = BossLogger().logger
 
 # GROUP NAMES
 PUBLIC_GROUP = 'boss-public' # DP TODO: Add to BOSS.realm file in boss-manage
@@ -50,9 +53,14 @@ class BossUser(APIView):
         try:
             with KeyCloakClient('BOSS') as kc:
                 response = kc.get_userdata(user_name)
+                groups = kc.get_user_groups(user_name)
+                response["groups"] = [g['name'] for g in groups]
+                roles = kc.get_realm_roles(user_name)
+                response["realmRoles"] = [r['name'] for r in roles]
                 return Response(response, status=200)
         except Exception as e:
-            return BossHTTPError(404, "Error getting user data for {}. {}".format(user_name, e), 30000)
+            msg = "Error getting user '{}' from Keycloak".format(user_name)
+            return BossHTTPError.from_exception(e, 404, msg, 30000)
 
     @check_role("user-manager")
     @transaction.atomic
@@ -87,25 +95,27 @@ class BossUser(APIView):
                 primary_created = True
 
                 # Create the user account, attached to the default groups
+                # DP NOTE: email also has to be unique, in the current configuration of Keycloak
                 data = {
                     "username": user_name,
                     "firstName": user_data.get('first_name'),
                     "lastName": user_data.get('last_name'),
                     "email": user_data.get('email'),
-                    "enabled": True,
-                    "credentials": [{
-                        "type": "password",
-                        "temporary": True,
-                        "value": user_data.get('password')
-                    }],
-                    "groups": [
-                        primary_group,
-                        PUBLIC_GROUP
-                    ]
+                    "enabled": True
                 }
                 data = json.dumps(data)
                 response = kc.create_user(data)
                 user_create = True
+
+                data = {
+                    "type": "password",
+                    "temporary": False,
+                    "value": user_data.get('password')
+                }
+                kc.reset_password(user_name, data)
+
+                kc.map_group_to_user(user_name, primary_group)
+                kc.map_group_to_user(user_name, PUBLIC_GROUP)
 
                 return Response(response, status=201)
         except Exception as e:
@@ -142,14 +152,14 @@ class BossUser(APIView):
         """
         try:
             # Delete from Keycloak
-            kc = KeyCloakClient('BOSS')
-            kc.login()
-            kc.delete_user(user_name)
+            with KeyCloakClient('BOSS') as kc:
+                kc.delete_user(user_name)
+                kc.delete_group(user_name + PRIMARY_GROUP)
 
             return Response(status=204)
-
         except Exception as e:
-            return BossHTTPError(404, "Error deleting user {} from keycloak. {}".format(user_name, e), 30000)
+            msg = "Error deleting user '{}' from Keycloak".format(user_name)
+            return BossHTTPError.from_exception(e, 404, msg, 30000)
 
 class BossUserGroups(APIView):
     """
