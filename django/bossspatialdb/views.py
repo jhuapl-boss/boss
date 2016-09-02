@@ -165,7 +165,7 @@ class Cutout(APIView):
                                    np.expand_dims(request.data, axis=0), req.get_time()[0])
         except Exception as e:
             # TODO: Eventually remove as this level of detail should not be sent to the user
-            return BossHTTPError(500, 'Error during write_cuboid: {}' + e)
+            return BossHTTPError(500, 'Error during write_cuboid: {}'.format(e))
 
         # Send data to renderer
         return HttpResponse(status=201)

@@ -197,7 +197,7 @@ class TestDjangoResource(APITestCase):
         assert "channel_layer" in data
         assert "collection" in data
         assert "experiment" in data
-        assert data["lookup_key"] == "1&1&1"
+        assert "lookup_key" in data
 
     def test_django_resource_to_dict_layer(self):
         """Test basic get datatype interface
@@ -211,4 +211,4 @@ class TestDjangoResource(APITestCase):
         assert "channel_layer" in data
         assert "collection" in data
         assert "experiment" in data
-        assert data["lookup_key"] == "1&1&3"
+        assert "lookup_key" in data
