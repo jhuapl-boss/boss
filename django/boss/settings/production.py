@@ -44,6 +44,7 @@ DATABASES = {
 from bossutils.aws import *
 aws_mngr = get_aws_manager()
 
+INSTALLED_APPS.append("bossoidc")
 INSTALLED_APPS.append("djangooidc")
 INSTALLED_APPS.append("rest_framework.authtoken")
 AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend')
