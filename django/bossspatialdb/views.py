@@ -27,7 +27,8 @@ from django.conf import settings
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, BossParserError
 
-import spdb
+from spdb.spatialdb.spatialdb import SpatialDB
+from spdb import project
 
 
 class Cutout(APIView):
@@ -36,15 +37,14 @@ class Cutout(APIView):
 
     * Requires authentication.
     """
+    # Set Parser and Renderer
+    parser_classes = (BloscParser, BloscPythonParser)
+    renderer_classes = (BloscRenderer, BloscPythonRenderer, JSONRenderer, BrowsableAPIRenderer)
+
     def __init__(self):
         super().__init__()
         self.data_type = None
         self.bit_depth = None
-
-    # Set Parser and Renderer
-
-    parser_classes = (BloscParser, BloscPythonParser)
-    renderer_classes = (BloscRenderer, BloscPythonRenderer, JSONRenderer, BrowsableAPIRenderer)
 
     def get(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
         """
@@ -72,7 +72,7 @@ class Cutout(APIView):
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         # Convert to Resource
-        resource = spdb.project.BossResourceDjango(req)
+        resource = project.BossResourceDjango(req)
 
         # Get bit depth
         try:
@@ -81,12 +81,14 @@ class Cutout(APIView):
             return BossHTTPError(400, "Unsupported data type: {}".format(resource.get_data_type()))
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * self.bit_depth
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth / 8)
         if total_bytes > settings.CUTOUT_MAX_SIZE:
             return BossHTTPError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
 
         # Get interface to SPDB cache
-        cache = spdb.spatialdb.SpatialDB()
+        cache = SpatialDB(settings.KVIO_SETTINGS,
+                          settings.STATEIO_CONFIG,
+                          settings.OBJECTIO_CONFIG)
 
         # Get the params to pull data out of the cache
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
@@ -126,7 +128,7 @@ class Cutout(APIView):
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         # Convert to Resource
-        resource = spdb.project.BossResourceDjango(req)
+        resource = project.BossResourceDjango(req)
 
         # Get bit depth
         try:
@@ -148,16 +150,22 @@ class Cutout(APIView):
             return BossHTTPError(400, "Data dimensions in URL do not match POSTed data.")
 
         # Get interface to SPDB cache
-        cache = spdb.spatialdb.SpatialDB()
+        cache = SpatialDB(settings.KVIO_SETTINGS,
+                          settings.STATEIO_CONFIG,
+                          settings.OBJECTIO_CONFIG)
 
         # Write block to cache
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
 
         try:
-            cache.write_cuboid(resource, corner, req.get_resolution(), request.data, req.get_time()[0])
-        except BaseException as e:
+            if len(request.data.shape) == 4:
+                cache.write_cuboid(resource, corner, req.get_resolution(), request.data, req.get_time()[0])
+            else:
+                cache.write_cuboid(resource, corner, req.get_resolution(),
+                                   np.expand_dims(request.data, axis=0), req.get_time()[0])
+        except Exception as e:
             # TODO: Eventually remove as this level of detail should not be sent to the user
-            return BossHTTPError(500, 'Error during write_cuboid: ' + str(e))
+            return BossHTTPError(500, 'Error during write_cuboid: {}' + e)
 
         # Send data to renderer
         return HttpResponse(status=201)

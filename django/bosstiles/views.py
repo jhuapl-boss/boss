@@ -73,7 +73,9 @@ class Tiles(APIView):
             return BossHTTPError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
 
         # Get interface to SPDB cache
-        cache = spdb.spatialdb.SpatialDB()
+        cache = spdb.spatialdb.SpatialDB(settings.KVIO_SETTINGS,
+                                         settings.STATEIO_CONFIG,
+                                         settings.OBJECTIO_CONFIG)
 
         # Get the params to pull data out of the cache
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())

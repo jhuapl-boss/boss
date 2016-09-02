@@ -57,7 +57,7 @@ class BloscParser(BaseParser):
             return BossParserError(400, "Unsupported data type provided to parser: {}".format(resource.get_data_type()))
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth / 8
         if total_bytes > settings.CUTOUT_MAX_SIZE:
             return BossParserError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
 
@@ -115,7 +115,7 @@ class BloscPythonParser(BaseParser):
                                    "Unsupported data type provided to parser: {}".format(resource.get_data_type()))
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth / 8
         if total_bytes > settings.CUTOUT_MAX_SIZE:
             return BossParserError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
 

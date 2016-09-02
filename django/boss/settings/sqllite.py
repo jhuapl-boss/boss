@@ -14,6 +14,7 @@
 
 from .base import *
 
+
 """
 Run the boss with a sqlite database.
 """
@@ -28,3 +29,5 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+
