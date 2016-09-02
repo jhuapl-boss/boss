@@ -32,7 +32,7 @@ from bossutils.logger import BossLogger
 LOG = BossLogger().logger
 
 # GROUP NAMES
-PUBLIC_GROUP = 'boss-public' # DP TODO: Add to BOSS.realm file in boss-manage
+PUBLIC_GROUP = 'boss-public'
 PRIMARY_GROUP = '-primary'
 
 
@@ -53,8 +53,6 @@ class BossUser(APIView):
         try:
             with KeyCloakClient('BOSS') as kc:
                 response = kc.get_userdata(user_name)
-                groups = kc.get_user_groups(user_name)
-                response["groups"] = [g['name'] for g in groups]
                 roles = kc.get_realm_roles(user_name)
                 response["realmRoles"] = [r['name'] for r in roles]
                 return Response(response, status=200)
@@ -80,20 +78,9 @@ class BossUser(APIView):
         # Keep track of what has been created, so in the catch block we can
         # delete them when there is an error in another step of create user
         user_created = False
-        primary_created = False
-
-        primary_group = user_name + PRIMARY_GROUP
 
         try:
             with KeyCloakClient('BOSS') as kc:
-                # Automatically create the user's primary group
-                data = {
-                    "name": primary_group
-                }
-                data = json.dumps(data)
-                kc.create_group(data)
-                primary_created = True
-
                 # Create the user account, attached to the default groups
                 # DP NOTE: email also has to be unique, in the current configuration of Keycloak
                 data = {
@@ -114,13 +101,10 @@ class BossUser(APIView):
                 }
                 kc.reset_password(user_name, data)
 
-                kc.map_group_to_user(user_name, primary_group)
-                kc.map_group_to_user(user_name, PUBLIC_GROUP)
-
                 return Response(response, status=201)
         except Exception as e:
             # cleanup created objects
-            if user_created or primary_created:
+            if True in [user_created]:
                 try:
                     with KeyCloakClient('BOSS') as kc:
                         try:
@@ -128,12 +112,6 @@ class BossUser(APIView):
                                 kc.delete_user(user_name)
                         except:
                             LOG.exception("Error deleting user '{}'".format(user_name))
-
-                        try:
-                            if primary_created:
-                                kc.delete_group(primary_group)
-                        except:
-                            LOG.exception("Error deleting group '{}'".format(primary_group))
                 except:
                     LOG.exception("Error communicating with Keycloak to delete created user and primary group")
 
@@ -154,7 +132,6 @@ class BossUser(APIView):
             # Delete from Keycloak
             with KeyCloakClient('BOSS') as kc:
                 kc.delete_user(user_name)
-                kc.delete_group(user_name + PRIMARY_GROUP)
 
             return Response(status=204)
         except Exception as e:
