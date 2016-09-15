@@ -44,6 +44,7 @@ DATABASES = {
 from bossutils.aws import *
 aws_mngr = get_aws_manager()
 
+INSTALLED_APPS.append("bossoidc")
 INSTALLED_APPS.append("djangooidc")
 INSTALLED_APPS.append("rest_framework.authtoken")
 AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend')
@@ -60,7 +61,7 @@ public_uri = vault.read('secret/endpoint/auth', 'public_uri')
 
 OIDC_VERIFY_SSL = not (config['auth']['OIDC_VERIFY_SSL'] in ['False', 'false'])
 
-LOAD_USER_ROLE = 'bosscore.privileges.load_user_role'
+LOAD_USER_ROLES = 'bosscore.privileges.load_user_roles'
 from bossoidc.settings import *
 configure_oidc(auth_uri, client_id, public_uri)
 
