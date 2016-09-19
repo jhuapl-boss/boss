@@ -25,7 +25,7 @@ from django.http import HttpResponse
 from django.conf import settings
 
 from bosscore.request import BossRequest
-from bosscore.error import BossError, BossHTTPError, BossParserError
+from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
 
 from spdb.spatialdb.spatialdb import SpatialDB
 from spdb import project
@@ -78,12 +78,13 @@ class Cutout(APIView):
         try:
             self.bit_depth = resource.get_bit_depth()
         except ValueError:
-            return BossHTTPError(400, "Unsupported data type: {}".format(resource.get_data_type()))
+            return BossHTTPError("Unsupported data type: {}".format(resource.get_data_type()),ErrorCodes.TYPE_ERROR)
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
         total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth / 8)
         if total_bytes > settings.CUTOUT_MAX_SIZE:
-            return BossHTTPError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
+            return BossHTTPError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+                                 ErrorCodes.REQUEST_TOO_LARGE)
 
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
@@ -134,11 +135,11 @@ class Cutout(APIView):
         try:
             expected_data_type = resource.get_numpy_data_type()
         except ValueError:
-            return BossHTTPError(400, "Unsupported data type: {}".format(resource.get_data_type()))
+            return BossHTTPError("Unsupported data type: {}".format(resource.get_data_type()), ErrorCodes.TYPE_ERROR)
 
         # Make sure datatype is valid
         if expected_data_type != request.data.dtype:
-            return BossHTTPError(400, "Datatype does not match channel/layer")
+            return BossHTTPError("Datatype does not match channel/layer", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Make sure the dimensions of the data match the dimensions of the post URL
         if len(request.data.shape) == 4:
@@ -147,7 +148,8 @@ class Cutout(APIView):
             expected_shape = (req.get_z_span(), req.get_y_span(), req.get_x_span())
 
         if expected_shape != request.data.shape:
-            return BossHTTPError(400, "Data dimensions in URL do not match POSTed data.")
+            return BossHTTPError("Data dimensions in URL do not match POSTed data.",
+                                 ErrorCodes.DATA_DIMENSIONS_DOES_NOT_MATCH)
 
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
@@ -165,7 +167,7 @@ class Cutout(APIView):
                                    np.expand_dims(request.data, axis=0), req.get_time()[0])
         except Exception as e:
             # TODO: Eventually remove as this level of detail should not be sent to the user
-            return BossHTTPError(500, 'Error during write_cuboid: {}'.format(e))
+            return BossHTTPError('Error during write_cuboid: {}'.format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
 
         # Send data to renderer
         return HttpResponse(status=201)

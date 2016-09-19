@@ -243,7 +243,7 @@ class MetaServiceViewTestsMixin(object):
         # key does not exist
         baseurl = '/' + version + '/meta/col1/exp1/channel44/?key=invalid'
         response = self.client.get(baseurl)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_meta_service_post_invalid(self):
         """
@@ -253,7 +253,7 @@ class MetaServiceViewTestsMixin(object):
 
         baseurl = '/' + version + '/meta/col1/exp1/layer1/'
         response = self.client.post(baseurl)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
         # post the same key twice
         baseurl = '/' + version + '/meta/col1/exp1/layer1/'
@@ -279,7 +279,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata without a key
         response = self.client.delete(baseurl)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
         # delete the metadata for a key that does not exist
         response = self.client.delete(baseurl + '?key=test')
@@ -295,7 +295,7 @@ class MetaServiceViewTestsMixin(object):
 
         # Update the metadata for an invalid object
         response = self.client.put(baseurl + argsget)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
         baseurl = '/' + version + '/meta/col1/exp1/layer1/'
 
