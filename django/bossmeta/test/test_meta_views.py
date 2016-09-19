@@ -305,7 +305,7 @@ class MetaServiceViewTestsMixin(object):
 
         # Update the metadata for a key that does not exist
         response = self.client.put(baseurl + '?key=test')
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
 
 # Assume there is no local DynamoDB unless the env variable set by jenkins.sh
