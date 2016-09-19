@@ -75,3 +75,4 @@ target/
 bossspatialdb/migrations
 django/bosscore/migrations
 django/bossmeta/migrations
+/django/bossingest/migrations
