@@ -16,7 +16,7 @@ import json
 from rest_framework.test import APITestCase
 from rest_framework import status
 
-from ..error import BossHTTPError, BossError, BossParserError
+from ..error import BossHTTPError, BossError, BossParserError, ErrorCodes
 
 
 class BossHTTPErrorTests(APITestCase):
@@ -26,48 +26,33 @@ class BossHTTPErrorTests(APITestCase):
         test the boss http error
         :return:
         """
-        response = BossHTTPError(404, 'UNIT TEST', 342634)
+        response = BossHTTPError('UNIT TEST', 4000)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
         response_json = json.loads(response.content.decode('utf-8'))
 
         assert response_json['message'] == 'UNIT TEST'
-        assert response_json['code'] == 342634
+        assert response_json['code'] == 4000
         assert response_json['status'] == 404
-
-    def test_bosshttperror_no_code(self):
-        """
-        test the boss http error
-        :return:
-        """
-        response = BossHTTPError(409, 'UNIT TEST')
-
-        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
-
-        response_json = json.loads(response.content.decode('utf-8'))
-
-        assert response_json['message'] == 'UNIT TEST'
-        assert response_json['code'] == 0
-        assert response_json['status'] == 409
 
 
 class TestBossError(APITestCase):
     def test_creation(self):
         with self.assertRaises(BossError):
-            raise BossError(404, "test", 10000)
+            raise BossError("test", ErrorCodes.INVALID_URL)
 
     def test_params(self):
         try:
-            raise BossError(404, "test", 10000)
+            raise BossError("test", ErrorCodes.INVALID_URL)
         except BossError as err:
-            assert err.args[0] == 404
-            assert err.args[1] == "test"
-            assert err.args[2] == 10000
+            assert err.status_code == 400
+            assert err.message == "test"
+            assert err.error_code == 1000
 
     def test_to_http(self):
         try:
-            raise BossError(404, "test", 10000)
+            raise BossError("test", 1000)
         except BossError as err:
             http_err = err.to_http()
             assert isinstance(http_err, BossHTTPError)
@@ -75,27 +60,21 @@ class TestBossError(APITestCase):
 
 class TestBossParserError(APITestCase):
     def test_creation(self):
-        err = BossParserError(404, "test", 10000)
-        assert err.args[0] == 404
-        assert err.args[1] == "test"
-        assert err.args[2] == 10000
-
-    def test_creation_no_code(self):
-        err = BossParserError(404, "test")
-        assert err.args[0] == 404
-        assert err.args[1] == "test"
-        assert err.args[2] == 0
+        err = BossParserError("test", ErrorCodes.INVALID_URL)
+        assert err.status_code == 400
+        assert err.message == "test"
+        assert err.error_code == 1000
 
     def test_to_http(self):
-        err = BossParserError(404, "test", 10000)
+        err = BossParserError("test", ErrorCodes.INVALID_URL)
         http_err = err.to_http()
         assert isinstance(http_err, BossHTTPError)
 
-        self.assertEqual(http_err.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(http_err.status_code, status.HTTP_400_BAD_REQUEST)
 
         response_json = json.loads(http_err.content.decode('utf-8'))
 
         assert response_json['message'] == 'test'
-        assert response_json['code'] == 10000
-        assert response_json['status'] == 404
+        assert response_json['code'] == 1000
+        assert response_json['status'] == 400
 

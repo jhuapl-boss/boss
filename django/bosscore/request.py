@@ -93,7 +93,7 @@ class BossRequest:
                 self.set_value(request.query_params['value'])
 
         elif 'view' in request.query_params:
-            raise BossError(404, "Views not implemented. Specify the full request", 30000)
+            raise BossError("Views not implemented. Specify the full request", ErrorCodes.FUTURE)
 
         elif service == 'tiles':
             self.validate_tile_service(webargs)
@@ -118,7 +118,7 @@ class BossRequest:
             self.check_permissions()
             self.set_boss_key()
         else:
-            raise BossError(400, "Unable to parse the url.", ErrorCodes.INVALID_URL)
+            raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
     def validate_cutout_service(self,webargs):
         """
@@ -150,7 +150,7 @@ class BossRequest:
             self.set_boss_key()
 
         else:
-            raise BossError(400, "Unable to parse the url.", ErrorCodes.INVALID_URL)
+            raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
 
     def validate_tile_service(self, webargs):
@@ -184,7 +184,7 @@ class BossRequest:
             self.set_boss_key()
 
         else:
-            raise BossError(400, "Unable to parse the url.", ErrorCodes.INVALID_URL)
+            raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
 
     def initialize_request(self, collection_name, experiment_name, channel_layer_name):
@@ -245,13 +245,11 @@ class BossRequest:
                     (self.x_start < self.coord_frame.x_start) or (self.x_stop > self.coord_frame.x_stop) or \
                     (self.y_start < self.coord_frame.y_start) or (self.y_stop > self.coord_frame.y_stop) or\
                     (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
-                raise BossError(400,
-                                "Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
+                raise BossError("Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                                 ErrorCodes.INVALID_CUTOUT_ARGS)
 
         except TypeError:
-            raise BossError(400,
-                            "Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
+            raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                             ErrorCodes.TYPE_ERROR)
 
     def set_tileargs(self, orientation, resolution, x_args, y_args, z_args):
@@ -290,7 +288,7 @@ class BossRequest:
                 y_coords = y_args.split(":")
                 z_coords = z_args.split(":")
             else:
-                raise BossError(404, "Incorrect orientation {}".format(orientation),30000)
+                raise BossError("Incorrect orientation {}".format(orientation),ErrorCodes.INVALID_URL)
 
             self.x_start = int(x_coords[0])
             self.x_stop = int(x_coords[1])
@@ -306,11 +304,10 @@ class BossRequest:
                     (self.x_start < self.coord_frame.x_start) or (self.x_stop > self.coord_frame.x_stop) or \
                     (self.y_start < self.coord_frame.y_start) or (self.y_stop > self.coord_frame.y_stop) or \
                     (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
-                raise BossError(400,
-                                "Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
+                raise BossError("Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
                                 ErrorCodes.INVALID_CUTOUT_ARGS)
         except TypeError:
-            raise BossError(404,"Type error in cutout argument{}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
+            raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
                             ErrorCodes.TYPE_ERROR)
 
     def initialize_view_request(self, webargs):
@@ -350,7 +347,7 @@ class BossRequest:
             self.collection = Collection.objects.get(name=collection_name)
             return True
         else:
-            raise BossError(404, "Collection {} not found".format(collection_name), ErrorCodes.OBJECT_NOT_FOUND)
+            raise BossError("Collection {} not found".format(collection_name), ErrorCodes.RESOURCE_NOT_FOUND)
 
     def get_collection(self):
         """
@@ -376,7 +373,7 @@ class BossRequest:
             self.experiment = Experiment.objects.get(name=experiment_name, collection=self.collection)
             self.coord_frame = self.experiment.coord_frame
         else:
-            raise BossError(404, "Experiment {} not found".format(experiment_name), ErrorCodes.OBJECT_NOT_FOUND)
+            raise BossError("Collection {} not found".format(experiment_name), ErrorCodes.RESOURCE_NOT_FOUND)
 
         return True
 
@@ -404,7 +401,7 @@ class BossRequest:
             self.channel_layer = ChannelLayer.objects.get(name=channel_layer_name, experiment=self.experiment)
             return True
         else:
-            raise BossError(404, "Channel/Layer {} not found".format(channel_layer_name), ErrorCodes.OBJECT_NOT_FOUND)
+            raise BossError("Channel/Layer {} not found".format(channel_layer_name), ErrorCodes.OBJECT_NOT_FOUND)
 
     def get_channel_layer(self):
         """
@@ -593,7 +590,7 @@ class BossRequest:
             perm = BossPermissionManager.check_resource_permissions(self.request.user, obj,
                                                                 self.request.method)
         if not perm:
-            return BossHTTPError(404, "This user does not have the required permissions", 30000)
+            return BossHTTPError( "This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
 
     def get_boss_key(self):
         """
@@ -682,16 +679,16 @@ class BossRequest:
             if tstart:
                 self.time_start = int(tstart)
                 if self.time_start > self.experiment.max_time_sample:
-                    return BossHTTPError(404, "Invalid time range {}. Start time is greater than the maximum time "
-                                              "sample {}".format(time, str(self.experiment.max_time_sample)), 30000)
+                    return BossHTTPError("Invalid time range {}. Start time is greater than the maximum time sample {}"
+                                         .format(time, str(self.experiment.max_time_sample)), ErrorCodes.INVALID_URL)
             else:
-                return BossHTTPError(404, "Unable to parse time sample argument {}".format(time), 30000)
+                return BossHTTPError("Unable to parse time sample argument {}".format(time), ErrorCodes.INVALID_URL)
             if tstop:
                 self.time_stop = int(tstop)
                 if self.time_start > self.time_stop or self.time_stop > self.experiment.max_time_sample + 1:
-                    return BossHTTPError(404, "Invalid time range {}. End time is greater than the start time "
-                                              "or out of bouds with maximum time sample {}"
-                                         .format(time, str(self.experiment.max_time_sample)), 30000)
+                    return BossHTTPError("Invalid time range {}. End time is greater than the start time or out of "
+                                         "bounds with maximum time sample {}".format
+                                         (time, str(self.experiment.max_time_sample)), ErrorCodes.INVALID_URL)
             else:
                 self.time_stop = self.time_start + 1
 

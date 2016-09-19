@@ -48,7 +48,7 @@ class CoordinateFrameUpdateSerializer(serializers.ModelSerializer):
         additional_fields = input_keys - fields_keys
 
         if bool(additional_fields):
-            self._errors['fields'] = ['Additional fields not allowed: {}.'.format(list(additional_fields))]
+            self._errors['fields'] = ['Cannot update the following readonly fields: {}.'.format(list(additional_fields))]
 
         if self._errors and raise_exception:
             raise serializers.ValidationError(self.errors)

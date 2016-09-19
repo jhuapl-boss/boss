@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 from django.db import transaction
 from django.contrib.auth.models import Group
 from django.contrib.auth.models import Permission
@@ -23,8 +22,10 @@ from rest_framework.response import Response
 
 from bosscore.models import Collection, Experiment, ChannelLayer
 from bosscore.permissions import BossPermissionManager
-from bosscore.error import BossHTTPError, BossError, BossObjectNotFoundError
+from bosscore.error import BossHTTPError, BossError, ErrorCodes, BossResourceNotFoundError,\
+    BossGroupNotFoundError, BossPermissionError
 from bosscore.privileges import check_role
+
 
 class ResourceUserPermission(APIView):
     """
@@ -57,18 +58,16 @@ class ResourceUserPermission(APIView):
                 collection_obj = Collection.objects.get(name=collection)
                 obj = Experiment.objects.get(name=experiment, collection=collection_obj)
 
-            elif collection:
-                obj = Collection.objects.get(name=collection)
             else:
-                return BossHTTPError(404, "Unable to process the request", 30000)
+                obj = Collection.objects.get(name=collection)
 
             return obj
         except Collection.DoesNotExist:
-            raise BossError(404, "Collection  with name {} is not found".format(collection), 30000)
+            raise BossError("{} does not exist".format(collection),ErrorCodes.RESOURCE_NOT_FOUND)
         except Experiment.DoesNotExist:
-            raise BossError(404, "Experiment  with name {} is not found".format(experiment), 30000)
+            raise BossError("{} does not exist".format(experiment), ErrorCodes.RESOURCE_NOT_FOUND)
         except ChannelLayer.DoesNotExist:
-            raise BossError(404, "A Channel or layer  with name {} is not found".format(channel_layer), 30000)
+            raise BossError("{} does not exist".format(channel_layer), ErrorCodes.RESOURCE_NOT_FOUND)
 
     @check_role("resource-manager")
     def get(self, request, group_name, collection, experiment=None, channel_layer=None):
@@ -91,14 +90,16 @@ class ResourceUserPermission(APIView):
         try:
 
             obj = self.get_object(collection, experiment, channel_layer)
+
             perm = BossPermissionManager.get_permissions_group(group_name, obj)
             data = {'group': group_name, 'permissions': perm}
             return Response(data, status=status.HTTP_201_CREATED, content_type='application/json')
 
         except Group.DoesNotExist:
-            return BossObjectNotFoundError(group_name)
+            return BossGroupNotFoundError(group_name)
         except Permission.DoesNotExist:
-            return BossHTTPError(404, "Invalid permissions in post".format(request.data['permissions']), 30000)
+            return BossHTTPError("Invalid permissions in post".format(request.data['permissions']),
+                                 ErrorCodes.UNRECOGNIZED_PERMISSION)
         except BossError as err:
             return err.to_http()
 
@@ -120,29 +121,25 @@ class ResourceUserPermission(APIView):
             Http status code
 
         """
-        # print(request.data)
-        # perm = request.data.copy()
-        # perm = dict(perm)
-        # print(type(perm['permissions']))
-
         if 'permissions' not in request.data:
-            return BossHTTPError(404, "Permission are not included in the request", 30000)
+            return BossHTTPError("Permission are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
         else:
             perm_list = dict(request.data)['permissions']
 
         try:
             obj = self.get_object(collection, experiment, channel_layer)
+
             if request.user.has_perm("assign_group", obj):
                 BossPermissionManager.add_permissions_group(group_name, obj, perm_list)
                 return Response(status=status.HTTP_201_CREATED)
             else:
-                return BossHTTPError(404, "The user {} needs the 'assign group' permission for this request".
-                                     format(request.user), 30000)
+                return BossPermissionError('assign group', collection)
 
         except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
+            return BossGroupNotFoundError(group_name)
         except Permission.DoesNotExist:
-            return BossHTTPError(404, "Invalid permissions in post".format(request.data['permissions']), 30000)
+            return BossHTTPError("Invalid permissions in post".format(request.data['permissions']),
+                                 ErrorCodes.UNRECOGNIZED_PERMISSION)
         except BossError as err:
             return err.to_http()
 
@@ -164,7 +161,7 @@ class ResourceUserPermission(APIView):
 
         """
         if 'permissions' not in request.data:
-            return BossHTTPError(404, "Permission are not included in the request", 30000)
+            return BossHTTPError("Permission are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
         else:
             perm_list = dict(request.data)['permissions']
 
@@ -174,12 +171,12 @@ class ResourceUserPermission(APIView):
                 BossPermissionManager.delete_permissions_group(group_name, obj, perm_list)
                 return Response(status=status.HTTP_200_OK)
             else:
-                return BossHTTPError(404, "The user {} needs the 'remove group' permission for this request".
-                                     format(request.user), 30000)
+                return BossPermissionError('remove group', obj.name)
 
         except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
+            return BossGroupNotFoundError(group_name)
         except Permission.DoesNotExist:
-            return BossHTTPError(404, "Invalid permissions in post".format(request.data['permissions']), 30000)
+            return BossHTTPError("Invalid permissions in post".format(request.data['permissions']),
+                                 ErrorCodes.UNRECOGNIZED_PERMISSION)
         except BossError as err:
             return err.to_http()

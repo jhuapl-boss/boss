@@ -22,7 +22,7 @@ from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
 from functools import wraps
 
-from bosscore.error import BossHTTPError, BossPermissionError, BossObjectNotFoundError
+from bosscore.error import BossHTTPError, BossPermissionError, BossResourceNotFoundError, ErrorCodes
 from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
@@ -58,7 +58,7 @@ class CollectionDetail(APIView):
             else:
                 return BossPermissionError('read', collection)
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -91,7 +91,7 @@ class CollectionDetail(APIView):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+            return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
 
     @transaction.atomic
     def put(self, request, collection):
@@ -121,11 +121,11 @@ class CollectionDetail(APIView):
 
                     return Response(serializer.data)
                 else:
-                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+                    return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
             else:
                 return BossPermissionError('update', collection)
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -154,10 +154,10 @@ class CollectionDetail(APIView):
             else:
                 return BossPermissionError('delete', collection)
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except ProtectedError:
-            return BossHTTPError(404, "Cannot delete {}. It has experiments that reference it.".format(collection),
-                                 30000)
+            return BossHTTPError("Cannot delete {}. It has experiments that reference it.".format(collection),
+                                 ErrorCodes.INTEGRITY_ERROR)
 
 
 class CoordinateFrameDetail(APIView):
@@ -180,7 +180,7 @@ class CoordinateFrameDetail(APIView):
             serializer = CoordinateFrameSerializer(coordframe_obj)
             return Response(serializer.data)
         except CoordinateFrame.DoesNotExist:
-            return BossObjectNotFoundError(coordframe)
+            return BossResourceNotFoundError(coordframe)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -208,7 +208,7 @@ class CoordinateFrameDetail(APIView):
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
-            return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+            return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
 
     @transaction.atomic
     def put(self, request, coordframe):
@@ -231,11 +231,11 @@ class CoordinateFrameDetail(APIView):
                     serializer.save()
                     return Response(serializer.data)
                 else:
-                    return BossHTTPError(405, "{}".format(serializer.errors), 30000)
+                    return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
             else:
                 return BossPermissionError('update', coordframe)
         except CoordinateFrame.DoesNotExist:
-            return BossObjectNotFoundError(coordframe)
+            return BossResourceNotFoundError(coordframe)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -256,10 +256,10 @@ class CoordinateFrameDetail(APIView):
             else:
                 return BossPermissionError('delete', coordframe)
         except CoordinateFrame.DoesNotExist:
-            return BossObjectNotFoundError(coordframe)
+            return BossResourceNotFoundError(coordframe)
         except ProtectedError:
-            return BossHTTPError(404, "Cannot delete {}. It has experiments that reference it.".format(coordframe),
-                                 30000)
+            return BossHTTPError("Cannot delete {}. It has experiments that reference it.".format(coordframe),
+                                 ErrorCodes.INTEGRITY_ERROR)
 
 
 class ExperimentDetail(APIView):
@@ -288,9 +288,9 @@ class ExperimentDetail(APIView):
             else:
                 return BossPermissionError('read', experiment)
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossObjectNotFoundError(experiment)
+            return BossResourceNotFoundError(experiment)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -329,14 +329,14 @@ class ExperimentDetail(APIView):
 
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
                 else:
-                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+                    return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
             else:
                 return BossPermissionError('add', collection)
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except ValueError:
-            return BossHTTPError(404, "Value Error.Collection id {} in post data needs to "
-                                      "be an integer".format(experiment_data['collection']), 30000)
+            return BossHTTPError("Value Error.Collection id {} in post data needs to "
+                                      "be an integer".format(experiment_data['collection']), ErrorCodes.TYPE_ERROR)
 
     @transaction.atomic
     def put(self, request, collection, experiment):
@@ -368,14 +368,14 @@ class ExperimentDetail(APIView):
 
                     return Response(serializer.data)
                 else:
-                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+                    return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
             else:
                 return BossPermissionError('update', experiment)
 
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossObjectNotFoundError(experiment)
+            return BossResourceNotFoundError(experiment)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -406,12 +406,12 @@ class ExperimentDetail(APIView):
             else:
                 return BossPermissionError('delete', experiment)
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossObjectNotFoundError(experiment)
+            return BossResourceNotFoundError(experiment)
         except ProtectedError:
-            return BossHTTPError(404, "Cannot delete {}. It has channels or layers that reference "
-                                      "it.".format(experiment), 30000)
+            return BossHTTPError("Cannot delete {}. It has channels or layers that reference "
+                                      "it.".format(experiment), ErrorCodes.INTEGRITY_ERROR)
 
 
 class ChannelLayerDetail(APIView):
@@ -442,7 +442,7 @@ class ChannelLayerDetail(APIView):
         elif value == "false" or value == "False":
             return False
         else:
-            return BossHTTPError(404, "Value Error in post data", 30000)
+            return BossHTTPError("Value Error in post data", ErrorCodes.TYPE_ERROR)
 
     def get(self, request, collection, experiment, channel_layer):
         """
@@ -469,13 +469,13 @@ class ChannelLayerDetail(APIView):
                 return BossPermissionError('read', channel_layer)
 
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossObjectNotFoundError(experiment)
+            return BossResourceNotFoundError(experiment)
         except ChannelLayer.DoesNotExist:
-            return BossObjectNotFoundError(channel_layer)
+            return BossResourceNotFoundError(channel_layer)
         except ValueError:
-            return BossHTTPError(404, "Value Error in post data", 30000)
+            return BossHTTPError("Value Error in post data", ErrorCodes.TYPE_ERROR)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -509,7 +509,8 @@ class ChannelLayerDetail(APIView):
 
                 # layers require at least 1 channel
                 if (channel_layer_data['is_channel'] is False) and (len(channels) == 0):
-                    return BossHTTPError(404, "{Invalid Request.Please specify a valid channel for the layer}", 30000)
+                    return BossHTTPError("Invalid Request.Please specify a valid channel for the layer",
+                                         ErrorCodes.INVALID_POST_ARGUMENT)
 
                 serializer = ChannelLayerSerializer(data=channel_layer_data)
                 if serializer.is_valid():
@@ -540,17 +541,17 @@ class ChannelLayerDetail(APIView):
 
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
                 else:
-                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+                    return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
             else:
                 return BossPermissionError('add', experiment)
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossObjectNotFoundError(experiment)
+            return BossResourceNotFoundError(experiment)
         except ChannelLayer.DoesNotExist:
-            return BossObjectNotFoundError(channel_layer)
+            return BossResourceNotFoundError(channel_layer)
         except ValueError:
-            return BossHTTPError(404, "Value Error in post data", 30000)
+            return BossHTTPError("Value Error in post data", ErrorCodes.TYPE_ERROR)
 
     @transaction.atomic
     def put(self, request, collection, experiment, channel_layer):
@@ -588,16 +589,16 @@ class ChannelLayerDetail(APIView):
 
                     return Response(serializer.data)
                 else:
-                    return BossHTTPError(404, "{}".format(serializer.errors), 30000)
+                    return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
             else:
                 return BossPermissionError('update', channel_layer)
 
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossObjectNotFoundError(experiment)
+            return BossResourceNotFoundError(experiment)
         except ChannelLayer.DoesNotExist:
-            return BossObjectNotFoundError(channel_layer)
+            return BossResourceNotFoundError(channel_layer)
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -628,13 +629,14 @@ class ChannelLayerDetail(APIView):
                 return BossPermissionError('delete', channel_layer)
 
         except Collection.DoesNotExist:
-            return BossObjectNotFoundError(collection)
+            return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
-            return BossObjectNotFoundError(experiment)
+            return BossResourceNotFoundError(experiment)
         except ChannelLayer.DoesNotExist:
-            return BossObjectNotFoundError(channel_layer)
+            return BossResourceNotFoundError(channel_layer)
         except ProtectedError:
-            return BossHTTPError(404, "Cannot delete {}. It has layers that reference it.".format(channel_layer), 30000)
+            return BossHTTPError("Cannot delete {}. It has layers that reference it.".format(channel_layer),
+                                 ErrorCodes.INTEGRITY_ERROR)
 
 
 class CollectionList(generics.ListAPIView):

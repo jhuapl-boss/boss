@@ -24,22 +24,61 @@ class ErrorCodes(IntEnum):
     # Url Validation
     INVALID_URL = 1000
     INVALID_CUTOUT_ARGS = 1001
-    TYPE_ERROR =1002
+    TYPE_ERROR = 1002
+    INVALID_POST_ARGUMENT = 1003
 
-    # Privileges
-    MISSING_PRIVILEGE = 2000
+    # Forbidden
+    MISSING_ROLE = 2000
 
-    # Permissions
+    # Unauthorized
     MISSING_PERMISSION = 3000
+    UNRECOGNIZED_PERMISSION = 3001
 
-    # Object Not Found
-    OBJECT_NOT_FOUND = 4000
+    # Database errors
+    RESOURCE_NOT_FOUND = 4000
+    GROUP_NOT_FOUND = 4001
+    USER_NOT_FOUND = 4002
+    INTEGRITY_ERROR = 4003
 
     # IO Errors
     IO_ERROR = 5000
     UNSUPPORTED_TRANSPORT_FORMAT = 5001
     SERIALIZATION_ERROR = 5002
     DESERIALIZATION_ERROR = 5003
+
+    # Already exists
+    GROUP_EXISTS = 6001
+    RESOURCE_EXISTS = 6002
+
+
+
+    # TO BE IMPLEMENTED
+    FUTURE = 9000
+
+
+RESP_CODES = {
+
+    ErrorCodes.INVALID_URL: 400,
+    ErrorCodes.INVALID_CUTOUT_ARGS: 400,
+    ErrorCodes.TYPE_ERROR: 400,
+    ErrorCodes.INVALID_POST_ARGUMENT: 400,
+    ErrorCodes.MISSING_ROLE: 403,
+    ErrorCodes.MISSING_PERMISSION: 403,
+    ErrorCodes.UNRECOGNIZED_PERMISSION: 404,
+    ErrorCodes.RESOURCE_NOT_FOUND: 404,
+    ErrorCodes.GROUP_NOT_FOUND: 404,
+    ErrorCodes.USER_NOT_FOUND: 404,
+    ErrorCodes.INTEGRITY_ERROR : 404,
+    ErrorCodes.IO_ERROR: 404,
+    ErrorCodes.UNSUPPORTED_TRANSPORT_FORMAT: 404,
+    ErrorCodes.SERIALIZATION_ERROR: 404,
+    ErrorCodes.DESERIALIZATION_ERROR: 404,
+    ErrorCodes.GROUP_EXISTS: 404,
+    ErrorCodes.RESOURCE_EXISTS: 404,
+
+    ErrorCodes.FUTURE: 404
+
+}
 
 
 class BossError(Exception):
@@ -54,24 +93,28 @@ class BossError(Exception):
 
     def __init__(self, *args):
         """
-        Custom HTTP error class
+        Custom error class
         :param args: A tuple of (http_status_code, message, error_code)
         :return:
         """
         # Set status code
-        self.args = args
+        if args[1] in RESP_CODES:
+            self.status_code = RESP_CODES[args[1]]
+        else:
+            self.status_code = 400
 
-        if len(args) == 2:
-            temp = list(args)
-            temp.append(0)
-            self.args = tuple(temp)
+        self.message = args[0]
+        self.error_code = args[1]
+
+
 
     def to_http(self):
         """
         Convert error to an HTTP error so you can return to the user if in a view
         :return: bosscore.error.BossHTTPError
         """
-        return BossHTTPError(self.args[0], self.args[1], self.args[2])
+        return BossHTTPError(self.message, self.error_code)
+
 
 
 class BossParserError(object):
@@ -98,19 +141,21 @@ class BossParserError(object):
         :return:
         """
         # Set status code
-        self.args = args
+        if args[1] in RESP_CODES:
+            self.status_code = RESP_CODES[args[1]]
+        else:
+            self.status_code = 400
 
-        if len(args) == 2:
-            temp = list(args)
-            temp.append(0)
-            self.args = tuple(temp)
+        self.message = args[0]
+        self.error_code = args[1]
+
 
     def to_http(self):
         """
         Convert error to an HTTP error so you can return to the user if in a view
         :return: bosscore.error.BossHTTPError
         """
-        return BossHTTPError(self.args[0], self.args[1], self.args[2])
+        return BossHTTPError(self.message, self.error_code)
 
 
 class BossHTTPError(JsonResponse):
@@ -123,7 +168,7 @@ class BossHTTPError(JsonResponse):
 
     """
 
-    def __init__(self, status, message, code=0):
+    def __init__(self, message, code):
         """
         Custom HTTP error class
         :param status: HTTP Status code
@@ -134,17 +179,59 @@ class BossHTTPError(JsonResponse):
         :return:
         """
         # Set status code
-        self.status_code = status
+        self.status_code = RESP_CODES[code]
 
         # Log
         blog = BossLogger().logger
-        blog.info("BossHTTPError - Status: {0} - Code: {1} - Message: {2}".format(status, code, message))
+        blog.info("BossHTTPError - Status: {0} - Code: {1} - Message: {2}".format(self.status_code, code, message))
 
         # Return
-        data = {'status': status, 'code': code, 'message': message}
+        data = {'status': self.status_code, 'code': code, 'message': message}
         super(BossHTTPError, self).__init__(data)
-     
-        
+
+
+
+
+class BossResourceNotFoundError(BossHTTPError):
+    """
+    Custom HTTP Error class for Object not found errors
+    """
+
+    def __init__(self, object):
+        """
+        Custom HTTP Error class for object not found errors
+        Args:
+            object (str): Name of resource/object that user is trying to access/manipulate
+        """
+        super(BossResourceNotFoundError, self).__init__("{} does not exist.".format(object), ErrorCodes.RESOURCE_NOT_FOUND)
+
+class BossUserNotFoundError(BossHTTPError):
+    """
+    Custom HTTP Error class for Object not found errors
+    """
+
+    def __init__(self, object):
+        """
+        Custom HTTP Error class for object not found errors
+        Args:
+            object (str): Name of resource/object that user is trying to access/manipulate
+        """
+        super(BossUserNotFoundError, self).__init__("{} does not exist. Ensure that the user has logged in"
+                                                    .format(object), ErrorCodes.USER_NOT_FOUND)
+
+class BossGroupNotFoundError(BossHTTPError):
+    """
+    Custom HTTP Error class for Object not found errors
+    """
+
+    def __init__(self, object):
+        """
+        Custom HTTP Error class for object not found errors
+        Args:
+            object (str): Name of resource/object that user is trying to access/manipulate
+        """
+        super(BossGroupNotFoundError, self).__init__("{} does not exist.".format(object), ErrorCodes.GROUP_NOT_FOUND)
+
 
 class BossPermissionError(BossHTTPError):
     """
@@ -159,26 +246,10 @@ class BossPermissionError(BossHTTPError):
             permission (str): Name of missing permission that caused the error
             object (str): Name of resource that user is trying to access/manipulate
         """
-        super(BossPermissionError, self).__init__(403,
-                                                  "Missing {} permissions on the resource {}".format(permission,
-                                                                                                     object),
+        super(BossPermissionError, self).__init__("Missing {} permissions on the resource {}".format(permission,object),
                                                   ErrorCodes.MISSING_PERMISSION)
 
 
-class BossObjectNotFoundError(BossHTTPError):
-    """
-    Custom HTTP Error class for Object not found errors
-
-    """
-
-    def __init__(self, object):
-        """
-        Custom HTTP Error class for object not found errors
-        Args:
-            object (str): Name of resource/object that user is trying to access/manipulate
-        """
-        super(BossObjectNotFoundError, self).__init__(404, "{} does not exist.".format(object),
-                                                      ErrorCodes.OBJECT_NOT_FOUND)
 
 
 class BossRestArgsError(BossHTTPError):
@@ -193,7 +264,8 @@ class BossRestArgsError(BossHTTPError):
         Args:
             object (str): Name of resource/object that user is trying to access/manipulate
         """
-        super(BossRestArgsError, self).__init__(400, "Invalid {} arguments in request {}.".format(service, args),
-                                                      ErrorCodes.INVALID_URL)
+        super(BossRestArgsError, self).__init__(RESP_CODES[ErrorCodes.INVALID_URL],
+                                                "Invalid {} arguments in request {}.".format(service, args),
+                                                ErrorCodes.INVALID_URL)
 
 

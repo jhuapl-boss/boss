@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 
 from bosscore.privileges import check_role
-from bosscore.error import BossHTTPError
+from bosscore.error import BossHTTPError, ErrorCodes, BossGroupNotFoundError, BossUserNotFoundError
 from bosscore.serializers import GroupSerializer, UserSerializer
 
 
@@ -57,9 +57,9 @@ class BossGroupMember(APIView):
                 return Response(serializer.data, status=200)
 
         except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
+            return BossGroupNotFoundError(group_name)
         except User.DoesNotExist:
-            return BossHTTPError(404, "User {} not found".format(user_name), 30000)
+            return BossUserNotFoundError(user_name)
 
     @check_role("resource-manager")
     def post(self, request, group_name, user_name):
@@ -80,9 +80,9 @@ class BossGroupMember(APIView):
             return HttpResponse(status=201)
 
         except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
+            return BossGroupNotFoundError(group_name)
         except User.DoesNotExist:
-            return BossHTTPError(404, "User {} not found".format(user_name), 30000)
+            return BossUserNotFoundError(user_name)
 
     @check_role("resource-manager")
     def delete(self, request, group_name, user_name):
@@ -103,9 +103,9 @@ class BossGroupMember(APIView):
             return HttpResponse(status=204)
 
         except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
+            return BossGroupNotFoundError(group_name)
         except User.DoesNotExist:
-            return BossHTTPError(404, "User {} not found".format(user_name), 30000)
+            return BossUserNotFoundError(user_name)
 
 
 class BossGroup(APIView):
@@ -141,7 +141,7 @@ class BossGroup(APIView):
         """
         group, created = Group.objects.get_or_create(name=group_name)
         if not created:
-            return BossHTTPError(404, "A group  with name {} already exist".format(group_name), 30000)
+            return BossHTTPError("A group  with name {} already exist".format(group_name), ErrorCodes.GROUP_EXISTS)
         return Response(status=201)
 
     @check_role("resource-manager")
@@ -161,4 +161,4 @@ class BossGroup(APIView):
             return Response(status=204)
 
         except Group.DoesNotExist:
-            return BossHTTPError(404, "A group  with name {} is not found".format(group_name), 30000)
+            return BossGroupNotFoundError(group_name)

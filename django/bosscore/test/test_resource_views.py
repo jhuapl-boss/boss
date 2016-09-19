@@ -82,7 +82,7 @@ class ResourceViewsCollectionTests(APITestCase):
 
         # Get an existing collection
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_post_collection_no_data(self):
         """
@@ -284,7 +284,7 @@ class ResourceViewsExperimentTests(APITestCase):
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
 
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_post_experiment_no_data(self):
         """
@@ -294,7 +294,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/resource/col1/exp2'
         response = self.client.post(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_put_experiment_exists(self):
         """
@@ -471,7 +471,7 @@ class ResourceViewsCoordinateTests(APITestCase):
 
         # Get an existing collection
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_put_coorddinateframe_exists(self):
         """
@@ -496,7 +496,7 @@ class ResourceViewsCoordinateTests(APITestCase):
 
         # Update an existing coordinate frame
         response = self.client.put(url, data=data)
-        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.status_code, 400)
 
     def test_put_coordinateframe_doesnotexist(self):
         """
@@ -639,7 +639,7 @@ class ResourceViewsChannelTests(APITestCase):
         url = '/' + version + '/resource/col1/exp1/channel1/'
         data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_put_channel(self):
         """
@@ -817,7 +817,7 @@ class ResourceViewsLayerTests(APITestCase):
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8'}
 
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_post_layer_invalid_channel_ids(self):
         """
@@ -842,7 +842,7 @@ class ResourceViewsLayerTests(APITestCase):
         # Post a new channel
         url = '/' + version + '/resource/col1/exp1/layer10/'
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
-                'channels': ['bad id', 'another bad id']}
+                'channels': ['200', '201']}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
@@ -892,7 +892,7 @@ class ResourceViewsLayerTests(APITestCase):
         data = {'description': 'This is a new layer', 'is_channel': False, 'datatype': 'uint8',
                 'channels': [channel_id1, channel_id2]}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_put_layer(self):
         """

@@ -16,7 +16,7 @@ from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 
 from guardian.shortcuts import assign_perm, get_perms, remove_perm
-from .error import BossHTTPError
+from .error import BossHTTPError, ErrorCodes
 
 
 class BossPermissionManager:
@@ -189,7 +189,7 @@ class BossPermissionManager:
         elif method_type == 'DELETE':
             permission = 'delete_volumetric_data'
         else:
-            return BossHTTPError(404, "Unable to get permissions for this request", 30000)
+            return BossHTTPError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
 
         if permission in get_perms(user, obj):
             return True
