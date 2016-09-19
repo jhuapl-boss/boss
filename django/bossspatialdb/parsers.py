@@ -19,7 +19,7 @@ import blosc
 import numpy as np
 
 from bosscore.request import BossRequest
-from bosscore.error import BossParserError, BossError
+from bosscore.error import BossParserError, BossError, ErrorCodes
 
 import spdb
 
@@ -54,20 +54,22 @@ class BloscParser(BaseParser):
         try:
             bit_depth = resource.get_bit_depth()
         except ValueError:
-            return BossParserError(400, "Unsupported data type provided to parser: {}".format(resource.get_data_type()))
+            return BossParserError("Unsupported data type provided to parser: {}".format(resource.get_data_type()),
+                                   ErrorCodes.TYPE_ERROR)
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
         total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth / 8
         if total_bytes > settings.CUTOUT_MAX_SIZE:
-            return BossParserError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
+            return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+                                   ErrorCodes.REQUEST_TOO_LARGE)
 
         try:
             # Decompress
             raw_data = blosc.decompress(stream.read())
             data_mat = np.fromstring(raw_data, dtype=resource.get_numpy_data_type())
         except:
-            return BossParserError(400, "Failed to decompress data. Verify the datatype/bitdepth of your data "
-                                        "matches the channel/layer.")
+            return BossParserError("Failed to decompress data. Verify the datatype/bitdepth of your data "
+                                        "matches the channel/layer.", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Reshape and return
         try:
@@ -78,8 +80,8 @@ class BloscParser(BaseParser):
             else:
                 return np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
         except ValueError:
-            return BossParserError(400, "Failed to unpack data. Verify the datatype of your POSTed data and "
-                                   "xyz dimensions used in the POST URL.")
+            return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
+                                   "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
 
 
 class BloscPythonParser(BaseParser):
@@ -111,18 +113,19 @@ class BloscPythonParser(BaseParser):
         try:
             bit_depth = resource.get_bit_depth()
         except ValueError:
-            return BossParserError(400,
-                                   "Unsupported data type provided to parser: {}".format(resource.get_data_type()))
+            return BossParserError("Unsupported data type provided to parser: {}".format(resource.get_data_type()),
+                                   ErrorCodes.TYPE_ERROR)
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
         total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth / 8
         if total_bytes > settings.CUTOUT_MAX_SIZE:
-            return BossParserError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
+            return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+                                   ErrorCodes.REQUEST_TOO_LARGE)
 
         # Decompress and return
         try:
             return blosc.unpack_array(stream.read())
         except EOFError:
-            return BossParserError(400, "Failed to unpack data. Verify the datatype of your POSTed data and "
-                                   "xyz dimensions used in the POST URL.")
+            return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
+                                   "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
 
