@@ -64,7 +64,6 @@ INSTALLED_APPS = [
     'bosscore',
     'bossmeta',
     'bossspatialdb',
-    'bossingest',
     'rest_framework_swagger',
     'guardian'
 ]

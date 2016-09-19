@@ -40,7 +40,6 @@ urlpatterns = [
     url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^ping/', views.Ping.as_view()),
     url(r'^token/', views.Token.as_view()),
-    url(r'^ingest/', include('bossingest.urls', namespace='ingest')),
 
     # API version 0.3
     url(r'^v0.3/cutout/', include('bossspatialdb.urls', namespace='v0.3')),
