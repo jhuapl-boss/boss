@@ -149,7 +149,7 @@ class Cutout(APIView):
 
         if expected_shape != request.data.shape:
             return BossHTTPError("Data dimensions in URL do not match POSTed data.",
-                                 ErrorCodes.DATA_DIMENSIONS_MISMATCH)
+                                 ErrorCodes.DATA_DIMENSION_MISMATCH)
 
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
