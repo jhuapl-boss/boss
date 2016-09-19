@@ -150,36 +150,3 @@ class BossCoreGroupRoutingTests(APITestCase):
         match = resolve('/' + version + '/group-member/test/')
         self.assertEqual(match.func.__name__, BossGroupMember.as_view().__name__)
 
-class BossCoreUserRoutingTests(APITestCase):
-
-    def test_user_resolves(self):
-        """
-        Test that all group urls resolves correctly
-
-        Returns: None
-
-        """
-
-        match = resolve('/' + version + '/user/test-user/')
-        self.assertEqual(match.func.__name__, BossUser.as_view().__name__)
-
-        match = resolve('/' + version + '/user/test-user/groups')
-        self.assertEqual(match.func.__name__, BossUserGroups.as_view().__name__)
-
-    def test_user_role_resolves(self):
-        """
-        Test that all group_member urls for experiments resolves correctly
-
-        Returns: None
-
-        """
-
-        match = resolve('/' + version + '/user-role/test/user-manager/')
-        self.assertEqual(match.func.__name__, BossUserRole.as_view().__name__)
-
-        match = resolve('/' + version + '/user-role/test/')
-        self.assertEqual(match.func.__name__, BossUserRole.as_view().__name__)
-
-
-
-

@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'bosscore',
     'bossmeta',
     'bossspatialdb',
+    'sso',
     'rest_framework_swagger',
     'guardian'
 ]
@@ -141,7 +142,7 @@ REST_FRAMEWORK = {
 
 }
 # Version that unit tests are being run against
-BOSS_VERSION = 'v0.5'
+BOSS_VERSION = 'v0.6'
 # Maximum number of bytes in an uncompressed matrix supported by the Cutout Service
 CUTOUT_MAX_SIZE = 10 ** 9
 

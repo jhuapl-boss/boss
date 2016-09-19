@@ -60,6 +60,18 @@ urlpatterns = [
     url(r'^v0.5/user/', include('bosscore.urls.user-urls', namespace='v0.5')),
     url(r'^v0.5/user-role/', include('bosscore.urls.user-role-urls', namespace='v0.5')),
 
+    # API version 0.6
+    url(r'^v0.6/meta/', include('bossmeta.urls', namespace='v0.6')),
+    url(r'^v0.6/resource/', include('bosscore.urls.resource_urls', namespace='v0.6')),
+    url(r'^v0.6/permission/', include('bosscore.urls.permission-urls', namespace='v0.6')),
+    url(r'^v0.6/group/', include('bosscore.urls.group-urls', namespace='v0.6')),
+    url(r'^v0.6/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.6')),
+    url(r'^v0.6/cutout/', include('bossspatialdb.urls', namespace='v0.6')),
+    url(r'^v0.6/tiles/', include('bosstiles.urls', namespace='v0.6')),
+    url(r'^v0.6/sso/user/', include('sso.urls.user-urls', namespace='v0.6')),
+    url(r'^v0.6/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.6')),
+
+
 ]
 
 if 'djangooidc' in settings.INSTALLED_APPS:
