@@ -401,7 +401,7 @@ class BossRequest:
             self.channel_layer = ChannelLayer.objects.get(name=channel_layer_name, experiment=self.experiment)
             return True
         else:
-            raise BossError("Channel/Layer {} not found".format(channel_layer_name), ErrorCodes.OBJECT_NOT_FOUND)
+            raise BossError("Channel/Layer {} not found".format(channel_layer_name), ErrorCodes.RESOURCE_NOT_FOUND)
 
     def get_channel_layer(self):
         """
@@ -566,7 +566,7 @@ class BossRequest:
         elif self.collection and self.core_service:
             self.base_boss_key = self.collection.name
         else:
-            return BossHTTPError(404, "Error creating the boss key", 30000)
+            return BossHTTPError("Error creating the boss key", ErrorCodes.UNABLE_TO_VALIDATE)
 
     def check_permissions(self):
         """ Set the base boss key for the request
@@ -586,7 +586,8 @@ class BossRequest:
             elif self.collection:
                 obj = self.collection
             else:
-                return BossHTTPError(404, "Error encountered while checking permissions for this request", 30000)
+                return BossHTTPError("Error encountered while checking permissions for this request",
+                                     ErrorCodes.UNABLE_TO_VALIDATE)
             perm = BossPermissionManager.check_resource_permissions(self.request.user, obj,
                                                                 self.request.method)
         if not perm:
