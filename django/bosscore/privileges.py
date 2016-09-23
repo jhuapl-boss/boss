@@ -13,7 +13,7 @@
 # limitations under the License.
 from django.contrib.auth.models import User
 from functools import wraps
-from bosscore.error import BossHTTPError
+from bosscore.error import BossHTTPError, ErrorCodes
 from bosscore.serializers import BossRoleSerializer
 from .models import BossRole
 from bossutils.keycloak import KeyCloakClient
@@ -37,7 +37,7 @@ def load_user_roles(user, roles):
             if serializer.is_valid():
                 serializer.save()
             else:
-                return BossHTTPError(404, "Invalid role {}".format(role), 30000)
+                return BossHTTPError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
 
 # Decorators to check that the user has the right role
 def check_role(role_name):
@@ -56,8 +56,8 @@ def check_role(role_name):
             if check_role:
                 bpm = BossPrivilegeManager(self.request.user)
                 if not bpm.has_role(role_name) and not bpm.has_role('admin'):
-                    return BossHTTPError(403, "{} does not have the required role {}"
-                                         .format(self.request.user, role_name), 30000)
+                    return BossHTTPError("{} does not have the required role {}"
+                                         .format(self.request.user, role_name), ErrorCodes.MISSING_ROLE)
             return func(self, *args, **kwargs)
 
         return wrapped
