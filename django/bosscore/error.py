@@ -15,6 +15,7 @@
 from django.http import JsonResponse
 from bossutils.logger import BossLogger
 from enum import IntEnum
+import sys
 
 
 class ErrorCodes(IntEnum):
@@ -202,18 +203,37 @@ class BossHTTPError(JsonResponse):
         data = {'status': self.status_code, 'code': code, 'message': message}
         super(BossHTTPError, self).__init__(data)
 
-class BossKeycloakError(BossHTTPError):
-    def __init__(self, message, ex = None):
-        txt = ". Inner Message: "
-        try: # Assume json formatted data
-            message += txt + json.dumps(json.loads(ex.response.text))
-        except:
-            try: # Try just adding raw response
-                message += txt + ex.response.text
-            except:
-                pass
+class BossKeycloakError(JsonResponse):
+    def __init__(self, message):
+        """
+        Custom HTTP error class for converting a KeyCloakError exception into a JsonResponse
 
-        super(BossKeycloakError, self).__init__(message, ErrorCodes.KEYCLOAK_EXCEPTION)
+        Args:
+            message (str): Error message to send back to user
+
+        Note: If called in an exception handler, expects the exception to be a KeyCloakError
+        """
+
+        ex = sys.exc_info()[1]
+
+        self.status_code = ex.status_code if ex else RESP_CODES[code]
+        data = {
+            'status': self.status_code,
+            'code': ErrorCodes.KEYCLOAK_EXCEPTION,
+            'message': message
+        }
+
+        if ex:
+            data.update(ex.data)
+
+        msg = "BossKeycloakError"
+        for k in data:
+            msg += " - {}: {}".format(k.capitalize(), data[k])
+
+        log = BossLogger().logger
+        log.info(msg)
+
+        super(BossKeycloakError, self).__init__(data)
 
 
 class BossResourceNotFoundError(BossHTTPError):

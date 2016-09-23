@@ -78,9 +78,9 @@ class BossUser(APIView):
                 roles = kc.get_realm_roles(user_name)
                 response["realmRoles"] = filter_roles([r['name'] for r in roles])
                 return Response(response, status=200)
-        except Exception as e:
+        except KeyCloakError:
             msg = "Error getting user '{}' from Keycloak".format(user_name)
-            return BossKeycloakError(msg, e)
+            return BossKeycloakError(msg)
 
     @check_role("user-manager")
     def post(self, request, user_name):
@@ -124,7 +124,7 @@ class BossUser(APIView):
                 kc.reset_password(user_name, data)
 
                 return Response(status=201)
-        except Exception as e:
+        except KeyCloakError:
             # cleanup created objects
             if True in [user_created]:
                 try:
@@ -138,7 +138,7 @@ class BossUser(APIView):
                     LOG.exception("Error communicating with Keycloak to delete created user and primary group")
 
             msg = "Error addng user '{}' to Keycloak".format(user_name)
-            return BossKeycloakError(msg, e)
+            return BossKeycloakError(msg)
 
     @check_role("user-manager")
     def delete(self, request, user_name):
@@ -157,9 +157,9 @@ class BossUser(APIView):
                 kc.delete_user(user_name)
 
             return Response(status=204)
-        except Exception as e:
+        except KeyCloakError:
             msg = "Error deleting user '{}' from Keycloak".format(user_name)
-            return BossKeycloakError(msg, e)
+            return BossKeycloakError(msg)
 
 class BossUserRole(APIView):
     """
@@ -195,9 +195,9 @@ class BossUserRole(APIView):
                     exists = role_name in roles
                     return Response(exists, status=200)
 
-        except Exception as e:
+        except KeyCloakError:
             msg = "Error getting user '{}' role's from Keycloak".format(user_name)
-            return BossKeycloakError(msg, e)
+            return BossKeycloakError(msg)
 
     @check_role("user-manager")
     @validate_role(3)
@@ -218,9 +218,9 @@ class BossUserRole(APIView):
                 response = kc.map_role_to_user(user_name, role_name)
                 return Response(status=201)
 
-        except Exception as e:
+        except KeyCloakError:
             msg = "Unable to map role '{}' to user '{}' in Keycloak".format(role_name, user_name)
-            return BossKeycloakError(msg, e)
+            return BossKeycloakError(msg)
 
     @check_role("user-manager")
     @validate_role(3)
@@ -241,6 +241,6 @@ class BossUserRole(APIView):
                 response = kc.remove_role_from_user(user_name, role_name)
                 return Response(status=204)
 
-        except Exception as e:
+        except KeyCloakError:
             msg = "Unable to remove role '{}' from user '{}' in Keycloak".format(role_name, user_name)
-            return BossKeycloakError(msg, e)
+            return BossKeycloakError(msg)
