@@ -54,6 +54,10 @@ class ErrorCodes(IntEnum):
     GROUP_EXISTS = 6001
     RESOURCE_EXISTS = 6002
 
+    # SSO Errors
+    KEYCLOAK_EXCEPTION = 7001
+    INVALID_ROLE = 7002
+
     # TO BE IMPLEMENTED
     FUTURE = 9000
     BOSS_SYSTEM_ERROR = 9001
@@ -82,6 +86,8 @@ RESP_CODES = {
     ErrorCodes.DESERIALIZATION_ERROR: 404,
     ErrorCodes.GROUP_EXISTS: 404,
     ErrorCodes.RESOURCE_EXISTS: 404,
+    ErrorCodes.KEYCLOAK_EXCEPTION: 500,
+    ErrorCodes.INVALID_ROLE: 403,
 
     ErrorCodes.FUTURE: 404
 
@@ -196,15 +202,18 @@ class BossHTTPError(JsonResponse):
         data = {'status': self.status_code, 'code': code, 'message': message}
         super(BossHTTPError, self).__init__(data)
 
-    @staticmethod
-    def from_exception(error, status, message, code):
-        try:
-            # Attach the HTTP response's body for more context, if data exists
-            message += ". Error Message: " + error.response.text
+class BossKeycloakError(BossHTTPError):
+    def __init__(self, message, ex = None):
+        txt = ". Inner Message: "
+        try: # Assume json formatted data
+            message += txt + json.dumps(json.loads(ex.response.text))
         except:
-            pass
+            try: # Try just adding raw response
+                message += txt + ex.response.text
+            except:
+                pass
 
-        return BossHTTPError(status, message, code)
+        super(BossKeycloakError, self).__init__(message, ErrorCodes.KEYCLOAK_EXCEPTION)
 
 
 class BossResourceNotFoundError(BossHTTPError):

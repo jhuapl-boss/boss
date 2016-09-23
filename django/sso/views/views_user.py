@@ -13,17 +13,14 @@
 # limitations under the License.
 
 import json
-from django.contrib.auth.models import Group, User
-from django.db import transaction
+from functools import wraps
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.http import HttpResponse
 
-from bosscore.error import BossHTTPError
+from bosscore.error import BossKeycloakError, BossHTTPError, ErrorCodes
 from bosscore.models import BossRole
-from bosscore.serializers import GroupSerializer, UserSerializer, BossRoleSerializer
-from bosscore.privileges import BossPrivilegeManager
+from bosscore.serializers import UserSerializer, BossRoleSerializer
 from bosscore.privileges import check_role
 
 from bossutils.keycloak import KeyCloakClient
@@ -31,9 +28,33 @@ from bossutils.logger import BossLogger
 
 LOG = BossLogger().logger
 
-# GROUP NAMES
-PUBLIC_GROUP = 'boss-public'
-PRIMARY_GROUP = '-primary'
+####
+## Should there be a hard coded list of valid roles, or shoulda all methods defer
+## to Keycloak to make the check that the role is valid. Basically, do we expect
+## for different applications to have their own roles?
+####
+VALID_ROLES = ('admin', 'user-manager', 'resource-manager')
+
+def validate_role(arg=None, kwarg=None):
+    """ Validate the role / role_name function argument
+        Args:
+            arg (int): The index into the args array of positional arguments
+            kwarg (string): The index into the kwargs dictionary of keyword arguments
+
+        Note: either arg or kwarg should be specified, based on the argument to check
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            role = args[arg] if arg else kwargs[kwargs]
+            if role is not None and role not in VALID_ROLES:
+                return BossHTTPError("Invalid role name {}".format(role), ErrorCodes.INVALID_ROLE)
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+def filter_roles(roles):
+    return [r for r in roles if r in VALID_ROLES]
 
 
 class BossUser(APIView):
@@ -42,36 +63,38 @@ class BossUser(APIView):
     """
     def get(self, request, user_name):
         """
-        Get the user information
+        Get information about a user
+
         Args:
            request: Django rest framework request
-           user_name: User name from the request
+           user_name: User name to get information about
 
         Returns:
-            User if the user exists
+            JSON dictionary of user data
         """
         try:
             with KeyCloakClient('BOSS') as kc:
                 response = kc.get_userdata(user_name)
                 roles = kc.get_realm_roles(user_name)
-                response["realmRoles"] = [r['name'] for r in roles]
+                response["realmRoles"] = filter_roles([r['name'] for r in roles])
                 return Response(response, status=200)
         except Exception as e:
             msg = "Error getting user '{}' from Keycloak".format(user_name)
-            return BossHTTPError.from_exception(e, 404, msg, 30000)
+            return BossKeycloakError(msg, e)
 
     @check_role("user-manager")
-    @transaction.atomic
     def post(self, request, user_name):
         """
-        Create a new user if the user does not exist
+        Create a new user
+
         Args:
             request: Django rest framework request
-            user_name: User name from the request
+            user_name: User name of the user to create
 
         Returns:
-            Http status of the request
+            None
 
+        Note: User's data is passed as json data in the request
         """
         user_data = request.data.copy()
 
@@ -81,7 +104,6 @@ class BossUser(APIView):
 
         try:
             with KeyCloakClient('BOSS') as kc:
-                # Create the user account, attached to the default groups
                 # DP NOTE: email also has to be unique, in the current configuration of Keycloak
                 data = {
                     "username": user_name,
@@ -101,7 +123,7 @@ class BossUser(APIView):
                 }
                 kc.reset_password(user_name, data)
 
-                return Response(response, status=201)
+                return Response(status=201)
         except Exception as e:
             # cleanup created objects
             if True in [user_created]:
@@ -116,29 +138,28 @@ class BossUser(APIView):
                     LOG.exception("Error communicating with Keycloak to delete created user and primary group")
 
             msg = "Error addng user '{}' to Keycloak".format(user_name)
-            return BossHTTPError.from_exception(e, 404, msg, 30000)
+            return BossKeycloakError(msg, e)
 
     @check_role("user-manager")
     def delete(self, request, user_name):
         """
         Delete a user
+
         Args:
             request: Django rest framework request
-            user_name: User name from the request
+            user_name: User name of user to delete
+
         Returns:
-            Http status of the request
+            None
         """
         try:
-            # Delete from Keycloak
             with KeyCloakClient('BOSS') as kc:
                 kc.delete_user(user_name)
 
             return Response(status=204)
         except Exception as e:
             msg = "Error deleting user '{}' from Keycloak".format(user_name)
-            return BossHTTPError.from_exception(e, 404, msg, 30000)
-
-
+            return BossKeycloakError(msg, e)
 
 class BossUserRole(APIView):
     """
@@ -146,82 +167,80 @@ class BossUserRole(APIView):
     """
 
     @check_role("user-manager")
+    @validate_role(kwarg="role_name")
     def get(self, request, user_name, role_name=None):
         """
-        Check if the user has a specific role
+        Multi-function method
+        1) If role_name is None, return all roles assigned to the user
+        2) If role_name is not None, return True/False if the user
+           is assigned the given role
+
         Args:
            request: Django rest framework request
-           user_name: User name
-           role_name:
+           user_name: User name of the user to check
+           role_name: Name of the role to check, or None to return all roles
 
         Returns:
-            True if the user has the role
+            True if the user has the role or a list of all assigned roles
         """
         try:
             with KeyCloakClient('BOSS') as kc:
                 resp = kc.get_realm_roles(user_name)
                 roles = [r['name'] for r in resp]
-                # DP TODO: filter roles array to limit to valid roles??
+                roles = filter_roles(roles)
 
                 if role_name is None:
                     return Response(roles, status=200)
                 else:
-                    valid = ['admin', 'user-manager', 'resource-manager']
-                    if role_name not in valid:
-                        return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)
-
                     exists = role_name in roles
                     return Response(exists, status=200)
 
         except Exception as e:
-            return BossHTTPError(404, "Error getting user's {} roles from keycloak. {}".format(user_name, e), 30000)
+            msg = "Error getting user '{}' role's from Keycloak".format(user_name)
+            return BossKeycloakError(msg, e)
 
     @check_role("user-manager")
+    @validate_role(3)
     def post(self, request, user_name, role_name):
         """
         Assign a role to a user
+
         Args:
             request: Django rest framework request
-            user_name: User name
-            role_name : Role name
+            user_name: User name of user to assign role to
+            role_name : Role name of role to assign to user
 
         Returns:
-            Http status of the request
-
+            None
         """
         try:
-            if role_name not in ['admin', 'user-manager', 'resource-manager']:
-                return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)
-
             with KeyCloakClient('BOSS') as kc:
                 response = kc.map_role_to_user(user_name, role_name)
-                return Response(serializer.data, status=201)
+                return Response(status=201)
 
         except Exception as e:
-            return BossHTTPError(404, "Unable to map role {} to user {} in keycloak. {}".format(role_name, user_name, e), 30000)
+            msg = "Unable to map role '{}' to user '{}' in Keycloak".format(role_name, user_name)
+            return BossKeycloakError(msg, e)
 
     @check_role("user-manager")
+    @validate_role(3)
     def delete(self, request, user_name, role_name):
         """
-        Delete a user
+        Unasign a role from a user
+
         Args:
             request: Django rest framework request
-            user_name: User name from the request
-            role_name: Role name from the request
+            user_name: User name of user to unassign role from
+            role_name : Role name of role to unassign from user
 
         Returns:
-            Http status of the request
-
+            None
         """
         try:
-
-            if role_name not in ['admin', 'user-manager', 'resource-manager']:
-                return BossHTTPError(404, "Invalid role name {}".format(role_name), 30000)
             with KeyCloakClient('BOSS') as kc:
                 response = kc.remove_role_from_user(user_name, role_name)
                 return Response(status=204)
 
         except Exception as e:
-            return BossHTTPError(404,
-                                 "Unable to remove role {} from user {} in keycloak. {}".format(role_name, user_name, e),
-                                 30000)
+            msg = "Unable to remove role '{}' from user '{}' in Keycloak".format(role_name, user_name)
+            return BossKeycloakError(msg, e)
