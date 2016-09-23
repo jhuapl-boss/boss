@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'bossmeta',
     'bossspatialdb',
     'sso',
+    'bossingest',
     'rest_framework_swagger',
     'guardian'
 ]

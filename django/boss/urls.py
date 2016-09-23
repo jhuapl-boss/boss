@@ -70,6 +70,7 @@ urlpatterns = [
     url(r'^v0.6/tiles/', include('bosstiles.urls', namespace='v0.6')),
     url(r'^v0.6/sso/user/', include('sso.urls.user-urls', namespace='v0.6')),
     url(r'^v0.6/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.6')),
+    url(r'^v0.6/ingest/', include('bossingest.urls', namespace='v0.6')),
 
 
 ]
