@@ -216,7 +216,7 @@ class BossKeycloakError(JsonResponse):
 
         ex = sys.exc_info()[1]
 
-        self.status_code = ex.status_code if ex else RESP_CODES[code]
+        self.status_code = ex.status if ex else RESP_CODES[code]
         data = {
             'status': self.status_code,
             'code': ErrorCodes.KEYCLOAK_EXCEPTION,

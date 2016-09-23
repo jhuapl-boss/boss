@@ -23,7 +23,7 @@ from bosscore.models import BossRole
 from bosscore.serializers import UserSerializer, BossRoleSerializer
 from bosscore.privileges import check_role
 
-from bossutils.keycloak import KeyCloakClient
+from bossutils.keycloak import KeyCloakClient, KeyCloakError
 from bossutils.logger import BossLogger
 
 LOG = BossLogger().logger
@@ -35,10 +35,9 @@ LOG = BossLogger().logger
 ####
 VALID_ROLES = ('admin', 'user-manager', 'resource-manager')
 
-def validate_role(arg=None, kwarg=None):
+def validate_role(kwarg="role_name"):
     """ Validate the role / role_name function argument
         Args:
-            arg (int): The index into the args array of positional arguments
             kwarg (string): The index into the kwargs dictionary of keyword arguments
 
         Note: either arg or kwarg should be specified, based on the argument to check
@@ -46,7 +45,7 @@ def validate_role(arg=None, kwarg=None):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            role = args[arg] if arg else kwargs[kwargs]
+            role = kwargs[kwarg]
             if role is not None and role not in VALID_ROLES:
                 return BossHTTPError("Invalid role name {}".format(role), ErrorCodes.INVALID_ROLE)
             return func(*args, **kwargs)
@@ -167,7 +166,7 @@ class BossUserRole(APIView):
     """
 
     @check_role("user-manager")
-    @validate_role(kwarg="role_name")
+    @validate_role()
     def get(self, request, user_name, role_name=None):
         """
         Multi-function method
@@ -200,7 +199,7 @@ class BossUserRole(APIView):
             return BossKeycloakError(msg)
 
     @check_role("user-manager")
-    @validate_role(3)
+    @validate_role()
     def post(self, request, user_name, role_name):
         """
         Assign a role to a user
@@ -223,7 +222,7 @@ class BossUserRole(APIView):
             return BossKeycloakError(msg)
 
     @check_role("user-manager")
-    @validate_role(3)
+    @validate_role()
     def delete(self, request, user_name, role_name):
         """
         Unasign a role from a user
