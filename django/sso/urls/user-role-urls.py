@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from django.conf.urls import url
-from bosscore.views import views_user
+from sso.views import views_user
 
 urlpatterns = [
 

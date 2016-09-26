@@ -15,6 +15,7 @@
 from django.http import JsonResponse
 from bossutils.logger import BossLogger
 from enum import IntEnum
+import sys
 
 
 class ErrorCodes(IntEnum):
@@ -54,6 +55,10 @@ class ErrorCodes(IntEnum):
     GROUP_EXISTS = 6001
     RESOURCE_EXISTS = 6002
 
+    # SSO Errors
+    KEYCLOAK_EXCEPTION = 7001
+    INVALID_ROLE = 7002
+
     # TO BE IMPLEMENTED
     FUTURE = 9000
     BOSS_SYSTEM_ERROR = 9001
@@ -82,6 +87,8 @@ RESP_CODES = {
     ErrorCodes.DESERIALIZATION_ERROR: 404,
     ErrorCodes.GROUP_EXISTS: 404,
     ErrorCodes.RESOURCE_EXISTS: 404,
+    ErrorCodes.KEYCLOAK_EXCEPTION: 500,
+    ErrorCodes.INVALID_ROLE: 403,
 
     ErrorCodes.FUTURE: 404
 
@@ -196,15 +203,37 @@ class BossHTTPError(JsonResponse):
         data = {'status': self.status_code, 'code': code, 'message': message}
         super(BossHTTPError, self).__init__(data)
 
-    @staticmethod
-    def from_exception(error, status, message, code):
-        try:
-            # Attach the HTTP response's body for more context, if data exists
-            message += ". Error Message: " + error.response.text
-        except:
-            pass
+class BossKeycloakError(JsonResponse):
+    def __init__(self, message):
+        """
+        Custom HTTP error class for converting a KeyCloakError exception into a JsonResponse
 
-        return BossHTTPError(status, message, code)
+        Args:
+            message (str): Error message to send back to user
+
+        Note: If called in an exception handler, expects the exception to be a KeyCloakError
+        """
+
+        ex = sys.exc_info()[1]
+
+        self.status_code = ex.status if ex else RESP_CODES[code]
+        data = {
+            'status': self.status_code,
+            'code': ErrorCodes.KEYCLOAK_EXCEPTION,
+            'message': message
+        }
+
+        if ex:
+            data.update(ex.data)
+
+        msg = "BossKeycloakError"
+        for k in data:
+            msg += " - {}: {}".format(k.capitalize(), data[k])
+
+        log = BossLogger().logger
+        log.info(msg)
+
+        super(BossKeycloakError, self).__init__(data)
 
 
 class BossResourceNotFoundError(BossHTTPError):
