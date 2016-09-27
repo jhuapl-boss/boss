@@ -89,8 +89,9 @@ RESP_CODES = {
     ErrorCodes.RESOURCE_EXISTS: 404,
     ErrorCodes.KEYCLOAK_EXCEPTION: 500,
     ErrorCodes.INVALID_ROLE: 403,
+    ErrorCodes.FUTURE: 404,
+    ErrorCodes.BOSS_SYSTEM_ERROR: 400
 
-    ErrorCodes.FUTURE: 404
 
 }
 

@@ -30,3 +30,13 @@ class BossIngestServiceRoutingTests(APITestCase):
         """
         match = resolve('/' + version + '/ingest/')
         self.assertEqual(match.func.__name__, IngestJobView.as_view().__name__)
+
+    def test_ingest_urls_with_id_resolves_to_BossIngest_views(self):
+        """
+        Test that the ingest url resolves to the ingest service view
+
+        Returns: None
+        """
+        match = resolve('/' + version + '/ingest/1')
+        self.assertEqual(match.func.__name__, IngestJobView.as_view().__name__)
+

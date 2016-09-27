@@ -17,8 +17,8 @@ from bossingest import views
 
 urlpatterns = [
 
-    # URLS to add a user
-    url(r'^/?',views.IngestJobView.as_view()),
+    url(r'(?P<ingest_job_id>[\d]+)/?$', views.IngestJobView.as_view()),
 
+    url(r'^$', views.IngestJobView.as_view()),
 
-]
+  ]

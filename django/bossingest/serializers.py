@@ -22,3 +22,13 @@ class IngestJobCreateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = IngestJob
+
+
+class IngestJobListSerializer(serializers.ModelSerializer):
+    """
+    Serializer to create and ingest job
+    """
+    class Meta:
+        model = IngestJob
+        fields = ('id', 'collection', 'experiment', 'channel_layer', 'status', 'ingest_queue', 'upload_queue')
+

@@ -14,22 +14,18 @@
 
 import json
 import os
-from io import StringIO
-import io
 from pkg_resources import resource_filename
 
-
-
-import ingest
-from ingest.core.validator import Validator, BossValidatorV01
 from ingest.core.config import Configuration
 
-from bossingest.serializers import IngestJobCreateSerializer
-from bosscore.error import BossError, ErrorCodes, BossResourceNotFoundError
+from bossingest.serializers import IngestJobCreateSerializer, IngestJobListSerializer
+from bossingest.models import IngestJob
 
+from bosscore.error import BossError, ErrorCodes, BossResourceNotFoundError
 from bosscore.models import Collection, Experiment,ChannelLayer
 
 from ndingest.ndqueue.uploadqueue import UploadQueue
+from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndingestproj.ingestproj import IngestProj
 
 SCHEMA_FILE_NAME = "boss-v0.1-schema.json"
@@ -50,6 +46,7 @@ class IngestManager:
         self.collection = None
         self.experiment = None
         self.channel_layer = None
+        self.resolution = 0
 
 
     def get_schema (self):
@@ -70,19 +67,20 @@ class IngestManager:
         """
 
         try:
+            # Validate the schema
             self.config = Configuration(config_data)
             self.validator = self.config.get_validator()
             self.validator.schema = self.config.schema
             self.validator.validate_schema()
+
             self.collection = self.config.config_data["database"]["collection"]
             self.experiment = self.config.config_data["database"]["experiment"]
             self.channel_layer = self.config.config_data["database"]["channel"]["name"]
+
         except Exception as e:
             raise BossError(" Could not validate the scheme file.{}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
 
         return True
-
-
 
     def validate_properties(self):
         """
@@ -97,12 +95,15 @@ class IngestManager:
                                                     collection=collection_obj)
             channel_layer_obj = ChannelLayer.objects.get(name=self.channel_layer,
                                                          experiment=experiment_obj)
+            self.resolution = channel_layer_obj.base_resolution
+
         except Collection.DoesNotExist:
             raise BossError("Collection {} not found".format(self.collection), ErrorCodes.RESOURCE_NOT_FOUND)
         except Experiment.DoesNotExist:
             raise BossError("Experiment {} not found".format(self.experiment), ErrorCodes.RESOURCE_NOT_FOUND)
         except ChannelLayer.DoesNotExist:
             raise BossError("Channel or Layer {} not found".format(self.channel_layer), ErrorCodes.RESOURCE_NOT_FOUND)
+
         # TODO If channel already exists, check corners to see if data exists.  If so question user for overwrite
         # TODO Check tile size - error if too big
         return True
@@ -162,9 +163,20 @@ class IngestManager:
 
             #create the additional resources needed for the ingest
 
+            try:
+                # Create the upload queue
+                queue = self.create_upload_queue()
+                ingest_job.upload_queue = queue.url
+
+                # Create the ingest queue
+                queue = self.create_ingest_queue()
+                ingest_job.ingest_queue = queue.url
+                ingest_job.save()
+            except Exception as e:
+                raise BossError("Unable to create the upload and ingest queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
             return ingest_job
 
-    def delete_ingest_job(ingest_job_id):
+    def get_ingest_job(self, ingest_job_id):
         """
 
         Args:
@@ -173,6 +185,80 @@ class IngestManager:
         Returns:
 
         """
+        ingest_job  = IngestJob.objects.get(id=ingest_job_id)
+        return ingest_job
+
+    def delete_ingest_job(self, ingest_job_id):
+        """
+
+        Args:
+            ingest_job_id:
+
+        Returns:
+
+        """
+        try:
+            print ("Deleting the queue's")
+            #self.delete_upload_queue()
+            # delete ingest queue
+            #self.delete_ingest_queue()
+
+        # delete channel if created?
+
+        # delete ingest job
+            ingest_job = IngestJob.objects.get(id=ingest_job_id)
+            ingest_job.delete()
+        except Exception as e:
+            raise BossError("Unable to delete the upload queue.{}".format(e),ErrorCodes.BOSS_SYSTEM_ERROR)
+        except IngestJob.DoesNotExist:
+            raise BossError("Ingest job with id {} does not exist".format(ingest_job_id), ErrorCodes.RESOURCE_NOT_FOUND)
         return ingest_job_id
 
+    def create_upload_queue(self):
+        """
 
+        Returns:
+
+        """
+        ProjClass = IngestProj.load()
+        nd_proj = ProjClass(self.collection, self.experiment, self.channel_layer, self.resolution, self.job_id,
+                            'manavpj1.boss.io')
+        queue_name = UploadQueue.createQueue(nd_proj, endpoint_url=None)
+        queue = UploadQueue(nd_proj, endpoint_url=None)
+        return queue
+
+
+    def create_ingest_queue(self):
+        """
+
+        Returns:
+
+        """
+        ProjClass = IngestProj.load()
+        nd_proj = ProjClass(self.collection, self.experiment, self.channel_layer, self.resolution, self.job_id,
+                            'manavpj1.boss.io')
+        queue_name = IngestQueue.createQueue(nd_proj, endpoint_url=None)
+        queue = IngestQueue(nd_proj, endpoint_url=None)
+        return queue
+
+    def delete_upload_queue(self):
+        """
+
+        Returns:
+
+        """
+        ProjClass = IngestProj.load()
+        nd_proj = ProjClass(self.collection, self.experiment, self.channel_layer, self.resolution, self.job_id,
+                            'manavpj1.boss.io')
+        queue = UploadQueue.deleteQueue(nd_proj, endpoint_url=None)
+
+    def delete_ingest_queue(self):
+        """
+
+        Returns:
+
+        """
+        ProjClass = IngestProj.load()
+        nd_proj = ProjClass(self.collection, self.experiment, self.channel_layer, self.resolution, self.job_id,
+                            'manavpj1.boss.io')
+        queue = IngestQueue.deleteQueue(nd_proj, endpoint_url=None)
