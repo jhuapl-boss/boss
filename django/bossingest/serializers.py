@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import url
-from bossingest import views
-
-urlpatterns = [
-
-    # URLS to add a user
-    url(r'^/?',views.IngestJobView.as_view()),
+from rest_framework import serializers
+from .models import IngestJob
 
 
-]
+class IngestJobCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer to create and ingest job
+    """
+    class Meta:
+        model = IngestJob

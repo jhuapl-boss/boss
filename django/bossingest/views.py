@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from bosscore.error import BossError
-from . import ingest
+from .ingest_manager import IngestManager
 
 # Create your views here.
 
@@ -36,11 +36,12 @@ class IngestJobView(APIView):
 
         """
         try:
-            return ingest.setup_ingest(ingest_config_data)
+            ingest_mgmr = IngestManager()
+            return ingest_mgmr.setup_ingest(self.request.user)
         except BossError as err:
                 return err.to_http()
 
-    def delete (self, ingest_job_id):
+    def delete(self, ingest_job_id):
         """
 
         Args:
@@ -50,6 +51,6 @@ class IngestJobView(APIView):
 
         """
         try:
-            return ingest.delete_ingest_job(ingest_job_id)
+            return IngestManager.delete_ingest_job(ingest_job_id)
         except BossError as err:
                 return err.to_http()
