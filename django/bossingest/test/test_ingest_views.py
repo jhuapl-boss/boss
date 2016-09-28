@@ -61,8 +61,17 @@ class GroupMemberTests(APITestCase):
     def test_delete_ingest_job(self):
         """ Test view to delete an ingest job """
 
-        # Post the data
-        url = '/' + version + '/ingest/1/'
+        config_data = self.setup_helper.get_ingest_config_data_dict()
+        config_data = json.loads(json.dumps(config_data))
+
+        # Post the job
+        url = '/' + version + '/ingest/'
+        response = self.client.post(url, data=config_data, format='json')
+        assert (response.status_code == 201)
+        job_id = response.json()['id']
+
+        # Delete the job
+        url = '/' + version + '/ingest/{}/'.format(job_id)
         response = self.client.delete(url)
         assert (response.status_code == 204)
 

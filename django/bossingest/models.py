@@ -27,6 +27,7 @@ class IngestJob(models.Model):
             (0, 'Preparing'),
             (1, 'Uploading'),
             (2, 'Complete'),
+            (3, 'Deleted'),
         )
     status = models.IntegerField(choices=INGEST_STATUS_OPTIONS, default=0)
     upload_queue = models.URLField(max_length=512, null=True)
@@ -37,6 +38,7 @@ class IngestJob(models.Model):
     experiment = models.CharField(max_length=128)
     channel_layer = models.CharField(max_length=128)
 
+    resolution = models.IntegerField()
     x_start = models.IntegerField()
     y_start = models.IntegerField()
     z_start = models.IntegerField()
@@ -46,10 +48,6 @@ class IngestJob(models.Model):
     z_stop = models.IntegerField()
     t_stop = models.IntegerField()
 
-    offset_x = models.IntegerField()
-    offset_y = models.IntegerField()
-    offset_z = models.IntegerField()
-    offset_t = models.IntegerField()
     tile_size_x = models.IntegerField()
     tile_size_y = models.IntegerField()
     tile_size_z = models.IntegerField()

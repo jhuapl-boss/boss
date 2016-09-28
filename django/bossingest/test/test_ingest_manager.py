@@ -47,8 +47,14 @@ class BossIngestManagerTestMixin(object):
         """Method to test the setup_ingest method"""
         ingest_mgmr = IngestManager()
         ingest_job = ingest_mgmr.setup_ingest("test_user", self.example_config_data)
-        assert (ingest_job.id == 1)
+        assert (ingest_job is not None)
 
+    def test_generate_upload_tasks(self):
+        """"""
+        print ("In the upload tasks tests:")
+        ingest_mgmr = IngestManager()
+        ingest_job = ingest_mgmr.setup_ingest("test_user", self.example_config_data)
+        ingest_job = ingest_mgmr.generate_upload_tasks(ingest_job.id)
 
 class TestBossIngestManager(BossIngestManagerTestMixin, unittest.TestCase):
 

@@ -103,20 +103,15 @@ class SetupTests(object):
         data['database']['channel']['create_properties'] = {}
         data['database']['channel']['create_properties']['description'] = ""
         data['database']['channel']['create_properties']['default_time_step'] = 0
-        data['database']['channel']['create_properties']['datatype'] = "uint8"
+        data['database']['channel']['create_properties']['datatype'] = "uint16"
 
         data['ingest_job'] = {}
+        data['ingest_job']['resolution'] = 0
         data['ingest_job']['extent'] ={}
         data['ingest_job']['extent']['x'] = [0, 796]
         data['ingest_job']['extent']['y'] = [0, 512]
-        data['ingest_job']['extent']['z'] = [0, 1]
-        data['ingest_job']['extent']['t'] = [0, 1499]
-
-        data['ingest_job']['offset'] = {}
-        data['ingest_job']['offset']['x'] = 0
-        data['ingest_job']['offset']['y'] = 0
-        data['ingest_job']['offset']['z'] = 0
-        data['ingest_job']['offset']['t'] = 0
+        data['ingest_job']['extent']['z'] = [0,16]
+        data['ingest_job']['extent']['t'] = [0, 10]
 
         data['ingest_job']['tile_size'] = {}
         data['ingest_job']['tile_size']['x'] = 796
@@ -133,6 +128,7 @@ class SetupTests(object):
             'collection': config_data["database"]["collection"],
             'experiment': config_data["database"]["experiment"],
             'channel_layer': config_data["database"]["channel"]["name"],
+            'resolution': 0,
             'config_data': config_data,
             'x_start': config_data["ingest_job"]["extent"]["x"][0],
             'x_stop': config_data["ingest_job"]["extent"]["x"][1],
@@ -142,10 +138,6 @@ class SetupTests(object):
             'z_stop': config_data["ingest_job"]["extent"]["z"][1],
             't_start': config_data["ingest_job"]["extent"]["t"][0],
             't_stop': config_data["ingest_job"]["extent"]["t"][1],
-            'offset_x': config_data["ingest_job"]["offset"]["x"],
-            'offset_y': config_data["ingest_job"]["offset"]["y"],
-            'offset_z': config_data["ingest_job"]["offset"]["z"],
-            'offset_t': config_data["ingest_job"]["offset"]["t"],
             'tile_size_x': config_data["ingest_job"]["tile_size"]["x"],
             'tile_size_y': config_data["ingest_job"]["tile_size"]["y"],
             'tile_size_z': config_data["ingest_job"]["tile_size"]["z"],
