@@ -26,7 +26,7 @@ from bosscore.lookup import LookUpKey
 
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
-from ndingest.ndingestproj.ingestproj import IngestProj
+from ndingestproj.bossingestproj import BossIngestProj
 
 CONNECTER = '&'
 NDINGEST_DOMAIN_NAME = 'manavpj1.boss.io'
@@ -149,9 +149,9 @@ class IngestManager:
 
             try:
                 # initialize the ndingest project for use with the library
-                proj_class = IngestProj.load()
+                proj_class = BossIngestProj.load()
                 self.nd_proj = proj_class(self.collection.name, self.experiment.name, self.channel_layer.name,
-                                     self.resolution, self.job.id, NDINGEST_DOMAIN_NAME)
+                                     self.resolution, self.job.id)
 
                 # Create the upload queue
                 queue = self.create_upload_queue()
@@ -348,9 +348,5 @@ class IngestManager:
         Returns:
 
         """
-
-        proj_class = IngestProj.load()
-        nd_proj = proj_class(self.collection.name, self.experiment.name, self.channel_layer.name,
-                             self.resolution, self.job.id, 'manavpj1.boss.io')
-        queue = UploadQueue(nd_proj, endpoint_url=None)
+        queue = UploadQueue(self.nd_proj, endpoint_url=None)
         queue.sendMessage(msg)
