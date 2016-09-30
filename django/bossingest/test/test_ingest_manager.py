@@ -12,23 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import absolute_import
-
 import os
 import unittest
 import json
-from pkg_resources import resource_filename
 
 from bossingest.ingest_manager import IngestManager
 from bossingest.test.setup import SetupTests
 from bosscore.test.setup_db import SetupTestDB
 from django.contrib.auth.models import User
+from rest_framework.test import APITestCase
 
+class BossIngestManagerTest(APITestCase):
 
-class BossIngestManagerTestMixin(object):
+    def setUp(self):
+        """
+            Initialize the database
+            :return:
+        """
+        self.user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        dbsetup = SetupTestDB()
+        dbsetup.set_user(self.user)
+
+        self.client.force_login(self.user)
+        dbsetup.insert_ingest_test_data()
+
+        # Get the config_data
+        config_data = SetupTests().get_ingest_config_data_dict()
+        self.example_config_data = config_data
 
     def test_validate_ingest(self):
         """Method to test validation method"""
-        # TODO: Complete after validation fully implemented
         #Validate schema and config file
         ingest_mgmr = IngestManager()
         response = ingest_mgmr.validate_config_file(self.example_config_data)
@@ -38,34 +51,40 @@ class BossIngestManagerTestMixin(object):
         response = ingest_mgmr.validate_properties()
         assert (response is True)
 
-    def test_upload_queue(self):
-        """Method to test the upload_queue"""
+    def test_validate_config_file(self):
+        """Method to test validation of a config file"""
         ingest_mgmr = IngestManager()
+        ingest_mgmr.validate_config_file(self.example_config_data)
+        assert(ingest_mgmr.config is not None)
+        assert (ingest_mgmr.config.config_data is not None)
 
+    def test_validate_properties(self):
+        """Methos to test validation of properties of the config data"""
 
-    def test_setup_ingest(self):
-        """Method to test the setup_ingest method"""
         ingest_mgmr = IngestManager()
-        ingest_job = ingest_mgmr.setup_ingest("test_user", self.example_config_data)
-        assert (ingest_job is not None)
+        ingest_mgmr.validate_config_file(self.example_config_data)
+        ingest_mgmr.validate_properties()
+        assert (ingest_mgmr.collection.name == 'my_col_1')
+        assert (ingest_mgmr.experiment.name == 'my_exp_1')
+        assert (ingest_mgmr.channel_layer.name == 'my_ch_1')
 
-    def test_generate_upload_tasks(self):
-        """"""
-        print ("In the upload tasks tests:")
+    def test_create_ingest_job(self):
+        """Method to test creation o a ingest job from a config_data dict"""
         ingest_mgmr = IngestManager()
-        ingest_job = ingest_mgmr.setup_ingest("test_user", self.example_config_data)
-        ingest_job = ingest_mgmr.generate_upload_tasks(ingest_job.id)
+        ingest_mgmr.validate_config_file(self.example_config_data)
+        ingest_mgmr.validate_properties()
+        ingest_mgmr.owner = self.user.pk
+        job = ingest_mgmr.create_ingest_job()
+        assert (job.id is not None)
 
-class TestBossIngestManager(BossIngestManagerTestMixin, unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        # Create the resources required for the ingest tests
-        cls.user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
-        dbsetup = SetupTestDB()
-        dbsetup.set_user(cls.user)
-        dbsetup.insert_ingest_test_data()
+    def test_create_upload_task_message(self):
+        """Test method that creates an upload task message"""
 
-        # Get the config_data
-        config_data = SetupTests().get_ingest_config_data_dict()
-        cls.example_config_data = config_data
+        ingest_mgmr = IngestManager()
+        msg = ingest_mgmr.create_upload_task_message(595, '3534561bd72dcfce1af7c041fc783379&16&1&1&1&0&1&1&3&0',
+                                                     '3534561bd72dcfpppaf7c041fc783379&1&1&1&0&1&1&3&0',
+                                                     'test_upload_queue_url', 'test_ingest_queue_url')
+        msg = json.loads(msg)
+        assert (msg['job_id'] == 595)
+

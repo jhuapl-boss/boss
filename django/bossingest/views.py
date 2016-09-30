@@ -47,7 +47,7 @@ class IngestJobView(APIView):
         ingest_config_data = request.data
         try:
             ingest_mgmr = IngestManager()
-            ingest_job = ingest_mgmr.setup_ingest(self.request.user, ingest_config_data)
+            ingest_job = ingest_mgmr.setup_ingest(self.request.user.id, ingest_config_data)
             serializer = IngestJobListSerializer(ingest_job)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         except BossError as err:

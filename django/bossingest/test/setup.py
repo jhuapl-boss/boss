@@ -14,6 +14,7 @@
 
 from pkg_resources import resource_filename
 import json
+from django.contrib.auth.models import User
 
 from bossutils.aws import get_region
 
@@ -97,24 +98,18 @@ class SetupTests(object):
         data['database'] = {}
         data['database']['collection'] = "my_col_1"
         data['database']['experiment'] = "my_exp_1"
-        data['database']['channel'] = {}
-        data['database']['channel']['name'] = "my_ch_1"
-        data['database']['channel']['create'] = "False"
-        data['database']['channel']['create_properties'] = {}
-        data['database']['channel']['create_properties']['description'] = ""
-        data['database']['channel']['create_properties']['default_time_step'] = 0
-        data['database']['channel']['create_properties']['datatype'] = "uint16"
+        data['database']['channel_layer'] = "my_ch_1"
 
         data['ingest_job'] = {}
         data['ingest_job']['resolution'] = 0
         data['ingest_job']['extent'] ={}
         data['ingest_job']['extent']['x'] = [0, 796]
         data['ingest_job']['extent']['y'] = [0, 512]
-        data['ingest_job']['extent']['z'] = [0,16]
-        data['ingest_job']['extent']['t'] = [0, 10]
+        data['ingest_job']['extent']['z'] = [0, 1]
+        data['ingest_job']['extent']['t'] = [0, 5]
 
         data['ingest_job']['tile_size'] = {}
-        data['ingest_job']['tile_size']['x'] = 796
+        data['ingest_job']['tile_size']['x'] = 512
         data['ingest_job']['tile_size']['y'] = 512
         data['ingest_job']['tile_size']['z'] = 1
         data['ingest_job']['tile_size']['t'] = 1
@@ -123,11 +118,12 @@ class SetupTests(object):
     def create_ingest_job(self):
         config_data = self.get_ingest_config_data_dict()
         # create the django model for the job
+        user = User.objects.get(pk=1)
         ingest_job_data = {
-            'owner': "pjm",
+            'creator': user,
             'collection': config_data["database"]["collection"],
             'experiment': config_data["database"]["experiment"],
-            'channel_layer': config_data["database"]["channel"]["name"],
+            'channel_layer': config_data["database"]["channel_layer"],
             'resolution': 0,
             'config_data': config_data,
             'x_start': config_data["ingest_job"]["extent"]["x"][0],

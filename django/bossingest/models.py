@@ -13,14 +13,14 @@
 # limitations under the License.
 
 from django.db import models
-
+from django.conf import settings
 
 class IngestJob(models.Model):
     """
     Django Model representing an ingest job
     """
 
-    owner = models.CharField(max_length=256)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL)
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True)
     INGEST_STATUS_OPTIONS = (

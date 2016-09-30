@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import json
+from django.contrib.auth.models import User
+from django.conf import settings
 
 from ingest.core.config import Configuration
 from ingest.core.backend import BossBackend
@@ -21,12 +23,13 @@ from bossingest.serializers import IngestJobCreateSerializer, IngestJobListSeria
 from bossingest.models import IngestJob
 
 from bosscore.error import BossError, ErrorCodes, BossResourceNotFoundError
-from bosscore.models import Collection, Experiment,ChannelLayer
+from bosscore.models import Collection, Experiment, ChannelLayer
 from bosscore.lookup import LookUpKey
+from bosscore.serializers import ChannelLayerSerializer
 
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
-from ndingestproj.bossingestproj import BossIngestProj
+from ndingest.ndingestproj.bossingestproj import BossIngestProj
 
 CONNECTER = '&'
 NDINGEST_DOMAIN_NAME = 'manavpj1.boss.io'
@@ -43,6 +46,7 @@ class IngestManager:
          Init function
         """
         self.job = None
+        self.owner = None
         self.config = None
         self.validator = None
         self.collection = None
@@ -83,7 +87,7 @@ class IngestManager:
             self.collection = Collection.objects.get(name=self.config.config_data["database"]["collection"])
             self.experiment = Experiment.objects.get(name=self.config.config_data["database"]["experiment"],
                                                      collection=self.collection)
-            self.channel_layer = ChannelLayer.objects.get(name=self.config.config_data["database"]["channel"]["name"],
+            self.channel_layer = ChannelLayer.objects.get(name=self.config.config_data["database"]["channel_layer"],
                                                           experiment=self.experiment)
             self.resolution = self.channel_layer.base_resolution
 
@@ -98,7 +102,7 @@ class IngestManager:
         # TODO Check tile size - error if too big
         return True
 
-    def setup_ingest(self, owner, config_data):
+    def setup_ingest(self, creator, config_data):
         """
 
         Args:
@@ -108,65 +112,74 @@ class IngestManager:
 
         """
         # Validate config data and schema
+
+        self.owner = creator
         try:
             valid_schema = self.validate_config_file(config_data)
             valid_prop = self.validate_properties()
-            # TODO create channel if needed
-        except BossError as err:
-            raise BossError(err.message, err.error_code)
+            if valid_schema is True and valid_prop is True:
+                # create the django model for the job
+                self.job = self.create_ingest_job()
 
-        if valid_schema is True and valid_prop is True:
-            # create the django model for the job
-            ingest_job_serializer_data = {
-                'owner': owner,
-                'collection': self.collection.name,
-                'experiment': self.experiment.name,
-                'channel_layer': self.channel_layer.name,
-                'config_data': config_data,
-                'resolution': self.resolution,
-                'x_start': self.config.config_data["ingest_job"]["extent"]["x"][0],
-                'x_stop': self.config.config_data["ingest_job"]["extent"]["x"][1],
-                'y_start': self.config.config_data["ingest_job"]["extent"]["y"][0],
-                'y_stop': self.config.config_data["ingest_job"]["extent"]["y"][1],
-                'z_start': self.config.config_data["ingest_job"]["extent"]["z"][0],
-                'z_stop': self.config.config_data["ingest_job"]["extent"]["z"][1],
-                't_start': self.config.config_data["ingest_job"]["extent"]["t"][0],
-                't_stop': self.config.config_data["ingest_job"]["extent"]["t"][1],
-                'tile_size_x': self.config.config_data["ingest_job"]["tile_size"]["x"],
-                'tile_size_y': self.config.config_data["ingest_job"]["tile_size"]["y"],
-                'tile_size_z': self.config.config_data["ingest_job"]["tile_size"]["z"],
-                'tile_size_t': self.config.config_data["ingest_job"]["tile_size"]["t"],
-            }
-            serializer = IngestJobCreateSerializer(data=ingest_job_serializer_data)
-            if serializer.is_valid():
-                ingest_job = serializer.save()
-                self.job = ingest_job
-
-            else:
-                raise BossError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
-
-            # create the additional resources needed for the ingest
-
-            try:
+                # create the additional resources needed for the ingest
                 # initialize the ndingest project for use with the library
                 proj_class = BossIngestProj.load()
                 self.nd_proj = proj_class(self.collection.name, self.experiment.name, self.channel_layer.name,
-                                     self.resolution, self.job.id)
+                                          self.resolution, self.job.id)
 
                 # Create the upload queue
                 queue = self.create_upload_queue()
-                ingest_job.upload_queue = queue.url
+                self.job.upload_queue = queue.url
 
                 # Create the ingest queue
                 queue = self.create_ingest_queue()
-                ingest_job.ingest_queue = queue.url
-                ingest_job.save()
+                self.job.ingest_queue = queue.url
+                self.job.save()
 
-                # self.generate_upload_tasks()
-            except Exception as e:
-                raise BossError("Unable to create the upload and ingest queue.{}".format(e),
+                self.generate_upload_tasks()
+            # TODO create channel if needed
+
+        except BossError as err:
+            raise BossError(err.message, err.error_code)
+        except Exception as e:
+            raise BossError("Unable to create the upload and ingest queue.{}".format(e),
                                 ErrorCodes.BOSS_SYSTEM_ERROR)
+        return self.job
+
+    def create_ingest_job(self):
+        """
+
+        Returns:
+
+        """
+
+        ingest_job_serializer_data = {
+            'creator': self.owner,
+            'collection': self.collection.name,
+            'experiment': self.experiment.name,
+            'channel_layer': self.channel_layer.name,
+            'config_data': json.dumps(self.config.config_data),
+            'resolution': self.resolution,
+            'x_start': self.config.config_data["ingest_job"]["extent"]["x"][0],
+            'x_stop': self.config.config_data["ingest_job"]["extent"]["x"][1],
+            'y_start': self.config.config_data["ingest_job"]["extent"]["y"][0],
+            'y_stop': self.config.config_data["ingest_job"]["extent"]["y"][1],
+            'z_start': self.config.config_data["ingest_job"]["extent"]["z"][0],
+            'z_stop': self.config.config_data["ingest_job"]["extent"]["z"][1],
+            't_start': self.config.config_data["ingest_job"]["extent"]["t"][0],
+            't_stop': self.config.config_data["ingest_job"]["extent"]["t"][1],
+            'tile_size_x': self.config.config_data["ingest_job"]["tile_size"]["x"],
+            'tile_size_y': self.config.config_data["ingest_job"]["tile_size"]["y"],
+            'tile_size_z': self.config.config_data["ingest_job"]["tile_size"]["z"],
+            'tile_size_t': self.config.config_data["ingest_job"]["tile_size"]["t"],
+        }
+        serializer = IngestJobCreateSerializer(data=ingest_job_serializer_data)
+        if serializer.is_valid():
+            ingest_job = serializer.save()
             return ingest_job
+
+        else:
+            raise BossError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
 
     def get_ingest_job(self, ingest_job_id):
         """
@@ -178,6 +191,9 @@ class IngestManager:
 
         """
         ingest_job = IngestJob.objects.get(id=ingest_job_id)
+        print (settings.KVIO_SETTINGS)
+               #,settings.STATEIO_CONFIG,settings.OBJECTIO_CONFIG)
+
         return ingest_job
 
     def delete_ingest_job(self, ingest_job_id):
@@ -190,18 +206,17 @@ class IngestManager:
 
         """
         try:
-            print("Deleting the queue's")
-            # self.delete_upload_queue()
-            # delete ingest queue
-            # self.delete_ingest_queue()
 
-        # delete channel if created?
-
-        # delete ingest job
+            # delete ingest job
             ingest_job = IngestJob.objects.get(id=ingest_job_id)
-            # self.delete_upload_queue(ingest_job)
-            # self.delete_ingest_queue(ingest_job)
-            ingest_job.delete()
+            proj_class = BossIngestProj.load()
+            self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
+                                      ingest_job.resolution, ingest_job.id)
+            self.delete_upload_queue()
+            self.delete_ingest_queue()
+            ingest_job.status = 3
+            ingest_job.save()
+
         except Exception as e:
             raise BossError("Unable to delete the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
         except IngestJob.DoesNotExist:
@@ -229,7 +244,7 @@ class IngestManager:
         queue = IngestQueue(self.nd_proj, endpoint_url=None)
         return queue
 
-    def delete_upload_queue(self, ingest_job):
+    def delete_upload_queue(self):
         """
 
         Returns:
@@ -237,7 +252,7 @@ class IngestManager:
         """
         UploadQueue.deleteQueue(self.nd_proj, endpoint_url=None)
 
-    def delete_ingest_queue(self, ingest_job):
+    def delete_ingest_queue(self):
         """
 
         Returns:
@@ -268,7 +283,6 @@ class IngestManager:
             ingest_job = self.job
 
         # Generate upload tasks for the ingest job
-
         # Get the project information
         bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel_layer
         lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
@@ -286,25 +300,19 @@ class IngestManager:
                         chunk_x = int(x/ingest_job.tile_size_x)
                         chunk_y = int(y/ingest_job.tile_size_y)
                         chunk_z = int(z/16)
-                        print("Chunk Indices {},{},{}".format(chunk_x, chunk_y, chunk_z))
 
                         # Compute the number of tiles in the chunk
                         if ingest_job.z_stop-z >= 16:
                             num_of_tiles = 16
                         else:
                             num_of_tiles = ingest_job.z_stop-z
-                        print("Number of tiles: {}".format(num_of_tiles))
 
                         # Generate the chunk key
-
                         chunk_key = (BossBackend(self.config)).encode_chunk_key(num_of_tiles, project_info,
                                                                                 ingest_job.resolution,
                                                                                 chunk_x, chunk_y, chunk_z, time_step)
-                        print("Chunk Key: {} ".format(chunk_key))
-
                         # get the tiles keys for this chunk
                         for tile in range(0, num_of_tiles):
-                            print("Tile indices: {},{},{}".format(x, y, z+tile))
                             # get the tile key
                             tile_key = (BossBackend(self.config)).encode_tile_key(project_info, ingest_job.resolution,
                                                                                   chunk_x, chunk_y, chunk_z, time_step)
@@ -315,7 +323,6 @@ class IngestManager:
                             # Upload the message
                             self.send_upload_task_message(msg)
 
-                        print('')
 
     @staticmethod
     def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):
@@ -350,3 +357,4 @@ class IngestManager:
         """
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         queue.sendMessage(msg)
+
