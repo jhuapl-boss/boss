@@ -42,13 +42,13 @@ class BossIngestViewTestMixin(object):
         :return:
         """
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user('testuser')
-        dbsetup.set_user(user)
-        self.client.force_login(user)
+        self.user = dbsetup.create_user('testuser')
+        dbsetup.set_user(self.user)
+        self.client.force_login(self.user)
         dbsetup.insert_ingest_test_data()
 
         self.setup_helper = SetupTests()
-        job = self.setup_helper.create_ingest_job()
+        job = self.setup_helper.create_ingest_job(self.user)
 
     def test_get_ingest_job(self):
         """ Test view to join an ingest job """

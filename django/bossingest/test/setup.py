@@ -115,10 +115,14 @@ class SetupTests(object):
         data['ingest_job']['tile_size']['t'] = 1
         return data
 
-    def create_ingest_job(self):
+    def create_ingest_job(self, creator = None):
         config_data = self.get_ingest_config_data_dict()
         # create the django model for the job
-        user = User.objects.get(pk=1)
+        if creator is None:
+            user = User.objects.get(pk=1)
+        else:
+            user = creator
+
         ingest_job_data = {
             'creator': user,
             'collection': config_data["database"]["collection"],
