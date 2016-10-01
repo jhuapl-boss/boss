@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from django.core.urlresolvers import resolve
-from bosstiles.views import Tiles
+from bosstiles.views import Image, Tile
 
 from rest_framework.test import APITestCase
 
@@ -36,11 +36,11 @@ class TileInterfaceRoutingTests(APITestCase):
         Test to make sure the tiles URL with all datamodel params resolves
         :return:
         """
-        view_tiles = resolve('/' + version + '/tiles/col1/exp1/ds1/xy/2/0:5/0:6/1')
-        self.assertEqual(view_tiles.func.__name__, Tiles.as_view().__name__)
+        view_tiles = resolve('/' + version + '/image/col1/exp1/ds1/xy/2/0:5/0:6/1')
+        self.assertEqual(view_tiles.func.__name__, Image.as_view().__name__)
 
-        view_tiles = resolve('/' + version + '/tiles/col1/exp1/ds1/xz/2/0:5/1/1:6')
-        self.assertEqual(view_tiles.func.__name__, Tiles.as_view().__name__)
+        view_tiles = resolve('/' + version + '/image/col1/exp1/ds1/xz/2/0:5/1/1:6')
+        self.assertEqual(view_tiles.func.__name__, Image.as_view().__name__)
 
-        view_tiles = resolve('/' + version + '/tiles/col1/exp1/ds1/yz/2/5/1:6/1:6')
-        self.assertEqual(view_tiles.func.__name__, Tiles.as_view().__name__)
+        view_tiles = resolve('/' + version + '/image/col1/exp1/ds1/yz/2/5/1:6/1:6')
+        self.assertEqual(view_tiles.func.__name__, Image.as_view().__name__)

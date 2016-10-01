@@ -67,7 +67,8 @@ urlpatterns = [
     url(r'^v0.6/group/', include('bosscore.urls.group-urls', namespace='v0.6')),
     url(r'^v0.6/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.6')),
     url(r'^v0.6/cutout/', include('bossspatialdb.urls', namespace='v0.6')),
-    url(r'^v0.6/tiles/', include('bosstiles.urls', namespace='v0.6')),
+    url(r'^v0.6/image/', include('bosstiles.image_urls', namespace='v0.6')),
+    url(r'^v0.6/tile/', include('bosstiles.tile_urls', namespace='v0.6')),
     url(r'^v0.6/sso/user/', include('sso.urls.user-urls', namespace='v0.6')),
     url(r'^v0.6/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.6')),
 
