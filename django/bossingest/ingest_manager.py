@@ -190,8 +190,13 @@ class IngestManager:
         Returns:
 
         """
-        ingest_job = IngestJob.objects.get(id=ingest_job_id)
-        return ingest_job
+        try:
+            ingest_job = IngestJob.objects.get(id=ingest_job_id)
+            return ingest_job
+        except IngestJob.DoesNotExist:
+            raise BossError("The ingest job with id {} does not exist".format(str(ingest_job_id)),
+                            ErrorCodes.OBJECT_NOT_FOUND)
+
 
     def delete_ingest_job(self, ingest_job_id):
         """
@@ -217,7 +222,7 @@ class IngestManager:
         except Exception as e:
             raise BossError("Unable to delete the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
         except IngestJob.DoesNotExist:
-            raise BossError("Ingest job with id {} does not exist".format(ingest_job_id), ErrorCodes.RESOURCE_NOT_FOUND)
+            raise BossError("Ingest job with id {} does not exist".format(ingest_job_id), ErrorCodes.OBJECT_NOT_FOUND)
         return ingest_job_id
 
 

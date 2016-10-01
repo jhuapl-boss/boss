@@ -44,6 +44,7 @@ class ErrorCodes(IntEnum):
     GROUP_NOT_FOUND = 4001
     USER_NOT_FOUND = 4002
     INTEGRITY_ERROR = 4003
+    OBJECT_NOT_FOUND = 4004
 
     # IO Errors
     IO_ERROR = 5000
@@ -81,6 +82,7 @@ RESP_CODES = {
     ErrorCodes.GROUP_NOT_FOUND: 404,
     ErrorCodes.USER_NOT_FOUND: 404,
     ErrorCodes.INTEGRITY_ERROR : 404,
+    ErrorCodes.OBJECT_NOT_FOUND : 404,
     ErrorCodes.IO_ERROR: 404,
     ErrorCodes.UNSUPPORTED_TRANSPORT_FORMAT: 404,
     ErrorCodes.SERIALIZATION_ERROR: 404,
