@@ -191,9 +191,6 @@ class IngestManager:
 
         """
         ingest_job = IngestJob.objects.get(id=ingest_job_id)
-        print (settings.KVIO_SETTINGS)
-               #,settings.STATEIO_CONFIG,settings.OBJECTIO_CONFIG)
-
         return ingest_job
 
     def delete_ingest_job(self, ingest_job_id):

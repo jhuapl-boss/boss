@@ -56,7 +56,7 @@ class BossIngestViewTestMixin(object):
         # Check if user is a member of the group
         url = '/' + version + '/ingest/1/'
         response = self.client.get(url)
-        assert (response.json()['id'] == 1)
+        assert (response.json()['ingest_job']['id'] == 1)
 
     def test_post_new_ingest_job(self):
         """ Test view to create a new ingest job """

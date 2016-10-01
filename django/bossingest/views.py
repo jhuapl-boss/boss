@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -28,7 +29,13 @@ class IngestJobView(APIView):
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
             serializer = IngestJobListSerializer(ingest_job)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            data = {}
+            data['ingest_job'] = serializer.data
+            data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
+            data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
+            data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
+            data['credentials'] = ''
+            return Response(data, status=status.HTTP_200_OK)
         except BossError as err:
                 return err.to_http()
 
