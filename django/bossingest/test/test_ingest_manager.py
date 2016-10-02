@@ -88,3 +88,10 @@ class BossIngestManagerTest(APITestCase):
         msg = json.loads(msg)
         assert (msg['job_id'] == 595)
 
+    def test_tile_bucket_name(self):
+        """ Test get tile bucket name"""
+
+        ingest_mgmr = IngestManager()
+        tile_bucket_name = ingest_mgmr.get_tile_bucket()
+        assert(tile_bucket_name is not None)
+

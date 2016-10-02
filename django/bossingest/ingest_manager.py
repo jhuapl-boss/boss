@@ -30,6 +30,7 @@ from bosscore.serializers import ChannelLayerSerializer
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
+from ndingest.ndbucket.tilebucket import TileBucket
 
 CONNECTER = '&'
 NDINGEST_DOMAIN_NAME = 'manavpj1.boss.io'
@@ -261,6 +262,15 @@ class IngestManager:
 
         """
         IngestQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+
+    def get_tile_bucket(self):
+        """
+
+        Returns:
+
+        """
+        return TileBucket.getBucketName()
+
 
     def generate_upload_tasks(self, job_id=None):
         """

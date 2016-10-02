@@ -29,8 +29,10 @@ class IngestJobView(APIView):
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
             serializer = IngestJobListSerializer(ingest_job)
+
             data = {}
             data['ingest_job'] = serializer.data
+            data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
             data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
