@@ -37,7 +37,7 @@ class TestDjangoResource(APITestCase):
         self.client.force_login(user)
         dbsetup.insert_test_data()
 
-        url = '/' + version + '/tiles/col1/exp1/channel1/xy/2/0:5/0:6/1/'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/2/0:5/0:6/1/'
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
@@ -47,7 +47,7 @@ class TestDjangoResource(APITestCase):
         self.request_channel = BossRequest(drfrequest)
 
         # Setup Layer
-        url = '/' + version + '/tiles/col1/exp1/layer1/xy/2/0:5/0:6/1/'
+        url = '/' + version + '/image/col1/exp1/layer1/xy/2/0:5/0:6/1/'
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
@@ -174,7 +174,6 @@ class TestDjangoResource(APITestCase):
 
         assert resource.get_lookup_key() == self.request_channel.get_lookup_key()
         assert isinstance(resource.get_lookup_key(), str)
-
 
     def test_basic_resource_get_data_type(self):
         """Test basic get datatype interface

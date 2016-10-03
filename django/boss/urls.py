@@ -56,7 +56,7 @@ urlpatterns = [
     url(r'^v0.5/group/', include('bosscore.urls.group-urls', namespace='v0.5')),
     url(r'^v0.5/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.5')),
     url(r'^v0.5/cutout/', include('bossspatialdb.urls', namespace='v0.5')),
-    url(r'^v0.5/tiles/', include('bosstiles.urls', namespace='v0.5')),
+    url(r'^v0.5/tiles/', include('bosstiles.image_urls', namespace='v0.5')),
     url(r'^v0.5/user/', include('bosscore.urls.user-urls', namespace='v0.5')),
     url(r'^v0.5/user-role/', include('bosscore.urls.user-role-urls', namespace='v0.5')),
 

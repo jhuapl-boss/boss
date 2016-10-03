@@ -95,7 +95,10 @@ class BossRequest:
         elif 'view' in request.query_params:
             raise BossError("Views not implemented. Specify the full request", ErrorCodes.FUTURE)
 
-        elif service == 'tiles':
+        elif service == 'image':
+            self.validate_image_service(webargs)
+
+        elif service == 'tile':
             self.validate_tile_service(webargs)
 
         else:
@@ -152,8 +155,7 @@ class BossRequest:
         else:
             raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
-
-    def validate_tile_service(self, webargs):
+    def validate_image_service(self, webargs):
         """
 
         Args:
@@ -186,6 +188,41 @@ class BossRequest:
         else:
             raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
+    def validate_tile_service(self, webargs):
+        """
+
+        Args:
+            webargs:
+
+        Returns:
+
+        """
+            (?P<resolution>\d)/(?P<x>\d+)/(?P<y>\d+)/(?P<z>\d+)/?(?P<t>\d+)?/?.*$',
+
+        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<orientation>xy|yz|xz)/" +
+                     "(?P<tile_size>\d+)/" +
+                     "(?P<resolution>\d)/(?P<x_args>\d+:?\d*)/(?P<y_args>\d+:?\d*)/(?P<z_args>\d+:?\d*)"
+                     + "/?(?P<rest>.*)?/?", webargs)
+
+        if m:
+            [collection_name, experiment_name, channel_layer_name, orientation, resolution, x_args, y_args,
+             z_args] = [arg for arg in m.groups()[:-1]]
+            time = m.groups()[-1]
+
+            self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.check_permissions()
+            if not time:
+                # get default time
+                self.time_start = self.channel_layer.default_time_step
+                self.time_stop = self.channel_layer.default_time_step + 1
+            else:
+                self.set_time(time)
+
+            self.set_tileargs(orientation, int(resolution), x_args, y_args, z_args)
+            self.set_boss_key()
+
+        else:
+            raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
     def initialize_request(self, collection_name, experiment_name, channel_layer_name):
         """
@@ -205,7 +242,6 @@ class BossRequest:
                 expstatus = self.set_experiment(experiment_name)
                 if channel_layer_name and expstatus:
                     self.set_channel_layer(channel_layer_name)
-
 
     def set_cutoutargs(self, resolution, x_range, y_range, z_range):
         """
@@ -575,7 +611,7 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-        if self.service =='cutout' or self.service == 'tiles':
+        if self.service =='cutout' or self.service == 'image' or self.service == 'tile':
             perm = BossPermissionManager.check_data_permissions(self.request.user, self.channel_layer,
                                                                   self.request.method)
         elif self.service =='meta':
@@ -591,7 +627,7 @@ class BossRequest:
             perm = BossPermissionManager.check_resource_permissions(self.request.user, obj,
                                                                 self.request.method)
         if not perm:
-            return BossHTTPError( "This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
+            return BossHTTPError("This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
 
     def get_boss_key(self):
         """

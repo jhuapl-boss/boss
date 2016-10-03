@@ -11,16 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import io
 from rest_framework import renderers
-import blosc
-import numpy as np
 
 
-class PNGImageXYRenderer(renderers.BaseRenderer):
-    """ A DRF renderer for redering an XY image
-
-    Should only be used by applications written in python
+class PNGRenderer(renderers.BaseRenderer):
+    """ A DRF renderer for rendering an XY image as a png
     """
     media_type = 'image/png'
     format = 'png'
@@ -28,15 +24,23 @@ class PNGImageXYRenderer(renderers.BaseRenderer):
     render_style = 'binary'
 
     def render(self, data, media_type=None, renderer_context=None):
-        return data
+        file_obj = io.BytesIO()
+        data.save(file_obj, "PNG")
+        file_obj.seek(0)
+        return file_obj.read()
 
 
 class JPEGRenderer(renderers.BaseRenderer):
+    """ A DRF renderer for rendering an XY image as a jpeg
+    """
     media_type = 'image/jpeg'
     format = 'jpg'
     charset = None
     render_style = 'binary'
 
     def render(self, data, media_type=None, renderer_context=None):
-        return data
+        file_obj = io.BytesIO()
+        data.save(file_obj, "JPEG")
+        file_obj.seek(0)
+        return file_obj.read()
 

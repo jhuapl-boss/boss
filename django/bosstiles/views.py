@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import io
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -19,9 +18,11 @@ from django.http import HttpResponse
 from django.conf import settings
 
 from bosscore.request import BossRequest
-from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
+from bosscore.error import BossError, BossHTTPError, ErrorCodes
 
 import spdb
+
+from .renderers import PNGRenderer, JPEGRenderer
 
 
 class Image(APIView):
@@ -30,6 +31,8 @@ class Image(APIView):
 
     * Requires authentication.
     """
+    renderer_classes = (PNGRenderer, JPEGRenderer)
+
     def __init__(self):
         super().__init__()
         self.data_type = None
@@ -51,12 +54,11 @@ class Image(APIView):
         :param z_args: Python style range indicating the Z coordinates of where to post the cuboid (eg. 100:200)
         :return:
         """
-
         # Process request and validate
         try:
             req = BossRequest(request)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return BossHTTPError(err[0], err[1])
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -65,12 +67,13 @@ class Image(APIView):
         try:
             self.bit_depth = resource.get_bit_depth()
         except ValueError:
-            return BossHTTPError(400, "Unsupported data type: {}".format(resource.get_data_type()))
+            return BossHTTPError("Datatype does not match channel/layer", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * self.bit_depth
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth/8)
         if total_bytes > settings.CUTOUT_MAX_SIZE:
-            return BossHTTPError(413, "Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.")
+            return BossHTTPError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+                                 ErrorCodes.REQUEST_TOO_LARGE)
 
         # Get interface to SPDB cache
         cache = spdb.spatialdb.SpatialDB(settings.KVIO_SETTINGS,
@@ -81,28 +84,22 @@ class Image(APIView):
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
         extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
 
-        try:
-            # Get a Cube instance with all time samples
-            data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
+        # Do a cutout as specified
+        data = cache.cutout(resource, corner, extent, req.get_resolution(),
+                            [req.get_time().start, req.get_time().stop])
 
-            # Covert the cutout back to an image and return it
-            if orientation == 'xy':
-                img = data.xy_image()
-            elif orientation == 'yz':
-                img = data.yz_image()
-            elif orientation == 'xz':
-                img = data.xz_image()
-            else:
-                return BossHTTPError(400, "Invalid orientation")
+        # Covert the cutout back to an image and return it
+        if orientation == 'xy':
+            img = data.xy_image()
+        elif orientation == 'yz':
+            img = data.yz_image()
+        elif orientation == 'xz':
+            img = data.xz_image()
+        else:
+            return BossHTTPError("Invalid orientation: {}".format(orientation),
+                                 ErrorCodes.INVALID_CUTOUT_ARGS)
 
-            fileobj = io.BytesIO()
-            img.save(fileobj, "PNG")
-            fileobj.seek(0)
-        except Exception as e:
-            # TODO: Eventually remove as this level of detail should not be sent to the user
-            return BossHTTPError(500, 'Error during tiles cutout: {}'.format(e))
-
-        return HttpResponse(fileobj.read(), content_type="image/png")
+        return Response(img)
 
 
 class Tile(APIView):
@@ -116,7 +113,7 @@ class Tile(APIView):
         self.data_type = None
         self.bit_depth = None
 
-    def get(self, request, collection, experiment, dataset, tile_size, resolution, x_idx, y_idx, z_idx, t_idx=None):
+    def get(self, request, collection, experiment, dataset, orientation, tile_size, resolution, x_idx, y_idx, z_idx, t_idx=None):
         """
         View to handle GET requests for a tile when providing indices. Currently only supports XY plane
 
@@ -132,13 +129,11 @@ class Tile(APIView):
         :param t_idx: the tile index in the T dimension
         :return:
         """
-        # Inject cutout params based on tile indices
-
         # Process request and validate
         try:
             req = BossRequest(request)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return BossHTTPError(err[0], err[1])
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -150,7 +145,7 @@ class Tile(APIView):
             return BossHTTPError("Datatype does not match channel/layer", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth / 8)
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth/8)
         if total_bytes > settings.CUTOUT_MAX_SIZE:
             return BossHTTPError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
                                  ErrorCodes.REQUEST_TOO_LARGE)
@@ -161,18 +156,32 @@ class Tile(APIView):
                                          settings.OBJECTIO_CONFIG)
 
         # Get the params to pull data out of the cache
-        corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
-        extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
+        if orientation == 'xy':
+            corner = (tile_size * x_idx, tile_size * y_idx, z_idx)
+            extent = (tile_size * (x_idx + 1), tile_size * (y_idx + 1), z_idx)
+        elif orientation == 'yz':
+            corner = (x_idx, tile_size * y_idx, tile_size * z_idx)
+            extent = (x_idx, tile_size * (y_idx + 1), tile_size * (z_idx + 1))
+        elif orientation == 'xz':
+            corner = (tile_size * x_idx, y_idx, tile_size * z_idx)
+            extent = (tile_size * (x_idx + 1), y_idx, tile_size * (z_idx + 1))
+        else:
+            return BossHTTPError("Invalid orientation: {}".format(orientation),
+                                 ErrorCodes.INVALID_CUTOUT_ARGS)
 
-        # Get a Cube instance with all time samples
-        data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
+        # Do a cutout as specified
+        data = cache.cutout(resource, corner, extent, req.get_resolution(),
+                            [req.get_time().start, req.get_time().stop])
 
         # Covert the cutout back to an image and return it
-        img = data.xy_image()
-
-        fileobj = io.BytesIO()
-        img.save(fileobj, "PNG")
-        fileobj.seek(0)
-
-        return HttpResponse(fileobj.read(), content_type="image/png")
+        if orientation == 'xy':
+            img = data.xy_image()
+        elif orientation == 'yz':
+            img = data.yz_image()
+        elif orientation == 'xz':
+            img = data.xz_image()
+        else:
+            return BossHTTPError("Invalid orientation: {}".format(orientation),
+                                 ErrorCodes.INVALID_CUTOUT_ARGS)
+        return Response(img)
 
