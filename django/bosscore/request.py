@@ -182,7 +182,7 @@ class BossRequest:
             else:
                 self.set_time(time)
 
-            self.set_tileargs(orientation, int(resolution), x_args, y_args, z_args)
+            self.set_imageargs(orientation, int(resolution), x_args, y_args, z_args)
             self.set_boss_key()
 
         else:
@@ -197,16 +197,12 @@ class BossRequest:
         Returns:
 
         """
-            (?P<resolution>\d)/(?P<x>\d+)/(?P<y>\d+)/(?P<z>\d+)/?(?P<t>\d+)?/?.*$',
-
         m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<orientation>xy|yz|xz)/" +
-                     "(?P<tile_size>\d+)/" +
-                     "(?P<resolution>\d)/(?P<x_args>\d+:?\d*)/(?P<y_args>\d+:?\d*)/(?P<z_args>\d+:?\d*)"
-                     + "/?(?P<rest>.*)?/?", webargs)
+                     "(?P<tile_size>\d+)/(?P<resolution>\d)/(?P<x>\d+)/(?P<y>\d+)/(?P<z>\d+)/?(?P<rest>.*)?/?", webargs)
 
         if m:
-            [collection_name, experiment_name, channel_layer_name, orientation, resolution, x_args, y_args,
-             z_args] = [arg for arg in m.groups()[:-1]]
+            [collection_name, experiment_name, channel_layer_name, orientation, tile_size, resolution, x, y, z] = \
+                [arg for arg in m.groups()[:-1]]
             time = m.groups()[-1]
 
             self.initialize_request(collection_name, experiment_name, channel_layer_name)
@@ -218,7 +214,7 @@ class BossRequest:
             else:
                 self.set_time(time)
 
-            self.set_tileargs(orientation, int(resolution), x_args, y_args, z_args)
+            self.set_tileargs(tile_size, orientation, int(resolution), x, y, z)
             self.set_boss_key()
 
         else:
@@ -288,7 +284,7 @@ class BossRequest:
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                             ErrorCodes.TYPE_ERROR)
 
-    def set_tileargs(self, orientation, resolution, x_args, y_args, z_args):
+    def set_imageargs(self, orientation, resolution, x_args, y_args, z_args):
         """
         Validate and initialize tile service arguments in the request
         Args:
@@ -345,6 +341,68 @@ class BossRequest:
         except TypeError:
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
                             ErrorCodes.TYPE_ERROR)
+
+    def set_tileargs(self, tile_size, orientation, resolution, x_idx, y_idx, z_idx):
+        """
+        Validate and initialize tile service arguments in the request
+        Args:
+            resolution: Integer indicating the level in the resolution hierarchy (0 = native)
+            orientation:
+            x_idx: X tile index
+            y_idx: Y tile index
+            z_idx: Z tile index
+
+        Raises:
+            BossError: For invalid requests
+
+        """
+        tile_size = int(tile_size)
+        x_idx = int(x_idx)
+        y_idx = int(y_idx)
+        z_idx = int(z_idx)
+
+        try:
+
+            if int(resolution) in range(0, self.experiment.num_hierarchy_levels):
+                self.resolution = int(resolution)
+
+            # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG
+
+            # Get the params to pull data out of the cache
+            if orientation == 'xy':
+                corner = (tile_size * x_idx, tile_size * y_idx, z_idx)
+                extent = (tile_size, tile_size, 1)
+            elif orientation == 'yz':
+                corner = (x_idx, tile_size * y_idx, tile_size * z_idx)
+                extent = (1, tile_size, tile_size)
+            elif orientation == 'xz':
+                corner = (tile_size * x_idx, y_idx, tile_size * z_idx)
+                extent = (tile_size, 1, tile_size)
+            else:
+                return BossHTTPError("Invalid orientation: {}".format(orientation),
+                                         ErrorCodes.INVALID_CUTOUT_ARGS)
+
+            self.x_start = int(corner[0])
+            self.x_stop = int(corner[0]+ extent[0])
+
+            self.y_start = int(corner[1])
+            self.y_stop = int(corner[1]+ extent[1])
+
+            self.z_start = int(corner[2])
+            self.z_stop = int(corner[2]+ extent[2])
+
+
+            # Check for valid arguments
+            if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop) or \
+                    (self.x_start < self.coord_frame.x_start) or (self.x_stop > self.coord_frame.x_stop) or \
+                    (self.y_start < self.coord_frame.y_start) or (self.y_stop > self.coord_frame.y_stop) or \
+                    (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
+                raise BossError("Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_idx, y_idx, z_idx),
+                                ErrorCodes.INVALID_CUTOUT_ARGS)
+        except TypeError:
+            raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_idx, y_idx, z_idx),
+                            ErrorCodes.TYPE_ERROR)
+
 
     def initialize_view_request(self, webargs):
         """
