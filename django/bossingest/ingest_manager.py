@@ -31,6 +31,7 @@ from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
 from ndingest.ndbucket.tilebucket import TileBucket
+from ndingest.nddynamo.boss_tileindexdb import BossTileIndexDB
 
 from bossutils.ingestcreds import IngestCredentials
 from ndingest.util.bossutil import BossUtil
@@ -231,6 +232,9 @@ class IngestManager:
             ingest_job.status = 3
             ingest_job.save()
 
+            # Remove ingest credentials for a job
+            self.remove_ingest_credentials(ingest_job_id)
+
         except Exception as e:
             raise BossError("Unable to delete the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
         except IngestJob.DoesNotExist:
@@ -381,7 +385,7 @@ class IngestManager:
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         queue.sendMessage(msg)
 
-    def delete_tiles_job(self, ingest_job):
+    def delete_chunks_job(self, ingest_job):
         """
 
         Args:
@@ -391,39 +395,12 @@ class IngestManager:
 
         """
 
-        # Iterate over the chunks for a job
+        # Query the tile index db for all the chunk keys
+        tiledb = BossTileIndexDB(ingest_job.collection + '&' + ingest_job.experiment)
+        chunks = list(tiledb.getTaskItems(ingest_job.id))
+        for chunk in chunks:
+            print (chunk)
 
-        # Get the project information
-        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel_layer
-        lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
-        [col_id, exp_id, ch_id] = lookup_key.split('&')
-        project_info = [col_id, exp_id, ch_id]
-
-        for time_step in range(ingest_job.t_start, ingest_job.t_stop, 1):
-            # For each time step, compute the chunks and tile keys
-
-            for z in range(ingest_job.z_start, ingest_job.z_stop, 16):
-                for y in range(ingest_job.y_start, ingest_job.y_stop, ingest_job.tile_size_y):
-                    for x in range(ingest_job.x_start, ingest_job.x_stop, ingest_job.tile_size_x):
-
-                        # compute the chunk indices
-                        chunk_x = int(x / ingest_job.tile_size_x)
-                        chunk_y = int(y / ingest_job.tile_size_y)
-                        chunk_z = int(z / 16)
-
-                        # Compute the number of tiles in the chunk
-                        if ingest_job.z_stop - z >= 16:
-                            num_of_tiles = 16
-                        else:
-                            num_of_tiles = ingest_job.z_stop - z
-
-                        # Generate the chunk key
-                        chunk_key = (BossBackend(self.config)).encode_chunk_key(num_of_tiles, project_info,
-                                                                                ingest_job.resolution,
-                                                                                chunk_x, chunk_y, chunk_z, time_step)
-
-                        # for each chunk key, delete entries from the tile_bucket
-                        print(chunk_key)
 
     def delete_tiles_chunkkey(self, chunk_key):
         """
@@ -447,3 +424,15 @@ class IngestManager:
         ingest_creds = IngestCredentials()
         policy = BossUtil.generate_ingest_policy(self.job.id, upload_queue, tile_bucket)
         ingest_creds.generate_credentials(self.job.id, policy.arn)
+
+    def remove_ingest_credentials(self,job_id):
+        """
+
+        Returns:
+
+        """
+        # Generate credentials for the ingest_job
+        # Create the credentials for the job
+        ingest_creds = IngestCredentials()
+        ingest_creds.remove_credentials(job_id)
+        ingest_creds.delete_policy(job_id)

@@ -85,6 +85,7 @@ class BossIntegrationIngestManagerTestMixin(object):
         try:
             ingest_mgmr.delete_upload_queue()
             ingest_mgmr.delete_ingest_queue()
+            ingest_mgmr.remove_ingest_credentials(ingest_job.id)
         except:
             raise
 
