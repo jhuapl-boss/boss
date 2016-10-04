@@ -427,12 +427,15 @@ class IngestManager:
 
     def remove_ingest_credentials(self,job_id):
         """
+        Remove the ingest credentials for a job
+        Args:
+            job_id: The id of the ingest job
 
         Returns:
-
+            status
         """
-        # Generate credentials for the ingest_job
         # Create the credentials for the job
         ingest_creds = IngestCredentials()
         ingest_creds.remove_credentials(job_id)
-        ingest_creds.delete_policy(job_id)
+        status = BossUtil.delete_ingest_policy(job_id)
+        return status

@@ -83,13 +83,14 @@ class BossIntegrationIngestManagerTestMixin(object):
             assert(upload_queue is not None)
             ingest_queue = IngestQueue(nd_proj, endpoint_url=None)
             assert (ingest_queue is not None)
+            ingest_mgmr.remove_ingest_credentials(ingest_job.id)
 
         except:
             raise
         finally:
             ingest_mgmr.delete_upload_queue()
             ingest_mgmr.delete_ingest_queue()
-            ingest_mgmr.remove_ingest_credentials(ingest_job.id)
+
 
 
     def test_generate_upload_tasks(self):
@@ -116,13 +117,14 @@ class BossIntegrationIngestManagerTestMixin(object):
                 # delete message from the queue
                 response = queue.deleteMessage(message_id, receipt_handle)
                 assert ('Successful' in response)
+            ingest_mgmr.remove_ingest_credentials(ingest_job.id)
 
         except:
             raise
         finally:
             ingest_mgmr.delete_upload_queue()
             ingest_mgmr.delete_ingest_queue()
-            ingest_mgmr.remove_ingest_credentials(ingest_job.id)
+
 
     @staticmethod
     def test_create_upload_task_message():
