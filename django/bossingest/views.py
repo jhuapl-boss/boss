@@ -8,6 +8,7 @@ from bosscore.error import BossError
 from bossingest.ingest_manager import IngestManager
 from bossingest.serializers import IngestJobListSerializer
 
+import bossutils
 from bossutils.ingestcreds import IngestCredentials
 # Create your views here.
 
@@ -37,9 +38,14 @@ class IngestJobView(APIView):
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
             data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
+            # add the credentials
             ingest_creds = IngestCredentials()
             data['credentials'] = ingest_creds.get_credentials(ingest_job.id)
-            
+
+            # add the lambda - Possibly remove this later
+            config = bossutils.configuration.BossConfig()
+            data['ingest_lamda'] = config["lambda"]["page_in_function"]
+
             return Response(data, status=status.HTTP_200_OK)
         except BossError as err:
                 return err.to_http()

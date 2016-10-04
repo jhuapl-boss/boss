@@ -84,9 +84,7 @@ class BossIngestViewTestMixin(object):
         url = '/' + version + '/ingest/{}/'.format(ingest_job['id'])
         response = self.client.delete(url)
         assert (response.status_code == 204)
-        import time
-        time.sleep(60)
-
+        
 
 class TestIntegrationBossIngestView(BossIngestViewTestMixin, APITestCase):
 

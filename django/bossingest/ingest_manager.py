@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import json
-from django.contrib.auth.models import User
-from django.conf import settings
+import os
 
 from ingest.core.config import Configuration
 from ingest.core.backend import BossBackend
@@ -25,7 +24,6 @@ from bossingest.models import IngestJob
 from bosscore.error import BossError, ErrorCodes, BossResourceNotFoundError
 from bosscore.models import Collection, Experiment, ChannelLayer
 from bosscore.lookup import LookUpKey
-from bosscore.serializers import ChannelLayerSerializer
 
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
@@ -142,7 +140,9 @@ class IngestManager:
 
                 self.generate_upload_tasks()
                 tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
-                self.create_ingest_credentials(upload_queue,tile_bucket)
+
+                if os.environ["NDINGEST_TEST"] == 0:
+                    self.create_ingest_credentials(upload_queue,tile_bucket)
 
             # TODO create channel if needed
 
@@ -204,7 +204,6 @@ class IngestManager:
             raise BossError("The ingest job with id {} does not exist".format(str(ingest_job_id)),
                             ErrorCodes.OBJECT_NOT_FOUND)
 
-
     def delete_ingest_job(self, ingest_job_id):
         """
 
@@ -227,20 +226,20 @@ class IngestManager:
             self.delete_ingest_queue()
 
             # delete any pending entries in the tile index database and tile bucket
-            self.delete_tiles_job(ingest_job)
+            # self.delete_tiles_job(ingest_job)
 
             ingest_job.status = 3
             ingest_job.save()
 
             # Remove ingest credentials for a job
-            self.remove_ingest_credentials(ingest_job_id)
+            if os.environ["NDINGEST_TEST"] == 0:
+                self.remove_ingest_credentials(ingest_job_id)
 
         except Exception as e:
             raise BossError("Unable to delete the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
         except IngestJob.DoesNotExist:
             raise BossError("Ingest job with id {} does not exist".format(ingest_job_id), ErrorCodes.OBJECT_NOT_FOUND)
         return ingest_job_id
-
 
     def create_upload_queue(self):
         """
@@ -285,7 +284,6 @@ class IngestManager:
 
         """
         return TileBucket.getBucketName()
-
 
     def generate_upload_tasks(self, job_id=None):
         """
@@ -350,7 +348,6 @@ class IngestManager:
                             # Upload the message
                             self.send_upload_task_message(msg)
 
-
     @staticmethod
     def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):
         """
@@ -394,13 +391,11 @@ class IngestManager:
         Returns:
 
         """
-
         # Query the tile index db for all the chunk keys
         tiledb = BossTileIndexDB(ingest_job.collection + '&' + ingest_job.experiment)
         chunks = list(tiledb.getTaskItems(ingest_job.id))
         for chunk in chunks:
-            print (chunk)
-
+            print(chunk)
 
     def delete_tiles_chunkkey(self, chunk_key):
         """
@@ -411,9 +406,9 @@ class IngestManager:
         Returns:
 
         """
-        print ('')
+        print('')
 
-    def create_ingest_credentials(self,upload_queue, tile_bucket):
+    def create_ingest_credentials(self, upload_queue, tile_bucket):
         """
 
         Returns:
@@ -425,7 +420,7 @@ class IngestManager:
         policy = BossUtil.generate_ingest_policy(self.job.id, upload_queue, tile_bucket)
         ingest_creds.generate_credentials(self.job.id, policy.arn)
 
-    def remove_ingest_credentials(self,job_id):
+    def remove_ingest_credentials(self, job_id):
         """
         Remove the ingest credentials for a job
         Args:
