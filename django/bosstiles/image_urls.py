@@ -17,6 +17,6 @@ from bosstiles import views
 
 urlpatterns = [
     # Url to handle cutout with a collection, experiment, dataset/annotation project
-    url(r'^(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/(?P<orientation>(xy|xz|yz))/(?P<resolution>\d)/(?P<x_args>\d+(:\d+)?)/(?P<y_args>\d+(:\d+)?)/(?P<z_args>\d+(:\d+)?)/?.*$',
-        views.Image.as_view()),
+    url(r'^(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/(?P<orientation>(xy|xz|yz))/(?P<resolution>\d)/(?P<x_args>\d+(:\d+)?)/(?P<y_args>\d+(:\d+)?)/(?P<z_args>\d+(:\d+)?)/?(?P<t_args>\d+)?/?.*$',
+        views.CutoutTile.as_view()),
 ]

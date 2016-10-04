@@ -13,8 +13,6 @@
 # limitations under the License.
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
-from django.http import HttpResponse
 from django.conf import settings
 
 from bosscore.request import BossRequest
@@ -25,7 +23,7 @@ import spdb
 from .renderers import PNGRenderer, JPEGRenderer
 
 
-class Image(APIView):
+class CutoutTile(APIView):
     """
     View to handle spatial cutouts by providing all datamodel fields
 
@@ -38,7 +36,7 @@ class Image(APIView):
         self.data_type = None
         self.bit_depth = None
 
-    def get(self, request, collection, experiment, dataset, orientation, resolution, x_args, y_args, z_args):
+    def get(self, request, collection, experiment, dataset, orientation, resolution, x_args, y_args, z_args, t_args=None):
         """
         View to handle GET requests for a cuboid of data while providing all params
 
@@ -58,7 +56,7 @@ class Image(APIView):
         try:
             req = BossRequest(request)
         except BossError as err:
-            return BossHTTPError(err[0], err[1])
+            return BossError.to_http()
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -108,6 +106,8 @@ class Tile(APIView):
 
     * Requires authentication.
     """
+    renderer_classes = (PNGRenderer, JPEGRenderer)
+
     def __init__(self):
         super().__init__()
         self.data_type = None
@@ -129,11 +129,12 @@ class Tile(APIView):
         :param t_idx: the tile index in the T dimension
         :return:
         """
+        # TODO: DMK Merge Tile and Image view once updated request validation is sorted out
         # Process request and validate
         try:
             req = BossRequest(request)
         except BossError as err:
-            return BossHTTPError(err[0], err[1])
+            return BossError.to_http()
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -156,18 +157,8 @@ class Tile(APIView):
                                          settings.OBJECTIO_CONFIG)
 
         # Get the params to pull data out of the cache
-        if orientation == 'xy':
-            corner = (tile_size * x_idx, tile_size * y_idx, z_idx)
-            extent = (tile_size * (x_idx + 1), tile_size * (y_idx + 1), z_idx)
-        elif orientation == 'yz':
-            corner = (x_idx, tile_size * y_idx, tile_size * z_idx)
-            extent = (x_idx, tile_size * (y_idx + 1), tile_size * (z_idx + 1))
-        elif orientation == 'xz':
-            corner = (tile_size * x_idx, y_idx, tile_size * z_idx)
-            extent = (tile_size * (x_idx + 1), y_idx, tile_size * (z_idx + 1))
-        else:
-            return BossHTTPError("Invalid orientation: {}".format(orientation),
-                                 ErrorCodes.INVALID_CUTOUT_ARGS)
+        corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
+        extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
 
         # Do a cutout as specified
         data = cache.cutout(resource, corner, extent, req.get_resolution(),
@@ -183,5 +174,5 @@ class Tile(APIView):
         else:
             return BossHTTPError("Invalid orientation: {}".format(orientation),
                                  ErrorCodes.INVALID_CUTOUT_ARGS)
-        return Response(img)
 
+        return Response(img)
