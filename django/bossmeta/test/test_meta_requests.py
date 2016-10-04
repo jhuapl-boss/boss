@@ -263,7 +263,6 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         try:
             BossRequest(drfrequest)
         except BossError as err:
-            print (err)
             assert err.status_code == 404
 
     def test_bossrequest_experiment_not_found(self):
