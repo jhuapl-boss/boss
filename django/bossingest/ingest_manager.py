@@ -32,8 +32,10 @@ from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
 from ndingest.ndbucket.tilebucket import TileBucket
 
+from bossutils.ingestcreds import IngestCredentials
+from ndingest.util.bossutil import BossUtil
+
 CONNECTER = '&'
-NDINGEST_DOMAIN_NAME = 'manavpj1.boss.io'
 
 
 class IngestManager:
@@ -129,15 +131,18 @@ class IngestManager:
                                           self.resolution, self.job.id)
 
                 # Create the upload queue
-                queue = self.create_upload_queue()
-                self.job.upload_queue = queue.url
+                upload_queue = self.create_upload_queue()
+                self.job.upload_queue = upload_queue.url
 
                 # Create the ingest queue
-                queue = self.create_ingest_queue()
-                self.job.ingest_queue = queue.url
+                ingest_queue = self.create_ingest_queue()
+                self.job.ingest_queue = ingest_queue.url
                 self.job.save()
 
                 self.generate_upload_tasks()
+                tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
+                self.create_ingest_credentials(upload_queue,tile_bucket)
+
             # TODO create channel if needed
 
         except BossError as err:
@@ -215,8 +220,14 @@ class IngestManager:
             proj_class = BossIngestProj.load()
             self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
                                       ingest_job.resolution, ingest_job.id)
+
+            # delete the ingest and upload_queue
             self.delete_upload_queue()
             self.delete_ingest_queue()
+
+            # delete any pending entries in the tile index database and tile bucket
+            self.delete_tiles_job(ingest_job)
+
             ingest_job.status = 3
             ingest_job.save()
 
@@ -370,3 +381,69 @@ class IngestManager:
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         queue.sendMessage(msg)
 
+    def delete_tiles_job(self, ingest_job):
+        """
+
+        Args:
+            ingest_job:
+
+        Returns:
+
+        """
+
+        # Iterate over the chunks for a job
+
+        # Get the project information
+        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel_layer
+        lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
+        [col_id, exp_id, ch_id] = lookup_key.split('&')
+        project_info = [col_id, exp_id, ch_id]
+
+        for time_step in range(ingest_job.t_start, ingest_job.t_stop, 1):
+            # For each time step, compute the chunks and tile keys
+
+            for z in range(ingest_job.z_start, ingest_job.z_stop, 16):
+                for y in range(ingest_job.y_start, ingest_job.y_stop, ingest_job.tile_size_y):
+                    for x in range(ingest_job.x_start, ingest_job.x_stop, ingest_job.tile_size_x):
+
+                        # compute the chunk indices
+                        chunk_x = int(x / ingest_job.tile_size_x)
+                        chunk_y = int(y / ingest_job.tile_size_y)
+                        chunk_z = int(z / 16)
+
+                        # Compute the number of tiles in the chunk
+                        if ingest_job.z_stop - z >= 16:
+                            num_of_tiles = 16
+                        else:
+                            num_of_tiles = ingest_job.z_stop - z
+
+                        # Generate the chunk key
+                        chunk_key = (BossBackend(self.config)).encode_chunk_key(num_of_tiles, project_info,
+                                                                                ingest_job.resolution,
+                                                                                chunk_x, chunk_y, chunk_z, time_step)
+
+                        # for each chunk key, delete entries from the tile_bucket
+                        print(chunk_key)
+
+    def delete_tiles_chunkkey(self, chunk_key):
+        """
+
+        Args:
+            chunk_key:
+
+        Returns:
+
+        """
+        print ('')
+
+    def create_ingest_credentials(self,upload_queue, tile_bucket):
+        """
+
+        Returns:
+
+        """
+        # Generate credentials for the ingest_job
+        # Create the credentials for the job
+        ingest_creds = IngestCredentials()
+        policy = BossUtil.generate_ingest_policy(self.job.id, upload_queue, tile_bucket)
+        ingest_creds.generate_credentials(self.job.id, policy.arn)
