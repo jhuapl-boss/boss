@@ -69,56 +69,60 @@ class BossIntegrationIngestManagerTestMixin(object):
 
     def test_setup_ingest(self):
         """Method to test the setup_ingest method"""
-        ingest_mgmr = IngestManager()
-        ingest_job = ingest_mgmr.setup_ingest(self.user.id, self.example_config_data)
-        assert (ingest_job is not None)
-
-        # Check if the queue's exist
-        proj_class = BossIngestProj.load()
-        nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
-                             ingest_job.resolution, ingest_job.id)
-        ingest_mgmr.nd_proj = nd_proj
-        upload_queue = UploadQueue(nd_proj, endpoint_url=None)
-        assert(upload_queue is not None)
-        ingest_queue = IngestQueue(nd_proj, endpoint_url=None)
-        assert (ingest_queue is not None)
         try:
+            ingest_mgmr = IngestManager()
+            ingest_job = ingest_mgmr.setup_ingest(self.user.id, self.example_config_data)
+            assert (ingest_job is not None)
+
+            # Check if the queue's exist
+            proj_class = BossIngestProj.load()
+            nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
+                             ingest_job.resolution, ingest_job.id)
+            ingest_mgmr.nd_proj = nd_proj
+            upload_queue = UploadQueue(nd_proj, endpoint_url=None)
+            assert(upload_queue is not None)
+            ingest_queue = IngestQueue(nd_proj, endpoint_url=None)
+            assert (ingest_queue is not None)
+
+        except:
+            raise
+        finally:
             ingest_mgmr.delete_upload_queue()
             ingest_mgmr.delete_ingest_queue()
             ingest_mgmr.remove_ingest_credentials(ingest_job.id)
-        except:
-            raise
 
 
     def test_generate_upload_tasks(self):
         """"""
-        ingest_mgmr = IngestManager()
-        ingest_job = ingest_mgmr.setup_ingest(self.user.id, self.example_config_data)
-        ingest_mgmr.generate_upload_tasks(ingest_job.id)
-        assert (ingest_job.collection == 'my_col_1')
-        assert (ingest_job.experiment == 'my_exp_1')
-        assert (ingest_job.channel_layer == 'my_ch_1')
-
-        # Pull the messages off the queue
-        proj_class = BossIngestProj.load()
-        nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
-                             ingest_job.resolution, ingest_job.id)
-        queue = UploadQueue(nd_proj, endpoint_url=None)
-
-        tmp = queue.receiveMessage(number_of_messages=10)
-        # receive message from the queue
-        for message_id, receipt_handle, message_body in tmp:
-            assert(message_body['job_id'] == ingest_job.id)
-
-            # delete message from the queue
-            response = queue.deleteMessage(message_id, receipt_handle)
-            assert ('Successful' in response)
-
         try:
-            ingest_mgmr.delete_upload_queue()
-            ingest_mgmr.delete_ingest_queue()
+            ingest_mgmr = IngestManager()
+            ingest_job = ingest_mgmr.setup_ingest(self.user.id, self.example_config_data)
+            ingest_mgmr.generate_upload_tasks(ingest_job.id)
+            assert (ingest_job.collection == 'my_col_1')
+            assert (ingest_job.experiment == 'my_exp_1')
+            assert (ingest_job.channel_layer == 'my_ch_1')
+
+            # Pull the messages off the queue
+            proj_class = BossIngestProj.load()
+            nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
+                             ingest_job.resolution, ingest_job.id)
+            queue = UploadQueue(nd_proj, endpoint_url=None)
+
+            tmp = queue.receiveMessage(number_of_messages=10)
+            # receive message from the queue
+            for message_id, receipt_handle, message_body in tmp:
+                assert(message_body['job_id'] == ingest_job.id)
+
+                # delete message from the queue
+                response = queue.deleteMessage(message_id, receipt_handle)
+                assert ('Successful' in response)
+
         except:
             raise
+        finally:
+            ingest_mgmr.delete_upload_queue()
+            ingest_mgmr.delete_ingest_queue()
+            ingest_mgmr.remove_ingest_credentials(ingest_job.id)
 
     @staticmethod
     def test_create_upload_task_message():
