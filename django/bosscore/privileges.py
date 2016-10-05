@@ -18,6 +18,8 @@ from bosscore.serializers import BossRoleSerializer
 from .models import BossRole
 from bossutils.keycloak import KeyCloakClient
 
+VALID_ROLES = ('admin', 'user-manager', 'resource-manager')
+
 def load_user_roles(user, roles):
     """
         Loads user roles from keycloak to django on user login
@@ -29,9 +31,20 @@ def load_user_roles(user, roles):
         Returns: None
 
         """
-    # DP TODO: clear all existing roles for the user, if they exist
+    # Remove any existing roles that are not asxsigned to the user
+    existing_roles = []
+    try:
+        for role in BossRole.objects.filter(user = user.pk):
+            if role.role not in roles:
+                role.delete()
+            else:
+                existing_roles.append(role.role)
+    except BossRole.DoesNotExist:
+        pass
+
+    # Assign any new roles
     for role in roles:
-        if role in ['admin', 'user-manager', 'resource-manager']:
+        if role in VALID_ROLES and role not in existing_roles:
             data = {'user': user.pk, 'role': role}
             serializer = BossRoleSerializer(data=data)
             if serializer.is_valid():
