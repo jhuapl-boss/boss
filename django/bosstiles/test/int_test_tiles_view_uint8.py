@@ -53,7 +53,7 @@ OBJECTIO_CONFIG = {"s3_flush_queue": None,
 
 config = bossutils.configuration.BossConfig()
 _, domain = config['aws']['cuboid_bucket'].split('.', 1)
-print("domain {}".format(domain))
+
 FLUSH_QUEUE_NAME = "intTest.S3FlushQueue.{}".format(domain).replace('.', '-')
 
 

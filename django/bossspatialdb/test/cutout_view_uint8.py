@@ -72,7 +72,6 @@ class CutoutInterfaceViewUint8TestMixin(object):
         """ Test posting the wrong bitdepth data """
 
         config = bossutils.configuration.BossConfig()
-        print(dict(config['aws']))
 
         test_mat = np.random.randint(1, 2 ** 16 - 1, (16, 128, 128))
         test_mat = test_mat.astype(np.uint16)
