@@ -34,6 +34,7 @@ from ndingest.ndbucket.tilebucket import TileBucket
 
 from bossutils.ingestcreds import IngestCredentials
 from ndingest.util.bossutil import BossUtil
+import jsonschema
 
 CONNECTER = '&'
 
@@ -70,10 +71,13 @@ class IngestManager:
 
         try:
             # Validate the schema
+            print(config_data)
             self.config = Configuration(config_data)
             self.validator = self.config.get_validator()
             self.validator.schema = self.config.schema
             self.validator.validate_schema()
+        except jsonschema.ValidationError as e:
+            raise BossError("Schema validation failed! {}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
         except Exception as e:
             raise BossError(" Could not validate the schema file.{}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
 
@@ -137,12 +141,15 @@ class IngestManager:
                 # Create the ingest queue
                 ingest_queue = self.create_ingest_queue()
                 self.job.ingest_queue = ingest_queue.url
-                self.job.save()
 
                 self.generate_upload_tasks()
                 tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
 
-                self.create_ingest_credentials(upload_queue,tile_bucket)
+                self.create_ingest_credentials(upload_queue, tile_bucket)
+
+                # Update status
+                self.job.status = 1
+                self.job.save()
 
             # TODO create channel if needed
 
