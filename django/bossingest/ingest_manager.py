@@ -30,6 +30,7 @@ from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
 from ndingest.ndbucket.tilebucket import TileBucket
 from ndingest.nddynamo.boss_tileindexdb import BossTileIndexDB
+from ndingest.ndbucket.tilebucket import TileBucket
 
 from bossutils.ingestcreds import IngestCredentials
 from ndingest.util.bossutil import BossUtil
@@ -74,7 +75,7 @@ class IngestManager:
             self.validator.schema = self.config.schema
             self.validator.validate_schema()
         except Exception as e:
-            raise BossError(" Could not validate the scheme file.{}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
+            raise BossError(" Could not validate the schema file.{}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
 
         return True
 
@@ -149,7 +150,7 @@ class IngestManager:
             raise BossError(err.message, err.error_code)
         except Exception as e:
             raise BossError("Unable to create the upload and ingest queue.{}".format(e),
-                                ErrorCodes.BOSS_SYSTEM_ERROR)
+                            ErrorCodes.BOSS_SYSTEM_ERROR)
         return self.job
 
     def create_ingest_job(self):
@@ -225,7 +226,7 @@ class IngestManager:
             self.delete_ingest_queue()
 
             # delete any pending entries in the tile index database and tile bucket
-            # self.delete_tiles_job(ingest_job)
+            self.delete_tiles(ingest_job)
 
             ingest_job.status = 3
             ingest_job.save()
@@ -338,7 +339,8 @@ class IngestManager:
                         for tile in range(0, num_of_tiles):
                             # get the tile key
                             tile_key = (BossBackend(self.config)).encode_tile_key(project_info, ingest_job.resolution,
-                                                                                  chunk_x, chunk_y, chunk_z, time_step)
+                                                                                  chunk_x, chunk_y, tile, time_step)
+
                             # Generate the upload task msg
                             msg = self.create_upload_task_message(ingest_job.id, chunk_key, tile_key,
                                                                   ingest_job.upload_queue, ingest_job.ingest_queue)
@@ -380,31 +382,31 @@ class IngestManager:
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         queue.sendMessage(msg)
 
-    def delete_chunks_job(self, ingest_job):
+    def delete_tiles(self, ingest_job):
         """
-
+        Delete all remaining tiles from the tile index database and tile bucket
         Args:
-            ingest_job:
+            ingest_job: Ingest job model
 
         Returns:
 
         """
-        # Query the tile index db for all the chunk keys
-        tiledb = BossTileIndexDB(ingest_job.collection + '&' + ingest_job.experiment)
-        chunks = list(tiledb.getTaskItems(ingest_job.id))
-        for chunk in chunks:
-            print(chunk)
+        try:
+            # Get all the chunks for a job
+            tiledb = BossTileIndexDB(ingest_job.collection + '&' + ingest_job.experiment)
+            tilebucket = TileBucket(ingest_job.collection + '&' + ingest_job.experiment)
+            chunks = list(tiledb.getTaskItems(ingest_job.id))
 
-    def delete_tiles_chunkkey(self, chunk_key):
-        """
+            for chunk in chunks:
+                chunk_key = chunk['chunk_key']
+                # delete each tile in the chunk
+                for key in chunk['tile_uploaded_map']:
+                    response = tilebucket.deleteObject(key)
+                tiledb.deleteCuboid(chunk['chunk_key'])
 
-        Args:
-            chunk_key:
-
-        Returns:
-
-        """
-        print('')
+        except Exception as e:
+            raise BossError ("Exception while deleteing tiles for the ingest job {}. {}".format(ingest_job.id,e),
+                             ErrorCodes.BOSS_SYSTEM_ERROR)
 
     def create_ingest_credentials(self, upload_queue, tile_bucket):
         """

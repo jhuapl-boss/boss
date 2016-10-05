@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import absolute_import
-import os
-import unittest
 import json
 
 from bossingest.ingest_manager import IngestManager
@@ -21,6 +19,7 @@ from bossingest.test.setup import SetupTests
 from bosscore.test.setup_db import SetupTestDB
 from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
+
 
 class BossIngestManagerTest(APITestCase):
 
@@ -95,3 +94,14 @@ class BossIngestManagerTest(APITestCase):
         tile_bucket_name = ingest_mgmr.get_tile_bucket()
         assert(tile_bucket_name is not None)
 
+
+    def test_create_ingest_credentials(self):
+        """"""
+        ingest_mgmr = IngestManager()
+        ingest_mgmr = IngestManager()
+        ingest_mgmr.validate_config_file(self.example_config_data)
+        ingest_mgmr.validate_properties()
+        ingest_mgmr.owner = self.user.pk
+        job = ingest_mgmr.create_ingest_job()
+        ingest_mgmr.job = job
+#        ingest_mgmr.create_ingest_credentials()
