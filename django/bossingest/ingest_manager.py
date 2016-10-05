@@ -345,7 +345,7 @@ class IngestManager:
                         for tile in range(0, num_of_tiles):
                             # get the tile key
                             tile_key = (BossBackend(self.config)).encode_tile_key(project_info, ingest_job.resolution,
-                                                                                  chunk_x, chunk_y, chunk_z, time_step)
+                                                                                  chunk_x, chunk_y, tile, time_step)
                             # Generate the upload task msg
                             msg = self.create_upload_task_message(ingest_job.id, chunk_key, tile_key,
                                                                   ingest_job.upload_queue, ingest_job.ingest_queue)
