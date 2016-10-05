@@ -141,8 +141,7 @@ class IngestManager:
                 self.generate_upload_tasks()
                 tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
 
-                if os.environ["NDINGEST_TEST"] == 0:
-                    self.create_ingest_credentials(upload_queue,tile_bucket)
+                self.create_ingest_credentials(upload_queue,tile_bucket)
 
             # TODO create channel if needed
 
@@ -232,8 +231,7 @@ class IngestManager:
             ingest_job.save()
 
             # Remove ingest credentials for a job
-            if os.environ["NDINGEST_TEST"] == 0:
-                self.remove_ingest_credentials(ingest_job_id)
+            self.remove_ingest_credentials(ingest_job_id)
 
         except Exception as e:
             raise BossError("Unable to delete the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
