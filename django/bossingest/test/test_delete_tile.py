@@ -131,8 +131,8 @@ class BossIngestManagerDeleteTest(APITestCase):
                         key_map = {}
                         for tile in range (0, num_of_tiles):
                             # get the object key and upload it
-                            tile_key = tilebucket.encodeObjectKey(ch_id, ingest_job.resolution,
-                                                          chunk_x, chunk_y, tile, time_step)
+                            #tile_key = tilebucket.encodeObjectKey(ch_id, ingest_job.resolution,
+                            #                              chunk_x, chunk_y, tile, time_step)
                             tile_key = 'fakekey' + str(tile)
                             tile_index_db.markTileAsUploaded(chunk_key, tile_key)
 

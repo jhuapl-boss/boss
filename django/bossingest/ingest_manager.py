@@ -71,7 +71,6 @@ class IngestManager:
 
         try:
             # Validate the schema
-            print(config_data)
             self.config = Configuration(config_data)
             self.validator = self.config.get_validator()
             self.validator.schema = self.config.schema
