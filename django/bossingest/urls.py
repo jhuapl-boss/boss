@@ -13,10 +13,12 @@
 # limitations under the License.
 
 from django.conf.urls import url
-from bosstiles import views
+from bossingest import views
 
 urlpatterns = [
-    # Url to handle cutout with a collection, experiment, dataset/annotation project
-    url(r'^(?P<collection>\w+)/(?P<experiment>\w+)/(?P<dataset>\w+)/(?P<orientation>(xy|xz|yz))/(?P<resolution>\d)/(?P<x_args>\d+(:\d+)?)/(?P<y_args>\d+(:\d+)?)/(?P<z_args>\d+(:\d+)?)/?.*$',
-        views.Tiles.as_view()),
-]
+
+    url(r'(?P<ingest_job_id>[\d]+)/?$', views.IngestJobView.as_view()),
+
+    url(r'^$', views.IngestJobView.as_view()),
+
+  ]

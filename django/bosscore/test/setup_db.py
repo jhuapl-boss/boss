@@ -78,6 +78,13 @@ class SetupTestDB:
         self.add_layer('col1', 'exp1', 'layer1', 0, 0, 'uint64')
         self.add_channel_layer_map('col1', 'exp1', 'channel1', 'layer1')
 
+    def insert_ingest_test_data(self):
+
+        self.add_collection('my_col_1', 'Description for collection1')
+        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4, 1)
+        self.add_experiment('my_col_1', 'my_exp_1', 'cf1', 10, 500)
+        self.add_channel('my_col_1', 'my_exp_1', 'my_ch_1', 0, 0, 'uint8')
+
     def add_permissions(self, group, obj):
         # Get the type of model
         ct = ContentType.objects.get_for_model(obj)

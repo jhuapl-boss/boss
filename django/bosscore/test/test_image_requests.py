@@ -18,16 +18,16 @@ from django.http import HttpRequest
 from django.conf import settings
 from django.contrib.auth.models import User
 
-from bosscore.request import BossRequest
+from ..request import BossRequest
 from bosscore.error import BossError
-from bosscore.test.setup_db import SetupTestDB
+from .setup_db import SetupTestDB
 
 version = settings.BOSS_VERSION
 
 
 class BossTileRequestTests(APITestCase):
     """
-    Class to test Boss tile requests and validation
+    Class to test boss requests
     """
 
     def setUp(self):
@@ -44,16 +44,15 @@ class BossTileRequestTests(APITestCase):
 
     def test_request_tile_init_channel(self):
         """
-        Test initialization of tile requests for the datamodel with a channel
+        Test initialization of tile requests for the datamodel
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/2/0:5/0:6/1/'
         col = 'col1'
         exp = 'exp1'
         channel = 'channel1'
         boss_key = 'col1&exp1&channel1'
         boss_key_list = 'col1&exp1&channel1&2&0'
-
 
         # Create the request
         req = HttpRequest()
@@ -70,10 +69,10 @@ class BossTileRequestTests(APITestCase):
 
     def test_request_tile_init_layer(self):
         """
-        Test initialization of tile requests for the datamodel with a layer
+        Test initialization of tile requests for the datamodel
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/layer1/xy/512/2/0/0/1'
+        url = '/' + version + '/image/col1/exp1/layer1/xy/2/0:5/0:6/1/'
         col = 'col1'
         exp = 'exp1'
         layer = 'layer1'
@@ -93,14 +92,14 @@ class BossTileRequestTests(APITestCase):
 
     def test_request_tile_init_tileargs_channel(self):
         """
-        Test initialization of tile arguments for a tile request for a channel
+        Test initialization of tile arguments for a tile request
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/2/0:5/0:6/1/'
 
         res = 2
-        (x_start, x_stop) = (0, 512)
-        (y_start, y_stop) = (0, 512)
+        (x_start, x_stop) = (0, 5)
+        (y_start, y_stop) = (0, 6)
         (z_start, z_stop) = (1, 2)
 
         # Create the request
@@ -128,7 +127,7 @@ class BossTileRequestTests(APITestCase):
         Test initialization of timesample arguments  without a specific timesample
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/2/0:5/0:6/1/'
 
         # Create the request
         req = HttpRequest()
@@ -144,7 +143,7 @@ class BossTileRequestTests(APITestCase):
         Test initialization of timesample arguments  with a single time
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1/1/'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/2/0:5/0:6/1/1/'
 
         # Create the request
         req = HttpRequest()
@@ -161,7 +160,7 @@ class BossTileRequestTests(APITestCase):
         :return:
         """
 
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1/'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/2/0:5/0:6/1/'
         exp_boss_keys = ['col1&exp1&channel1&2&0']
 
         # Create the request
@@ -173,7 +172,7 @@ class BossTileRequestTests(APITestCase):
         boss_keys = ret.get_boss_key_list()
         self.assertEqual(boss_keys, exp_boss_keys)
 
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1/1/'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/2/0:5/0:6/1/1/'
         exp_boss_keys = ['col1&exp1&channel1&2&1']
 
         # Create the request
@@ -192,7 +191,7 @@ class BossTileRequestTests(APITestCase):
         frame
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/7000/1/1/1/'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/0/990:1010/0:6/1/'
 
         # Create the request
         req = HttpRequest()
@@ -205,11 +204,11 @@ class BossTileRequestTests(APITestCase):
 
     def test_request_tile_invalid_yargs(self):
         """
-        Test initialization of tile arguments for a invalid tile request. The y-args are outside the coordinate
+        Test initialization of tile arguments for a invalid tile request. The x-args are outside the coordinate
         frame
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/7000/1/1/'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/0/0:6/0:1010/1/'
 
         # Create the request
         req = HttpRequest()
@@ -222,11 +221,11 @@ class BossTileRequestTests(APITestCase):
 
     def test_request_tile_invalid_zargs(self):
         """
-        Test initialization of tile arguments for a invalid tile request. The z-args are outside the coordinate
+        Test initialization of tile arguments for a invalid tile request. The x-args are outside the coordinate
         frame
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/1/7000/1/'
+        url = '/' + version + '/image/col1/exp1/channel1/xy/0/0:6/0:6/1040/'
 
         # Create the request
         req = HttpRequest()
@@ -239,10 +238,11 @@ class BossTileRequestTests(APITestCase):
 
     def test_request_tile_invalid_orientation(self):
         """
-        Test initialization of tile arguments for a invalid tile request. Unrecognized orientation
+        Test initialization of tile arguments for a invalid tile request. The x-args are outside the coordinate
+        frame
         :return:
         """
-        url = '/' + version + '/tile/col1/exp1/channel1/xe/512/2/0/1/1/1/'
+        url = '/' + version + '/image/col1/exp1/channel1/xe/0/0:6/0:6/1/'
 
         # Create the request
         req = HttpRequest()

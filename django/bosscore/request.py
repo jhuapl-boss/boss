@@ -95,7 +95,10 @@ class BossRequest:
         elif 'view' in request.query_params:
             raise BossError("Views not implemented. Specify the full request", ErrorCodes.FUTURE)
 
-        elif service == 'tiles':
+        elif service == 'image':
+            self.validate_image_service(webargs)
+
+        elif service == 'tile':
             self.validate_tile_service(webargs)
 
         else:
@@ -152,8 +155,7 @@ class BossRequest:
         else:
             raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
-
-    def validate_tile_service(self, webargs):
+    def validate_image_service(self, webargs):
         """
 
         Args:
@@ -180,12 +182,43 @@ class BossRequest:
             else:
                 self.set_time(time)
 
-            self.set_tileargs(orientation, int(resolution), x_args, y_args, z_args)
+            self.set_imageargs(orientation, int(resolution), x_args, y_args, z_args)
             self.set_boss_key()
 
         else:
             raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
+    def validate_tile_service(self, webargs):
+        """
+
+        Args:
+            webargs:
+
+        Returns:
+
+        """
+        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<orientation>xy|yz|xz)/" +
+                     "(?P<tile_size>\d+)/(?P<resolution>\d)/(?P<x>\d+)/(?P<y>\d+)/(?P<z>\d+)/?(?P<rest>.*)?/?", webargs)
+
+        if m:
+            [collection_name, experiment_name, channel_layer_name, orientation, tile_size, resolution, x, y, z] = \
+                [arg for arg in m.groups()[:-1]]
+            time = m.groups()[-1]
+
+            self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.check_permissions()
+            if not time:
+                # get default time
+                self.time_start = self.channel_layer.default_time_step
+                self.time_stop = self.channel_layer.default_time_step + 1
+            else:
+                self.set_time(time)
+
+            self.set_tileargs(tile_size, orientation, int(resolution), x, y, z)
+            self.set_boss_key()
+
+        else:
+            raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
     def initialize_request(self, collection_name, experiment_name, channel_layer_name):
         """
@@ -205,7 +238,6 @@ class BossRequest:
                 expstatus = self.set_experiment(experiment_name)
                 if channel_layer_name and expstatus:
                     self.set_channel_layer(channel_layer_name)
-
 
     def set_cutoutargs(self, resolution, x_range, y_range, z_range):
         """
@@ -252,7 +284,7 @@ class BossRequest:
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                             ErrorCodes.TYPE_ERROR)
 
-    def set_tileargs(self, orientation, resolution, x_args, y_args, z_args):
+    def set_imageargs(self, orientation, resolution, x_args, y_args, z_args):
         """
         Validate and initialize tile service arguments in the request
         Args:
@@ -309,6 +341,68 @@ class BossRequest:
         except TypeError:
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
                             ErrorCodes.TYPE_ERROR)
+
+    def set_tileargs(self, tile_size, orientation, resolution, x_idx, y_idx, z_idx):
+        """
+        Validate and initialize tile service arguments in the request
+        Args:
+            resolution: Integer indicating the level in the resolution hierarchy (0 = native)
+            orientation:
+            x_idx: X tile index
+            y_idx: Y tile index
+            z_idx: Z tile index
+
+        Raises:
+            BossError: For invalid requests
+
+        """
+        tile_size = int(tile_size)
+        x_idx = int(x_idx)
+        y_idx = int(y_idx)
+        z_idx = int(z_idx)
+
+        try:
+
+            if int(resolution) in range(0, self.experiment.num_hierarchy_levels):
+                self.resolution = int(resolution)
+
+            # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG
+
+            # Get the params to pull data out of the cache
+            if orientation == 'xy':
+                corner = (tile_size * x_idx, tile_size * y_idx, z_idx)
+                extent = (tile_size, tile_size, 1)
+            elif orientation == 'yz':
+                corner = (x_idx, tile_size * y_idx, tile_size * z_idx)
+                extent = (1, tile_size, tile_size)
+            elif orientation == 'xz':
+                corner = (tile_size * x_idx, y_idx, tile_size * z_idx)
+                extent = (tile_size, 1, tile_size)
+            else:
+                return BossHTTPError("Invalid orientation: {}".format(orientation),
+                                         ErrorCodes.INVALID_CUTOUT_ARGS)
+
+            self.x_start = int(corner[0])
+            self.x_stop = int(corner[0]+ extent[0])
+
+            self.y_start = int(corner[1])
+            self.y_stop = int(corner[1]+ extent[1])
+
+            self.z_start = int(corner[2])
+            self.z_stop = int(corner[2]+ extent[2])
+
+
+            # Check for valid arguments
+            if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop) or \
+                    (self.x_start < self.coord_frame.x_start) or (self.x_stop > self.coord_frame.x_stop) or \
+                    (self.y_start < self.coord_frame.y_start) or (self.y_stop > self.coord_frame.y_stop) or \
+                    (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
+                raise BossError("Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_idx, y_idx, z_idx),
+                                ErrorCodes.INVALID_CUTOUT_ARGS)
+        except TypeError:
+            raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_idx, y_idx, z_idx),
+                            ErrorCodes.TYPE_ERROR)
+
 
     def initialize_view_request(self, webargs):
         """
@@ -575,7 +669,7 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-        if self.service =='cutout' or self.service == 'tiles':
+        if self.service =='cutout' or self.service == 'image' or self.service == 'tile':
             perm = BossPermissionManager.check_data_permissions(self.request.user, self.channel_layer,
                                                                   self.request.method)
         elif self.service =='meta':
@@ -591,7 +685,7 @@ class BossRequest:
             perm = BossPermissionManager.check_resource_permissions(self.request.user, obj,
                                                                 self.request.method)
         if not perm:
-            return BossHTTPError( "This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
+            return BossHTTPError("This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
 
     def get_boss_key(self):
         """
