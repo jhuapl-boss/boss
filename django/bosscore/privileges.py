@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from functools import wraps
 from bosscore.error import BossHTTPError, ErrorCodes
 from bosscore.serializers import BossRoleSerializer
@@ -50,7 +50,10 @@ def load_user_roles(user, roles):
             if serializer.is_valid():
                 serializer.save()
             else:
+                # TODO: Clean up error handling for this method
                 return BossHTTPError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
+
+    Group.objects.get_or_create(name=user.username + '-primary')
 
 # Decorators to check that the user has the right role
 def check_role(role_name):
