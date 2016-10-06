@@ -54,12 +54,12 @@ class IngestJobView(APIView):
             channel_layer = ChannelLayer.objects.get(name=data['ingest_job']["channel_layer"], experiment=experiment)
 
             resource = {}
-            resource['boss_key'] = ['{}&{}&{}'.format(data['ingest_job']["collection"],
+            resource['boss_key'] = '{}&{}&{}'.format(data['ingest_job']["collection"],
                                                       data['ingest_job']["experiment"],
-                                                      data['ingest_job']["channel_layer"])]
-            resource['lookup_key'] = ['{}&{}&{}'.format(collection.id,
+                                                      data['ingest_job']["channel_layer"])
+            resource['lookup_key'] = '{}&{}&{}'.format(collection.id,
                                                         experiment.id,
-                                                        channel_layer.id)]
+                                                        channel_layer.id)
             resource['collection'] = {}
             resource['collection']['name'] = collection.name
             resource['collection']['description'] = collection.description
