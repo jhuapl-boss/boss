@@ -113,7 +113,7 @@ class BossUser(APIView):
                 }
                 data = json.dumps(data)
                 response = kc.create_user(data)
-                user_create = True
+                user_created = True
 
                 data = {
                     "type": "password",

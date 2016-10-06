@@ -207,7 +207,7 @@ class BossHTTPError(JsonResponse):
         super(BossHTTPError, self).__init__(data)
 
 class BossKeycloakError(JsonResponse):
-    def __init__(self, message):
+    def __init__(self, message, code = ErrorCodes.KEYCLOAK_EXCEPTION):
         """
         Custom HTTP error class for converting a KeyCloakError exception into a JsonResponse
 
