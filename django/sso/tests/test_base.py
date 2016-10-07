@@ -31,6 +31,8 @@ try:
     import bossutils
 
     patch_check_role()
+
+    from sso.views.views_user import KeyCloakError
 except ImportError:
     # Stubb out
     sys.modules['bossutils'] = mock.MagicMock()
