@@ -12,59 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework.test import APITestCase, APIRequestFactory, force_authenticate
-from django.contrib.auth.models import User
 from unittest import mock
-import sys, json
+import json
 
-class KeyCloakError(Exception):
-    def __init__(self, status, data):
-        super(KeyCloakError, self).__init__(data)
-        self.status = status
-        self.data = data
+from .test_base import TestBase, raise_error
 
-def raise_error(*args, **kwargs):
-    raise KeyCloakError(500, {})
-
-sys.modules['bossutils'] = mock.Mock()
-sys.modules['bossutils.aws'] = mock.Mock()
-sys.modules['bossutils.logger'] = mock.Mock()
-sys.modules['bossutils.keycloak'] = mock.Mock()
-mock.patch('bosscore.privileges.check_role', lambda x: lambda y: y).start() # apply right now
 from sso.views.views_user import BossUser
-import sso.views.views_user
-sso.views.views_user.KeyCloakError = KeyCloakError
 
-from django.test import TestCase
-from django.conf import settings
 
-VERSION = settings.BOSS_VERSION
-TEST_USER = 'testuser'
-
-class TestBossUser(APITestCase):
-    def setUp(self):
-        """
-        Initialize the database
-        :return:
-        """
-        self.user = User.objects.create_user(username=TEST_USER)
-
-    def makeRequest(self, get=None, post=None, delete=None, data=None):
-        factory = APIRequestFactory()
-
-        if get is not None:
-            request = factory.get(get)
-        elif post is not None:
-            request = factory.post(post, data)
-        elif delete is not None:
-            request = factory.delete(delete)
-        else:
-            raise Exception('Unsupported request type')
-
-        force_authenticate(request, user=self.user)
-
-        return request
-
+class TestBossUser(TestBase):
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
     def test_get_user(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
@@ -106,6 +62,7 @@ class TestBossUser(APITestCase):
         response = BossUser.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 201)
+        self.assertIsNone(response.data)
 
         call1 = mock.call.create_user(json.dumps({'username': 'test',
                                                   'firstName': 'first',
@@ -160,6 +117,7 @@ class TestBossUser(APITestCase):
         response = BossUser.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 204)
+        self.assertIsNone(response.data)
 
         call = mock.call.delete_user('test')
         self.assertEqual(ctxMgr.mock_calls, [call])

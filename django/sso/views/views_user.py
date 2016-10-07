@@ -35,7 +35,7 @@ LOG = BossLogger().logger
 ####
 VALID_ROLES = ('admin', 'user-manager', 'resource-manager')
 
-def validate_role(kwarg="role_name"):
+def validate_role(arg=3, kwarg="role_name"):
     """ Validate the role / role_name function argument
         Args:
             kwarg (string): The index into the kwargs dictionary of keyword arguments
@@ -45,7 +45,7 @@ def validate_role(kwarg="role_name"):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            role = kwargs[kwarg]
+            role = args[arg] if len(args) > arg else kwargs.get(kwarg)
             if role is not None and role not in VALID_ROLES:
                 return BossHTTPError("Invalid role name {}".format(role), ErrorCodes.INVALID_ROLE)
             return func(*args, **kwargs)
