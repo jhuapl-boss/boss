@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-import os
+import jsonschema
 
 from ingest.core.config import Configuration
 from ingest.core.backend import BossBackend
@@ -28,20 +28,18 @@ from bosscore.lookup import LookUpKey
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
-from ndingest.ndbucket.tilebucket import TileBucket
 from ndingest.nddynamo.boss_tileindexdb import BossTileIndexDB
 from ndingest.ndbucket.tilebucket import TileBucket
+from ndingest.util.bossutil import BossUtil
 
 from bossutils.ingestcreds import IngestCredentials
-from ndingest.util.bossutil import BossUtil
-import jsonschema
 
 CONNECTER = '&'
 
 
 class IngestManager:
     """
-    Helper function for the boss ingest service
+    Helper class for the boss ingest service
 
     """
 
@@ -62,10 +60,12 @@ class IngestManager:
     def validate_config_file(self, config_data):
         """
         Method to validate an ingest config file
+
         Args:
             config_data:
 
         Returns:
+            (bool) : Status of the validation
 
         """
 
@@ -235,6 +235,8 @@ class IngestManager:
             self.delete_tiles(ingest_job)
 
             ingest_job.status = 3
+            ingest_job.ingest_queue = None
+            ingest_job.upload_queue = None
             ingest_job.save()
 
             # Remove ingest credentials for a job

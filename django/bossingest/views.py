@@ -36,6 +36,10 @@ class IngestJobView(APIView):
             # Start setting up output
             data = {}
             data['ingest_job'] = serializer.data
+            if ingest_job.status == 3:
+                # Return the information for the deleted job
+                return Response(data, status=status.HTTP_200_OK)
+
             data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
