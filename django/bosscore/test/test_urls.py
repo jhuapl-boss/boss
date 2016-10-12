@@ -18,13 +18,13 @@ from django.core.urlresolvers import resolve
 from django.conf import settings
 
 from bosscore.views.views_resource import CollectionList, CollectionDetail, ExperimentList, ExperimentDetail, \
-    ChannelList, LayerList, ChannelLayerDetail, CoordinateFrameList, CoordinateFrameDetail
+    ChannelList, ChannelDetail, CoordinateFrameList, CoordinateFrameDetail
 from bosscore.views.views_permission import ResourceUserPermission
 from bosscore.views.views_group import BossGroupMember, BossGroup
 from bosscore.views.views_user import BossUserRole, BossUser, BossUserGroups
 
 
-version = settings.BOSS_VERSION
+version = 'v0.7'
 
 
 class BossCoreResourceRoutingTests(APITestCase):
@@ -37,10 +37,10 @@ class BossCoreResourceRoutingTests(APITestCase):
 
         """
 
-        match = resolve('/' + version + '/resource/collections/')
+        match = resolve('/' + version + '/collection/')
         self.assertEqual(match.func.__name__, CollectionList.as_view().__name__)
 
-        match = resolve('/' + version + '/resource/col1/')
+        match = resolve('/' + version + '/collection/col1/')
         self.assertEqual(match.func.__name__, CollectionDetail.as_view().__name__)
 
     def test_manage_data_urls_experiment_resolves(self):
@@ -51,10 +51,10 @@ class BossCoreResourceRoutingTests(APITestCase):
 
         """
 
-        match = resolve('/' + version + '/resource/col1/experiments')
+        match = resolve('/' + version + '/collection/col1/experiment')
         self.assertEqual(match.func.__name__, ExperimentList.as_view().__name__)
 
-        match = resolve('/' + version + '/resource/col1/exp1/')
+        match = resolve('/' + version + '/collection/col1/experiment/exp1/')
         self.assertEqual(match.func.__name__, ExperimentDetail.as_view().__name__)
 
     def test_manage_data_urls_channel_layer_resolves(self):
@@ -65,14 +65,12 @@ class BossCoreResourceRoutingTests(APITestCase):
 
         """
 
-        match = resolve('/' + version + '/resource/col1/exp1/channels/')
+        match = resolve('/' + version + '/collection/col1/experiment/exp1/channel/')
         self.assertEqual(match.func.__name__, ChannelList.as_view().__name__)
 
-        match = resolve('/' + version + '/resource/col1/exp1/layers/')
-        self.assertEqual(match.func.__name__, LayerList.as_view().__name__)
+        match = resolve('/' + version + '/collection/col1/experiment/exp1/channel/channel1/')
+        self.assertEqual(match.func.__name__, ChannelDetail.as_view().__name__)
 
-        match = resolve('/' + version + '/resource/col1/exp1/channel1/')
-        self.assertEqual(match.func.__name__, ChannelLayerDetail.as_view().__name__)
 
     def test_manage_data_urls_coordinateframes_resolves(self):
         """
@@ -82,10 +80,10 @@ class BossCoreResourceRoutingTests(APITestCase):
 
         """
 
-        match = resolve('/' + version + '/resource/coordinateframes')
+        match = resolve('/' + version + '/coord/')
         self.assertEqual(match.func.__name__, CoordinateFrameList.as_view().__name__)
 
-        match = resolve('/' + version + '/resource/coordinateframes/cf1/')
+        match = resolve('/' + version + '/coord/cf1/')
         self.assertEqual(match.func.__name__, CoordinateFrameDetail.as_view().__name__)
 
 class BossCorePermissionRoutingTests(APITestCase):
