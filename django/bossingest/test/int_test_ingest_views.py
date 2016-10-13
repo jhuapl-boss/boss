@@ -72,7 +72,7 @@ class BossIngestViewTestMixin(object):
         # Check if the queue's exist
         ingest_job = response.json()
         proj_class = BossIngestProj.load()
-        nd_proj = proj_class(ingest_job['collection'], ingest_job['experiment'], ingest_job['channel_layer'],
+        nd_proj = proj_class(ingest_job['collection'], ingest_job['experiment'], ingest_job['channel'],
                              0, ingest_job['id'])
         self.nd_proj = nd_proj
         upload_queue = UploadQueue(nd_proj, endpoint_url=None)
