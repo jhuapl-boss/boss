@@ -65,7 +65,7 @@ class BossIngestManagerTest(APITestCase):
         ingest_mgmr.validate_properties()
         assert (ingest_mgmr.collection.name == 'my_col_1')
         assert (ingest_mgmr.experiment.name == 'my_exp_1')
-        assert (ingest_mgmr.channel_layer.name == 'my_ch_1')
+        assert (ingest_mgmr.channel.name == 'my_ch_1')
 
     def test_create_ingest_job(self):
         """Method to test creation o a ingest job from a config_data dict"""

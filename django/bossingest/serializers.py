@@ -30,5 +30,5 @@ class IngestJobListSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = IngestJob
-        fields = ('id', 'collection', 'experiment', 'channel_layer', 'status', 'ingest_queue', 'upload_queue')
+        fields = ('id', 'collection', 'experiment', 'channel', 'status', 'ingest_queue', 'upload_queue')
 

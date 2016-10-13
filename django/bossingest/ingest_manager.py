@@ -53,7 +53,7 @@ class IngestManager:
         self.validator = None
         self.collection = None
         self.experiment = None
-        self.channel_layer = None
+        self.channel = None
         self.resolution = 0
         self.nd_proj = None
 
@@ -93,16 +93,16 @@ class IngestManager:
             self.collection = Collection.objects.get(name=self.config.config_data["database"]["collection"])
             self.experiment = Experiment.objects.get(name=self.config.config_data["database"]["experiment"],
                                                      collection=self.collection)
-            self.channel_layer = Channel.objects.get(name=self.config.config_data["database"]["channel_layer"],
+            self.channel = Channel.objects.get(name=self.config.config_data["database"]["channel_layer"],
                                                           experiment=self.experiment)
-            self.resolution = self.channel_layer.base_resolution
+            self.resolution = self.channel.base_resolution
 
         except Collection.DoesNotExist:
             raise BossError("Collection {} not found".format(self.collection), ErrorCodes.RESOURCE_NOT_FOUND)
         except Experiment.DoesNotExist:
             raise BossError("Experiment {} not found".format(self.experiment), ErrorCodes.RESOURCE_NOT_FOUND)
         except Channel.DoesNotExist:
-            raise BossError("Channel or Layer {} not found".format(self.channel_layer), ErrorCodes.RESOURCE_NOT_FOUND)
+            raise BossError("Channel {} not found".format(self.channel), ErrorCodes.RESOURCE_NOT_FOUND)
 
         # TODO If channel already exists, check corners to see if data exists.  If so question user for overwrite
         # TODO Check tile size - error if too big
@@ -130,7 +130,7 @@ class IngestManager:
                 # create the additional resources needed for the ingest
                 # initialize the ndingest project for use with the library
                 proj_class = BossIngestProj.load()
-                self.nd_proj = proj_class(self.collection.name, self.experiment.name, self.channel_layer.name,
+                self.nd_proj = proj_class(self.collection.name, self.experiment.name, self.channel.name,
                                           self.resolution, self.job.id)
 
                 # Create the upload queue
@@ -170,7 +170,7 @@ class IngestManager:
             'creator': self.owner,
             'collection': self.collection.name,
             'experiment': self.experiment.name,
-            'channel_layer': self.channel_layer.name,
+            'channel': self.channel.name,
             'config_data': json.dumps(self.config.config_data),
             'resolution': self.resolution,
             'x_start': self.config.config_data["ingest_job"]["extent"]["x"][0],
@@ -224,7 +224,7 @@ class IngestManager:
             # delete ingest job
             ingest_job = IngestJob.objects.get(id=ingest_job_id)
             proj_class = BossIngestProj.load()
-            self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
+            self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
                                       ingest_job.resolution, ingest_job.id)
 
             # delete the ingest and upload_queue
@@ -316,7 +316,7 @@ class IngestManager:
 
         # Generate upload tasks for the ingest job
         # Get the project information
-        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel_layer
+        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
         lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
         [col_id, exp_id, ch_id] = lookup_key.split('&')
         project_info = [col_id, exp_id, ch_id]

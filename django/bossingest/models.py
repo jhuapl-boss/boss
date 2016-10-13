@@ -36,7 +36,7 @@ class IngestJob(models.Model):
 
     collection = models.CharField(max_length=128)
     experiment = models.CharField(max_length=128)
-    channel_layer = models.CharField(max_length=128)
+    channel = models.CharField(max_length=128)
 
     resolution = models.IntegerField()
     x_start = models.IntegerField()
