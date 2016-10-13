@@ -127,7 +127,7 @@ class SetupTests(object):
             'creator': user,
             'collection': config_data["database"]["collection"],
             'experiment': config_data["database"]["experiment"],
-            'channel_layer': config_data["database"]["channel_layer"],
+            'channel': config_data["database"]["channel_layer"],
             'resolution': 0,
             'config_data': config_data,
             'x_start': config_data["ingest_job"]["extent"]["x"][0],
