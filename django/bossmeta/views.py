@@ -13,7 +13,7 @@ class BossMeta(APIView):
 
     """
 
-    def get(self, request, collection, experiment=None, channel_layer=None):
+    def get(self, request, collection, experiment=None, channel=None):
         """
         View to handle GET requests for metadata
 
@@ -21,7 +21,7 @@ class BossMeta(APIView):
             request: DRF Request object
             collection: Collection Name
             experiment: Experiment name. default = None
-            channel_layer: Channel or Layer name
+            channel: Channel name
 
         Returns:
 
@@ -60,7 +60,7 @@ class BossMeta(APIView):
                 return BossHTTPError("Invalid request. Key {} Not found in the database".format(mkey),
                                      ErrorCodes.INVALID_POST_ARGUMENT)
 
-    def post(self, request, collection, experiment=None, channel_layer=None):
+    def post(self, request, collection, experiment=None, channel=None):
         """
         View to handle POST requests for metadata
 
@@ -68,7 +68,7 @@ class BossMeta(APIView):
             request: DRF Request object
             collection: Collection Name specifying the collection you want to get the meta data for
             experiment: Experiment name. default = None
-            channel_layer: Channel or Layer name. Default = None
+            channel: Channel name. Default = None
 
         Returns:
 
@@ -98,14 +98,14 @@ class BossMeta(APIView):
         mdb.write_meta(lookup_key, mkey, value)
         return HttpResponse(status=201)
 
-    def delete(self, request, collection, experiment=None, channel_layer=None):
+    def delete(self, request, collection, experiment=None, channel=None):
         """
         View to handle the delete requests for metadata
         Args:
             request: DRF Request object
             collection: Collection name. Default = None
             experiment: Experiment name. Default = None
-            channel_layer: Channel_layer name . Default = None
+            channel: Channel name . Default = None
 
         Returns:
 
@@ -135,14 +135,14 @@ class BossMeta(APIView):
         else:
             return BossHTTPError("[ERROR]- Key {} not found ".format(mkey), ErrorCodes.INVALID_POST_ARGUMENT)
 
-    def put(self, request, collection, experiment=None, channel_layer=None):
+    def put(self, request, collection, experiment=None, channel=None):
         """
         View to handle update requests for metadata
         Args:
             request: DRF Request object
             collection: Collection Name. Default = None
             experiment: Experiment Name. Default = None
-            channel_layer: Channel Name Default + None
+            channel: Channel Name Default + None
 
         Returns:
 

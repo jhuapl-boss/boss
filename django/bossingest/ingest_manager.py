@@ -22,7 +22,7 @@ from bossingest.serializers import IngestJobCreateSerializer, IngestJobListSeria
 from bossingest.models import IngestJob
 
 from bosscore.error import BossError, ErrorCodes, BossResourceNotFoundError
-from bosscore.models import Collection, Experiment, ChannelLayer
+from bosscore.models import Collection, Experiment, Channel
 from bosscore.lookup import LookUpKey
 
 from ndingest.ndqueue.uploadqueue import UploadQueue
@@ -93,7 +93,7 @@ class IngestManager:
             self.collection = Collection.objects.get(name=self.config.config_data["database"]["collection"])
             self.experiment = Experiment.objects.get(name=self.config.config_data["database"]["experiment"],
                                                      collection=self.collection)
-            self.channel_layer = ChannelLayer.objects.get(name=self.config.config_data["database"]["channel_layer"],
+            self.channel_layer = Channel.objects.get(name=self.config.config_data["database"]["channel_layer"],
                                                           experiment=self.experiment)
             self.resolution = self.channel_layer.base_resolution
 
@@ -101,7 +101,7 @@ class IngestManager:
             raise BossError("Collection {} not found".format(self.collection), ErrorCodes.RESOURCE_NOT_FOUND)
         except Experiment.DoesNotExist:
             raise BossError("Experiment {} not found".format(self.experiment), ErrorCodes.RESOURCE_NOT_FOUND)
-        except ChannelLayer.DoesNotExist:
+        except Channel.DoesNotExist:
             raise BossError("Channel or Layer {} not found".format(self.channel_layer), ErrorCodes.RESOURCE_NOT_FOUND)
 
         # TODO If channel already exists, check corners to see if data exists.  If so question user for overwrite

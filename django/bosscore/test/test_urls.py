@@ -57,9 +57,9 @@ class BossCoreResourceRoutingTests(APITestCase):
         match = resolve('/' + version + '/collection/col1/experiment/exp1/')
         self.assertEqual(match.func.__name__, ExperimentDetail.as_view().__name__)
 
-    def test_manage_data_urls_channel_layer_resolves(self):
+    def test_manage_data_urls_channel_resolves(self):
         """
-        Test that all manage_data urls for experiments resolves correctly
+        Test that all manage_data urls for channels resolves correctly
 
         Returns: None
 
@@ -110,9 +110,9 @@ class BossCorePermissionRoutingTests(APITestCase):
         match = resolve('/' + version + '/permission/test/col1/exp1/')
         self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
 
-    def test_permission_channel_layer_resolves(self):
+    def test_permission_channel_resolves(self):
         """
-        Test that all permission urls for channel or layers resolves correctly
+        Test that all permission urls for channel resolves correctly
 
         Returns: None
 

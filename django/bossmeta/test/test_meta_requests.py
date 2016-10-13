@@ -132,7 +132,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), expected_col)
         self.assertEqual(ret.get_experiment(), expected_exp)
-        self.assertEqual(ret.get_channel_layer(), expected_channel)
+        self.assertEqual(ret.get_channel(), expected_channel)
 
         # Boss key
         boss_key = ret.get_boss_key()
@@ -167,7 +167,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), expected_col)
         self.assertEqual(ret.get_experiment(), expected_exp)
-        self.assertEqual(ret.get_channel_layer(), expected_layer)
+        self.assertEqual(ret.get_channel(), expected_layer)
 
         # Boss key
         boss_key = ret.get_boss_key()
@@ -198,7 +198,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         # Data model objects
         self.assertEqual(ret.get_collection(), expected_col)
         self.assertEqual(ret.get_experiment(), expected_exp)
-        self.assertEqual(ret.get_channel_layer(), expected_channel)
+        self.assertEqual(ret.get_channel(), expected_channel)
 
         # Check coordinate frame
         self.assertEqual(ret.get_coordinate_frame(), expected_coord)
@@ -222,7 +222,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         # Data model objects
         self.assertEqual(ret.get_collection(), expected_col)
         self.assertEqual(ret.get_experiment(), expected_exp)
-        self.assertEqual(ret.get_channel_layer(), expected_channel)
+        self.assertEqual(ret.get_channel(), expected_channel)
 
         # Key and value should be empty
         self.assertEqual(ret.get_key(), None)

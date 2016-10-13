@@ -15,7 +15,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User, Group
 from guardian.shortcuts import get_objects_for_user
-from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap, BossLookup, BossRole
+from .models import Collection, Experiment, Channel, CoordinateFrame, BossLookup, BossRole
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -55,53 +55,23 @@ class CoordinateFrameUpdateSerializer(serializers.ModelSerializer):
 
         return not bool(self._errors)
 
-class ChannelLayerMapSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = ChannelLayerMap
-        fields = ('channel', 'layer')
-
 
 class NameOnlySerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = ChannelLayer
+        model = Channel
         fields = ('name',)
 
 
 class ChannelSerializer(serializers.ModelSerializer):
-    linked_channel_layers = NameOnlySerializer(many=True, read_only=True)
-    is_channel = serializers.BooleanField(default=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
-        model = ChannelLayer
-        fields = ('id', 'name', 'description', 'experiment', 'is_channel', 'default_time_step',
-                  'base_resolution', 'datatype', 'linked_channel_layers', 'creator')
-
-
-class LayerSerializer(serializers.ModelSerializer):
-    linked_channel_layers = NameOnlySerializer(many=True, read_only=True)
-    is_channel = serializers.BooleanField(default=False, read_only=True)
-    creator = serializers.ReadOnlyField(source='creator.username')
-
-    class Meta:
-        model = ChannelLayer
-        fields = ('id', 'name', 'description', 'is_channel', 'experiment', 'default_time_step',
-                  'base_resolution', 'datatype', 'linked_channel_layers', 'creator')
-
-
-class ChannelLayerSerializer(serializers.ModelSerializer):
-    creator = serializers.ReadOnlyField(source='creator.username')
-
-    class Meta:
-        model = ChannelLayer
-        fields = ('id', 'name', 'description', 'experiment', 'is_channel', 'default_time_step', 'datatype',
-                  'base_resolution', 'linked_channel_layers', 'creator')
-
+        model = Channel
+        fields = ('id', 'name', 'description', 'experiment', 'default_time_step', 'type',
+                  'base_resolution', 'datatype', 'creator')
 
 class ExperimentSerializer(serializers.ModelSerializer):
-    channel_layers = ChannelLayerSerializer(many=True, read_only=True)
     creator = serializers.ReadOnlyField(source='creator.username')
 
     def get_fields(self):
@@ -114,7 +84,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Experiment
         fields = ('id', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
-                  'max_time_sample', 'channel_layers', 'creator')
+                  'max_time_sample', 'creator')
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -132,7 +102,7 @@ class BossLookupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BossLookup
-        fields = ('id', 'lookup_key', 'boss_key', 'collection_name', 'experiment_name', 'channel_layer_name')
+        fields = ('id', 'lookup_key', 'boss_key', 'collection_name', 'experiment_name', 'channel_name')
 
 
 class BossRoleSerializer(serializers.ModelSerializer):

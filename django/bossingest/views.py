@@ -7,7 +7,7 @@ from rest_framework import status
 from bosscore.error import BossError, ErrorCodes
 from bossingest.ingest_manager import IngestManager
 from bossingest.serializers import IngestJobListSerializer
-from bosscore.models import Collection, Experiment, ChannelLayer
+from bosscore.models import Collection, Experiment, Channel
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
@@ -55,7 +55,7 @@ class IngestJobView(APIView):
             # Generate a "resource" for the ingest lambda function to be able to use SPDB cleanly
             collection = Collection.objects.get(name=data['ingest_job']["collection"])
             experiment = Experiment.objects.get(name=data['ingest_job']["experiment"], collection=collection)
-            channel_layer = ChannelLayer.objects.get(name=data['ingest_job']["channel_layer"], experiment=experiment)
+            channel_layer = Channel.objects.get(name=data['ingest_job']["channel_layer"], experiment=experiment)
 
             resource = {}
             resource['boss_key'] = '{}&{}&{}'.format(data['ingest_job']["collection"],

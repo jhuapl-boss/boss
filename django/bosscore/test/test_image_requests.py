@@ -63,32 +63,9 @@ class BossTileRequestTests(APITestCase):
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
-        self.assertEqual(ret.get_channel_layer(), channel)
+        self.assertEqual(ret.get_channel(), channel)
         self.assertEqual(ret.get_boss_key(), boss_key)
         self.assertEqual(ret.get_boss_key_list()[0], boss_key_list)
-
-    def test_request_tile_init_layer(self):
-        """
-        Test initialization of tile requests for the datamodel
-        :return:
-        """
-        url = '/' + version + '/image/col1/exp1/layer1/xy/2/0:5/0:6/1/'
-        col = 'col1'
-        exp = 'exp1'
-        layer = 'layer1'
-        boss_key = 'col1&exp1&layer1&2&0'
-
-        # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
-        drfrequest.version = version
-
-        ret = BossRequest(drfrequest)
-        self.assertEqual(ret.get_collection(), col)
-        self.assertEqual(ret.get_experiment(), exp)
-        self.assertEqual(ret.get_channel_layer(), layer)
-        self.assertEqual(ret.get_boss_key_list()[0], boss_key)
 
     def test_request_tile_init_tileargs_channel(self):
         """

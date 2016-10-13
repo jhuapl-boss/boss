@@ -54,7 +54,7 @@ class Cutout(APIView):
         :type request: rest_framework.request.Request
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
-        :param dataset: Dataset identifier, indicating which channel or layer you want to access
+        :param dataset: Dataset identifier, indicating which channel you want to access
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_range: Python style range indicating the X coordinates of where to post the cuboid (eg. 100:200)
         :param y_range: Python style range indicating the Y coordinates of where to post the cuboid (eg. 100:200)
@@ -139,7 +139,7 @@ class Cutout(APIView):
 
         # Make sure datatype is valid
         if expected_data_type != request.data.dtype:
-            return BossHTTPError("Datatype does not match channel/layer", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
+            return BossHTTPError("Datatype does not match channel", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Make sure the dimensions of the data match the dimensions of the post URL
         if len(request.data.shape) == 4:

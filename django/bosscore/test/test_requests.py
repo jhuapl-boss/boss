@@ -63,32 +63,9 @@ class BossCoreRequestTests(APITestCase):
         ret = BossRequest(drfrequest)
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
-        self.assertEqual(ret.get_channel_layer(), channel)
+        self.assertEqual(ret.get_channel(), channel)
         self.assertEqual(ret.get_boss_key(), boss_key)
         self.assertEqual(ret.get_boss_key_list()[0], boss_key_list)
-
-    def test_request_cutout_init_layer(self):
-        """
-        Test initialization of cutout requests for the datamodel
-        :return:
-        """
-        url = '/' + version + '/cutout/col1/exp1/layer1/2/0:5/0:6/0:2/'
-        col = 'col1'
-        exp = 'exp1'
-        layer = 'layer1'
-        boss_key = 'col1&exp1&layer1&2&0'
-
-        # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
-        drfrequest.version = version
-
-        ret = BossRequest(drfrequest)
-        self.assertEqual(ret.get_collection(), col)
-        self.assertEqual(ret.get_experiment(), exp)
-        self.assertEqual(ret.get_channel_layer(), layer)
-        self.assertEqual(ret.get_boss_key_list()[0], boss_key)
 
     def test_request_cutout_init_cutoutargs_channel(self):
         """
@@ -235,8 +212,8 @@ class BossCoreRequestTests(APITestCase):
         ret = BossRequest(drfrequest)
         col_id = ret.collection.pk
         exp_id = ret.experiment.pk
-        channel_layer_id = ret.channel_layer.pk
-        base_lookup = str(col_id) + '&' + str(exp_id) + '&' + str(channel_layer_id)
+        channel_id = ret.channel.pk
+        base_lookup = str(col_id) + '&' + str(exp_id) + '&' + str(channel_id)
         exp_lookup_keys = []
         exp_lookup_keys.append(base_lookup+'&2&1')
         exp_lookup_keys.append(base_lookup+'&2&2')

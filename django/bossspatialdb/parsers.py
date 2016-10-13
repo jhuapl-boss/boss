@@ -69,7 +69,7 @@ class BloscParser(BaseParser):
             data_mat = np.fromstring(raw_data, dtype=resource.get_numpy_data_type())
         except:
             return BossParserError("Failed to decompress data. Verify the datatype/bitdepth of your data "
-                                        "matches the channel/layer.", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
+                                        "matches the channel.", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Reshape and return
         try:

@@ -239,9 +239,9 @@ class PermissionViewsExperimentTests(APITestCase):
         self.assertEqual(len(resp['permissions']), 0)
 
 
-class PermissionViewsChannelLayerTests(APITestCase):
+class PermissionViewsChannelTests(APITestCase):
     """
-    Class to test the permission service which assigns permissions to Channel or Layer
+    Class to test the permission service which assigns permissions to Channel
     """
 
     def setUp(self):

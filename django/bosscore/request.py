@@ -14,7 +14,7 @@
 
 import re
 
-from .models import Collection, Experiment, ChannelLayer
+from .models import Collection, Experiment, Channel
 from .lookup import LookUpKey
 from .error import BossHTTPError, BossError, ErrorCodes, BossRestArgsError
 from .permissions import BossPermissionManager
@@ -40,7 +40,7 @@ class BossRequest:
         # Datamodel objects
         self.collection = None
         self.experiment = None
-        self.channel_layer = None
+        self.channel = None
 
         self.default_time = None
         self.coord_frame = None
@@ -113,11 +113,11 @@ class BossRequest:
         Returns:
 
         """
-        m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel_layer>\w+)?/?", webargs)
+        m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel>\w+)?/?", webargs)
         if m:
-            [collection_name, experiment_name, channel_layer_name] = [arg for arg in m.groups()]
+            [collection_name, experiment_name, channel_name] = [arg for arg in m.groups()]
 
-            self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.initialize_request(collection_name, experiment_name, channel_name)
             self.check_permissions()
             self.set_boss_key()
         else:
@@ -132,20 +132,20 @@ class BossRequest:
         Returns:
 
         """
-        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<resolution>\d)/"
+        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel>\w+)/(?P<resolution>\d)/"
                      + "(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?(?P<rest>.*)?/?", webargs)
 
         if m:
-            [collection_name, experiment_name, channel_layer_name, resolution, x_range, y_range, z_range] \
+            [collection_name, experiment_name, channel_name, resolution, x_range, y_range, z_range] \
                 = [arg for arg in m.groups()[:-1]]
             time = m.groups()[-1]
 
-            self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.initialize_request(collection_name, experiment_name, channel_name)
             self.check_permissions()
             if not time:
                 # get default time
-                self.time_start = self.channel_layer.default_time_step
-                self.time_stop = self.channel_layer.default_time_step + 1
+                self.time_start = self.channel.default_time_step
+                self.time_stop = self.channel.default_time_step + 1
             else:
                 self.set_time(time)
 
@@ -164,21 +164,21 @@ class BossRequest:
         Returns:
 
         """
-        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<orientation>xy|yz|xz)/"
+        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel>\w+)/(?P<orientation>xy|yz|xz)/"
                      + "(?P<resolution>\d)/(?P<x_args>\d+:?\d*)/(?P<y_args>\d+:?\d*)/(?P<z_args>\d+:?\d*)"
                      + "/?(?P<rest>.*)?/?", webargs)
 
         if m:
-            [collection_name, experiment_name, channel_layer_name, orientation, resolution, x_args, y_args,
+            [collection_name, experiment_name, channel_name, orientation, resolution, x_args, y_args,
             z_args] = [arg for arg in m.groups()[:-1]]
             time = m.groups()[-1]
 
-            self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.initialize_request(collection_name, experiment_name, channel_name)
             self.check_permissions()
             if not time:
                 # get default time
-                self.time_start = self.channel_layer.default_time_step
-                self.time_stop = self.channel_layer.default_time_step + 1
+                self.time_start = self.channel.default_time_step
+                self.time_stop = self.channel.default_time_step + 1
             else:
                 self.set_time(time)
 
@@ -197,20 +197,20 @@ class BossRequest:
         Returns:
 
         """
-        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel_layer>\w+)/(?P<orientation>xy|yz|xz)/" +
+        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel>\w+)/(?P<orientation>xy|yz|xz)/" +
                      "(?P<tile_size>\d+)/(?P<resolution>\d)/(?P<x>\d+)/(?P<y>\d+)/(?P<z>\d+)/?(?P<rest>.*)?/?", webargs)
 
         if m:
-            [collection_name, experiment_name, channel_layer_name, orientation, tile_size, resolution, x, y, z] = \
+            [collection_name, experiment_name, channel_name, orientation, tile_size, resolution, x, y, z] = \
                 [arg for arg in m.groups()[:-1]]
             time = m.groups()[-1]
 
-            self.initialize_request(collection_name, experiment_name, channel_layer_name)
+            self.initialize_request(collection_name, experiment_name, channel_name)
             self.check_permissions()
             if not time:
                 # get default time
-                self.time_start = self.channel_layer.default_time_step
-                self.time_stop = self.channel_layer.default_time_step + 1
+                self.time_start = self.channel.default_time_step
+                self.time_stop = self.channel.default_time_step + 1
             else:
                 self.set_time(time)
 
@@ -220,7 +220,7 @@ class BossRequest:
         else:
             raise BossError("Unable to parse the url.", ErrorCodes.INVALID_URL)
 
-    def initialize_request(self, collection_name, experiment_name, channel_layer_name):
+    def initialize_request(self, collection_name, experiment_name, channel_name):
         """
         Initialize the request
 
@@ -229,15 +229,15 @@ class BossRequest:
         Args:
             collection_name: Collection name from the request
             experiment_name: Experiment name from the request
-            channel_layer_name: Channel_layer name from the request
+            channel_name: Channel name from the request
 
         """
         if collection_name:
             colstatus = self.set_collection(collection_name)
             if experiment_name and colstatus:
                 expstatus = self.set_experiment(experiment_name)
-                if channel_layer_name and expstatus:
-                    self.set_channel_layer(channel_layer_name)
+                if channel_name and expstatus:
+                    self.set_channel(channel_name)
 
     def set_cutoutargs(self, resolution, x_range, y_range, z_range):
         """
@@ -482,31 +482,31 @@ class BossRequest:
         if self.experiment:
             return self.experiment.name
 
-    def set_channel_layer(self, channel_layer_name):
+    def set_channel(self, channel_name):
         """
-        Validate and set the channel or layer
+        Validate and set the channel
         Args:
-            channel_layer_name: Channel or layer name specified in the request
+            channel_name: Channel name specified in the request
 
         Returns:
 
         """
-        if ChannelLayer.objects.filter(name=channel_layer_name, experiment=self.experiment).exists():
-            self.channel_layer = ChannelLayer.objects.get(name=channel_layer_name, experiment=self.experiment)
+        if Channel.objects.filter(name=channel_name, experiment=self.experiment).exists():
+            self.channel = Channel.objects.get(name=channel_name, experiment=self.experiment)
             return True
         else:
-            raise BossError("Channel/Layer {} not found".format(channel_layer_name), ErrorCodes.RESOURCE_NOT_FOUND)
+            raise BossError("Channel {} not found".format(channel_name), ErrorCodes.RESOURCE_NOT_FOUND)
 
-    def get_channel_layer(self):
+    def get_channel(self):
         """
-        Return the channel or layer name for the channel or layer
+        Return the channel name for the channel
 
         Returns:
-            self.channel_layer.name (str) : Name of channel or layer
+            self.channel.name (str) : Name of channel
 
         """
-        if self.channel_layer:
-            return self.channel_layer.name
+        if self.channel:
+            return self.channel.name
 
     def set_key(self, key):
         """
@@ -546,9 +546,9 @@ class BossRequest:
 
     def get_default_time(self):
         """
-        Return the default timesample for the channel or layer
+        Return the default timesample for the channel
         Returns:
-            self.default_time (int) : Default timestep for the channel or layer
+            self.default_time (int) : Default timestep for the channel
 
         """
         return self.default_time
@@ -652,9 +652,9 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-        if self.collection and self.experiment and self.channel_layer:
+        if self.collection and self.experiment and self.channel:
             self.base_boss_key = self.collection.name + META_CONNECTOR + self.experiment.name + META_CONNECTOR \
-                                 + self.channel_layer.name
+                                 + self.channel.name
         elif self.collection and self.experiment and self.core_service:
             self.base_boss_key = self.collection.name + META_CONNECTOR + self.experiment.name
         elif self.collection and self.core_service:
@@ -670,11 +670,11 @@ class BossRequest:
             self.bosskey(str) : String that represents the boss key for the current request
         """
         if self.service =='cutout' or self.service == 'image' or self.service == 'tile':
-            perm = BossPermissionManager.check_data_permissions(self.request.user, self.channel_layer,
+            perm = BossPermissionManager.check_data_permissions(self.request.user, self.channel,
                                                                   self.request.method)
         elif self.service =='meta':
-            if self.collection and self.experiment and self.channel_layer:
-                obj = self.channel_layer
+            if self.collection and self.experiment and self.channel:
+                obj = self.channel
             elif self.collection and self.experiment:
                 obj = self.experiment
             elif self.collection:

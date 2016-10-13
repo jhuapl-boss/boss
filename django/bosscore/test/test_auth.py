@@ -421,8 +421,8 @@ class UserPermissionsChannel(APITestCase):
         dbsetup.add_experiment('unittestcol', 'unittestexp', 'unittestcf', 10, 10)
 
         dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestchannel', 0, 0, 'uint8')
-        dbsetup.add_layer('unittestcol', 'unittestexp', 'unittestlayer', 0, 0, 'uint16')
-        dbsetup.add_channel_layer_map('unittestcol', 'unittestexp', 'unittestchannel', 'unittestlayer')
+        dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestlayer', 0, 0, 'uint16', 'annotation')
+        #dbsetup.add_channel_layer_map('unittestcol', 'unittestexp', 'unittestchannel', 'unittestlayer')
 
     def test_get_channel_no_permission(self):
         """
@@ -451,7 +451,7 @@ class UserPermissionsChannel(APITestCase):
 
         """
         url = '/' + version + '/collection/unittestcol/experiment/unittestexp/channel/unittestchannelnew/'
-        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 

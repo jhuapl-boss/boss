@@ -44,7 +44,7 @@ class CutoutTile(APIView):
         :type request: rest_framework.request.Request
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
-        :param dataset: Dataset identifier, indicating which channel or layer you want to access
+        :param dataset: Dataset identifier, indicating which channel you want to access
         :param orientation: Image plane requested. Vaid options include xy,xz or yz
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_args: Python style range indicating the X coordinates of where to post the cuboid (eg. 100:200)
@@ -65,7 +65,7 @@ class CutoutTile(APIView):
         try:
             self.bit_depth = resource.get_bit_depth()
         except ValueError:
-            return BossHTTPError("Datatype does not match channel/layer", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
+            return BossHTTPError("Datatype does not match channel", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
         total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth/8)
@@ -121,7 +121,7 @@ class Tile(APIView):
         :type request: rest_framework.request.Request
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
-        :param dataset: Dataset identifier, indicating which channel or layer you want to access
+        :param dataset: Dataset identifier, indicating which channel you want to access
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_idx: the tile index in the X dimension
         :param y_idx: the tile index in the Y dimension
@@ -143,7 +143,7 @@ class Tile(APIView):
         try:
             self.bit_depth = resource.get_bit_depth()
         except ValueError:
-            return BossHTTPError("Datatype does not match channel/layer", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
+            return BossHTTPError("Datatype does not match channel", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
         total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth/8)

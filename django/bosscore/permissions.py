@@ -53,7 +53,7 @@ class BossPermissionManager:
         assign_perm('delete', user_primary_group, obj)
         assign_perm('assign_group', user_primary_group, obj)
         assign_perm('remove_group', user_primary_group, obj)
-        if ct.model == 'channellayer':
+        if ct.model == 'channel':
             assign_perm('add_volumetric_data', user_primary_group, obj)
             assign_perm('read_volumetric_data', user_primary_group, obj)
             assign_perm('delete_volumetric_data', user_primary_group, obj)
@@ -132,7 +132,7 @@ class BossPermissionManager:
             assign_perm('delete', admin_group, obj)
             assign_perm('assign_group', admin_group, obj)
             assign_perm('remove_group', admin_group, obj)
-            if ct.model == 'channellayer':
+            if ct.model == 'channel':
                 assign_perm('add_volumetric_data', admin_group, obj)
                 assign_perm('read_volumetric_data', admin_group, obj)
                 assign_perm('delete_volumetric_data', admin_group, obj)

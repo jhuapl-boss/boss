@@ -27,9 +27,9 @@ from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
 
-from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelLayerSerializer,\
-    LayerSerializer, CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ChannelLayerMapSerializer
-from bosscore.models import Collection, Experiment, ChannelLayer, CoordinateFrame
+from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer,\
+    CoordinateFrameSerializer, CoordinateFrameUpdateSerializer
+from bosscore.models import Collection, Experiment, Channel, CoordinateFrame
 
 
 class CollectionDetail(APIView):
@@ -410,7 +410,7 @@ class ExperimentDetail(APIView):
         except Experiment.DoesNotExist:
             return BossResourceNotFoundError(experiment)
         except ProtectedError:
-            return BossHTTPError("Cannot delete {}. It has channels or layers that reference "
+            return BossHTTPError("Cannot delete {}. It has channels that reference "
                                       "it.".format(experiment), ErrorCodes.INTEGRITY_ERROR)
 
 
@@ -451,19 +451,19 @@ class ChannelDetail(APIView):
             request: DRF Request object
             collection: Collection name
             experiment: Experiment name
-            channel_layer: Channel or Layer name
+            channel: Channel name
 
         Returns :
-            ChannelLayer
+            Channel
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            channel_obj = ChannelLayer.objects.get(name=channel, experiment=experiment_obj)
+            channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
 
             # Check for permissions
             if request.user.has_perm("read", channel_obj):
-                serializer = ChannelLayerSerializer(channel_obj)
+                serializer = ChannelSerializer(channel_obj)
                 return Response(serializer.data)
             else:
                 return BossPermissionError('read', channel)
@@ -472,7 +472,7 @@ class ChannelDetail(APIView):
             return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
             return BossResourceNotFoundError(experiment)
-        except ChannelLayer.DoesNotExist:
+        except Channel.DoesNotExist:
             return BossResourceNotFoundError(channel)
         except ValueError:
             return BossHTTPError("Value Error in post data", ErrorCodes.TYPE_ERROR)
@@ -486,58 +486,36 @@ class ChannelDetail(APIView):
             request: DRF Request object
             collection: Collection name
             experiment: Experiment name
-            channel_layer: Channel or Layer name
+            channel: Channel name
 
         Returns :
-            ChannelLayer
+            Channel
         """
 
-        channel_layer_data = request.data.copy()
-        channel_layer_data['name'] = channel
+        channel_data = request.data.copy()
+        channel_data['name'] = channel
 
         try:
-            if 'channels' in channel_layer_data:
-                channels = dict(channel_layer_data)['channels']
-            else:
-                channels = []
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for add permissions
             if request.user.has_perm("add", experiment_obj):
-                channel_layer_data['experiment'] = experiment_obj.pk
-                channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
+                channel_data['experiment'] = experiment_obj.pk
 
-                # layers require at least 1 channel
-                if (channel_layer_data['is_channel'] is False) and (len(channels) == 0):
-                    return BossHTTPError("Invalid Request.Please specify a valid channel for the layer",
-                                         ErrorCodes.INVALID_POST_ARGUMENT)
-
-                serializer = ChannelLayerSerializer(data=channel_layer_data)
+                serializer = ChannelSerializer(data=channel_data)
                 if serializer.is_valid():
                     serializer.save(creator=self.request.user)
-                    channel_layer_obj = ChannelLayer.objects.get(name=channel_layer_data['name'],
+                    channel_obj = Channel.objects.get(name=channel_data['name'],
                                                                  experiment=experiment_obj)
 
-                    # Layer?
-                    if not channel_layer_obj.is_channel:
-                        # Layers must map to at least 1 channel
-                        for channel_id in channels:
-                            # Is this a valid channel?
-                            channel_obj = ChannelLayer.objects.get(pk=channel_id)
-                            if channel_obj:
-                                channel_layer_map = {'channel': channel_id, 'layer': channel_layer_obj.pk}
-                                map_serializer = ChannelLayerMapSerializer(data=channel_layer_map)
-                                if map_serializer.is_valid():
-                                    map_serializer.save()
-
                     # Assign permissions to the users primary group
-                    BossPermissionManager.add_permissions_primary_group(self.request.user, channel_layer_obj)
+                    BossPermissionManager.add_permissions_primary_group(self.request.user, channel_obj)
 
                     # Add Lookup key
-                    lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' + str(channel_layer_obj.pk)
-                    boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + channel_layer_obj.name
+                    lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' + str(channel_obj.pk)
+                    boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + channel_obj.name
                     LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name,
-                                         channel_layer_obj.name)
+                                         channel_obj.name)
 
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
                 else:
@@ -548,7 +526,7 @@ class ChannelDetail(APIView):
             return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
             return BossResourceNotFoundError(experiment)
-        except ChannelLayer.DoesNotExist:
+        except Channel.DoesNotExist:
             return BossResourceNotFoundError(channel)
         except ValueError:
             return BossHTTPError("Value Error in post data", ErrorCodes.TYPE_ERROR)
@@ -556,33 +534,31 @@ class ChannelDetail(APIView):
     @transaction.atomic
     def put(self, request, collection, experiment, channel):
         """
-        Update new Channel or Layer
+        Update new Channel
         Args:
             request: DRF Request object
             collection: Collection name
             experiment: Experiment name
-            channel_layer: Channel or Layer name
+            channel: Channel name
 
         Returns :
-            ChannelLayer
+            Channel
         """
-        channel_layer_data = request.data.copy()
-        if 'is_channel' in channel_layer_data:
-            channel_layer_data['is_channel'] = self.get_bool(channel_layer_data['is_channel'])
+        channel_data = request.data.copy()
 
         try:
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            channel_layer_obj = ChannelLayer.objects.get(name=channel, experiment=experiment_obj)
-            if request.user.has_perm("update", channel_layer_obj):
-                serializer = ChannelLayerSerializer(channel_layer_obj, data=request.data, partial=True)
+            channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
+            if request.user.has_perm("update", channel_obj):
+                serializer = ChannelSerializer(channel_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
                     # update the lookup key if you update the name
                     if 'name' in request.data and request.data['name'] != channel:
                         lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' \
-                                     + str(channel_layer_obj.pk)
+                                     + str(channel_obj.pk)
                         boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + request.data['name']
                         LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name,  experiment_obj.name,
                                                 request.data['name'])
@@ -597,19 +573,19 @@ class ChannelDetail(APIView):
             return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
             return BossResourceNotFoundError(experiment)
-        except ChannelLayer.DoesNotExist:
+        except Channel.DoesNotExist:
             return BossResourceNotFoundError(channel)
 
     @transaction.atomic
     @check_role("resource-manager")
     def delete(self, request, collection, experiment, channel):
         """
-        Delete a Channel  or a Layer
+        Delete a Channel
         Args:
             request: DRF Request object
             collection: Collection name
             experiment: Experiment name
-            channel_layer: Channel or Layer name
+            channel: Channel name
 
         Returns :
             Http status
@@ -617,10 +593,10 @@ class ChannelDetail(APIView):
         try:
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-            channel_layer_obj = ChannelLayer.objects.get(name=channel, experiment=experiment_obj)
+            channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
 
-            if request.user.has_perm("delete", channel_layer_obj):
-                channel_layer_obj.delete()
+            if request.user.has_perm("delete", channel_obj):
+                channel_obj.delete()
 
                 # delete the lookup key for this object
                 LookUpKey.delete_lookup_key(collection, experiment, channel)
@@ -632,10 +608,10 @@ class ChannelDetail(APIView):
             return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
             return BossResourceNotFoundError(experiment)
-        except ChannelLayer.DoesNotExist:
+        except Channel.DoesNotExist:
             return BossResourceNotFoundError(channel)
         except ProtectedError:
-            return BossHTTPError("Cannot delete {}. It has layers that reference it.".format(channel),
+            return BossHTTPError("Cannot delete {}. It has channels that reference it.".format(channel),
                                  ErrorCodes.INTEGRITY_ERROR)
 
 
@@ -695,8 +671,8 @@ class ChannelList(generics.ListAPIView):
     """
     List all channels
     """
-    queryset = ChannelLayer.objects.all()
-    serializer_class = ChannelLayerSerializer
+    queryset = Channel.objects.all()
+    serializer_class = ChannelSerializer
 
     def list(self, request, collection, experiment, *args, **kwargs):
         """
@@ -709,14 +685,14 @@ class ChannelList(generics.ListAPIView):
             *args:
             **kwargs:
 
-        Returns: Channel_Layers that user has view permissions on
+        Returns: Channel that user has view permissions on
 
         """
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        channel_layers = get_objects_for_user(request.user, 'read',
-                                              klass=ChannelLayer).filter(is_channel=True, experiment=experiment_obj)
-        serializer = ChannelLayerSerializer(channel_layers, many=True)
+        channel = get_objects_for_user(request.user, 'read',
+                                              klass=Channel).filter(experiment=experiment_obj)
+        serializer = ChannelSerializer(channel, many=True)
         return Response(serializer.data)
 
 class CoordinateFrameList(generics.ListCreateAPIView):

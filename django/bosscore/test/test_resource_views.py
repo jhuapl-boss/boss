@@ -485,7 +485,6 @@ class ResourceViewsCoordinateTests(APITestCase):
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
 
-
     def test_put_coorddinateframe_extrafields(self):
         """
         Update a coordinateframe (Valid - The coordinateframe exists)
@@ -613,11 +612,11 @@ class ResourceViewsChannelTests(APITestCase):
         """
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
-        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-    def test_post_channel_layer_no_experiment(self):
+    def test_post_channel_no_experiment(self):
         """
         Post a new channel (valid - No experiment in the post data. This is picked up from the request)
 
@@ -626,7 +625,7 @@ class ResourceViewsChannelTests(APITestCase):
         # Post a new channel
 
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
-        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
+        data = {'description': 'This is a new channel', 'type': 'image', 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -643,7 +642,7 @@ class ResourceViewsChannelTests(APITestCase):
 
     def test_put_channel(self):
         """
-        Update a channel or layer (Valid - The channel exists)
+        Update a channel (Valid - The channel exists)
 
         """
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
@@ -682,7 +681,7 @@ class ResourceViewsChannelTests(APITestCase):
         """
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
-        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -692,7 +691,7 @@ class ResourceViewsChannelTests(APITestCase):
 
     def test_delete_channel_invalid(self):
         """
-        Delete a channel (invalid - Violates integrity constraint because layers are linked to it)
+        Delete a channel (invalid - Violates integrity constraint because channels are linked to it)
 
         """
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
@@ -721,5 +720,3 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data[0]['name'], 'channel1')
-
-
