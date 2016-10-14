@@ -18,22 +18,21 @@ from guardian.shortcuts import get_objects_for_user
 from .models import Collection, Experiment, Channel, CoordinateFrame, BossLookup, BossRole
 
 
-class UserSerializer(serializers.ModelSerializer):
-    collections = serializers.PrimaryKeyRelatedField(many=True, queryset=Collection.objects.all())
-
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'collections')
-
-
 class CoordinateFrameSerializer(serializers.ModelSerializer):
+    """
+    Coordinate frame serializer
+    """
 
     class Meta:
         model = CoordinateFrame
-        fields = ('id', 'name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
+        fields = ('name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
                   'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit')
 
+
 class CoordinateFrameUpdateSerializer(serializers.ModelSerializer):
+    """
+    Coordinate frame update serializer
+    """
 
     class Meta:
         model = CoordinateFrame
@@ -48,7 +47,7 @@ class CoordinateFrameUpdateSerializer(serializers.ModelSerializer):
         additional_fields = input_keys - fields_keys
 
         if bool(additional_fields):
-            self._errors['fields'] = ['Cannot update the following readonly fields: {}.'.format(list(additional_fields))]
+            self._errors['fields'] = ['Cannot update the following readonly fields:{}.'.format(list(additional_fields))]
 
         if self._errors and raise_exception:
             raise serializers.ValidationError(self.errors)
@@ -56,22 +55,72 @@ class CoordinateFrameUpdateSerializer(serializers.ModelSerializer):
         return not bool(self._errors)
 
 
-class NameOnlySerializer(serializers.ModelSerializer):
+class CollectionNameOnlySerializer(serializers.ModelSerializer):
+    """
+    Name only serializer for collections
+    """
 
     class Meta:
+        model = Collection
+        fields = ('name',)
+
+
+class ExperimentNameOnlySerializer(serializers.ModelSerializer):
+    """
+    Name only serializer for experiments
+    """
+    class Meta:
+        model = Experiment
+        fields = ('name',)
+
+
+class ChannelNameOnlySerializer(serializers.ModelSerializer):
+    """
+    Name only serializer for Channels
+    """
+    class Meta:
         model = Channel
+        fields = ['name']
+
+
+class CoordinateFrameNameOnlySerializer(serializers.ModelSerializer):
+    """
+        Name only serializer for Coordinate frames
+    """
+    class Meta:
+        model = CoordinateFrame
         fields = ('name',)
 
 
 class ChannelSerializer(serializers.ModelSerializer):
+    """
+    Channel serializers
+    """
     creator = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
         model = Channel
-        fields = ('id', 'name', 'description', 'experiment', 'default_time_step', 'type',
+        fields = ('name', 'description', 'experiment', 'default_time_step', 'type',
                   'base_resolution', 'datatype', 'creator')
 
+
+class ChannelReadSerializer(serializers.ModelSerializer):
+    """
+    Channel serializer for GETS
+    """
+    creator = serializers.ReadOnlyField(source='creator.username')
+    experiment = serializers.ReadOnlyField(source='experiment.name')
+
+    class Meta:
+        model = Channel
+        fields = ('name', 'description', 'experiment', 'default_time_step', 'type',
+                  'base_resolution', 'datatype', 'creator')
+
+
 class ExperimentSerializer(serializers.ModelSerializer):
+    """
+        Experiment serializer used for POST's
+    """
     creator = serializers.ReadOnlyField(source='creator.username')
 
     def get_fields(self):
@@ -83,26 +132,48 @@ class ExperimentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('id', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
+        fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
                   'max_time_sample', 'creator')
 
 
+class ExperimentReadSerializer(serializers.ModelSerializer):
+    """
+    Experiment Serializer used for GETS
+    """
+    channels = serializers.SerializerMethodField()
+    creator = serializers.ReadOnlyField(source='creator.username')
+    collection = serializers.ReadOnlyField(source='collection.name')
+    coord_frame = serializers.ReadOnlyField(source='coord_frame.name')
+
+    class Meta:
+        model = Experiment
+        fields = ('channels', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels',
+                  'hierarchy_method', 'max_time_sample', 'creator')
+    
+    def get_channels(self, experiment):
+        return experiment.channels.values_list('name', flat=True)
+
+
 class CollectionSerializer(serializers.ModelSerializer):
-    experiments = ExperimentSerializer(many=True, read_only=True)
+    """
+    Collection serializer
+    """
+    experiments = serializers.SerializerMethodField()
     creator = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
         model = Collection
-        fields = ('id', 'name', 'description', 'experiments', 'creator')
-        depth = 1
+        fields = ('name', 'description', 'experiments', 'creator')
+
+    def get_experiments(self, collection):
+        return collection.experiments.values_list('name', flat=True)
 
 
 class BossLookupSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField(source='pk')
 
     class Meta:
         model = BossLookup
-        fields = ('id', 'lookup_key', 'boss_key', 'collection_name', 'experiment_name', 'channel_name')
+        fields = ('lookup_key', 'boss_key', 'collection_name', 'experiment_name', 'channel_name')
 
 
 class BossRoleSerializer(serializers.ModelSerializer):
@@ -116,11 +187,11 @@ class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
-        fields = ('id','name')
+        fields = ('name',)
 
 
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id','username', 'first_name', 'last_name', 'email')
+        fields = ('username', 'first_name', 'last_name', 'email')

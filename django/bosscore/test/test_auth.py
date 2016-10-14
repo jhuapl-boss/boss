@@ -300,11 +300,11 @@ class UserPermissionsExperiment(APITestCase):
         url = '/' + version + '/coord/unittestcf/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        cf_id = response.data['id']
+        cf = response.data['name']
 
         # Post a new experiment
         url = '/' + version + '/collection/unittestcol/experiment/unittestexpnew'
-        data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -319,11 +319,11 @@ class UserPermissionsExperiment(APITestCase):
         url = '/' + version + '/coord/unittestcf/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        cf_id = response.data['id']
+        cf = response.data['name']
 
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/unittestexpnew'
-        data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 403)

@@ -151,7 +151,7 @@ class Channel(models.Model):
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='Channel')
 
-    experiment = models.ForeignKey(Experiment, related_name='channel', on_delete=models.PROTECT)
+    experiment = models.ForeignKey(Experiment, related_name='channels', on_delete=models.PROTECT)
     base_resolution = models.IntegerField(default=0)
     default_time_step = models.IntegerField(default=0)
 
@@ -168,7 +168,7 @@ class Channel(models.Model):
         ('uint64', 'UINT64'),
     )
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
-    source = models.ManyToManyField('self', related_name='derived_from')
+    source = models.ManyToManyField('self', related_name='derived')
 
     class Meta:
         db_table = u"channel"

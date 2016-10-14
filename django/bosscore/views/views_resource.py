@@ -27,8 +27,12 @@ from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
 
-from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer,\
-    CoordinateFrameSerializer, CoordinateFrameUpdateSerializer
+from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, \
+    CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer
+
+from bosscore.serializers import CollectionNameOnlySerializer, ExperimentNameOnlySerializer,\
+    ChannelNameOnlySerializer, CoordinateFrameNameOnlySerializer
+
 from bosscore.models import Collection, Experiment, Channel, CoordinateFrame
 
 
@@ -283,7 +287,7 @@ class ExperimentDetail(APIView):
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for permissions
             if request.user.has_perm("read", experiment_obj):
-                serializer = ExperimentSerializer(experiment_obj)
+                serializer = ExperimentReadSerializer(experiment_obj)
                 return Response(serializer.data)
             else:
                 return BossPermissionError('read', experiment)
@@ -315,6 +319,13 @@ class ExperimentDetail(APIView):
             if request.user.has_perm("add", collection_obj):
                 experiment_data['collection'] = collection_obj.pk
 
+                #Update the coordinate frame
+                if 'coord_frame' not in experiment_data:
+                    return BossHTTPError("This request requires a valid coordinate frame", ErrorCodes.INVALID_POST_ARGUMENT)
+                coord_frame_obj = CoordinateFrame.objects.get(name=experiment_data['coord_frame'])
+                experiment_data['coord_frame'] = coord_frame_obj.pk
+
+
                 serializer = ExperimentSerializer(data=experiment_data)
                 if serializer.is_valid():
                     serializer.save(creator=self.request.user)
@@ -334,6 +345,8 @@ class ExperimentDetail(APIView):
                 return BossPermissionError('add', collection)
         except Collection.DoesNotExist:
             return BossResourceNotFoundError(collection)
+        except CoordinateFrame.DoesNotExist:
+            return BossResourceNotFoundError(experiment_data['coord_frame'])
         except ValueError:
             return BossHTTPError("Value Error.Collection id {} in post data needs to "
                                       "be an integer".format(experiment_data['collection']), ErrorCodes.TYPE_ERROR)
@@ -636,7 +649,7 @@ class CollectionList(generics.ListAPIView):
         """
         # queryset = self.get_queryset()
         collections = get_objects_for_user(request.user, 'read', klass=Collection)
-        serializer = CollectionSerializer(collections, many=True)
+        serializer = CollectionNameOnlySerializer(collections, many=True)
         return Response(serializer.data)
 
 
@@ -663,7 +676,7 @@ class ExperimentList(generics.ListAPIView):
         collection_obj = Collection.objects.get(name=collection)
         all_experiments = get_objects_for_user(request.user, 'read', klass=Experiment)
         experiments = all_experiments.filter(collection=collection_obj)
-        serializer = ExperimentSerializer(experiments, many=True)
+        serializer = ExperimentNameOnlySerializer(experiments, many=True)
         return Response(serializer.data)
 
 
@@ -692,7 +705,7 @@ class ChannelList(generics.ListAPIView):
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
         channel = get_objects_for_user(request.user, 'read',
                                               klass=Channel).filter(experiment=experiment_obj)
-        serializer = ChannelSerializer(channel, many=True)
+        serializer = ChannelNameOnlySerializer(channel, many=True)
         return Response(serializer.data)
 
 class CoordinateFrameList(generics.ListCreateAPIView):
@@ -714,5 +727,5 @@ class CoordinateFrameList(generics.ListCreateAPIView):
 
         """
         coords = get_objects_for_user(request.user, 'read', klass=CoordinateFrame)
-        serializer = CoordinateFrameSerializer(coords, many=True)
+        serializer = CoordinateFrameNameOnlySerializer(coords, many=True)
         return Response(serializer.data)

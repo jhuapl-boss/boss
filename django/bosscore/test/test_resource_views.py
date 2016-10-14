@@ -232,11 +232,11 @@ class ResourceViewsExperimentTests(APITestCase):
         url = '/' + version + '/coord/cf1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        cf_id = response.data['id']
+        cf = response.data['name']
 
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
-        data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -251,11 +251,11 @@ class ResourceViewsExperimentTests(APITestCase):
         url = '/' + version + '/coord/cf1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        cf_id = response.data['id']
+        cf = response.data['name']
 
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
-        data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -270,17 +270,16 @@ class ResourceViewsExperimentTests(APITestCase):
         url = '/' + version + '/collection/col1/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        collection_id = response.data['id']
 
         # Get the coordinate frame id
         url = '/' + version + '/coord/cf1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        cf_id = response.data['id']
+        cf = response.data['name']
 
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp1'
-        data = {'description': 'This is a new experiment', 'collection': collection_id, 'coord_frame': cf_id,
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
 
         response = self.client.post(url, data=data)
@@ -340,11 +339,11 @@ class ResourceViewsExperimentTests(APITestCase):
         url = '/' + version + '/coord/cf1'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        cf_id = response.data['id']
+        cf = response.data['name']
 
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
-        data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
