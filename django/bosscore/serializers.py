@@ -55,43 +55,6 @@ class CoordinateFrameUpdateSerializer(serializers.ModelSerializer):
         return not bool(self._errors)
 
 
-class CollectionNameOnlySerializer(serializers.ModelSerializer):
-    """
-    Name only serializer for collections
-    """
-
-    class Meta:
-        model = Collection
-        fields = ('name',)
-
-
-class ExperimentNameOnlySerializer(serializers.ModelSerializer):
-    """
-    Name only serializer for experiments
-    """
-    class Meta:
-        model = Experiment
-        fields = ('name',)
-
-
-class ChannelNameOnlySerializer(serializers.ModelSerializer):
-    """
-    Name only serializer for Channels
-    """
-    class Meta:
-        model = Channel
-        fields = ['name']
-
-
-class CoordinateFrameNameOnlySerializer(serializers.ModelSerializer):
-    """
-        Name only serializer for Coordinate frames
-    """
-    class Meta:
-        model = CoordinateFrame
-        fields = ('name',)
-
-
 class ChannelSerializer(serializers.ModelSerializer):
     """
     Channel serializers
@@ -149,7 +112,7 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
         model = Experiment
         fields = ('channels', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels',
                   'hierarchy_method', 'max_time_sample', 'creator')
-    
+
     def get_channels(self, experiment):
         return experiment.channels.values_list('name', flat=True)
 

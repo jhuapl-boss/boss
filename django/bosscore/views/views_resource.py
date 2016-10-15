@@ -30,9 +30,6 @@ from bosscore.privileges import check_role
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, \
     CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer
 
-from bosscore.serializers import CollectionNameOnlySerializer, ExperimentNameOnlySerializer,\
-    ChannelNameOnlySerializer, CoordinateFrameNameOnlySerializer
-
 from bosscore.models import Collection, Experiment, Channel, CoordinateFrame
 
 
@@ -649,8 +646,8 @@ class CollectionList(generics.ListAPIView):
         """
         # queryset = self.get_queryset()
         collections = get_objects_for_user(request.user, 'read', klass=Collection)
-        serializer = CollectionNameOnlySerializer(collections, many=True)
-        return Response(serializer.data)
+        list_cols = [collection.name for collection in collections]
+        return Response(list_cols)
 
 
 class ExperimentList(generics.ListAPIView):
@@ -676,8 +673,8 @@ class ExperimentList(generics.ListAPIView):
         collection_obj = Collection.objects.get(name=collection)
         all_experiments = get_objects_for_user(request.user, 'read', klass=Experiment)
         experiments = all_experiments.filter(collection=collection_obj)
-        serializer = ExperimentNameOnlySerializer(experiments, many=True)
-        return Response(serializer.data)
+        list_exps = [experiment.name for experiment in experiments]
+        return Response(list_exps)
 
 
 class ChannelList(generics.ListAPIView):
@@ -703,10 +700,11 @@ class ChannelList(generics.ListAPIView):
         """
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        channel = get_objects_for_user(request.user, 'read',
+        channels = get_objects_for_user(request.user, 'read',
                                               klass=Channel).filter(experiment=experiment_obj)
-        serializer = ChannelNameOnlySerializer(channel, many=True)
-        return Response(serializer.data)
+        list_channels = [channel.name for channel in channels]
+        return Response(list_channels)
+
 
 class CoordinateFrameList(generics.ListCreateAPIView):
     """
@@ -727,5 +725,5 @@ class CoordinateFrameList(generics.ListCreateAPIView):
 
         """
         coords = get_objects_for_user(request.user, 'read', klass=CoordinateFrame)
-        serializer = CoordinateFrameNameOnlySerializer(coords, many=True)
-        return Response(serializer.data)
+        list_coords = [coord.name for coord in coords]
+        return Response(list_coords)

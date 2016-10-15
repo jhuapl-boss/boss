@@ -125,7 +125,7 @@ class UserPermissionsCollection(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestcol')
+        self.assertEqual(response.data[0], 'unittestcol')
         self.assertEqual(len(response.data), 1)
 
 
@@ -239,7 +239,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestcf')
+        self.assertEqual(response.data[0], 'unittestcf')
         self.assertEqual(len(response.data), 1)
 
 
@@ -390,7 +390,7 @@ class UserPermissionsExperiment(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestexp')
+        self.assertEqual(response.data[0], 'unittestexp')
         self.assertEqual(len(response.data), 1)
 
 
@@ -516,4 +516,4 @@ class UserPermissionsChannel(APITestCase):
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestchannel')
+        self.assertEqual(response.data[0], 'unittestchannel')
