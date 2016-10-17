@@ -125,8 +125,8 @@ class UserPermissionsCollection(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0], 'unittestcol')
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data['collections'][0], 'unittestcol')
+        self.assertEqual(len(response.data['collections']), 1)
 
 
 class UserPermissionsCoordinateFrame(APITestCase):
@@ -239,8 +239,8 @@ class UserPermissionsCoordinateFrame(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0], 'unittestcf')
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data['coords'][0], 'unittestcf')
+        self.assertEqual(len(response.data['coords']), 1)
 
 
 class UserPermissionsExperiment(APITestCase):
@@ -378,7 +378,7 @@ class UserPermissionsExperiment(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data['experiments'], [])
 
     def test_get_experiments(self):
         """
@@ -390,8 +390,8 @@ class UserPermissionsExperiment(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0], 'unittestexp')
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data['experiments'][0], 'unittestexp')
+        self.assertEqual(len(response.data['experiments']), 1)
 
 
 class UserPermissionsChannel(APITestCase):
@@ -505,7 +505,7 @@ class UserPermissionsChannel(APITestCase):
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data['channels'], [])
 
     def test_get_channels(self):
         """
@@ -516,4 +516,4 @@ class UserPermissionsChannel(APITestCase):
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0], 'unittestchannel')
+        self.assertEqual(response.data['channels'][0], 'unittestchannel')

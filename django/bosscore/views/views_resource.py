@@ -28,7 +28,7 @@ from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
 
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, \
-    CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer
+    CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer, ChannelReadSerializer
 
 from bosscore.models import Collection, Experiment, Channel, CoordinateFrame
 
@@ -473,7 +473,7 @@ class ChannelDetail(APIView):
 
             # Check for permissions
             if request.user.has_perm("read", channel_obj):
-                serializer = ChannelSerializer(channel_obj)
+                serializer = ChannelReadSerializer(channel_obj)
                 return Response(serializer.data)
             else:
                 return BossPermissionError('read', channel)
@@ -646,8 +646,8 @@ class CollectionList(generics.ListAPIView):
         """
         # queryset = self.get_queryset()
         collections = get_objects_for_user(request.user, 'read', klass=Collection)
-        list_cols = [collection.name for collection in collections]
-        return Response(list_cols)
+        data = {"collections": [collection.name for collection in collections]}
+        return Response(data)
 
 
 class ExperimentList(generics.ListAPIView):
@@ -673,8 +673,8 @@ class ExperimentList(generics.ListAPIView):
         collection_obj = Collection.objects.get(name=collection)
         all_experiments = get_objects_for_user(request.user, 'read', klass=Experiment)
         experiments = all_experiments.filter(collection=collection_obj)
-        list_exps = [experiment.name for experiment in experiments]
-        return Response(list_exps)
+        data = {"experiments": [experiment.name for experiment in experiments]}
+        return Response(data)
 
 
 class ChannelList(generics.ListAPIView):
@@ -702,8 +702,8 @@ class ChannelList(generics.ListAPIView):
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
         channels = get_objects_for_user(request.user, 'read',
                                               klass=Channel).filter(experiment=experiment_obj)
-        list_channels = [channel.name for channel in channels]
-        return Response(list_channels)
+        data = {"channels": [channel.name for channel in channels]}
+        return Response(data)
 
 
 class CoordinateFrameList(generics.ListCreateAPIView):
@@ -725,5 +725,5 @@ class CoordinateFrameList(generics.ListCreateAPIView):
 
         """
         coords = get_objects_for_user(request.user, 'read', klass=CoordinateFrame)
-        list_coords = [coord.name for coord in coords]
-        return Response(list_coords)
+        data = {"coords": [coord.name for coord in coords]}
+        return Response(data)

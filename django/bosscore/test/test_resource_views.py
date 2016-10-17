@@ -178,7 +178,7 @@ class ResourceViewsCollectionTests(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0], 'col1')
+        self.assertEqual(response.data['collections'][0], 'col1')
 
 
 class ResourceViewsExperimentTests(APITestCase):
@@ -384,7 +384,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0], 'exp1')
+        self.assertEqual(response.data['experiments'][0], 'exp1')
 
 
 class ResourceViewsCoordinateTests(APITestCase):
@@ -416,7 +416,7 @@ class ResourceViewsCoordinateTests(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0], 'cf1')
+        self.assertEqual(response.data['coords'][0], 'cf1')
 
     def test_get_coordinateframe_doesnotexist(self):
         """
@@ -718,4 +718,4 @@ class ResourceViewsChannelTests(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0], 'channel1')
+        self.assertEqual(response.data['channels'][0], 'channel1')
