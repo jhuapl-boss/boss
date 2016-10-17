@@ -64,7 +64,7 @@ class ChannelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Channel
         fields = ('name', 'description', 'experiment', 'default_time_step', 'type',
-                  'base_resolution', 'datatype', 'creator')
+                  'base_resolution', 'datatype', 'creator', 'source', 'related')
 
 
 class ChannelReadSerializer(serializers.ModelSerializer):
@@ -77,7 +77,7 @@ class ChannelReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Channel
         fields = ('name', 'description', 'experiment', 'default_time_step', 'type',
-                  'base_resolution', 'datatype', 'creator')
+                  'base_resolution', 'datatype', 'creator', 'source', 'related')
 
 
 class ExperimentSerializer(serializers.ModelSerializer):

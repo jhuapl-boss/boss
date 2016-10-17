@@ -168,7 +168,8 @@ class Channel(models.Model):
         ('uint64', 'UINT64'),
     )
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
-    source = models.ManyToManyField('self', related_name='derived')
+    source = models.ManyToManyField('self', related_name='derived', blank=True)
+    related = models.ManyToManyField('self', related_name='related', blank=True)
 
     class Meta:
         db_table = u"channel"
