@@ -93,7 +93,7 @@ class IngestManager:
             self.collection = Collection.objects.get(name=self.config.config_data["database"]["collection"])
             self.experiment = Experiment.objects.get(name=self.config.config_data["database"]["experiment"],
                                                      collection=self.collection)
-            self.channel = Channel.objects.get(name=self.config.config_data["database"]["channel_layer"],
+            self.channel = Channel.objects.get(name=self.config.config_data["database"]["channel"],
                                                           experiment=self.experiment)
             self.resolution = self.channel.base_resolution
 

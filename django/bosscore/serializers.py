@@ -64,8 +64,33 @@ class ChannelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Channel
         fields = ('name', 'description', 'experiment', 'default_time_step', 'type',
-                  'base_resolution', 'datatype', 'creator', 'source', 'related')
+                  'base_resolution', 'datatype', 'creator')
 
+
+class ChannelUpdateSerializer(serializers.ModelSerializer):
+    """
+    Channel update serializer
+    """
+
+    class Meta:
+        model = Channel
+        fields = ('name', 'description', 'default_time_step', 'base_resolution')
+
+    def is_valid(self, raise_exception=False):
+        super().is_valid(False)
+
+        fields_keys = set(self.fields.keys())
+        input_keys = set(self.initial_data.keys())
+
+        additional_fields = input_keys - fields_keys
+
+        if bool(additional_fields):
+            self._errors['fields'] = ['Cannot update the following readonly fields:{}.'.format(list(additional_fields))]
+
+        if self._errors and raise_exception:
+            raise serializers.ValidationError(self.errors)
+
+        return not bool(self._errors)
 
 class ChannelReadSerializer(serializers.ModelSerializer):
     """
@@ -73,11 +98,25 @@ class ChannelReadSerializer(serializers.ModelSerializer):
     """
     creator = serializers.ReadOnlyField(source='creator.username')
     experiment = serializers.ReadOnlyField(source='experiment.name')
+    sources = serializers.SerializerMethodField()
+    related = serializers.SerializerMethodField()
 
     class Meta:
         model = Channel
         fields = ('name', 'description', 'experiment', 'default_time_step', 'type',
-                  'base_resolution', 'datatype', 'creator', 'source', 'related')
+                  'base_resolution', 'datatype', 'creator', 'sources', 'related')
+
+    def get_sources(self, channel):
+        source_names = channel.source.values_list('name', flat=True)
+        list_sources = [name for name in source_names ]
+        return list_sources
+
+    def get_related(self, channel):
+        related_names = channel.related.values_list('name', flat=True)
+        list_related = [name for name in related_names ]
+        return list_related
+
+
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
@@ -97,6 +136,32 @@ class ExperimentSerializer(serializers.ModelSerializer):
         model = Experiment
         fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
                   'max_time_sample', 'creator')
+
+
+class ExperimentUpdateSerializer(serializers.ModelSerializer):
+    """
+    Experiment update serializer
+    """
+
+    class Meta:
+        model = Experiment
+        fields = ('name', 'description', 'max_time_sample')
+
+    def is_valid(self, raise_exception=False):
+        super().is_valid(False)
+
+        fields_keys = set(self.fields.keys())
+        input_keys = set(self.initial_data.keys())
+
+        additional_fields = input_keys - fields_keys
+
+        if bool(additional_fields):
+            self._errors['fields'] = ['Cannot update the following readonly fields:{}.'.format(list(additional_fields))]
+
+        if self._errors and raise_exception:
+            raise serializers.ValidationError(self.errors)
+
+        return not bool(self._errors)
 
 
 class ExperimentReadSerializer(serializers.ModelSerializer):

@@ -66,6 +66,7 @@ class SetupTestDB:
         self.add_experiment('col1', 'exp22', 'cf1', 10, 500)
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8', 'image')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint8', 'image')
+        self.add_channel('col1', 'exp1', 'channel3', 0, 0, 'uint16', 'annotation')
         self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint16', 'annotation')
 
     def insert_spatialdb_test_data(self):

@@ -102,11 +102,11 @@ class IngestJobView(APIView):
             resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
             resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
             resource['experiment']['max_time_sample'] = experiment.max_time_sample
-            resource['channel_layer'] = {}
-            resource['channel_layer']['name'] = channel.name
-            resource['channel_layer']['description'] = channel.description
-            #resource['channel_layer']['is_channel'] = channel.is_channel
-            resource['channel_layer']['datatype'] = channel.datatype
+            resource['channel'] = {}
+            resource['channel']['name'] = channel.name
+            resource['channel']['description'] = channel.description
+            resource['channel']['type'] = channel.type
+            resource['channel']['datatype'] = channel.datatype
 
             # Set resource
             data['resource'] = resource

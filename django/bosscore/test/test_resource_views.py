@@ -65,7 +65,7 @@ class ResourceViewsCollectionTests(APITestCase):
         Post a new collection (valid)
 
         """
-        url = '/' + version + '/collection/col55/'
+        url = '/' + version + '/collection/col55'
         data = {'description': 'A new collection for unit tests'}
 
         # Get an existing collection
@@ -635,9 +635,90 @@ class ResourceViewsChannelTests(APITestCase):
         """
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1/'
-        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
+        data = {'description': 'This is a new channel', 'type': 'image', 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
+
+
+    def test_post_channel_annotation_without_source(self):
+        """
+        Post a new channel of type annotation(invalid - source missing)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_channel_annotation_with_source(self):
+        """
+        Post a new channel of type annotation(invalid - source missing)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'source':['channel1'], 'related': ['channel2']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        # Get an existing experiment
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['sources'],['channel1'])
+        self.assertEqual(response.data['related'], ['channel2'])
+
+
+    def test_post_channel_annotation_with_multiple_sources(self):
+        """
+        Post a new channel of type annotation(invalid - source missing)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'source':['channel1','channel2']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        # Get an existing experiment
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['sources'],['channel1', 'channel2'])
+
+    def test_post_channel_annotation_with_common_source_related(self):
+        """
+        Post a new channel of type annotation(invalid - source missing)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'source': ['channel1'],
+                'related': ['channel1', 'channel3']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_channel_annotation_with_multiple_related(self):
+        """
+        Post a new channel of type annotation(invalid - source missing)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'source': ['channel1'],
+                'related':['channel2','channel3']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+
+        # Get an existing experiment
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['related'],['channel2', 'channel3'])
+
 
     def test_put_channel(self):
         """
@@ -693,10 +774,30 @@ class ResourceViewsChannelTests(APITestCase):
         Delete a channel (invalid - Violates integrity constraint because channels are linked to it)
 
         """
-        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
 
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'source': ['channel1'], 'related': ['channel2']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+
+        # Get an existing experiment
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+
+        # Get an existing experiment
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
 
     def test_delete_channel_doesnotexist(self):
         """

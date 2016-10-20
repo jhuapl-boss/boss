@@ -22,13 +22,14 @@ from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
 from functools import wraps
 
-from bosscore.error import BossHTTPError, BossPermissionError, BossResourceNotFoundError, ErrorCodes
+from bosscore.error import BossError, BossHTTPError, BossPermissionError, BossResourceNotFoundError, ErrorCodes
 from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
 
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, \
-    CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer, ChannelReadSerializer
+    CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer, ChannelReadSerializer, \
+    ExperimentUpdateSerializer, ChannelUpdateSerializer
 
 from bosscore.models import Collection, Experiment, Channel, CoordinateFrame
 
@@ -77,6 +78,7 @@ class CollectionDetail(APIView):
         col_data = request.data.copy()
         col_data['name'] = collection
 
+        # Save the object
         serializer = CollectionSerializer(data=col_data)
         if serializer.is_valid():
             serializer.save(creator=self.request.user)
@@ -366,7 +368,7 @@ class ExperimentDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             if request.user.has_perm("update", experiment_obj):
-                serializer = ExperimentSerializer(experiment_obj, data=request.data, partial=True)
+                serializer = ExperimentUpdateSerializer(experiment_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
 
@@ -429,30 +431,36 @@ class ChannelDetail(APIView):
     View to access a channel
 
     """
-    @staticmethod
-    def get_bool(value):
-        """
-        Convert a string to a bool
 
-        Boolean variables in post data get converted to strings. This method converts the variables
-        back to a boolean if they are valid.
+    @staticmethod
+    def add_source_related_channels(channel, experiment, source_channels, related_channels):
+        """
+        Add a list of source and related channels
 
         Args:
-            value:
+            channel_names: A list of source channel names
 
         Returns:
-            Boolean : True if the string is "True"
-
-        Raises:
-            BossError : If the value of the string is not a valid bool
+            list : A list of channels id's if the list is valid
 
         """
-        if value == "true" or value == "True":
-            return True
-        elif value == "false" or value == "False":
-            return False
-        else:
-            return BossHTTPError("Value Error in post data", ErrorCodes.TYPE_ERROR)
+
+
+
+        try:
+            for name in source_channels:
+                source_channel_obj = Channel.objects.get(name=name, experiment=experiment)
+                channel.source.add(source_channel_obj.pk)
+
+            for name in related_channels:
+                related_channel_obj = Channel.objects.get(name=name, experiment=experiment)
+                channel.related.add(related_channel_obj.pk)
+
+            channel.save()
+            return channel
+        except Channel.DoesNotExist:
+            raise BossError("Invalid channel names {} in the list of source/related channels channels ".format(name),
+                            ErrorCodes.INVALID_POST_ARGUMENT)
 
     def get(self, request, collection, experiment, channel):
         """
@@ -506,17 +514,37 @@ class ChannelDetail(APIView):
         channel_data['name'] = channel
 
         try:
+            # Get the collection and experiment
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+
             # Check for add permissions
             if request.user.has_perm("add", experiment_obj):
                 channel_data['experiment'] = experiment_obj.pk
 
+                # The source and related channels are names and need to be removed from the dict before serialization
+                source_channels = channel_data.pop('source', [])
+                related_channels = channel_data.pop('related', [])
+
+                # Source channels have to be included for new annotation channels
+                if 'type' in channel_data and channel_data['type'] == 'annotation' and len(source_channels) == 0:
+                    return BossHTTPError("Annotation channels require the source channel to be set. "
+                                         "Specify a valid source channel in the post", ErrorCodes.INVALID_POST_ARGUMENT)
+
+                common = set(source_channels) & set(related_channels)
+                if len(common) > 0 :
+                    return BossHTTPError("Related channels have to be different from source channels",
+                                         ErrorCodes.INVALID_POST_ARGUMENT)
+
+                # Validate and create the channel
                 serializer = ChannelSerializer(data=channel_data)
                 if serializer.is_valid():
                     serializer.save(creator=self.request.user)
-                    channel_obj = Channel.objects.get(name=channel_data['name'],
-                                                                 experiment=experiment_obj)
+                    channel_obj = Channel.objects.get(name=channel_data['name'],experiment=experiment_obj)
+
+                    # Save source and related channels if they are valid
+                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj,source_channels,
+                                                                   related_channels)
 
                     # Assign permissions to the users primary group
                     BossPermissionManager.add_permissions_primary_group(self.request.user, channel_obj)
@@ -538,6 +566,8 @@ class ChannelDetail(APIView):
             return BossResourceNotFoundError(experiment)
         except Channel.DoesNotExist:
             return BossResourceNotFoundError(channel)
+        except BossError as err:
+            return err.to_http()
         except ValueError:
             return BossHTTPError("Value Error in post data", ErrorCodes.TYPE_ERROR)
 
@@ -562,7 +592,7 @@ class ChannelDetail(APIView):
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
             if request.user.has_perm("update", channel_obj):
-                serializer = ChannelSerializer(channel_obj, data=request.data, partial=True)
+                serializer = ChannelUpdateSerializer(channel_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
                     # update the lookup key if you update the name
