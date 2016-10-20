@@ -20,5 +20,7 @@ urlpatterns = [
     # URLS to add a user to a group
     url(r'(?P<group_name>[\w_-]+)/(?P<user_name>[\w_-]+)?/?',views_group.BossGroupMember.as_view()),
 
+    # URLS to add a user to a group
+    url(r'^',views_group.BossGroupMember.as_view()),
 
 ]

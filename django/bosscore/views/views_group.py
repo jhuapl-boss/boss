@@ -30,7 +30,7 @@ class BossGroupMember(APIView):
     """
 
     @check_role("resource-manager")
-    def get(self, request, group_name, user_name=None):
+    def get(self, request, group_name= None, user_name=None):
         """
         Gets the membership status of a user for a group
         Args:
@@ -43,19 +43,26 @@ class BossGroupMember(APIView):
 
         """
         try:
-            group = Group.objects.get(name=group_name)
-            if user_name:
-                # Check the membership status for a user
-                usr = User.objects.get(username=user_name)
-                data = group.user_set.filter(id=usr.id).exists()
-                return Response(data, status=200)
-            else:
-                # Return all the users in the group
-                # TODO (pmanava1) - Check if the user has the role to do this
-                users = group.user_set.all()
-                serializer = UserSerializer(users, many=True)
-                return Response(serializer.data, status=200)
+            if group_name is None:
+                #  Both the user-name and group name is not specified. Return all groups for the logged in user
+                list_groups = request.user.groups.values_list('name', flat=True)
+                list_groups = [name for name in list_groups]
+                data = {"groups": list_groups}
 
+            elif group_name :
+                group = Group.objects.get(name=group_name)
+                if user_name == None:
+                    # The group name is specified without the username. Return a list of all users in the group
+                    list_users = group.user_set.all().values_list('username', flat=True)
+                    list_users = [name for name in list_users]
+                    data = {"group-members": list_users}
+                elif user_name:
+                    # Both group name and user name are specified. Return the membership status for the user
+                    usr = User.objects.get(username=user_name)
+                    status = group.user_set.filter(id=usr.id).exists()
+                    data = {'group-member' : status}
+
+            return Response(data, status=200)
         except Group.DoesNotExist:
             return BossGroupNotFoundError(group_name)
         except User.DoesNotExist:
