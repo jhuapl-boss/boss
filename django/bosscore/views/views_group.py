@@ -23,6 +23,68 @@ from bosscore.error import BossHTTPError, ErrorCodes, BossGroupNotFoundError, Bo
 from bosscore.serializers import GroupSerializer, UserSerializer
 
 
+class BossGroupMemberList(APIView):
+    """
+    Class to get group membership information
+
+    """
+
+    @check_role("resource-manager")
+    def get(self, request):
+        """
+        Gets the membership status of a user for a group
+        Args:
+           request: Django rest framework request
+           group_name: Group name from the request
+           user_name: User name from the request
+
+       Returns:
+           bool : True if the user is a member of the group
+
+        """
+        if 'groupname' in request.query_params:
+            groupname = request.query_params['groupname']
+        else:
+            groupname = None
+
+        if 'username' in request.query_params:
+            username = request.query_params['username']
+        else:
+            username = None
+
+
+        try:
+
+            if username is None and groupname is None:
+                #  Both the user-name and group name is not specified. Return all groups for the logged in user
+                list_groups = request.user.groups.values_list('name', flat=True)
+                list_groups = [name for name in list_groups]
+                data = {"groups": list_groups}
+            elif username is not None and groupname is None:
+                # username without groupname. Return all groups for this user
+                user = User.objects.get(username=username)
+                list_groups = user.groups.values_list('name', flat=True)
+                list_groups = [name for name in list_groups]
+                data = {"groups": list_groups}
+            elif username is None and groupname is not None:
+                # The group name is specified without the username. Return a list of all users in the group
+                group = Group.objects.get(name=groupname)
+                list_users = group.user_set.all().values_list('username', flat=True)
+                list_users = [name for name in list_users]
+                data = {"group-members": list_users}
+            else:
+                # Both group name and user name are specified. Return the membership status for the user
+                group = Group.objects.get(name=groupname)
+                usr = User.objects.get(username=username)
+                status = group.user_set.filter(id=usr.id).exists()
+                data = {'group-member' : status}
+
+            return Response(data, status=200)
+        except Group.DoesNotExist:
+            return BossGroupNotFoundError(groupname)
+        except User.DoesNotExist:
+            return BossUserNotFoundError(username)
+
 class BossGroupMember(APIView):
     """
     View to add a user to a group
@@ -30,7 +92,7 @@ class BossGroupMember(APIView):
     """
 
     @check_role("resource-manager")
-    def get(self, request, group_name= None, user_name=None):
+    def get(self, request, group_name, user_name):
         """
         Gets the membership status of a user for a group
         Args:
@@ -43,24 +105,11 @@ class BossGroupMember(APIView):
 
         """
         try:
-            if group_name is None:
-                #  Both the user-name and group name is not specified. Return all groups for the logged in user
-                list_groups = request.user.groups.values_list('name', flat=True)
-                list_groups = [name for name in list_groups]
-                data = {"groups": list_groups}
-
-            elif group_name :
-                group = Group.objects.get(name=group_name)
-                if user_name == None:
-                    # The group name is specified without the username. Return a list of all users in the group
-                    list_users = group.user_set.all().values_list('username', flat=True)
-                    list_users = [name for name in list_users]
-                    data = {"group-members": list_users}
-                elif user_name:
-                    # Both group name and user name are specified. Return the membership status for the user
-                    usr = User.objects.get(username=user_name)
-                    status = group.user_set.filter(id=usr.id).exists()
-                    data = {'group-member' : status}
+            # Both group name and user name are specified. Return the membership status for the user
+            group = Group.objects.get(name=group_name)
+            usr = User.objects.get(username=user_name)
+            status = group.user_set.filter(id=usr.id).exists()
+            data = {'group-member' : status}
 
             return Response(data, status=200)
         except Group.DoesNotExist:

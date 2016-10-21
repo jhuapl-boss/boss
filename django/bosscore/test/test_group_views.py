@@ -39,7 +39,7 @@ class GroupMemberTests(APITestCase):
         self.client.force_login(user)
         dbsetup.insert_test_data()
 
-    def test_get_groups_for_user(self):
+    def test_get_groups_for_current_user(self):
         """
         Test group membership for a logged in user
         Returns:
@@ -51,6 +51,30 @@ class GroupMemberTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['groups']), 2)
         self.assertEqual(response.data['groups'], ['testuser-primary', 'boss-public'])
+
+    def test_get_groups_for_user(self):
+        """
+        Get groups for a specified user
+        Returns:
+
+        """
+        # Get all groups for the user
+        url = '/' + version + '/group-member/?username=testuser'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['groups']), 2)
+        self.assertEqual(response.data['groups'], ['testuser-primary', 'boss-public'])
+
+    def test_get_groups_for_invalid_user(self):
+        """
+        Get groups for a invalid user
+        Returns:
+
+        """
+        # Get all groups for the user
+        url = '/' + version + '/group-member/?username=testusereee'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_get_member_group(self):
         """ Check for usermember ship in a group. """
@@ -75,7 +99,7 @@ class GroupMemberTests(APITestCase):
     def test_get_all_group_member(self):
         """ Get a list of all members in the group """
 
-        url = '/' + version + '/group-member/testuser-primary/'
+        url = '/' + version + '/group-member/?groupname=testuser-primary'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['group-members']), 1)
@@ -102,7 +126,7 @@ class GroupMemberTests(APITestCase):
         self.assertEqual(response.data["group-member"], True)
 
         # List all members of the group
-        url = '/' + version + '/group-member/unittest/'
+        url = '/' + version + '/group-member/?groupname=unittest'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['group-members']), 1)
