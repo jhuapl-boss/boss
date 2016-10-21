@@ -66,8 +66,8 @@ class SetupTestDB:
         self.add_experiment('col1', 'exp22', 'cf1', 10, 500)
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8', 'image')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint8', 'image')
-        self.add_channel('col1', 'exp1', 'channel3', 0, 0, 'uint16', 'annotation')
-        self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint16', 'annotation')
+        self.add_channel('col1', 'exp1', 'channel3', 0, 0, 'uint64', 'annotation')
+        self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint64', 'annotation')
 
     def insert_spatialdb_test_data(self):
 
@@ -211,7 +211,7 @@ class SetupTestDB:
         exp = Experiment.objects.get(name=experiment_name, collection=col)
         channel = Channel.objects.create(name=channel_name, experiment=exp,
                                          default_time_step=default_time_step, base_resolution=base_resolution,
-                                         type='image', datatype=datatype, creator=self.user)
+                                         type=type, datatype=datatype, creator=self.user)
 
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(channel.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + channel.name

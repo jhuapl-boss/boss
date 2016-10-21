@@ -39,3 +39,11 @@ class CutoutInterfaceRoutingTests(APITestCase):
         view_based_cutout = resolve('/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2')
         self.assertEqual(view_based_cutout.func.__name__, Cutout.as_view().__name__)
 
+    def test_full_token_cutout_resolves_to_cutout_time(self):
+        """
+        Test to make sure the cutout URL with all datamodel params resolves
+        :return:
+        """
+        view_based_cutout = resolve('/' + version + '/cutout/col1/exp1/ds1/2/0:5/0:6/0:2/5:57')
+        self.assertEqual(view_based_cutout.func.__name__, Cutout.as_view().__name__)
+
