@@ -65,6 +65,36 @@ class GroupMemberTests(APITestCase):
         self.assertEqual(len(response.data['groups']), 2)
         self.assertEqual(response.data['groups'], ['testuser-primary', 'boss-public'])
 
+    def test_get_members_for_group(self):
+        """
+        Get users for a specified group
+        Returns:
+
+        """
+        # Get all groups for the user
+        url = '/' + version + '/group-member/?groupname=boss-public'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['group-members']), 1)
+        self.assertEqual(response.data['group-members'], ['testuser'])
+
+    def test_get_membership_status(self):
+        """
+        Get membership status for a user
+        Returns:
+
+        """
+        # Get all groups for the user
+        url = '/' + version + '/group-member/?groupname=boss-public&username=testuser'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+        # Get all groups for the user
+        url = '/' + version + '/group-member/?groupname=boss-public&username=testusereee'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
     def test_get_groups_for_invalid_user(self):
         """
         Get groups for a invalid user
@@ -83,18 +113,18 @@ class GroupMemberTests(APITestCase):
         url = '/' + version + '/group-member/testuser-primary/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["group-member"], True)
+        self.assertEqual(response.data, True)
 
         url = '/' + version + '/group-member/boss-public/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["group-member"], True)
+        self.assertEqual(response.data, True)
 
         # Check if user is a member of the group
         url = '/' + version + '/group-member/unittest/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["group-member"], False)
+        self.assertEqual(response.data, False)
 
     def test_get_all_group_member(self):
         """ Get a list of all members in the group """
@@ -112,7 +142,7 @@ class GroupMemberTests(APITestCase):
         url = '/' + version + '/group-member/unittest/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["group-member"], False)
+        self.assertEqual(response.data, False)
 
         # Add user to the group
         url = '/' + version + '/group-member/unittest/testuser/'
@@ -123,7 +153,7 @@ class GroupMemberTests(APITestCase):
         url = '/' + version + '/group-member/unittest/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["group-member"], True)
+        self.assertEqual(response.data, True)
 
         # List all members of the group
         url = '/' + version + '/group-member/?groupname=unittest'
@@ -144,7 +174,7 @@ class GroupMemberTests(APITestCase):
         url = '/' + version + '/group-member/unittest/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["group-member"], True)
+        self.assertEqual(response.data, True)
 
         # Remove user from the group
         url = '/' + version + '/group-member/unittest/testuser/'
@@ -155,7 +185,7 @@ class GroupMemberTests(APITestCase):
         url = '/' + version + '/group-member/unittest/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data["group-member"], False)
+        self.assertEqual(response.data, False)
 
     def test_group_member_invalid_group(self):
         """ Test group-memeber api calls with a group that does not exist """
