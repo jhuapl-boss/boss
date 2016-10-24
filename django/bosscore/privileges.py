@@ -53,7 +53,10 @@ def load_user_roles(user, roles):
                 # TODO: Clean up error handling for this method
                 return BossHTTPError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
 
-    Group.objects.get_or_create(name=user.username + '-primary')
+    for name in [user.username + '-primary', 'bosspublic']:
+        group = Group.objects.get_or_create(name=name)
+        if group not in user.groups:
+            user.groups.add(group)
 
 # Decorators to check that the user has the right role
 def check_role(role_name):
