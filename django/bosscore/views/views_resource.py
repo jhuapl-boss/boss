@@ -232,6 +232,11 @@ class CoordinateFrameDetail(APIView):
                 serializer = CoordinateFrameUpdateSerializer(coordframe_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
+
+                    # return the object back to the user
+                    coordframe = serializer.data['name']
+                    coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
+                    serializer = CoordinateFrameSerializer(coordframe_obj)
                     return Response(serializer.data)
                 else:
                     return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
