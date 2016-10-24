@@ -145,7 +145,7 @@ class ExperimentUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('name', 'description', 'max_time_sample')
+        fields = ('name', 'description', 'num_hierarchy_levels', 'hierarchy_method', 'max_time_sample')
 
     def is_valid(self, raise_exception=False):
         super().is_valid(False)

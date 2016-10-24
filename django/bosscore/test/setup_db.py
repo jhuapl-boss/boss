@@ -34,7 +34,7 @@ class SetupTestDB:
 
         self.user = User.objects.create_user(username=username, email=username+'@test.com', password=username)
         user_primary_group, created = Group.objects.get_or_create(name=username + '-primary')
-        public_group, created = Group.objects.get_or_create(name='boss-public')
+        public_group, created = Group.objects.get_or_create(name='bosspublic')
         self.user.groups.add(user_primary_group)
         public_group.user_set.add(self.user)
         return self.user
