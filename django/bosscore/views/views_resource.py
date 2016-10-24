@@ -337,6 +337,7 @@ class ExperimentDetail(APIView):
                     boss_key = collection_obj.name + '&' + experiment_obj.name
                     LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name)
 
+                    serializer = ExperimentReadSerializer(experiment_obj)
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
                 else:
                     return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
@@ -378,6 +379,10 @@ class ExperimentDetail(APIView):
                         boss_key = collection_obj.name + '&' + request.data['name']
                         LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name, request.data['name'])
 
+                    # return the object back to the user
+                    experiment = serializer.data['name']
+                    experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+                    serializer = ExperimentReadSerializer(experiment_obj)
                     return Response(serializer.data)
                 else:
                     return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
@@ -555,6 +560,7 @@ class ChannelDetail(APIView):
                     LookUpKey.add_lookup(lookup_key, boss_key, collection_obj.name, experiment_obj.name,
                                          channel_obj.name)
 
+                    serializer = ChannelReadSerializer(channel_obj)
                     return Response(serializer.data, status=status.HTTP_201_CREATED)
                 else:
                     return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
@@ -603,6 +609,10 @@ class ChannelDetail(APIView):
                         LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name,  experiment_obj.name,
                                                 request.data['name'])
 
+                    # return the object back to the user
+                    channel = serializer.data['name']
+                    channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
+                    serializer = ChannelReadSerializer(channel_obj)
                     return Response(serializer.data)
                 else:
                     return BossHTTPError("{}".format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
