@@ -107,7 +107,7 @@ class ChannelReadSerializer(serializers.ModelSerializer):
                   'base_resolution', 'datatype', 'creator', 'sources', 'related')
 
     def get_sources(self, channel):
-        source_names = channel.source.values_list('name', flat=True)
+        source_names = channel.sources.values_list('name', flat=True)
         list_sources = [name for name in source_names ]
         return list_sources
 

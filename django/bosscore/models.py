@@ -168,7 +168,9 @@ class Channel(models.Model):
         ('uint64', 'UINT64'),
     )
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
-    source = models.ManyToManyField('self', related_name='derived', blank=True)
+    sources = models.ManyToManyField('self', through = 'Source',
+                                    symmetrical=False,
+                                    related_name='derived', blank=True)
     related = models.ManyToManyField('self', related_name='related', blank=True)
 
     class Meta:
@@ -189,8 +191,24 @@ class Channel(models.Model):
 
         )
 
+    def add_source(self, source):
+        source, created = Source.objects.get_or_create(
+            derived_channel= self,
+            source_channel = source)
+        return source
+
+    def remove_source(self, source):
+        Source.objects.filter(
+            derived_channel=self,
+            source_channel=source).delete()
+        return
+
     def __str__(self):
         return self.name
+
+class Source(models.Model):
+    derived_channel = models.ForeignKey(Channel, related_name='derived_channel')
+    source_channel = models.ForeignKey(Channel, related_name='source_channel', on_delete=models.PROTECT)
 
 class BossLookup(models.Model):
     """

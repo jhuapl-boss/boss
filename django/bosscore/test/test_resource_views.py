@@ -653,7 +653,7 @@ class ResourceViewsChannelTests(APITestCase):
 
     def test_post_channel_annotation_with_source(self):
         """
-        Post a new channel of type annotation(invalid - source missing)
+        Post a new channel of type annotation
 
         """
         # Post a new channel
@@ -687,6 +687,12 @@ class ResourceViewsChannelTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['sources'],['channel1', 'channel2'])
 
+        # Ensure that this is Asymmetrical
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['sources'], [])
+
     def test_post_channel_annotation_with_common_source_related(self):
         """
         Post a new channel of type annotation(invalid - source missing)
@@ -713,12 +719,16 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-
         # Get an existing experiment
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['related'],['channel2', 'channel3'])
 
+        # Make sure it is symmetrical
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel2/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['related'], ['channel33'])
 
     def test_put_channel(self):
         """
@@ -727,6 +737,18 @@ class ResourceViewsChannelTests(APITestCase):
         """
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
         data = {'description': 'A new channel for unit tests. Updated'}
+
+        # Get an existing collection
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_put_channel(self):
+        """
+        Update a channel (Valid - The channel exists)
+
+        """
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        data = {'description': 'A new channel for unit tests. Updated', 'default_time_step' : 1}
 
         # Get an existing collection
         response = self.client.put(url, data=data)
@@ -782,19 +804,12 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
-
-        # Get an existing experiment
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
 
-        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
-
         # Get an existing experiment
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 

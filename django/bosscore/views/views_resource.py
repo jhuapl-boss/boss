@@ -31,7 +31,7 @@ from bosscore.serializers import CollectionSerializer, ExperimentSerializer, Cha
     CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer, ChannelReadSerializer, \
     ExperimentUpdateSerializer, ChannelUpdateSerializer
 
-from bosscore.models import Collection, Experiment, Channel, CoordinateFrame
+from bosscore.models import Collection, Experiment, Channel, CoordinateFrame, Source
 
 
 class CollectionDetail(APIView):
@@ -323,12 +323,13 @@ class ExperimentDetail(APIView):
             if request.user.has_perm("add", collection_obj):
                 experiment_data['collection'] = collection_obj.pk
 
-                #Update the coordinate frame
+                # Update the coordinate frame
                 if 'coord_frame' not in experiment_data:
-                    return BossHTTPError("This request requires a valid coordinate frame", ErrorCodes.INVALID_POST_ARGUMENT)
+                    return BossHTTPError("This request requires a valid coordinate frame",
+                                         ErrorCodes.INVALID_POST_ARGUMENT)
+
                 coord_frame_obj = CoordinateFrame.objects.get(name=experiment_data['coord_frame'])
                 experiment_data['coord_frame'] = coord_frame_obj.pk
-
 
                 serializer = ExperimentSerializer(data=experiment_data)
                 if serializer.is_valid():
@@ -353,8 +354,8 @@ class ExperimentDetail(APIView):
         except CoordinateFrame.DoesNotExist:
             return BossResourceNotFoundError(experiment_data['coord_frame'])
         except ValueError:
-            return BossHTTPError("Value Error.Collection id {} in post data needs to "
-                                      "be an integer".format(experiment_data['collection']), ErrorCodes.TYPE_ERROR)
+            return BossHTTPError("Value Error.Collection id {} in post data needs to be an integer"
+                                 .format(experiment_data['collection']), ErrorCodes.TYPE_ERROR)
 
     @transaction.atomic
     def put(self, request, collection, experiment):
@@ -432,8 +433,8 @@ class ExperimentDetail(APIView):
         except Experiment.DoesNotExist:
             return BossResourceNotFoundError(experiment)
         except ProtectedError:
-            return BossHTTPError("Cannot delete {}. It has channels that reference "
-                                      "it.".format(experiment), ErrorCodes.INTEGRITY_ERROR)
+            return BossHTTPError("Cannot delete {}. It has channels that reference it."
+                                 .format(experiment), ErrorCodes.INTEGRITY_ERROR)
 
 
 class ChannelDetail(APIView):
@@ -448,19 +449,19 @@ class ChannelDetail(APIView):
         Add a list of source and related channels
 
         Args:
-            channel_names: A list of source channel names
+            related_channels:
+            source_channels:
+            experiment:
+            channel:
 
         Returns:
             list : A list of channels id's if the list is valid
 
         """
-
-
-
         try:
             for name in source_channels:
                 source_channel_obj = Channel.objects.get(name=name, experiment=experiment)
-                channel.source.add(source_channel_obj.pk)
+                channel.add_source(source_channel_obj)
 
             for name in related_channels:
                 related_channel_obj = Channel.objects.get(name=name, experiment=experiment)
@@ -542,7 +543,7 @@ class ChannelDetail(APIView):
                                          "Specify a valid source channel in the post", ErrorCodes.INVALID_POST_ARGUMENT)
 
                 common = set(source_channels) & set(related_channels)
-                if len(common) > 0 :
+                if len(common) > 0:
                     return BossHTTPError("Related channels have to be different from source channels",
                                          ErrorCodes.INVALID_POST_ARGUMENT)
 
@@ -550,10 +551,10 @@ class ChannelDetail(APIView):
                 serializer = ChannelSerializer(data=channel_data)
                 if serializer.is_valid():
                     serializer.save(creator=self.request.user)
-                    channel_obj = Channel.objects.get(name=channel_data['name'],experiment=experiment_obj)
+                    channel_obj = Channel.objects.get(name=channel_data['name'], experiment=experiment_obj)
 
                     # Save source and related channels if they are valid
-                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj,source_channels,
+                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj, source_channels,
                                                                    related_channels)
 
                     # Assign permissions to the users primary group
@@ -595,8 +596,6 @@ class ChannelDetail(APIView):
         Returns :
             Channel
         """
-        channel_data = request.data.copy()
-
         try:
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
@@ -745,8 +744,7 @@ class ChannelList(generics.ListAPIView):
         """
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        channels = get_objects_for_user(request.user, 'read',
-                                              klass=Channel).filter(experiment=experiment_obj)
+        channels = get_objects_for_user(request.user, 'read', klass=Channel).filter(experiment=experiment_obj)
         data = {"channels": [channel.name for channel in channels]}
         return Response(data)
 
