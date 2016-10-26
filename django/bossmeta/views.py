@@ -26,7 +26,6 @@ class BossMeta(APIView):
         Returns:
 
         """
-        print (collection)
         try:
             # Validate the request and get the lookup Key
             req = BossRequest(request)
