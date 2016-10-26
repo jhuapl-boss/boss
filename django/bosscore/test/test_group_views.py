@@ -50,7 +50,7 @@ class GroupMemberTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['groups']), 2)
-        self.assertEqual(response.data['groups'], ['testuser-primary', 'boss-public'])
+        self.assertEqual(response.data['groups'], ['testuser-primary', 'bosspublic'])
 
     def test_get_groups_for_user(self):
         """
@@ -63,7 +63,7 @@ class GroupMemberTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['groups']), 2)
-        self.assertEqual(response.data['groups'], ['testuser-primary', 'boss-public'])
+        self.assertEqual(response.data['groups'], ['testuser-primary', 'bosspublic'])
 
     def test_get_members_for_group(self):
         """
@@ -72,7 +72,7 @@ class GroupMemberTests(APITestCase):
 
         """
         # Get all groups for the user
-        url = '/' + version + '/group-member/?groupname=boss-public'
+        url = '/' + version + '/group-member/?groupname=bosspublic'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['group-members']), 1)
@@ -85,13 +85,13 @@ class GroupMemberTests(APITestCase):
 
         """
         # Get all groups for the user
-        url = '/' + version + '/group-member/?groupname=boss-public&username=testuser'
+        url = '/' + version + '/group-member/?groupname=bosspublic&username=testuser'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, True)
 
         # Get all groups for the user
-        url = '/' + version + '/group-member/?groupname=boss-public&username=testusereee'
+        url = '/' + version + '/group-member/?groupname=bosspublic&username=testusereee'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
@@ -115,7 +115,7 @@ class GroupMemberTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, True)
 
-        url = '/' + version + '/group-member/boss-public/testuser/'
+        url = '/' + version + '/group-member/bosspublic/testuser/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, True)

@@ -34,7 +34,7 @@ class SetupTestDB:
 
         self.user = User.objects.create_user(username=username, email=username+'@test.com', password=username)
         user_primary_group, created = Group.objects.get_or_create(name=username + '-primary')
-        public_group, created = Group.objects.get_or_create(name='boss-public')
+        public_group, created = Group.objects.get_or_create(name='bosspublic')
         self.user.groups.add(user_primary_group)
         public_group.user_set.add(self.user)
         return self.user
@@ -61,6 +61,7 @@ class SetupTestDB:
     def insert_test_data(self):
 
         self.add_collection('col1', 'Description for collection1')
+        self.add_collection('col2', 'Description for collection2')
         self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
         self.add_experiment('col1', 'exp1', 'cf1', 10, 10)
         self.add_experiment('col1', 'exp22', 'cf1', 10, 500)

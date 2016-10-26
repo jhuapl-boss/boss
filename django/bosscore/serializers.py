@@ -74,7 +74,7 @@ class ChannelUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'default_time_step', 'base_resolution')
+        fields = ('name', 'description', 'default_time_step', 'base_resolution', 'sources', 'related')
 
     def is_valid(self, raise_exception=False):
         super().is_valid(False)
@@ -107,7 +107,7 @@ class ChannelReadSerializer(serializers.ModelSerializer):
                   'base_resolution', 'datatype', 'creator', 'sources', 'related')
 
     def get_sources(self, channel):
-        source_names = channel.source.values_list('name', flat=True)
+        source_names = channel.sources.values_list('name', flat=True)
         list_sources = [name for name in source_names ]
         return list_sources
 
@@ -145,7 +145,7 @@ class ExperimentUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('name', 'description', 'max_time_sample')
+        fields = ('name', 'description', 'num_hierarchy_levels', 'hierarchy_method', 'max_time_sample')
 
     def is_valid(self, raise_exception=False):
         super().is_valid(False)
