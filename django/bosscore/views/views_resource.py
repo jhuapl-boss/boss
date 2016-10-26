@@ -334,7 +334,7 @@ class ExperimentDetail(APIView):
                 serializer = ExperimentSerializer(data=experiment_data)
                 if serializer.is_valid():
                     serializer.save(creator=self.request.user)
-                    experiment_obj = Experiment.objects.get(name=experiment_data['name'])
+                    experiment_obj = Experiment.objects.get(name=experiment_data['name'],collection = collection_obj)
 
                     # Assign permissions to the users primary group
                     BossPermissionManager.add_permissions_primary_group(self.request.user, experiment_obj)

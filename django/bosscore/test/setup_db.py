@@ -61,6 +61,7 @@ class SetupTestDB:
     def insert_test_data(self):
 
         self.add_collection('col1', 'Description for collection1')
+        self.add_collection('col2', 'Description for collection2')
         self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
         self.add_experiment('col1', 'exp1', 'cf1', 10, 10)
         self.add_experiment('col1', 'exp22', 'cf1', 10, 500)

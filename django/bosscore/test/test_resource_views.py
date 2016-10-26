@@ -241,6 +241,24 @@ class ResourceViewsExperimentTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
+    def test_post_experiment_not_unique(self):
+        """
+        Post a new experiment with a name that already exists in the database but is unique to the collection
+
+        """
+        # Get the coordinate frame id
+        url = '/' + version + '/coord/cf1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        cf = response.data['name']
+
+        # Post a new experiment
+        url = '/' + version + '/collection/col2/experiment/exp1'
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
     def test_post_experiment_no_collection(self):
         """
         Post a new experiment (valid - No collection in the post data. This is picked up from the request)
@@ -639,7 +657,6 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
 
-
     def test_post_channel_annotation_without_source(self):
         """
         Post a new channel of type annotation(invalid - source missing)
@@ -659,16 +676,15 @@ class ResourceViewsChannelTests(APITestCase):
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
-                'sources':['channel1'], 'related': ['channel2']}
+                'sources': ['channel1'], 'related': ['channel2']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
         # Get an existing experiment
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['sources'],['channel1'])
+        self.assertEqual(response.data['sources'], ['channel1'])
         self.assertEqual(response.data['related'], ['channel2'])
-
 
     def test_post_channel_annotation_with_multiple_sources(self):
         """
@@ -678,14 +694,14 @@ class ResourceViewsChannelTests(APITestCase):
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
-                'sources':['channel1','channel2']}
+                'sources': ['channel1', 'channel2']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
         # Get an existing experiment
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['sources'],['channel1', 'channel2'])
+        self.assertEqual(response.data['sources'], ['channel1', 'channel2'])
 
         # Ensure that this is Asymmetrical
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1/'
@@ -715,14 +731,14 @@ class ResourceViewsChannelTests(APITestCase):
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
                 'sources': ['channel1'],
-                'related':['channel2','channel3']}
+                'related': ['channel2', 'channel3']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
         # Get an existing experiment
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['related'],['channel2', 'channel3'])
+        self.assertEqual(response.data['related'], ['channel2', 'channel3'])
 
         # Make sure it is symmetrical
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel2/'
@@ -742,13 +758,13 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
 
-    def test_put_channel(self):
+    def test_put_channel_source(self):
         """
         Update a channel (Valid - The channel exists)
 
         """
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
-        data = {'description': 'A new channel for unit tests. Updated', 'default_time_step' : 1}
+        data = {'description': 'A new channel for unit tests. Updated', 'default_time_step': 1}
 
         # Get an existing collection
         response = self.client.put(url, data=data)
@@ -812,7 +828,6 @@ class ResourceViewsChannelTests(APITestCase):
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-
 
     def test_delete_channel_doesnotexist(self):
         """
