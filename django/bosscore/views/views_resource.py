@@ -534,7 +534,7 @@ class ChannelDetail(APIView):
                 channel_data['experiment'] = experiment_obj.pk
 
                 # The source and related channels are names and need to be removed from the dict before serialization
-                source_channels = channel_data.pop('source', [])
+                source_channels = channel_data.pop('sources', [])
                 related_channels = channel_data.pop('related', [])
 
                 # Source channels have to be included for new annotation channels

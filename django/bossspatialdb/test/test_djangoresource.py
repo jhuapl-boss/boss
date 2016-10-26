@@ -40,7 +40,7 @@ class TestDjangoResource(APITestCase):
 
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
-                'source': ['channel1'],
+                'sources': ['channel1'],
                 'related': ['channel2', 'channel3']}
         response = self.client.post(url, data=data)
 
@@ -147,7 +147,7 @@ class TestDjangoResource(APITestCase):
         assert channel.base_resolution == self.request_channel.channel.base_resolution
         assert channel.default_time_step == self.request_channel.channel.default_time_step
         assert channel.related == []
-        assert channel.source == []
+        assert channel.sources == []
 
     def test_django_resource_channel_annotation(self):
         """Test basic get channel when an annotation interface
@@ -168,7 +168,7 @@ class TestDjangoResource(APITestCase):
         assert channel.base_resolution == self.request_annotation.channel.base_resolution
         assert channel.default_time_step == self.request_annotation.channel.default_time_step
         assert channel.related == []
-        assert channel.source == []
+        assert channel.sources == []
 
     def test_django_resource_channel_image_with_links(self):
         """Test basic get channel interface
@@ -189,7 +189,7 @@ class TestDjangoResource(APITestCase):
         assert channel.base_resolution == self.request_channel_links.channel.base_resolution
         assert channel.default_time_step == self.request_channel_links.channel.default_time_step
         assert channel.related == ['channel2', 'channel3']
-        assert channel.source == ['channel1']
+        assert channel.sources == ['channel1']
 
     def test_django_resource_get_boss_key(self):
         """Test basic get boss key interface

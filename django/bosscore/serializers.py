@@ -74,7 +74,7 @@ class ChannelUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'default_time_step', 'base_resolution')
+        fields = ('name', 'description', 'default_time_step', 'base_resolution', 'sources', 'related')
 
     def is_valid(self, raise_exception=False):
         super().is_valid(False)

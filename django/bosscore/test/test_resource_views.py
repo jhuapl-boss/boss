@@ -659,7 +659,7 @@ class ResourceViewsChannelTests(APITestCase):
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
-                'source':['channel1'], 'related': ['channel2']}
+                'sources':['channel1'], 'related': ['channel2']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -678,7 +678,7 @@ class ResourceViewsChannelTests(APITestCase):
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
-                'source':['channel1','channel2']}
+                'sources':['channel1','channel2']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -701,7 +701,7 @@ class ResourceViewsChannelTests(APITestCase):
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
-                'source': ['channel1'],
+                'sources': ['channel1'],
                 'related': ['channel1', 'channel3']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
@@ -714,7 +714,7 @@ class ResourceViewsChannelTests(APITestCase):
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
-                'source': ['channel1'],
+                'sources': ['channel1'],
                 'related':['channel2','channel3']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -799,8 +799,8 @@ class ResourceViewsChannelTests(APITestCase):
 
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
-        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
-                'source': ['channel1'], 'related': ['channel2']}
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint64',
+                'sources': ['channel1'], 'related': ['channel2']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
