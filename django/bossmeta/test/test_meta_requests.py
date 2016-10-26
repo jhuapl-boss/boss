@@ -52,9 +52,9 @@ class BossCoreMetaValidRequestTests(APITestCase):
         # log in user
 
 
-        url = '/' + version + '/meta/col1/?key=mkey&value=TestValue'
-        expected_col = 'col1'
-        expected_bosskey = 'col1'
+        url = '/' + version + '/meta/col1-22/?key=mkey&value=TestValue'
+        expected_col = 'col1-22'
+        expected_bosskey = 'col1-22'
         expected_key = 'mkey'
         expected_value = 'TestValue'
 
