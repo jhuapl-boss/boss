@@ -48,7 +48,7 @@ AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend')
 
 REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
     'rest_framework.authentication.SessionAuthentication',
-    'rest_framework.authentication.TokenAuthentication',
+    'boss.authentication.TokenAuthentication',
     'oidc_auth.authentication.BearerTokenAuthentication',
 )
 

@@ -30,7 +30,7 @@ class TokenAuthentication(DRFTokenAuthentication):
         try:
             kc_user = KeycloakModel.objects.get(user = user)
 
-            if self.user_exist(kc_user.uid):
+            if self.user_exist(kc_user.UID):
                 return (user, token) # regular return for authenticate_credentials()
             else:
                 # Disable the user in Django to shortcut the Keycloak lookup
@@ -43,7 +43,7 @@ class TokenAuthentication(DRFTokenAuthentication):
             return (user, token)
 
     @cache(ttl=DRF_KC_TIMEOUT)
-    def user_exists(self, uid):
+    def user_exist(self, uid):
         """Cache the results of looking up the user in Keycloak"""
         with KeyCloakClient('BOSS') as kc:
             return kc.user_exist(uid)
