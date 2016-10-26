@@ -75,9 +75,7 @@ class BloscParser(BaseParser):
         try:
             if len(req.get_time()) > 1:
                 # Time series data
-                time_range = req.get_time()
-                return np.reshape(data_mat, ((time_range[1] - time_range[0]),
-                                             req.get_z_span(), req.get_y_span(), req.get_x_span()),
+                return np.reshape(data_mat, (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span()),
                                   order='C')
             else:
                 return np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
