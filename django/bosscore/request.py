@@ -113,7 +113,7 @@ class BossRequest:
         Returns:
 
         """
-        m = re.match("/?(?P<collection>\w+)/?(?P<experiment>\w+)?/?(?P<channel>\w+)?/?", webargs)
+        m = re.match("/?(?P<collection>[\w_-]+)/?(?P<experiment>[\w_-]+)?/?(?P<channel>[\w_-]+)?/?", webargs)
         if m:
             [collection_name, experiment_name, channel_name] = [arg for arg in m.groups()]
 
@@ -132,7 +132,7 @@ class BossRequest:
         Returns:
 
         """
-        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel>\w+)/(?P<resolution>\d)/"
+        m = re.match("/?(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<resolution>\d)/"
                      + "(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+\:\d+)/?(?P<rest>.*)?/?", webargs)
 
         if m:
@@ -164,7 +164,7 @@ class BossRequest:
         Returns:
 
         """
-        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel>\w+)/(?P<orientation>xy|yz|xz)/"
+        m = re.match("/?(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<orientation>xy|yz|xz)/"
                      + "(?P<resolution>\d)/(?P<x_args>\d+:?\d*)/(?P<y_args>\d+:?\d*)/(?P<z_args>\d+:?\d*)"
                      + "/?(?P<rest>.*)?/?", webargs)
 
@@ -197,7 +197,7 @@ class BossRequest:
         Returns:
 
         """
-        m = re.match("/?(?P<collection>\w+)/(?P<experiment>\w+)/(?P<channel>\w+)/(?P<orientation>xy|yz|xz)/" +
+        m = re.match("/?(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<orientation>xy|yz|xz)/" +
                      "(?P<tile_size>\d+)/(?P<resolution>\d)/(?P<x>\d+)/(?P<y>\d+)/(?P<z>\d+)/?(?P<rest>.*)?/?", webargs)
 
         if m:

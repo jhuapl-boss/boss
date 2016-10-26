@@ -72,6 +72,22 @@ class ResourceViewsCollectionTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
+    def test_post_collection_special_characters(self):
+        """
+        Post a new collection (valid)
+
+        """
+        url = '/' + version + '/collection/col55-22'
+        data = {'description': 'A new collection for unit tests'}
+
+        # Get an existing collection
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], 'col55-22')
+
     def test_post_collection_already_exists(self):
         """
         Post a new collection (invalid - Name already exists)

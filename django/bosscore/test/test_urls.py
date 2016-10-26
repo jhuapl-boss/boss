@@ -43,6 +43,9 @@ class BossCoreResourceRoutingTests(APITestCase):
         match = resolve('/' + version + '/collection/col1/')
         self.assertEqual(match.func.__name__, CollectionDetail.as_view().__name__)
 
+        match = resolve('/' + version + '/collection/col1/exp1')
+        self.assertEqual(match.func.__name__, CollectionDetail.as_view().__name__)
+
     def test_manage_data_urls_experiment_resolves(self):
         """
         Test that all manage_data urls for experiments resolves correctly
