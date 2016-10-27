@@ -162,7 +162,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None)
+                                    resolution='0', x_range='0:100000', y_range='0:100000', z_range='0:100000', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
 
     def test_channel_uint64_cuboid_aligned_no_offset_no_time_blosc(self):
