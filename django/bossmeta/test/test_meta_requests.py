@@ -64,7 +64,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         drfrequest.version = version
 
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "user": self.user,
             "method": request.method,
             "service": "meta",
@@ -77,7 +77,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         }
 
         # Datamodel object
-        ret = BossRequest(drfrequest, bossrequest)
+        ret = BossRequest(drfrequest, request_args)
         self.assertEqual(ret.get_collection(), expected_col)
 
         # Boss key
@@ -107,7 +107,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         drfrequest.version = version
 
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "user": self.user,
             "method": request.method,
             "service": "meta",
@@ -119,7 +119,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
             "value": "TestValue"
         }
 
-        ret = BossRequest(drfrequest, bossrequest)
+        ret = BossRequest(drfrequest, request_args)
 
         # Datamodel object
         self.assertEqual(ret.get_collection(), expected_col)
@@ -155,7 +155,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         drfrequest.version = version
 
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "user": self.user,
             "method": request.method,
             "service": "meta",
@@ -168,7 +168,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         }
 
         # Data model Objects
-        ret = BossRequest(drfrequest, bossrequest)
+        ret = BossRequest(drfrequest, request_args)
         self.assertEqual(ret.get_collection(), expected_col)
         self.assertEqual(ret.get_experiment(), expected_exp)
         self.assertEqual(ret.get_channel(), expected_channel)
@@ -200,7 +200,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         drfrequest.version = version
 
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "user": self.user,
             "method": request.method,
             "service": "meta",
@@ -210,7 +210,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
             "channel_name": expected_channel,
             "key": "mkey",
         }
-        ret = BossRequest(drfrequest, bossrequest)
+        ret = BossRequest(drfrequest, request_args)
 
         # Data model objects
         self.assertEqual(ret.get_collection(), expected_col)
@@ -235,7 +235,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "user": self.user,
             "method": request.method,
             "service": "meta",
@@ -247,7 +247,7 @@ class BossCoreMetaValidRequestTests(APITestCase):
             "value": None
         }
 
-        ret = BossRequest(drfrequest, bossrequest)
+        ret = BossRequest(drfrequest, request_args)
 
         # Data model objects
         self.assertEqual(ret.get_collection(), expected_col)
@@ -292,7 +292,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
 
         try:
             # Create the request dict
-            bossrequest = {
+            request_args = {
                 "user": self.user,
                 "method": request.method,
                 "service": "meta",
@@ -303,7 +303,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
                 "key": "mkey",
                 "value": None
             }
-            BossRequest(drfrequest, bossrequest)
+            BossRequest(drfrequest, request_args)
         except BossError as err:
             assert err.status_code == 404
 
@@ -321,7 +321,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
 
         try:
             # Create the request dict
-            bossrequest = {
+            request_args = {
                 "user": self.user,
                 "method": request.method,
                 "service": "meta",
@@ -332,7 +332,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
                 "key": "mkey",
                 "value": None
             }
-            BossRequest(drfrequest, bossrequest)
+            BossRequest(drfrequest, request_args)
         except BossError as err:
             assert err.status_code == 404
 
@@ -349,7 +349,7 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         drfrequest.version = version
 
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "user": self.user,
             "method": request.method,
             "service": "meta",
@@ -362,6 +362,6 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         }
 
         try:
-            BossRequest(drfrequest,bossrequest)
+            BossRequest(drfrequest,request_args)
         except BossError as err:
             assert err.args[0] == 404

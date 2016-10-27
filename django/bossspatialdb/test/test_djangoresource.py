@@ -52,7 +52,7 @@ class TestDjangoResource(APITestCase):
         drfrequest.version = version
 
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "service": "cutout",
             "collection_name": "col1",
             "experiment_name": "exp1",
@@ -64,7 +64,7 @@ class TestDjangoResource(APITestCase):
             "time_args": None
         }
 
-        self.request_channel = BossRequest(drfrequest, bossrequest)
+        self.request_channel = BossRequest(drfrequest, request_args)
 
         # Setup Layer
         url = '/' + version + '/cutout/col1/exp1/layer1/2/0:5/0:6/0:2/'
@@ -75,7 +75,7 @@ class TestDjangoResource(APITestCase):
         drfrequest.version = version
 
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "service": "cutout",
             "collection_name": "col1",
             "experiment_name": "exp1",
@@ -87,7 +87,7 @@ class TestDjangoResource(APITestCase):
             "time_args": None
         }
 
-        self.request_annotation = BossRequest(drfrequest, bossrequest)
+        self.request_annotation = BossRequest(drfrequest, request_args)
 
         url = '/' + version + '/cutout/col1/exp1/channel33/2/0:5/0:6/0:2/'
         # Create the request
@@ -97,7 +97,7 @@ class TestDjangoResource(APITestCase):
         drfrequest.version = version
 
         # Create the request dict
-        bossrequest = {
+        request_args = {
             "service": "cutout",
             "collection_name": "col1",
             "experiment_name": "exp1",
@@ -109,7 +109,7 @@ class TestDjangoResource(APITestCase):
             "time_args": None
         }
 
-        self.request_channel_links = BossRequest(drfrequest, bossrequest)
+        self.request_channel_links = BossRequest(drfrequest, request_args)
 
     def test_django_resource_col(self):
         """Test basic get collection interface

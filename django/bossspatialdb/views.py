@@ -46,7 +46,7 @@ class Cutout(APIView):
         self.data_type = None
         self.bit_depth = None
 
-    def get(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, time=None):
+    def get(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, t_range=None):
         """
         View to handle GET requests for a cuboid of data while providing all params
 
@@ -66,9 +66,8 @@ class Cutout(APIView):
             return request.data.to_http()
 
         # Process request and validate
-        print (request.data)
         try:
-            bossrequest = {
+            request_args = {
                 "service": "cutout",
                 "collection_name": collection,
                 "experiment_name": experiment,
@@ -77,9 +76,9 @@ class Cutout(APIView):
                 "x_args": x_range,
                 "y_args": y_range,
                 "z_args": z_range,
-                "time_args": time
+                "time_args": t_range
             }
-            req = BossRequest(request, bossrequest)
+            req = BossRequest(request, request_args)
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
@@ -113,7 +112,7 @@ class Cutout(APIView):
         # Send data to renderer
         return Response(data)
 
-    def post(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, time=None):
+    def post(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, t_range=None):
         """
         View to handle POST requests for a cuboid of data while providing all datamodel params
 
@@ -136,7 +135,7 @@ class Cutout(APIView):
 
         # Process request and validate
         try:
-            bossrequest = {
+            request_args = {
                 "service": "cutout",
                 "collection_name": collection,
                 "experiment_name": experiment,
@@ -145,9 +144,9 @@ class Cutout(APIView):
                 "x_args": x_range,
                 "y_args": y_range,
                 "z_args": z_range,
-                "time_args": time
+                "time_args": t_range
             }
-            req = BossRequest(request, bossrequest)
+            req = BossRequest(request, request_args)
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
