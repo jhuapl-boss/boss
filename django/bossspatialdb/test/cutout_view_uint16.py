@@ -305,7 +305,7 @@ class CutoutInterfaceViewUint16TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None)
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='0:3')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
@@ -317,7 +317,7 @@ class CutoutInterfaceViewUint16TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None).render()
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='0:3').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -456,7 +456,7 @@ class CutoutInterfaceViewUint16TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None)
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='0:3')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
@@ -468,7 +468,7 @@ class CutoutInterfaceViewUint16TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None).render()
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='0:3').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -494,7 +494,7 @@ class CutoutInterfaceViewUint16TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
-                                    resolution='0', x_range='100:300', y_range='450:675', z_range='20:37', t_range=None)
+                                    resolution='0', x_range='100:300', y_range='450:675', z_range='20:37', t_range='203:206')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
@@ -506,7 +506,7 @@ class CutoutInterfaceViewUint16TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
-                                    resolution='0', x_range='100:300', y_range='450:675', z_range='20:37', t_range=None).render()
+                                    resolution='0', x_range='100:300', y_range='450:675', z_range='20:37', t_range='203:206').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
