@@ -238,7 +238,7 @@ class TileInterfaceViewTestMixin(object):
         # Make request
         response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                   orientation='xz', tile_size='4', resolution='0',
-                                  x_idx='0', y_idx='0', z_idx='5')
+                                  x_idx='0', y_idx='5', z_idx='0')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Check data is correct (this is pre-renderer)
