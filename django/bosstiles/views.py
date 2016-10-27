@@ -36,7 +36,7 @@ class CutoutTile(APIView):
         self.data_type = None
         self.bit_depth = None
 
-    def get(self, request, collection, experiment, dataset, orientation, resolution, x_args, y_args, z_args, t_args=None):
+    def get(self, request, collection, experiment, channel, orientation, resolution, x_args, y_args, z_args, t_args=None):
         """
         View to handle GET requests for a cuboid of data while providing all params
 
@@ -44,7 +44,7 @@ class CutoutTile(APIView):
         :type request: rest_framework.request.Request
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
-        :param dataset: Dataset identifier, indicating which channel you want to access
+        :param channel: Channel identifier, indicating which channel you want to access
         :param orientation: Image plane requested. Vaid options include xy,xz or yz
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_args: Python style range indicating the X coordinates of where to post the cuboid (eg. 100:200)
@@ -54,7 +54,19 @@ class CutoutTile(APIView):
         """
         # Process request and validate
         try:
-            req = BossRequest(request)
+            bossrequest = {
+                "service": "tile",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "orientation" : orientation,
+                "resolution": resolution,
+                "x_args": x_args,
+                "y_args": y_args,
+                "z_args": z_args,
+                "time_args": t_args
+            }
+            req = BossRequest(request, bossrequest)
         except BossError as err:
             return BossError.to_http()
 
@@ -113,7 +125,7 @@ class Tile(APIView):
         self.data_type = None
         self.bit_depth = None
 
-    def get(self, request, collection, experiment, dataset, orientation, tile_size, resolution, x_idx, y_idx, z_idx, t_idx=None):
+    def get(self, request, collection, experiment, channel, orientation, tile_size, resolution, x_idx, y_idx, z_idx, t_idx=None):
         """
         View to handle GET requests for a tile when providing indices. Currently only supports XY plane
 
@@ -121,7 +133,7 @@ class Tile(APIView):
         :type request: rest_framework.request.Request
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
-        :param dataset: Dataset identifier, indicating which channel you want to access
+        :param channel: Channel identifier, indicating which channel you want to access
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_idx: the tile index in the X dimension
         :param y_idx: the tile index in the Y dimension
@@ -130,9 +142,23 @@ class Tile(APIView):
         :return:
         """
         # TODO: DMK Merge Tile and Image view once updated request validation is sorted out
+
+
         # Process request and validate
         try:
-            req = BossRequest(request)
+            bossrequest = {
+                "service": "tile",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "orientation": orientation,
+                "resolution": resolution,
+                "x_args": x_idx,
+                "y_args": y_idx,
+                "z_args": z_idx,
+                "time_args": t_idx
+            }
+            req = BossRequest(request, bossrequest)
         except BossError as err:
             return BossError.to_http()
 

@@ -46,7 +46,7 @@ class Cutout(APIView):
         self.data_type = None
         self.bit_depth = None
 
-    def get(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
+    def get(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, time=None):
         """
         View to handle GET requests for a cuboid of data while providing all params
 
@@ -54,7 +54,7 @@ class Cutout(APIView):
         :type request: rest_framework.request.Request
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
-        :param dataset: Dataset identifier, indicating which channel you want to access
+        :param channel: Channel identifier, indicating which channel you want to access
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_range: Python style range indicating the X coordinates of where to post the cuboid (eg. 100:200)
         :param y_range: Python style range indicating the Y coordinates of where to post the cuboid (eg. 100:200)
@@ -66,8 +66,20 @@ class Cutout(APIView):
             return request.data.to_http()
 
         # Process request and validate
+        print (request.data)
         try:
-            req = BossRequest(request)
+            bossrequest = {
+                "service": "cutout",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "resolution": resolution,
+                "x_args": x_range,
+                "y_args": y_range,
+                "z_args": z_range,
+                "time_args": time
+            }
+            req = BossRequest(request, bossrequest)
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
@@ -101,7 +113,7 @@ class Cutout(APIView):
         # Send data to renderer
         return Response(data)
 
-    def post(self, request, collection, experiment, dataset, resolution, x_range, y_range, z_range):
+    def post(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, time=None):
         """
         View to handle POST requests for a cuboid of data while providing all datamodel params
 
@@ -111,7 +123,7 @@ class Cutout(APIView):
         :type request: rest_framework.request.Request
         :param collection: Unique Collection identifier, indicating which collection you want to access
         :param experiment: Experiment identifier, indicating which experiment you want to access
-        :param dataset: Dataset identifier, indicating which dataset or annotation project you want to access
+        :param channel: Channel identifier, indicating which dataset or annotation project you want to access
         :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
         :param x_range: Python style range indicating the X coordinates of where to post the cuboid (eg. 100:200)
         :param y_range: Python style range indicating the Y coordinates of where to post the cuboid (eg. 100:200)
@@ -124,7 +136,18 @@ class Cutout(APIView):
 
         # Process request and validate
         try:
-            req = BossRequest(request)
+            bossrequest = {
+                "service": "cutout",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "resolution": resolution,
+                "x_args": x_range,
+                "y_args": y_range,
+                "z_args": z_range,
+                "time_args": time
+            }
+            req = BossRequest(request, bossrequest)
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
 

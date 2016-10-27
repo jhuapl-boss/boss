@@ -16,7 +16,16 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
-    # Url to handle cutout with a collection, experiment, dataset/annotation project
-    url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<dataset>[\w_-]+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+:\d+)/?.*$',
+
+    # Url to handle cutout with a collection, experiment, channel/annotation project and single time
+    url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+:\d+)/(?P<time>\d+)/?$',
+        views.Cutout.as_view()),
+
+    # Url to handle cutout with a collection, experiment, channel/annotation project and  range time
+    url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+:\d+)/(?P<time>\d+:\d+?)/?$',
+        views.Cutout.as_view()),
+
+    # Url to handle cutout with a collection, experiment, channel/annotation projec
+    url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+:\d+)/?$',
         views.Cutout.as_view()),
 ]

@@ -28,7 +28,21 @@ class BossMeta(APIView):
         """
         try:
             # Validate the request and get the lookup Key
-            req = BossRequest(request)
+            if 'key' in request.query_params:
+                key = request.query_params['key']
+            else:
+                key = None
+
+            # Create the request dict
+            bossrequest = {
+                "service": "meta",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "key": key
+
+            }
+            req = BossRequest(request, bossrequest)
             lookup_key = req.get_lookup_key()
 
         except BossError as err:
@@ -37,7 +51,7 @@ class BossMeta(APIView):
         if not lookup_key or lookup_key == "":
             return BossHTTPError("Invalid request. Unable to parse the datamodel arguments", )
 
-        if 'key' not in request.query_params:
+        if 'key' is None:
             # List all keys that are valid for the query
             mdb = metadb.MetaDB()
             mdata = mdb.get_meta_list(lookup_key)
@@ -78,7 +92,17 @@ class BossMeta(APIView):
             return BossHTTPError("Missing optional argument key/value in the request", ErrorCodes.INVALID_POST_ARGUMENT)
 
         try:
-            req = BossRequest(request)
+            # Create the request dict
+            bossrequest = {
+                "service": "meta",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "key": request.query_params['key'],
+                "value": request.query_params['value']
+
+            }
+            req = BossRequest(request, bossrequest)
             lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()
@@ -110,12 +134,19 @@ class BossMeta(APIView):
         Returns:
 
         """
-
         if 'key' not in request.query_params:
             return BossHTTPError("Missing optional argument key in the request", ErrorCodes.INVALID_POST_ARGUMENT)
 
         try:
-            req = BossRequest(request)
+            # Create the request dict
+            bossrequest = {
+                "service": "meta",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "key": request.query_params['key'],
+            }
+            req = BossRequest(request, bossrequest)
             lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()
@@ -153,7 +184,16 @@ class BossMeta(APIView):
                                  ErrorCodes.INVALID_POST_ARGUMENT)
 
         try:
-            req = BossRequest(request)
+            # Create the request dict
+            bossrequest = {
+                "service": "meta",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "key": request.query_params['key'],
+                "value": request.query_params['value']
+            }
+            req = BossRequest(request, bossrequest)
             lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()

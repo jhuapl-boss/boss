@@ -51,7 +51,20 @@ class TestDjangoResource(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
-        self.request_channel = BossRequest(drfrequest)
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        self.request_channel = BossRequest(drfrequest, bossrequest)
 
         # Setup Layer
         url = '/' + version + '/cutout/col1/exp1/layer1/2/0:5/0:6/0:2/'
@@ -61,7 +74,20 @@ class TestDjangoResource(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
-        self.request_annotation = BossRequest(drfrequest)
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "layer1",
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        self.request_annotation = BossRequest(drfrequest, bossrequest)
 
         url = '/' + version + '/cutout/col1/exp1/channel33/2/0:5/0:6/0:2/'
         # Create the request
@@ -70,7 +96,20 @@ class TestDjangoResource(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
-        self.request_channel_links = BossRequest(drfrequest)
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel33",
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        self.request_channel_links = BossRequest(drfrequest, bossrequest)
 
     def test_django_resource_col(self):
         """Test basic get collection interface

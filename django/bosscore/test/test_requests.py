@@ -38,7 +38,7 @@ class BossCoreRequestTests(APITestCase):
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
         dbsetup.set_user(user)
-
+        self.user = user
         self.client.force_login(user)
         dbsetup.insert_test_data()
 
@@ -60,7 +60,21 @@ class BossCoreRequestTests(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
-        ret = BossRequest(drfrequest)
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        ret = BossRequest(drfrequest, bossrequest)
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel(), channel)
@@ -84,7 +98,21 @@ class BossCoreRequestTests(APITestCase):
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+        ret = BossRequest(drfrequest, bossrequest)
 
         self.assertEqual(ret.get_resolution(), res)
         self.assertEqual(ret.get_x_start(), x_start)
@@ -111,7 +139,21 @@ class BossCoreRequestTests(APITestCase):
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+        ret = BossRequest(drfrequest, bossrequest)
         time = ret.get_time()
         self.assertEqual(time, range(0, 1))
 
@@ -121,13 +163,26 @@ class BossCoreRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1/'
-
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": '1'
+        }
+        ret = BossRequest(drfrequest, bossrequest)
         time = ret.get_time()
         self.assertEqual(time, range(1, 2))
 
@@ -147,7 +202,22 @@ class BossCoreRequestTests(APITestCase):
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": "1:5"
+        }
+
+        ret = BossRequest(drfrequest, bossrequest)
         time = ret.get_time()
         boss_keys = ret.get_boss_key_list()
         self.assertEqual(time, range(1, 5))
@@ -169,19 +239,49 @@ class BossCoreRequestTests(APITestCase):
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": "1:5"
+        }
+        ret = BossRequest(drfrequest, bossrequest)
         boss_keys = ret.get_boss_key_list()
         self.assertEqual(boss_keys, exp_boss_keys)
 
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/1:2/'
         exp_boss_keys = ['col1&exp1&channel1&2&0']
 
+
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "1:2",
+            "time_args": None
+        }
+        ret = BossRequest(drfrequest, bossrequest)
         boss_keys = ret.get_boss_key_list()
         self.assertEqual(boss_keys, exp_boss_keys)
 
@@ -193,7 +293,21 @@ class BossCoreRequestTests(APITestCase):
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": "1"
+        }
+        ret = BossRequest(drfrequest, bossrequest)
         boss_keys = ret.get_boss_key_list()
         self.assertEqual(boss_keys, exp_boss_keys)
 
@@ -209,7 +323,22 @@ class BossCoreRequestTests(APITestCase):
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": "1:5"
+        }
+
+        ret = BossRequest(drfrequest, bossrequest)
         col_id = ret.collection.pk
         exp_id = ret.experiment.pk
         channel_id = ret.channel.pk
@@ -238,8 +367,21 @@ class BossCoreRequestTests(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "990:1010",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
         with self.assertRaises(BossError):
-            BossRequest(drfrequest)
+            BossRequest(drfrequest, bossrequest)
 
     def test_request_cutout_invalid_yargs(self):
         """
@@ -254,9 +396,22 @@ class BossCoreRequestTests(APITestCase):
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:6",
+            "y_args": "0:1010",
+            "z_args": "0:2",
+            "time_args": None
+        }
 
         with self.assertRaises(BossError):
-            BossRequest(drfrequest)
+            BossRequest(drfrequest, bossrequest)
 
     def test_request_cutout_invalid_zargs(self):
         """
@@ -272,8 +427,17 @@ class BossCoreRequestTests(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
+        # Create the request dict
+        bossrequest = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "resolution": 2,
+            "x_args": "0:6",
+            "y_args": "0:6",
+            "z_args": "0:1040",
+            "time_args": None
+        }
         with self.assertRaises(BossError):
-            BossRequest(drfrequest)
-
-
-
+            BossRequest(drfrequest, bossrequest)

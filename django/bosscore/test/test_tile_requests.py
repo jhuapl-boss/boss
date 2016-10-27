@@ -38,7 +38,7 @@ class BossTileRequestTests(APITestCase):
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
         dbsetup.set_user(user)
-
+        self.user = user
         self.client.force_login(user)
         dbsetup.insert_test_data()
 
@@ -54,6 +54,20 @@ class BossTileRequestTests(APITestCase):
         boss_key = 'col1&exp1&channel1'
         boss_key_list = 'col1&exp1&channel1&2&0'
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "0",
+            "z_args": "1",
+            "time_args": None
+        }
 
         # Create the request
         req = HttpRequest()
@@ -61,7 +75,7 @@ class BossTileRequestTests(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
-        ret = BossRequest(drfrequest)
+        ret = BossRequest(drfrequest, bossrequest)
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel(), channel)
@@ -80,12 +94,26 @@ class BossTileRequestTests(APITestCase):
         (y_start, y_stop) = (0, 512)
         (z_start, z_stop) = (1, 2)
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "0",
+            "z_args": "1",
+            "time_args": None
+        }
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+        ret = BossRequest(drfrequest, bossrequest)
 
         self.assertEqual(ret.get_resolution(), res)
         self.assertEqual(ret.get_x_start(), x_start)
@@ -107,12 +135,27 @@ class BossTileRequestTests(APITestCase):
         """
         url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1'
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "0",
+            "z_args": "1",
+            "time_args": None
+        }
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+        ret = BossRequest(drfrequest, bossrequest)
         time = ret.get_time()
         self.assertEqual(time, range(0, 1))
 
@@ -123,12 +166,27 @@ class BossTileRequestTests(APITestCase):
         """
         url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1/1/'
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "0",
+            "z_args": "1",
+            "time_args": "1"
+        }
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+        ret = BossRequest(drfrequest, bossrequest)
         time = ret.get_time()
         self.assertEqual(time, range(1, 2))
 
@@ -141,27 +199,56 @@ class BossTileRequestTests(APITestCase):
         url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1/'
         exp_boss_keys = ['col1&exp1&channel1&2&0']
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "0",
+            "z_args": "1",
+            "time_args": None
+        }
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+        ret = BossRequest(drfrequest, bossrequest)
         boss_keys = ret.get_boss_key_list()
         self.assertEqual(boss_keys, exp_boss_keys)
 
         url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1/1/'
         exp_boss_keys = ['col1&exp1&channel1&2&1']
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "0",
+            "z_args": "1",
+            "time_args": "1"
+        }
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
         drfrequest = Request(req)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+        ret = BossRequest(drfrequest, bossrequest)
         boss_keys = ret.get_boss_key_list()
         self.assertEqual(boss_keys, exp_boss_keys)
-
 
     def test_request_tile_invalid_xargs(self):
         """
@@ -171,6 +258,21 @@ class BossTileRequestTests(APITestCase):
         """
         url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/7000/1/1/1/'
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "7000",
+            "y_args": "0",
+            "z_args": "1",
+            "time_args": "1"
+        }
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
@@ -178,7 +280,7 @@ class BossTileRequestTests(APITestCase):
         drfrequest.version = version
 
         with self.assertRaises(BossError):
-            BossRequest(drfrequest)
+            BossRequest(drfrequest, bossrequest)
 
     def test_request_tile_invalid_yargs(self):
         """
@@ -188,6 +290,21 @@ class BossTileRequestTests(APITestCase):
         """
         url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/7000/1/1/'
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "7000",
+            "z_args": "1",
+            "time_args": "1"
+        }
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
@@ -195,7 +312,7 @@ class BossTileRequestTests(APITestCase):
         drfrequest.version = version
 
         with self.assertRaises(BossError):
-            BossRequest(drfrequest)
+            BossRequest(drfrequest, bossrequest)
 
     def test_request_tile_invalid_zargs(self):
         """
@@ -205,6 +322,21 @@ class BossTileRequestTests(APITestCase):
         """
         url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/1/7000/1/'
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xy",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "1",
+            "z_args": "7000",
+            "time_args": "1"
+        }
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
@@ -212,7 +344,7 @@ class BossTileRequestTests(APITestCase):
         drfrequest.version = version
 
         with self.assertRaises(BossError):
-            BossRequest(drfrequest)
+            BossRequest(drfrequest, bossrequest)
 
     def test_request_tile_invalid_orientation(self):
         """
@@ -221,6 +353,21 @@ class BossTileRequestTests(APITestCase):
         """
         url = '/' + version + '/tile/col1/exp1/channel1/xe/512/2/0/1/1/1/'
 
+        # Create the request dict
+        bossrequest = {
+            "service": "tile",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "orientation": "xe",
+            "tile_size": 512,
+            "resolution": 2,
+            "x_args": "0",
+            "y_args": "0",
+            "z_args": "1",
+            "time_args": "1"
+        }
+
         # Create the request
         req = HttpRequest()
         req.META = {'PATH_INFO': url}
@@ -228,8 +375,4 @@ class BossTileRequestTests(APITestCase):
         drfrequest.version = version
 
         with self.assertRaises(BossError):
-            BossRequest(drfrequest)
-
-
-
-
+            BossRequest(drfrequest, bossrequest)
