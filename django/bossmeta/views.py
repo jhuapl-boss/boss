@@ -51,7 +51,7 @@ class BossMeta(APIView):
         if not lookup_key or lookup_key == "":
             return BossHTTPError("Invalid request. Unable to parse the datamodel arguments", )
 
-        if 'key' is None:
+        if key is None:
             # List all keys that are valid for the query
             mdb = metadb.MetaDB()
             mdata = mdb.get_meta_list(lookup_key)

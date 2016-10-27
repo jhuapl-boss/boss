@@ -75,12 +75,8 @@ class BossRequest:
         self.method = request.method
         self.version = request.version
 
-        # Make this private?
+        # Validate the request based on the service
         self.service = self.bossrequest['service']
-
-        #print (self.bossrequest)
-
-        # Validate the request
         if self.service == 'meta':
             self.validate_meta_service()
             if 'key' in request.query_params:
@@ -102,6 +98,7 @@ class BossRequest:
 
     def validate_meta_service(self):
         """
+        "Validate all meta data requests.
 
         Args:
             webargs:
