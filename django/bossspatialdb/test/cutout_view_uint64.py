@@ -87,7 +87,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -105,7 +105,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -125,7 +125,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
                                     resolution='0', x_range='0:100', y_range='0:128', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -144,7 +144,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
                                     resolution='0', x_range='0:100', y_range='0:128', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -161,7 +161,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
                                     resolution='0', x_range='0:100000', y_range='0:100000', z_range='0:100000', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
 
