@@ -129,7 +129,7 @@ class ImageViewIntegrationTests(ImageInterfaceViewTestMixin, APITestCase):
                                content_type='application/blosc')
         force_authenticate(request, user=cls.user)
         _ = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
-                             resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16')
+                             resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16', t_range=None)
 
     @classmethod
     def tearDownClass(cls):
@@ -225,7 +225,7 @@ class TileViewIntegrationTests(TileInterfaceViewTestMixin, APITestCase):
                                content_type='application/blosc')
         force_authenticate(request, user=cls.user)
         _ = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
-                             resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16')
+                             resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16', t_range=None)
 
 
     @classmethod
