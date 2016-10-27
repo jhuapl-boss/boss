@@ -126,8 +126,9 @@ class BloscPythonParser(BaseParser):
                 "x_args": parser_context['kwargs']['x_range'],
                 "y_args": parser_context['kwargs']['y_range'],
                 "z_args": parser_context['kwargs']['z_range'],
-                "time_args": parser_context['kwargs']['t_range']
             }
+            if 't_range' in parser_context['kwargs']:
+                request_args["time_args"] = parser_context['kwargs']['t_range']
             req = BossRequest(parser_context['request'], request_args)
         except BossError as err:
             return BossParserError(err.args[0], err.args[1], err.args[2])
