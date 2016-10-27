@@ -63,6 +63,7 @@ class ErrorCodes(IntEnum):
     # TO BE IMPLEMENTED
     FUTURE = 9000
     BOSS_SYSTEM_ERROR = 9001
+    UNHANDLED_EXCEPTION = 9002
 
 
 RESP_CODES = {
@@ -92,7 +93,8 @@ RESP_CODES = {
     ErrorCodes.KEYCLOAK_EXCEPTION: 500,
     ErrorCodes.INVALID_ROLE: 403,
     ErrorCodes.FUTURE: 404,
-    ErrorCodes.BOSS_SYSTEM_ERROR: 400
+    ErrorCodes.BOSS_SYSTEM_ERROR: 400,
+    ErrorCodes.UNHANDLED_EXCEPTION: 500
 
 
 }

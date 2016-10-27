@@ -43,8 +43,6 @@ class BloscParser(BaseParser):
         """
         # Process request and validate
         try:
-
-
             request_args={
                 "service": "cutout",
                 "collection_name": parser_context['kwargs']['collection'],
@@ -57,10 +55,14 @@ class BloscParser(BaseParser):
             }
             if 't_range' in parser_context['kwargs']:
                 request_args["time_args"] = parser_context['kwargs']['t_range']
+            else:
+                request_args["time_args"] = None
 
             req = BossRequest(parser_context['request'], request_args)
         except BossError as err:
-            return BossParserError(err.args[0], err.args[1], err.args[2])
+            return BossParserError(err.message, err.error_code)
+        except Exception as err:
+            return BossParserError(str(err), ErrorCodes.UNHANDLED_EXCEPTION)
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -90,13 +92,15 @@ class BloscParser(BaseParser):
         try:
             if len(req.get_time()) > 1:
                 # Time series data
-                return np.reshape(data_mat, (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span()),
+                parsed_data = np.reshape(data_mat, (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span()),
                                   order='C')
             else:
-                return np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
+                parsed_data = np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
         except ValueError:
             return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
                                    "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
+
+        return (req, resource, parsed_data)
 
 
 class BloscPythonParser(BaseParser):
@@ -129,9 +133,14 @@ class BloscPythonParser(BaseParser):
             }
             if 't_range' in parser_context['kwargs']:
                 request_args["time_args"] = parser_context['kwargs']['t_range']
+            else:
+                request_args["time_args"] = None
+
             req = BossRequest(parser_context['request'], request_args)
         except BossError as err:
-            return BossParserError(err.args[0], err.args[1], err.args[2])
+            return BossParserError(err.message, err.status_code)
+        except Exception as err:
+            return BossParserError(str(err), ErrorCodes.UNHANDLED_EXCEPTION)
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -151,8 +160,9 @@ class BloscPythonParser(BaseParser):
 
         # Decompress and return
         try:
-            return blosc.unpack_array(stream.read())
+            parsed_data = blosc.unpack_array(stream.read())
         except EOFError:
             return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
                                    "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
 
+        return (req, resource, parsed_data)

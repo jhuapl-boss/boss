@@ -133,25 +133,9 @@ class Cutout(APIView):
         if isinstance(request.data, BossParserError):
             return request.data.to_http()
 
-        # Process request and validate
-        try:
-            request_args = {
-                "service": "cutout",
-                "collection_name": collection,
-                "experiment_name": experiment,
-                "channel_name": channel,
-                "resolution": resolution,
-                "x_args": x_range,
-                "y_args": y_range,
-                "z_args": z_range,
-                "time_args": t_range
-            }
-            req = BossRequest(request, request_args)
-        except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
-
-        # Convert to Resource
-        resource = project.BossResourceDjango(req)
+        # Get BossRequest and BossResource from parser
+        req = request.data[0]
+        resource = request.data[1]
 
         # Get bit depth
         try:
@@ -160,16 +144,16 @@ class Cutout(APIView):
             return BossHTTPError("Unsupported data type: {}".format(resource.get_data_type()), ErrorCodes.TYPE_ERROR)
 
         # Make sure datatype is valid
-        if expected_data_type != request.data.dtype:
+        if expected_data_type != request.data[2].dtype:
             return BossHTTPError("Datatype does not match channel", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Make sure the dimensions of the data match the dimensions of the post URL
-        if len(request.data.shape) == 4:
+        if len(request.data[2].shape) == 4:
             expected_shape = (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span())
         else:
             expected_shape = (req.get_z_span(), req.get_y_span(), req.get_x_span())
 
-        if expected_shape != request.data.shape:
+        if expected_shape != request.data[2].shape:
             return BossHTTPError("Data dimensions in URL do not match POSTed data.",
                                  ErrorCodes.DATA_DIMENSION_MISMATCH)
 
@@ -182,11 +166,11 @@ class Cutout(APIView):
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
 
         try:
-            if len(request.data.shape) == 4:
-                cache.write_cuboid(resource, corner, req.get_resolution(), request.data, req.get_time()[0])
+            if len(request.data[2].shape) == 4:
+                cache.write_cuboid(resource, corner, req.get_resolution(), request.data[2], req.get_time()[0])
             else:
                 cache.write_cuboid(resource, corner, req.get_resolution(),
-                                   np.expand_dims(request.data, axis=0), req.get_time()[0])
+                                   np.expand_dims(request.data[2], axis=0), req.get_time()[0])
         except Exception as e:
             # TODO: Eventually remove as this level of detail should not be sent to the user
             return BossHTTPError('Error during write_cuboid: {}'.format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
