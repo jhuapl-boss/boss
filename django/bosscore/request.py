@@ -264,7 +264,7 @@ class BossRequest:
 
         try:
 
-            if resolution in range(0, self.experiment.num_hierarchy_levels):
+            if int(resolution) in range(0, self.experiment.num_hierarchy_levels):
                 self.resolution = int(resolution)
 
             # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG

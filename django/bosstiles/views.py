@@ -54,8 +54,8 @@ class CutoutTile(APIView):
         """
         # Process request and validate
         try:
-            bossrequest = {
-                "service": "tile",
+            request_args = {
+                "service": "image",
                 "collection_name": collection,
                 "experiment_name": experiment,
                 "channel_name": channel,
@@ -66,7 +66,7 @@ class CutoutTile(APIView):
                 "z_args": z_args,
                 "time_args": t_args
             }
-            req = BossRequest(request, bossrequest)
+            req = BossRequest(request, request_args)
         except BossError as err:
             return BossError.to_http()
 
@@ -146,19 +146,20 @@ class Tile(APIView):
 
         # Process request and validate
         try:
-            bossrequest = {
+            request_args = {
                 "service": "tile",
                 "collection_name": collection,
                 "experiment_name": experiment,
                 "channel_name": channel,
                 "orientation": orientation,
+                "tile_size": tile_size,
                 "resolution": resolution,
                 "x_args": x_idx,
                 "y_args": y_idx,
                 "z_args": z_idx,
                 "time_args": t_idx
             }
-            req = BossRequest(request, bossrequest)
+            req = BossRequest(request, request_args)
         except BossError as err:
             return BossError.to_http()
 
