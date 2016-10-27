@@ -86,7 +86,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -104,7 +104,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -124,7 +124,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
                                     resolution='0', x_range='0:100', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -143,7 +143,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
                                     resolution='0', x_range='0:100', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -160,7 +160,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel2',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel2',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
 
@@ -180,7 +180,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -192,7 +192,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -220,7 +220,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -232,7 +232,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -260,7 +260,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -272,7 +272,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -303,7 +303,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -315,7 +315,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -342,7 +342,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -354,7 +354,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -379,7 +379,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -391,7 +391,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -416,7 +416,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -428,7 +428,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -456,7 +456,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -468,7 +468,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -496,7 +496,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -508,7 +508,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
