@@ -52,6 +52,53 @@ class BossCoreMetaValidRequestTests(APITestCase):
         # log in user
 
 
+        url = '/' + version + '/meta/col1/?key=mkey&value=TestValue'
+        expected_col = 'col1'
+        expected_bosskey = 'col1'
+        expected_key = 'mkey'
+        expected_value = 'TestValue'
+
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = BossMeta().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "user": self.user,
+            "method": request.method,
+            "service": "meta",
+            "version": version,
+            "collection_name": expected_col,
+            "experiment_name": None,
+            "channel_name": None,
+            "key": "mkey",
+            "value": "TestValue"
+        }
+
+        # Datamodel object
+        ret = BossRequest(drfrequest, request_args)
+        self.assertEqual(ret.get_collection(), expected_col)
+
+        # Boss key
+        boss_key = ret.get_boss_key()
+        self.assertEqual(boss_key, expected_bosskey)
+
+        # Key and value
+        key = ret.get_key()
+        self.assertEqual(key, expected_key)
+        value = ret.get_value()
+        self.assertEqual(value, expected_value)
+
+    def test_collection_special_char_dash(self):
+        """
+        Test initialization of requests from the meta data service with collection that has a dash in the name
+        :return:
+        """
+        # create the request with collection name
+        # log in user
+
+
         url = '/' + version + '/meta/col1-22/?key=mkey&value=TestValue'
         expected_col = 'col1-22'
         expected_bosskey = 'col1-22'

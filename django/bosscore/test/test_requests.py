@@ -25,7 +25,7 @@ from .setup_db import SetupTestDB
 version = settings.BOSS_VERSION
 
 
-class BossCoreRequestTests(APITestCase):
+class CutoutRequestTests(APITestCase):
     """
     Class to test boss requests
     """
@@ -384,5 +384,154 @@ class BossCoreRequestTests(APITestCase):
             "z_args": "0:1040",
             "time_args": None
         }
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+class CutoutInvalidRequestTests(APITestCase):
+    """
+    Class to test boss invalid requests
+    """
+
+    def setUp(self):
+        """
+            Initialize the database
+            :return:
+        """
+        user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        dbsetup = SetupTestDB()
+        dbsetup.set_user(user)
+        self.user = user
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
+
+    def test_request_cutout_invalid_collection(self):
+        """
+        Test initialization of cutout requests for an invalid datamode - Collection does not exist
+        :return:
+        """
+        url = '/' + version + '/cutout/col5786/exp1/channel1/2/0:5/0:6/0:2/'
+        col = 'col5786'
+        exp = 'exp1'
+        channel = 'channel1'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_invalid_experiment(self):
+        """
+        Test initialization of cutout requests for an invalid datamodel - Experiment does not exist
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp56668/channel1/2/0:5/0:6/0:2/'
+        col = 'col1'
+        exp = 'exp56668'
+        channel = 'channel1'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_invalid_datamodel(self):
+        """
+        Test initialization of cutout requests for an invalid datamodel - experiment  does not exist for the collection
+        :return:
+        """
+        url = '/' + version + '/cutout/col2/exp1/channel1/2/0:5/0:6/0:2/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel12345'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_invalid_resolution(self):
+        """
+        Test initialization of cutout requests for an invalid datamodel - experiment  does not exist for the collection
+        :return:
+        """
+        url = '/' + version + '/cutout/col2/exp1/channel1/92/0:5/0:6/0:2/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel1'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "resolution": 92,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
         with self.assertRaises(BossError):
             BossRequest(drfrequest, request_args)

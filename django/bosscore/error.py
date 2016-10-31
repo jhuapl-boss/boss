@@ -29,7 +29,7 @@ class ErrorCodes(IntEnum):
     INVALID_POST_ARGUMENT = 1003
     UNABLE_TO_VALIDATE = 1004
 
-    #Request Validation
+    # Request Validation
     REQUEST_TOO_LARGE = 2000
     DATATYPE_DOES_NOT_MATCH = 2001
     DATA_DIMENSION_MISMATCH = 2002
@@ -82,8 +82,8 @@ RESP_CODES = {
     ErrorCodes.RESOURCE_NOT_FOUND: 404,
     ErrorCodes.GROUP_NOT_FOUND: 404,
     ErrorCodes.USER_NOT_FOUND: 404,
-    ErrorCodes.INTEGRITY_ERROR : 404,
-    ErrorCodes.OBJECT_NOT_FOUND : 404,
+    ErrorCodes.INTEGRITY_ERROR: 404,
+    ErrorCodes.OBJECT_NOT_FOUND: 404,
     ErrorCodes.IO_ERROR: 404,
     ErrorCodes.UNSUPPORTED_TRANSPORT_FORMAT: 404,
     ErrorCodes.SERIALIZATION_ERROR: 404,
@@ -125,15 +125,12 @@ class BossError(Exception):
         self.message = args[0]
         self.error_code = args[1]
 
-
-
     def to_http(self):
         """
         Convert error to an HTTP error so you can return to the user if in a view
         :return: bosscore.error.BossHTTPError
         """
         return BossHTTPError(self.message, self.error_code)
-
 
 
 class BossParserError(object):
@@ -167,7 +164,6 @@ class BossParserError(object):
 
         self.message = args[0]
         self.error_code = args[1]
-
 
     def to_http(self):
         """
@@ -208,8 +204,9 @@ class BossHTTPError(JsonResponse):
         data = {'status': self.status_code, 'code': code, 'message': message}
         super(BossHTTPError, self).__init__(data)
 
+
 class BossKeycloakError(JsonResponse):
-    def __init__(self, message, code = ErrorCodes.KEYCLOAK_EXCEPTION):
+    def __init__(self, message, code=ErrorCodes.KEYCLOAK_EXCEPTION):
         """
         Custom HTTP error class for converting a KeyCloakError exception into a JsonResponse
 
@@ -252,7 +249,9 @@ class BossResourceNotFoundError(BossHTTPError):
         Args:
             object (str): Name of resource/object that user is trying to access/manipulate
         """
-        super(BossResourceNotFoundError, self).__init__("{} does not exist.".format(object), ErrorCodes.RESOURCE_NOT_FOUND)
+        super(BossResourceNotFoundError, self).__init__("{} does not exist.".format(object),
+                                                        ErrorCodes.RESOURCE_NOT_FOUND)
+
 
 class BossUserNotFoundError(BossHTTPError):
     """
@@ -267,6 +266,7 @@ class BossUserNotFoundError(BossHTTPError):
         """
         super(BossUserNotFoundError, self).__init__("{} does not exist. Ensure that the user has logged in"
                                                     .format(object), ErrorCodes.USER_NOT_FOUND)
+
 
 class BossGroupNotFoundError(BossHTTPError):
     """
@@ -295,10 +295,8 @@ class BossPermissionError(BossHTTPError):
             permission (str): Name of missing permission that caused the error
             object (str): Name of resource that user is trying to access/manipulate
         """
-        super(BossPermissionError, self).__init__("Missing {} permissions on the resource {}".format(permission,object),
-                                                  ErrorCodes.MISSING_PERMISSION)
-
-
+        super(BossPermissionError, self).__init__("Missing {} permissions on the resource {}"
+                                                  .format(permission, object), ErrorCodes.MISSING_PERMISSION)
 
 
 class BossRestArgsError(BossHTTPError):
@@ -316,5 +314,3 @@ class BossRestArgsError(BossHTTPError):
         super(BossRestArgsError, self).__init__(RESP_CODES[ErrorCodes.INVALID_URL],
                                                 "Invalid {} arguments in request {}.".format(service, args),
                                                 ErrorCodes.INVALID_URL)
-
-

@@ -77,12 +77,9 @@ class BossRequest:
 
         # Validate the request based on the service
         self.service = self.bossrequest['service']
+
         if self.service == 'meta':
             self.validate_meta_service()
-            if 'key' in request.query_params:
-                self.set_key(request.query_params['key'])
-            if 'value' in request.query_params:
-                self.set_value(request.query_params['value'])
 
         elif self.service == 'view':
             raise BossError("Views not implemented. Specify the full request", ErrorCodes.FUTURE)
@@ -108,8 +105,11 @@ class BossRequest:
         """
         self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
                                 self.bossrequest['channel_name'])
-        self.check_permissions()
-        self.set_boss_key()
+
+        if 'key' in self.bossrequest:
+            self.set_key(self.bossrequest['key'])
+        if 'value' in self.bossrequest:
+            self.set_value(self.bossrequest['value'])
 
     def validate_cutout_service(self):
         """
@@ -122,7 +122,7 @@ class BossRequest:
         """
         self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
                                 self.bossrequest['channel_name'])
-        self.check_permissions()
+
         time = self.bossrequest['time_args']
         if not time:
             # get default time
@@ -133,7 +133,6 @@ class BossRequest:
 
         self.set_cutoutargs(int(self.bossrequest['resolution']), self.bossrequest['x_args'],
                             self.bossrequest['y_args'], self.bossrequest['z_args'])
-        self.set_boss_key()
 
     def validate_image_service(self):
         """
@@ -144,11 +143,10 @@ class BossRequest:
         Returns:
 
         """
-        time = self.bossrequest['time_args']
-
         self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
                                 self.bossrequest['channel_name'])
-        self.check_permissions()
+
+        time = self.bossrequest['time_args']
         if not time:
             # get default time
             self.time_start = self.channel.default_time_step
@@ -158,7 +156,6 @@ class BossRequest:
 
         self.set_imageargs(self.bossrequest['orientation'], self.bossrequest['resolution'], self.bossrequest['x_args'],
                            self.bossrequest['y_args'], self.bossrequest['z_args'])
-        self.set_boss_key()
 
     def validate_tile_service(self):
         """
@@ -169,10 +166,10 @@ class BossRequest:
         Returns:
 
         """
-        time = self.bossrequest['time_args']
         self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
                                 self.bossrequest['channel_name'])
-        self.check_permissions()
+
+        time = self.bossrequest['time_args']
         if not time:
             # get default time
             self.time_start = self.channel.default_time_step
@@ -182,7 +179,6 @@ class BossRequest:
 
         self.set_tileargs(self.bossrequest['tile_size'], self.bossrequest['orientation'], self.bossrequest['resolution'],
                           self.bossrequest['x_args'], self.bossrequest['y_args'], self.bossrequest['z_args'])
-        self.set_boss_key()
 
     def initialize_request(self, collection_name, experiment_name, channel_name):
         """
@@ -203,6 +199,9 @@ class BossRequest:
                 if channel_name and expstatus:
                     self.set_channel(channel_name)
 
+        self.check_permissions()
+        self.set_boss_key()
+
     def set_cutoutargs(self, resolution, x_range, y_range, z_range):
         """
         Validate and initialize cutout arguments in the request
@@ -217,8 +216,12 @@ class BossRequest:
 
         """
         try:
+            # validate the resolution
             if int(resolution) in range(0, self.experiment.num_hierarchy_levels):
                 self.resolution = int(resolution)
+            else:
+                raise BossError("Invalid resolution {} in cutout args. The resolution has to be between 0 and {}".
+                                format(resolution, self.experiment.num_hierarchy_levels), ErrorCodes.INVALID_CUTOUT_ARGS)
 
             # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG
 
@@ -284,7 +287,7 @@ class BossRequest:
                 y_coords = y_args.split(":")
                 z_coords = z_args.split(":")
             else:
-                raise BossError("Incorrect orientation {}".format(orientation),ErrorCodes.INVALID_URL)
+                raise BossError("Incorrect orientation {}".format(orientation), ErrorCodes.INVALID_URL)
 
             self.x_start = int(x_coords[0])
             self.x_stop = int(x_coords[1])
