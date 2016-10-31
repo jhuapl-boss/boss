@@ -14,7 +14,9 @@
 
 from django.contrib import admin
 from guardian.admin import GuardedModelAdmin
-from .models import Collection, Experiment, Channel, CoordinateFrame, BossRole, BossLookup, Source
+from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
+from django.contrib.auth.models import Group
+from .models import Collection, Experiment, Channel, CoordinateFrame, BossRole, BossLookup, Source, BossGroup
 
 
 class CollectionAdmin(GuardedModelAdmin):
@@ -44,6 +46,14 @@ class BossRoleAdmin(GuardedModelAdmin):
 class BossLookupAdmin(GuardedModelAdmin):
     model = BossLookup
 
+
+class BossGroupInline(admin.StackedInline):
+    model = BossGroup
+
+
+class GroupAdmin(BaseGroupAdmin):
+    inlines = (BossGroupInline, )
+
 admin.site.register(Collection, CollectionAdmin)
 admin.site.register(Experiment, ExperimentAdmin)
 admin.site.register(Channel, ChannelAdmin)
@@ -51,3 +61,7 @@ admin.site.register(Source, SourceAdmin)
 admin.site.register(CoordinateFrame, CoordinateFrameAdmin)
 admin.site.register(BossRole, BossRoleAdmin)
 admin.site.register(BossLookup, BossLookupAdmin)
+
+# Re-register GroupAdmin
+admin.site.unregister(Group)
+admin.site.register(Group, GroupAdmin)

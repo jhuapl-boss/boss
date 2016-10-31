@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from django.db import models
+from django.contrib.auth.models import Group
 from django.core.validators import RegexValidator
 
 
@@ -250,3 +251,14 @@ class BossRole(models.Model):
 
     def __str__(self):
         return 'user = {}, role = {}'.format(self.user, self.role)
+
+
+class BossGroup(models.Model):
+    """
+    Store group information
+    """
+    group = models.OneToOneField(Group)
+    creator = models.ForeignKey('auth.User', related_name='Bossgroup')
+
+    class Meta:
+        db_table = u"bossgroup"
