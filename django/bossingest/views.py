@@ -1,3 +1,17 @@
+# Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from django.shortcuts import render
 from django.conf import settings
 from rest_framework.views import APIView
@@ -7,11 +21,11 @@ from rest_framework import status
 from bosscore.error import BossError, ErrorCodes
 from bossingest.ingest_manager import IngestManager
 from bossingest.serializers import IngestJobListSerializer
-from bosscore.models import Collection, Experiment, ChannelLayer
+from bosscore.models import Collection, Experiment, Channel
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
-# Create your views here.
+
 
 class IngestJobView(APIView):
     """
@@ -36,6 +50,10 @@ class IngestJobView(APIView):
             # Start setting up output
             data = {}
             data['ingest_job'] = serializer.data
+            if ingest_job.status == 3:
+                # Return the information for the deleted job
+                return Response(data, status=status.HTTP_200_OK)
+
             data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
@@ -51,15 +69,15 @@ class IngestJobView(APIView):
             # Generate a "resource" for the ingest lambda function to be able to use SPDB cleanly
             collection = Collection.objects.get(name=data['ingest_job']["collection"])
             experiment = Experiment.objects.get(name=data['ingest_job']["experiment"], collection=collection)
-            channel_layer = ChannelLayer.objects.get(name=data['ingest_job']["channel_layer"], experiment=experiment)
+            channel = Channel.objects.get(name=data['ingest_job']["channel"], experiment=experiment)
 
             resource = {}
             resource['boss_key'] = '{}&{}&{}'.format(data['ingest_job']["collection"],
                                                       data['ingest_job']["experiment"],
-                                                      data['ingest_job']["channel_layer"])
+                                                      data['ingest_job']["channel"])
             resource['lookup_key'] = '{}&{}&{}'.format(collection.id,
                                                         experiment.id,
-                                                        channel_layer.id)
+                                                        channel.id)
             resource['collection'] = {}
             resource['collection']['name'] = collection.name
             resource['collection']['description'] = collection.description
@@ -84,11 +102,11 @@ class IngestJobView(APIView):
             resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
             resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
             resource['experiment']['max_time_sample'] = experiment.max_time_sample
-            resource['channel_layer'] = {}
-            resource['channel_layer']['name'] = channel_layer.name
-            resource['channel_layer']['description'] = channel_layer.description
-            resource['channel_layer']['is_channel'] = channel_layer.is_channel
-            resource['channel_layer']['datatype'] = channel_layer.datatype
+            resource['channel'] = {}
+            resource['channel']['name'] = channel.name
+            resource['channel']['description'] = channel.description
+            resource['channel']['type'] = channel.type
+            resource['channel']['datatype'] = channel.datatype
 
             # Set resource
             data['resource'] = resource

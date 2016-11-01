@@ -28,7 +28,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
 from django.conf import settings
-from django.conf.urls import include, url
+from django.conf.urls import url
 from django.contrib import admin
 from django.conf.urls import include
 
@@ -41,37 +41,34 @@ urlpatterns = [
     url(r'^ping/', views.Ping.as_view()),
     url(r'^token/', views.Token.as_view()),
 
-    # API version 0.4
-    url(r'^v0.4/meta/', include('bossmeta.urls', namespace='v0.4')),
-    url(r'^v0.4/resource/', include('bosscore.urls.resource_urls', namespace='v0.4')),
-    url(r'^v0.4/permission/', include('bosscore.urls.permission-urls', namespace='v0.4')),
-    url(r'^v0.4/group/', include('bosscore.urls.group-urls', namespace='v0.4')),
-    url(r'^v0.4/group-member/', include('bosscore.urls.group-urls', namespace='v0.4')),
-    url(r'^v0.4/cutout/', include('bossspatialdb.urls', namespace='v0.4')),
+    #
+    #
+    # # API version 0.6
+    # url(r'^v0.6/meta/', include('bossmeta.urls', namespace='v0.6')),
+    # url(r'^v0.6/resource/', include('bosscore.urls.resource_urls_v6', namespace='v0.6')),
+    # url(r'^v0.6/permission/', include('bosscore.urls.permission-urls', namespace='v0.6')),
+    # url(r'^v0.6/group/', include('bosscore.urls.group-urls', namespace='v0.6')),
+    # url(r'^v0.6/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.6')),
+    # url(r'^v0.6/cutout/', include('bossspatialdb.urls', namespace='v0.6')),
+    # url(r'^v0.6/image/', include('bosstiles.image_urls', namespace='v0.6')),
+    # url(r'^v0.6/tile/', include('bosstiles.tile_urls', namespace='v0.6')),
+    # url(r'^v0.6/sso/user/', include('sso.urls.user-urls', namespace='v0.6')),
+    # url(r'^v0.6/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.6')),
+    # url(r'^v0.6/ingest/', include('bossingest.urls', namespace='v0.6')),
 
-    # API version 0.5
-    url(r'^v0.5/meta/', include('bossmeta.urls', namespace='v0.5')),
-    url(r'^v0.5/resource/', include('bosscore.urls.resource_urls', namespace='v0.5')),
-    url(r'^v0.5/permission/', include('bosscore.urls.permission-urls', namespace='v0.5')),
-    url(r'^v0.5/group/', include('bosscore.urls.group-urls', namespace='v0.5')),
-    url(r'^v0.5/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.5')),
-    url(r'^v0.5/cutout/', include('bossspatialdb.urls', namespace='v0.5')),
-    url(r'^v0.5/user/', include('bosscore.urls.user-urls', namespace='v0.5')),
-    url(r'^v0.5/user-role/', include('bosscore.urls.user-role-urls', namespace='v0.5')),
-
-    # API version 0.6
-    url(r'^v0.6/meta/', include('bossmeta.urls', namespace='v0.6')),
-    url(r'^v0.6/resource/', include('bosscore.urls.resource_urls', namespace='v0.6')),
-    url(r'^v0.6/permission/', include('bosscore.urls.permission-urls', namespace='v0.6')),
-    url(r'^v0.6/group/', include('bosscore.urls.group-urls', namespace='v0.6')),
-    url(r'^v0.6/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.6')),
-    url(r'^v0.6/cutout/', include('bossspatialdb.urls', namespace='v0.6')),
-    url(r'^v0.6/image/', include('bosstiles.image_urls', namespace='v0.6')),
-    url(r'^v0.6/tile/', include('bosstiles.tile_urls', namespace='v0.6')),
-    url(r'^v0.6/sso/user/', include('sso.urls.user-urls', namespace='v0.6')),
-    url(r'^v0.6/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.6')),
-    url(r'^v0.6/ingest/', include('bossingest.urls', namespace='v0.6')),
-
+    # API version 0.7
+    url(r'^v0.7/meta/', include('bossmeta.urls', namespace='v0.7')),
+    url(r'^v0.7/permission/', include('bosscore.urls.permission-urls', namespace='v0.7')),
+    url(r'^v0.7/group/', include('bosscore.urls.group-urls', namespace='v0.7')),
+    url(r'^v0.7/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.7')),
+    url(r'^v0.7/cutout/', include('bossspatialdb.urls', namespace='v0.7')),
+    url(r'^v0.7/image/', include('bosstiles.image_urls', namespace='v0.7')),
+    url(r'^v0.7/tile/', include('bosstiles.tile_urls', namespace='v0.7')),
+    url(r'^v0.7/sso/user/', include('sso.urls.user-urls', namespace='v0.7')),
+    url(r'^v0.7/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.7')),
+    url(r'^v0.7/ingest/', include('bossingest.urls', namespace='v0.7')),
+    url(r'^v0.7/collection/', include('bosscore.urls.resource_urls', namespace='v0.7')),
+    url(r'^v0.7/coord/', include('bosscore.urls.coord_urls', namespace='v0.7')),
 
 ]
 

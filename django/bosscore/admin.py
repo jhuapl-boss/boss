@@ -14,7 +14,7 @@
 
 from django.contrib import admin
 from guardian.admin import GuardedModelAdmin
-from .models import Collection, Experiment, ChannelLayer, CoordinateFrame, ChannelLayerMap, BossRole
+from .models import Collection, Experiment, Channel, CoordinateFrame, BossRole
 
 
 class CollectionAdmin(GuardedModelAdmin):
@@ -25,16 +25,12 @@ class ExperimentAdmin(GuardedModelAdmin):
     model = Experiment
 
 
-class ChannelLayerAdmin(GuardedModelAdmin):
-    model = ChannelLayer
+class ChannelAdmin(GuardedModelAdmin):
+    model = Channel
 
 
 class CoordinateFrameAdmin(GuardedModelAdmin):
     model = CoordinateFrame
-
-
-class ChannelLayerMapAdmin(GuardedModelAdmin):
-    model = ChannelLayerMap
 
 
 class BossRoleAdmin(GuardedModelAdmin):
@@ -42,7 +38,6 @@ class BossRoleAdmin(GuardedModelAdmin):
 
 admin.site.register(Collection, CollectionAdmin)
 admin.site.register(Experiment, ExperimentAdmin)
-admin.site.register(ChannelLayer, ChannelLayerAdmin)
+admin.site.register(Channel, ChannelAdmin)
 admin.site.register(CoordinateFrame, CoordinateFrameAdmin)
-admin.site.register(ChannelLayerMap, ChannelLayerMapAdmin)
 admin.site.register(BossRole, BossRoleAdmin)

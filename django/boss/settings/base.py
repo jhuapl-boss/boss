@@ -143,7 +143,7 @@ REST_FRAMEWORK = {
 
 }
 # Version that unit tests are being run against
-BOSS_VERSION = 'v0.6'
+BOSS_VERSION = 'v0.7'
 # Maximum number of bytes in an uncompressed matrix supported by the Cutout Service
 CUTOUT_MAX_SIZE = 10 ** 9
 

@@ -18,8 +18,7 @@ from . import views
 urlpatterns = [
 
     # Urls related to metadata
-    url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)?/(?P<channel_layer>[\w_-]+)?/?$', views.BossMeta.as_view()),
-    url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)?/?$', views.BossMeta.as_view()),
-    url(r'(?P<collection>[\w_-]+)/?$', views.BossMeta.as_view()),
-
+    url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/?', views.BossMeta.as_view()),
+    url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/?', views.BossMeta.as_view()),
+    url(r'(?P<collection>[\w_\-]+)/?$', views.BossMeta.as_view()),
 ]

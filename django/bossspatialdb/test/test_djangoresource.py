@@ -34,8 +34,15 @@ class TestDjangoResource(APITestCase):
         """Setup test by inserting data model items into the database"""
         dbsetup = SetupTestDB()
         user = dbsetup.create_user()
+        dbsetup.add_role("resource-manager", user)
         self.client.force_login(user)
         dbsetup.insert_test_data()
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'sources': ['channel1'],
+                'related': ['channel2', 'channel3']}
+        response = self.client.post(url, data=data)
 
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/'
         # Create the request
@@ -44,7 +51,20 @@ class TestDjangoResource(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
-        self.request_channel = BossRequest(drfrequest)
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel1",
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        self.request_channel = BossRequest(drfrequest, request_args)
 
         # Setup Layer
         url = '/' + version + '/cutout/col1/exp1/layer1/2/0:5/0:6/0:2/'
@@ -54,7 +74,42 @@ class TestDjangoResource(APITestCase):
         drfrequest = Request(req)
         drfrequest.version = version
 
-        self.request_layer = BossRequest(drfrequest)
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "layer1",
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        self.request_annotation = BossRequest(drfrequest, request_args)
+
+        url = '/' + version + '/cutout/col1/exp1/channel33/2/0:5/0:6/0:2/'
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel33",
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        self.request_channel_links = BossRequest(drfrequest, request_args)
 
     def test_django_resource_col(self):
         """Test basic get collection interface
@@ -112,7 +167,7 @@ class TestDjangoResource(APITestCase):
         assert exp.num_hierarchy_levels == self.request_channel.experiment.num_hierarchy_levels
         assert exp.hierarchy_method == self.request_channel.experiment.hierarchy_method
 
-    def test_django_resource_channel(self):
+    def test_django_resource_channel_image(self):
         """Test basic get channel interface
 
         Returns:
@@ -121,35 +176,59 @@ class TestDjangoResource(APITestCase):
         """
         resource = BossResourceDjango(self.request_channel)
 
-        assert resource.is_channel() == True
-
-        assert not resource.get_layer()
-
         channel = resource.get_channel()
+        assert channel.is_image() is True
 
-        assert channel.name == self.request_channel.channel_layer.name
-        assert channel.description == self.request_channel.channel_layer.description
-        assert channel.datatype == self.request_channel.channel_layer.datatype
+        assert channel.name == self.request_channel.channel.name
+        assert channel.description == self.request_channel.channel.description
+        assert channel.datatype == self.request_channel.channel.datatype
+        assert channel.type == self.request_channel.channel.type
+        assert channel.base_resolution == self.request_channel.channel.base_resolution
+        assert channel.default_time_step == self.request_channel.channel.default_time_step
+        assert channel.related == []
+        assert channel.sources == []
 
-    def test_django_resource_layer(self):
-        """Test basic get layer interface
+    def test_django_resource_channel_annotation(self):
+        """Test basic get channel when an annotation interface
 
         Returns:
             None
 
         """
-        resource = BossResourceDjango(self.request_layer)
+        resource = BossResourceDjango(self.request_annotation)
 
-        assert resource.is_channel() == False
+        channel = resource.get_channel()
+        assert channel.is_image() is False
 
-        assert not resource.get_channel()
+        assert channel.name == self.request_annotation.channel.name
+        assert channel.description == self.request_annotation.channel.description
+        assert channel.datatype == self.request_annotation.channel.datatype
+        assert channel.type == self.request_annotation.channel.type
+        assert channel.base_resolution == self.request_annotation.channel.base_resolution
+        assert channel.default_time_step == self.request_annotation.channel.default_time_step
+        assert channel.related == []
+        assert channel.sources == []
 
-        layer = resource.get_layer()
-        assert layer.name == self.request_layer.channel_layer.name
-        assert layer.description == self.request_layer.channel_layer.description
-        assert layer.datatype == self.request_layer.channel_layer.datatype
-        assert layer.base_resolution == self.request_layer.channel_layer.base_resolution
-        assert layer.parent_channels == self.request_layer.channel_layer.linked_channel_layers
+    def test_django_resource_channel_image_with_links(self):
+        """Test basic get channel interface
+
+        Returns:
+            None
+
+        """
+        resource = BossResourceDjango(self.request_channel_links)
+
+        channel = resource.get_channel()
+        assert channel.is_image() is False
+
+        assert channel.name == self.request_channel_links.channel.name
+        assert channel.description == self.request_channel_links.channel.description
+        assert channel.datatype == self.request_channel_links.channel.datatype
+        assert channel.type == self.request_channel_links.channel.type
+        assert channel.base_resolution == self.request_channel_links.channel.base_resolution
+        assert channel.default_time_step == self.request_channel_links.channel.default_time_step
+        assert channel.related == ['channel2', 'channel3']
+        assert channel.sources == ['channel1']
 
     def test_django_resource_get_boss_key(self):
         """Test basic get boss key interface
@@ -183,10 +262,10 @@ class TestDjangoResource(APITestCase):
 
         """
         resource = BossResourceDjango(self.request_channel)
-        assert resource.get_data_type() == self.request_channel.channel_layer.datatype
+        assert resource.get_data_type() == self.request_channel.channel.datatype
 
     def test_django_resource_to_dict_channel(self):
-        """Test basic get datatype interface
+        """Test basic get to dict interface for images
 
         Returns:
             None
@@ -194,21 +273,25 @@ class TestDjangoResource(APITestCase):
         """
         resource = BossResourceDjango(self.request_channel)
         data = resource.to_dict()
-        assert "channel_layer" in data
+        assert "channel" in data
         assert "collection" in data
         assert "experiment" in data
         assert "lookup_key" in data
+        assert "boss_key" in data
+        assert "coord_frame" in data
 
-    def test_django_resource_to_dict_layer(self):
-        """Test basic get datatype interface
+    def test_django_resource_to_dict_annotation(self):
+        """Test basic get to dict interface for annotations
 
         Returns:
             None
 
         """
-        resource = BossResourceDjango(self.request_layer)
+        resource = BossResourceDjango(self.request_annotation)
         data = resource.to_dict()
-        assert "channel_layer" in data
+        assert "channel" in data
         assert "collection" in data
         assert "experiment" in data
         assert "lookup_key" in data
+        assert "boss_key" in data
+        assert "coord_frame" in data

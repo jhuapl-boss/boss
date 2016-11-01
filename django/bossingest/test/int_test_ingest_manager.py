@@ -56,7 +56,7 @@ class BossIntegrationIngestManagerTestMixin(object):
         ingest_mgmr.validate_properties()
         assert (ingest_mgmr.collection.name == 'my_col_1')
         assert (ingest_mgmr.experiment.name == 'my_exp_1')
-        assert (ingest_mgmr.channel_layer.name == 'my_ch_1')
+        assert (ingest_mgmr.channel.name == 'my_ch_1')
 
     def test_create_ingest_job(self):
         """Method to test creation o a ingest job from a config_data dict"""
@@ -76,7 +76,7 @@ class BossIntegrationIngestManagerTestMixin(object):
 
             # Check if the queue's exist
             proj_class = BossIngestProj.load()
-            nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
+            nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
                              ingest_job.resolution, ingest_job.id)
             ingest_mgmr.nd_proj = nd_proj
             upload_queue = UploadQueue(nd_proj, endpoint_url=None)
@@ -101,11 +101,11 @@ class BossIntegrationIngestManagerTestMixin(object):
             ingest_mgmr.generate_upload_tasks(ingest_job.id)
             assert (ingest_job.collection == 'my_col_1')
             assert (ingest_job.experiment == 'my_exp_1')
-            assert (ingest_job.channel_layer == 'my_ch_1')
+            assert (ingest_job.channel == 'my_ch_1')
 
             # Pull the messages off the queue
             proj_class = BossIngestProj.load()
-            nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel_layer,
+            nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
                              ingest_job.resolution, ingest_job.id)
             queue = UploadQueue(nd_proj, endpoint_url=None)
 

@@ -98,7 +98,7 @@ class SetupTests(object):
         data['database'] = {}
         data['database']['collection'] = "my_col_1"
         data['database']['experiment'] = "my_exp_1"
-        data['database']['channel_layer'] = "my_ch_1"
+        data['database']['channel'] = "my_ch_1"
 
         data['ingest_job'] = {}
         data['ingest_job']['resolution'] = 0
@@ -127,7 +127,7 @@ class SetupTests(object):
             'creator': user,
             'collection': config_data["database"]["collection"],
             'experiment': config_data["database"]["experiment"],
-            'channel_layer': config_data["database"]["channel_layer"],
+            'channel': config_data["database"]["channel"],
             'resolution': 0,
             'config_data': config_data,
             'x_start': config_data["ingest_job"]["extent"]["x"][0],

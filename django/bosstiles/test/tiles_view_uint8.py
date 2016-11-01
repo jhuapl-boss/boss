@@ -78,7 +78,7 @@ class ImageInterfaceViewTestMixin(object):
                               Accept='image/png')
         force_authenticate(request, user=self.user)
         # Make request
-        response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                         orientation='xy', resolution='0', x_args='0:128', y_args='0:128', z_args='1')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -97,7 +97,7 @@ class ImageInterfaceViewTestMixin(object):
                               Accept='image/png')
         force_authenticate(request, user=self.user)
         # Make request
-        response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                         orientation='xz', resolution='0', x_args='0:128', y_args='2', z_args='0:16')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -116,7 +116,7 @@ class ImageInterfaceViewTestMixin(object):
                               Accept='image/png')
         force_authenticate(request, user=self.user)
         # Make request
-        response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                         orientation='yz', resolution='0', x_args='5', y_args='20:400', z_args='0:16')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -176,7 +176,7 @@ class TileInterfaceViewTestMixin(object):
                               Accept='image/png')
         force_authenticate(request, user=self.user)
         # Make request
-        response = Tile.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                   orientation='xy', tile_size='512', resolution='0',
                                   x_idx='0', y_idx='0', z_idx='5')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -196,7 +196,7 @@ class TileInterfaceViewTestMixin(object):
                               Accept='image/png')
         force_authenticate(request, user=self.user)
         # Make request
-        response = Tile.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                   orientation='xy', tile_size='512', resolution='0',
                                   x_idx='0', y_idx='1', z_idx='7')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -216,7 +216,7 @@ class TileInterfaceViewTestMixin(object):
                               Accept='image/png')
         force_authenticate(request, user=self.user)
         # Make request
-        response = Tile.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                   orientation='xy', tile_size='512', resolution='0',
                                   x_idx='1', y_idx='1', z_idx='3')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -236,9 +236,9 @@ class TileInterfaceViewTestMixin(object):
                               Accept='image/png')
         force_authenticate(request, user=self.user)
         # Make request
-        response = Tile.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                   orientation='xz', tile_size='4', resolution='0',
-                                  x_idx='0', y_idx='1', z_idx='0')
+                                  x_idx='0', y_idx='5', z_idx='0')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Check data is correct (this is pre-renderer)
@@ -256,7 +256,7 @@ class TileInterfaceViewTestMixin(object):
                               Accept='image/png')
         force_authenticate(request, user=self.user)
         # Make request
-        response = Tile.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
+        response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                   orientation='yz', tile_size='4', resolution='0',
                                   x_idx='0', y_idx='7', z_idx='2')
         self.assertEqual(response.status_code, status.HTTP_200_OK)

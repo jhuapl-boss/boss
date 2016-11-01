@@ -128,8 +128,8 @@ class ImageViewIntegrationTests(ImageInterfaceViewTestMixin, APITestCase):
         request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/0:1024/0:1024/0:16/', bb,
                                content_type='application/blosc')
         force_authenticate(request, user=cls.user)
-        _ = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                             resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16')
+        _ = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                             resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16', t_range=None)
 
     @classmethod
     def tearDownClass(cls):
@@ -224,8 +224,8 @@ class TileViewIntegrationTests(TileInterfaceViewTestMixin, APITestCase):
         request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/0:1024/0:1024/0:16/', bb,
                                content_type='application/blosc')
         force_authenticate(request, user=cls.user)
-        _ = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                             resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16')
+        _ = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                             resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16', t_range=None)
 
 
     @classmethod

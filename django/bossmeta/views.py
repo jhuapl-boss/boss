@@ -1,6 +1,20 @@
+# Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse
 
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, ErrorCodes
@@ -13,7 +27,7 @@ class BossMeta(APIView):
 
     """
 
-    def get(self, request, collection, experiment=None, channel_layer=None):
+    def get(self, request, collection, experiment=None, channel=None):
         """
         View to handle GET requests for metadata
 
@@ -21,14 +35,28 @@ class BossMeta(APIView):
             request: DRF Request object
             collection: Collection Name
             experiment: Experiment name. default = None
-            channel_layer: Channel or Layer name
+            channel: Channel name
 
         Returns:
 
         """
         try:
             # Validate the request and get the lookup Key
-            req = BossRequest(request)
+            if 'key' in request.query_params:
+                key = request.query_params['key']
+            else:
+                key = None
+
+            # Create the request dict
+            request_args = {
+                "service": "meta",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "key": key
+
+            }
+            req = BossRequest(request, request_args)
             lookup_key = req.get_lookup_key()
 
         except BossError as err:
@@ -37,7 +65,7 @@ class BossMeta(APIView):
         if not lookup_key or lookup_key == "":
             return BossHTTPError("Invalid request. Unable to parse the datamodel arguments", )
 
-        if 'key' not in request.query_params:
+        if key is None:
             # List all keys that are valid for the query
             mdb = metadb.MetaDB()
             mdata = mdb.get_meta_list(lookup_key)
@@ -60,7 +88,7 @@ class BossMeta(APIView):
                 return BossHTTPError("Invalid request. Key {} Not found in the database".format(mkey),
                                      ErrorCodes.INVALID_POST_ARGUMENT)
 
-    def post(self, request, collection, experiment=None, channel_layer=None):
+    def post(self, request, collection, experiment=None, channel=None):
         """
         View to handle POST requests for metadata
 
@@ -68,7 +96,7 @@ class BossMeta(APIView):
             request: DRF Request object
             collection: Collection Name specifying the collection you want to get the meta data for
             experiment: Experiment name. default = None
-            channel_layer: Channel or Layer name. Default = None
+            channel: Channel name. Default = None
 
         Returns:
 
@@ -78,7 +106,17 @@ class BossMeta(APIView):
             return BossHTTPError("Missing optional argument key/value in the request", ErrorCodes.INVALID_POST_ARGUMENT)
 
         try:
-            req = BossRequest(request)
+            # Create the request dict
+            request_args = {
+                "service": "meta",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "key": request.query_params['key'],
+                "value": request.query_params['value']
+
+            }
+            req = BossRequest(request, request_args)
             lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()
@@ -98,24 +136,31 @@ class BossMeta(APIView):
         mdb.write_meta(lookup_key, mkey, value)
         return HttpResponse(status=201)
 
-    def delete(self, request, collection, experiment=None, channel_layer=None):
+    def delete(self, request, collection, experiment=None, channel=None):
         """
         View to handle the delete requests for metadata
         Args:
             request: DRF Request object
             collection: Collection name. Default = None
             experiment: Experiment name. Default = None
-            channel_layer: Channel_layer name . Default = None
+            channel: Channel name . Default = None
 
         Returns:
 
         """
-
         if 'key' not in request.query_params:
             return BossHTTPError("Missing optional argument key in the request", ErrorCodes.INVALID_POST_ARGUMENT)
 
         try:
-            req = BossRequest(request)
+            # Create the request dict
+            request_args = {
+                "service": "meta",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "key": request.query_params['key'],
+            }
+            req = BossRequest(request, request_args)
             lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()
@@ -135,14 +180,14 @@ class BossMeta(APIView):
         else:
             return BossHTTPError("[ERROR]- Key {} not found ".format(mkey), ErrorCodes.INVALID_POST_ARGUMENT)
 
-    def put(self, request, collection, experiment=None, channel_layer=None):
+    def put(self, request, collection, experiment=None, channel=None):
         """
         View to handle update requests for metadata
         Args:
             request: DRF Request object
             collection: Collection Name. Default = None
             experiment: Experiment Name. Default = None
-            channel_layer: Channel Name Default + None
+            channel: Channel Name Default + None
 
         Returns:
 
@@ -153,7 +198,16 @@ class BossMeta(APIView):
                                  ErrorCodes.INVALID_POST_ARGUMENT)
 
         try:
-            req = BossRequest(request)
+            # Create the request dict
+            request_args = {
+                "service": "meta",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "key": request.query_params['key'],
+                "value": request.query_params['value']
+            }
+            req = BossRequest(request, request_args)
             lookup_key = req.get_lookup_key()
         except BossError as err:
             return err.to_http()

@@ -75,8 +75,8 @@ class CutoutViewIntegration8BitTests(CutoutInterfaceViewUint8TestMixin, APITestC
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         factory = APIRequestFactory()
@@ -85,8 +85,8 @@ class CutoutViewIntegration8BitTests(CutoutInterfaceViewUint8TestMixin, APITestC
         # log in user
         force_authenticate(request, user=self.user)
 
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         test_mat[1, 20, 40] = 5
@@ -101,8 +101,8 @@ class CutoutViewIntegration8BitTests(CutoutInterfaceViewUint8TestMixin, APITestC
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16')
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
@@ -113,8 +113,8 @@ class CutoutViewIntegration8BitTests(CutoutInterfaceViewUint8TestMixin, APITestC
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', dataset='channel1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16').render()
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress

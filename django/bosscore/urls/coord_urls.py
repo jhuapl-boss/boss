@@ -12,23 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from rest_framework import serializers
-from .models import IngestJob
+from django.conf.urls import url
+from bosscore.views import views_resource
 
-
-class IngestJobCreateSerializer(serializers.ModelSerializer):
-    """
-    Serializer to create and ingest job
-    """
-    class Meta:
-        model = IngestJob
-
-
-class IngestJobListSerializer(serializers.ModelSerializer):
-    """
-    Serializer to create and ingest job
-    """
-    class Meta:
-        model = IngestJob
-        fields = ('id', 'collection', 'experiment', 'channel', 'status', 'ingest_queue', 'upload_queue')
-
+urlpatterns = [
+    # Specific coordinate frame
+     url(r'(?P<coordframe>[\w_-]+)/?$', views_resource.CoordinateFrameDetail.as_view()),
+    # All coordinate frames
+    url(r'^$', views_resource.CoordinateFrameList.as_view()),
+]

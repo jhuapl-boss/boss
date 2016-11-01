@@ -34,7 +34,7 @@ class UserPermissionsCollection(APITestCase):
         Get a collection that does not exist
 
         """
-        url = '/' + version + '/resource/col1/'
+        url = '/' + version + '/collection/col1/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -45,7 +45,7 @@ class UserPermissionsCollection(APITestCase):
         Get a valid collection
 
         """
-        url = '/' + version + '/resource/unittestcol/'
+        url = '/' + version + '/collection/unittestcol/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -59,7 +59,7 @@ class UserPermissionsCollection(APITestCase):
         Update a collection for which the user does not have update permissions on
 
         """
-        url = '/' + version + '/resource/col1/'
+        url = '/' + version + '/collection/col1/'
         data = {'description': 'A new collection for unit tests. Updated'}
 
         # Get an existing collection
@@ -71,7 +71,7 @@ class UserPermissionsCollection(APITestCase):
         Update a collection that  the user has permissions on
 
         """
-        url = '/' + version + '/resource/unittestcol/'
+        url = '/' + version + '/collection/unittestcol/'
         data = {'description': 'A new collection for unit tests. Updated'}
 
         # Get an existing collection
@@ -83,7 +83,7 @@ class UserPermissionsCollection(APITestCase):
         Update collection name (valid)
 
         """
-        url = '/' + version + '/resource/unittestcol/'
+        url = '/' + version + '/collection/unittestcol/'
         data = {'name': 'unittestcolnew'}
 
         # Get an existing collection
@@ -95,7 +95,7 @@ class UserPermissionsCollection(APITestCase):
         Delete a collection that the user does not have permission for
 
         """
-        url = '/' + version + '/resource/col1/'
+        url = '/' + version + '/collection/col1/'
         # Get an existing collection
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
@@ -105,7 +105,7 @@ class UserPermissionsCollection(APITestCase):
         Delete a collection that the user has permission for
 
         """
-        url = '/' + version + '/resource/unittestcol1/'
+        url = '/' + version + '/collection/unittestcol1/'
         data = {'description': 'A new collection for unit tests'}
 
         # Get an existing collection
@@ -120,13 +120,13 @@ class UserPermissionsCollection(APITestCase):
         Get list of collections
 
         """
-        url = '/' + version + '/resource/collections/'
+        url = '/' + version + '/collection/'
 
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestcol')
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data['collections'][0], 'unittestcol')
+        self.assertEqual(len(response.data['collections']), 1)
 
 
 class UserPermissionsCoordinateFrame(APITestCase):
@@ -158,7 +158,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
         Get a coordinate frame that the user has no permissions for
 
         """
-        url = '/' + version + '/resource/coordinateframes/cf1/'
+        url = '/' + version + '/coord/cf1/'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -168,7 +168,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
         Get a valid coordinate_frame
 
         """
-        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        url = '/' + version + '/coord/unittestcf/'
 
         # Get an existing collection
         response = self.client.get(url)
@@ -182,7 +182,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
         Update a coordinate frame for which the user does not have update permissions on
 
         """
-        url = '/' + version + '/resource/coordinateframes/cf1'
+        url = '/' + version + '/coord/cf1'
         data = {'description': 'A new collection for unit tests. Updated'}
 
         # Get an existing collection
@@ -194,7 +194,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
         Update a coordinate frames that  the user has permissions on
 
         """
-        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        url = '/' + version + '/coord/unittestcf/'
         data = {'description': 'A new coordinate frame for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
@@ -205,7 +205,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
         Update coordinate frame name (valid)
 
         """
-        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        url = '/' + version + '/coord/unittestcf/'
         data = {'name': 'unittestcfnew'}
 
         response = self.client.put(url, data=data)
@@ -216,7 +216,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
         Delete a coordinate frame that the user does not have permission for
 
         """
-        url = '/' + version + '/resource/coordinateframes/cf1/'
+        url = '/' + version + '/coord/cf1/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
 
@@ -225,7 +225,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
         Delete a coordinate frame that the user has permission for
 
         """
-        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        url = '/' + version + '/coord/unittestcf/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
@@ -234,13 +234,13 @@ class UserPermissionsCoordinateFrame(APITestCase):
         Get list of coordinateframes
 
         """
-        url = '/' + version + '/resource/coordinateframes/'
+        url = '/' + version + '/coord/'
 
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestcf')
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data['coords'][0], 'unittestcf')
+        self.assertEqual(len(response.data['coords']), 1)
 
 
 class UserPermissionsExperiment(APITestCase):
@@ -274,7 +274,7 @@ class UserPermissionsExperiment(APITestCase):
         Get a experiment that the user has no permissions for
 
         """
-        url = '/' + version + '/resource/col1/exp1/'
+        url = '/' + version + '/collection/col1/experiment/exp1/'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
@@ -284,7 +284,7 @@ class UserPermissionsExperiment(APITestCase):
         Get a valid experiment
 
         """
-        url = '/' + version + '/resource/unittestcol/unittestexp/'
+        url = '/' + version + '/collection/unittestcol/experiment/unittestexp/'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -297,14 +297,14 @@ class UserPermissionsExperiment(APITestCase):
         """
 
         # Get the coordinate frame id
-        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        url = '/' + version + '/coord/unittestcf/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        cf_id = response.data['id']
+        cf = response.data['name']
 
         # Post a new experiment
-        url = '/' + version + '/resource/unittestcol/unittestexpnew'
-        data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
+        url = '/' + version + '/collection/unittestcol/experiment/unittestexpnew'
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -316,14 +316,14 @@ class UserPermissionsExperiment(APITestCase):
         """
 
         # Get the coordinate frame id
-        url = '/' + version + '/resource/coordinateframes/unittestcf/'
+        url = '/' + version + '/coord/unittestcf/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        cf_id = response.data['id']
+        cf = response.data['name']
 
         # Post a new experiment
-        url = '/' + version + '/resource/col1/unittestexpnew'
-        data = {'description': 'This is a new experiment', 'coord_frame': cf_id,
+        url = '/' + version + '/collection/col1/experiment/unittestexpnew'
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
                 'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 403)
@@ -333,7 +333,7 @@ class UserPermissionsExperiment(APITestCase):
         Update an experiment for which the user does not have update permissions on
 
         """
-        url = '/' + version + '/resource/col1/exp1/'
+        url = '/' + version + '/collection/col1/experiment/exp1/'
         data = {'description': 'A new experiment for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
@@ -344,7 +344,7 @@ class UserPermissionsExperiment(APITestCase):
         Update a experiment that  the user has permissions on
 
         """
-        url = '/' + version + '/resource/unittestcol/unittestexp/'
+        url = '/' + version + '/collection/unittestcol/experiment/unittestexp/'
         data = {'description': 'A new experiment for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
@@ -355,7 +355,7 @@ class UserPermissionsExperiment(APITestCase):
         Delete an experiment that the user does not have permission for
 
         """
-        url = '/' + version + '/resource/col1/exp1/'
+        url = '/' + version + '/collection/col1/experiment/exp1/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
 
@@ -364,7 +364,7 @@ class UserPermissionsExperiment(APITestCase):
         Delete an experiment that the user does have permission for
 
         """
-        url = '/' + version + '/resource/unittestcol/unittestexp/'
+        url = '/' + version + '/collection/unittestcol/experiment/unittestexp/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
@@ -373,28 +373,28 @@ class UserPermissionsExperiment(APITestCase):
         Get list of experiments
 
         """
-        url = '/' + version + '/resource/col1/experiments/'
+        url = '/' + version + '/collection/col1/experiment/'
 
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data['experiments'], [])
 
     def test_get_experiments(self):
         """
         Get list of experiments
 
         """
-        url = '/' + version + '/resource/unittestcol/experiments/'
+        url = '/' + version + '/collection/unittestcol/experiment/'
 
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestexp')
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data['experiments'][0], 'unittestexp')
+        self.assertEqual(len(response.data['experiments']), 1)
 
 
-class UserPermissionsChannelLayer(APITestCase):
+class UserPermissionsChannel(APITestCase):
     """
     Class to test the resource service
     """
@@ -421,15 +421,15 @@ class UserPermissionsChannelLayer(APITestCase):
         dbsetup.add_experiment('unittestcol', 'unittestexp', 'unittestcf', 10, 10)
 
         dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestchannel', 0, 0, 'uint8')
-        dbsetup.add_layer('unittestcol', 'unittestexp', 'unittestlayer', 0, 0, 'uint16')
-        dbsetup.add_channel_layer_map('unittestcol', 'unittestexp', 'unittestchannel', 'unittestlayer')
+        dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestlayer', 0, 0, 'uint16', 'annotation')
+        #dbsetup.add_channel_layer_map('unittestcol', 'unittestexp', 'unittestchannel', 'unittestlayer')
 
     def test_get_channel_no_permission(self):
         """
         Get a channel that the user has no permissions for
 
         """
-        url = '/' + version + '/resource/col1/exp1/channel1'
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
@@ -439,7 +439,7 @@ class UserPermissionsChannelLayer(APITestCase):
         Get a valid channel
 
         """
-        url = '/' + version + '/resource/unittestcol/unittestexp/unittestchannel'
+        url = '/' + version + '/collection/unittestcol/experiment/unittestexp/channel/unittestchannel'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -450,8 +450,8 @@ class UserPermissionsChannelLayer(APITestCase):
         Post a new channel
 
         """
-        url = '/' + version + '/resource/unittestcol/unittestexp/unittestchannelnew/'
-        data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
+        url = '/' + version + '/collection/unittestcol/experiment/unittestexp/channel/unittestchannelnew/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -460,7 +460,7 @@ class UserPermissionsChannelLayer(APITestCase):
         Post a new channel .This is invalid because the user does not have add permissions for the resource
         """
 
-        url = '/' + version + '/resource/col1/exp1/unittestchannelnew/'
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/unittestchannelnew/'
         data = {'description': 'This is a new channel', 'is_channel': True, 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 403)
@@ -470,7 +470,7 @@ class UserPermissionsChannelLayer(APITestCase):
         Update an channel for which the user does not have update permissions on
 
         """
-        url = '/' + version + '/resource/col1/exp1/channel1'
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
         data = {'description': 'A new channel for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
@@ -481,7 +481,7 @@ class UserPermissionsChannelLayer(APITestCase):
         Update a channel that  the user has permissions on
 
         """
-        url = '/' + version + '/resource/unittestcol/unittestexp/unittestchannel'
+        url = '/' + version + '/collection/unittestcol/experiment/unittestexp/channel/unittestchannel'
         data = {'description': 'A new channel for unit tests. Updated'}
 
         response = self.client.put(url, data=data)
@@ -492,59 +492,28 @@ class UserPermissionsChannelLayer(APITestCase):
         Delete an channel that the user does not have permission for
 
         """
-        url = '/' + version + '/resource/col1/exp1/channel1'
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
-
-    def test_delete_layer_valid_permissions(self):
-        """
-        Delete an layer that the user does have permission for
-
-        """
-        url = '/' + version + '/resource/unittestcol/unittestexp/unittestlayer/'
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, 204)
 
     def test_get_channels_no_permissions(self):
         """
         Get list of channels
 
         """
-        url = '/' + version + '/resource/col1/exp1/channels/'
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
-
-    def test_get_layers_no_permissions(self):
-        """
-        Get list of layers
-
-        """
-        url = '/' + version + '/resource/col1/exp1/layers/'
-
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data['channels'], [])
 
     def test_get_channels(self):
         """
         Get list of channels
 
         """
-        url = '/' + version + '/resource/unittestcol/unittestexp/channels/'
+        url = '/' + version + '/collection/unittestcol/experiment/unittestexp/channel/'
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestchannel')
-
-    def test_get_layers(self):
-        """
-        Get list of layers
-
-        """
-        url = '/' + version + '/resource/unittestcol/unittestexp/layers/'
-
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data[0]['name'], 'unittestlayer')
+        self.assertEqual(response.data['channels'][0], 'unittestchannel')

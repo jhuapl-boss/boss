@@ -24,7 +24,7 @@ class LookUpKey:
     """
     @staticmethod
     def add_lookup(lookup_key, boss_key, collection_name, experiment_name=None,
-                   channel_layer_name=None, max_time_sample=None):
+                   channel_name=None, max_time_sample=None):
         """
         Add the lookup key that correspond to a data model object
         Args:
@@ -32,7 +32,7 @@ class LookUpKey:
             boss_key: Bosskey for the objec that we created
             collection_name: Collection name . Matches the collection in the bosskey
             experiment_name: Experiment name . Matches the experiment in the bosskey
-            channel_layer_name: Channel or Layer name . Matches the channel or layer in the bosskey
+            channel_name: Channel name . Matches the channel in the bosskey
             max_time_sample: Time sample (optional argument)
 
         Returns: None
@@ -43,7 +43,7 @@ class LookUpKey:
         lookup_data = {'lookup_key': lookup_key, 'boss_key': boss_key,
                        'collection_name': collection_name,
                        'experiment_name': experiment_name,
-                       'channel_layer_name': channel_layer_name
+                       'channel_name': channel_name
                        }
         serializer = BossLookupSerializer(data=lookup_data)
         if serializer.is_valid():
@@ -65,23 +65,23 @@ class LookUpKey:
         return lookup_obj
 
     @staticmethod
-    def delete_lookup_key(collection, experiment=None, channel_layer=None):
+    def delete_lookup_key(collection, experiment=None, channel=None):
         """
         Delete a lookupkey for a specific bosskey
 
         Args:
             collection: Collection Name
             experiment : Experiment Name
-            channel_layer : Channel_layer name
+            channel : Channel name
         Returns:
             None
 
         """
 
         try:
-            if channel_layer and experiment and collection:
+            if channel and experiment and collection:
                 lookup_obj = BossLookup.objects.get(collection_name=collection, experiment_name=experiment,
-                                                    channel_layer_name=channel_layer)
+                                                    channel_name=channel)
                 lookup_obj.delete()
             elif experiment and collection:
                 lookup_obj = BossLookup.objects.get(collection_name=collection, experiment_name=experiment)
@@ -97,7 +97,7 @@ class LookUpKey:
 
     @staticmethod
     def update_lookup(lookup_key, boss_key, collection_name, experiment_name=None,
-                   channel_layer_name=None):
+                   channel_name=None):
         """
         Update the fields that correspond to a lookupkey
         Args:
@@ -105,7 +105,7 @@ class LookUpKey:
             boss_key: Bosskey for the objec that we created
             collection_name: Collection name . Matches the collection in the bosskey
             experiment_name: Experiment name . Matches the experiment in the bosskey
-            channel_layer_name: Channel or Layer name . Matches the channel or layer in the bosskey
+            channel_name: Channel name . Matches the channel in the bosskey
 
 
         Returns: None
@@ -115,7 +115,7 @@ class LookUpKey:
         lookup_data = {'lookup_key': lookup_key, 'boss_key': boss_key,
                        'collection_name': collection_name,
                        'experiment_name': experiment_name,
-                       'channel_layer_name': channel_layer_name
+                       'channel_name': channel_name
                        }
         lookup_obj = BossLookup.objects.get(lookup_key=lookup_key)
         serializer = BossLookupSerializer(lookup_obj, data=lookup_data, partial=True)

@@ -41,9 +41,6 @@ DATABASES = {
     }
 }
 
-from bossutils.aws import *
-aws_mngr = get_aws_manager()
-
 INSTALLED_APPS.append("bossoidc")
 INSTALLED_APPS.append("djangooidc")
 INSTALLED_APPS.append("rest_framework.authtoken")
@@ -51,7 +48,7 @@ AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend')
 
 REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
     'rest_framework.authentication.SessionAuthentication',
-    'rest_framework.authentication.TokenAuthentication',
+    'boss.authentication.TokenAuthentication',
     'oidc_auth.authentication.BearerTokenAuthentication',
 )
 

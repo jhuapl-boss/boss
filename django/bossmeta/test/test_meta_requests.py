@@ -52,9 +52,9 @@ class BossCoreMetaValidRequestTests(APITestCase):
         # log in user
 
 
-        url = '/' + version + '/meta/col1/?key=mkey&value=TestValue'
-        expected_col = 'col1'
-        expected_bosskey = 'col1'
+        url = '/' + version + '/meta/col1-22/?key=mkey&value=TestValue'
+        expected_col = 'col1-22'
+        expected_bosskey = 'col1-22'
         expected_key = 'mkey'
         expected_value = 'TestValue'
 
@@ -63,8 +63,21 @@ class BossCoreMetaValidRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
+        # Create the request dict
+        request_args = {
+            "user": self.user,
+            "method": request.method,
+            "service": "meta",
+            "version": version,
+            "collection_name": expected_col,
+            "experiment_name": None,
+            "channel_name": None,
+            "key": "mkey",
+            "value": "TestValue"
+        }
+
         # Datamodel object
-        ret = BossRequest(drfrequest)
+        ret = BossRequest(drfrequest, request_args)
         self.assertEqual(ret.get_collection(), expected_col)
 
         # Boss key
@@ -93,7 +106,20 @@ class BossCoreMetaValidRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
-        ret = BossRequest(drfrequest)
+        # Create the request dict
+        request_args = {
+            "user": self.user,
+            "method": request.method,
+            "service": "meta",
+            "version": version,
+            "collection_name": expected_col,
+            "experiment_name": expected_exp,
+            "channel_name": None,
+            "key": "mkey",
+            "value": "TestValue"
+        }
+
+        ret = BossRequest(drfrequest, request_args)
 
         # Datamodel object
         self.assertEqual(ret.get_collection(), expected_col)
@@ -128,11 +154,24 @@ class BossCoreMetaValidRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
+        # Create the request dict
+        request_args = {
+            "user": self.user,
+            "method": request.method,
+            "service": "meta",
+            "version": version,
+            "collection_name": expected_col,
+            "experiment_name": expected_exp,
+            "channel_name": expected_channel,
+            "key": "mkey",
+            "value": "TestValue"
+        }
+
         # Data model Objects
-        ret = BossRequest(drfrequest)
+        ret = BossRequest(drfrequest, request_args)
         self.assertEqual(ret.get_collection(), expected_col)
         self.assertEqual(ret.get_experiment(), expected_exp)
-        self.assertEqual(ret.get_channel_layer(), expected_channel)
+        self.assertEqual(ret.get_channel(), expected_channel)
 
         # Boss key
         boss_key = ret.get_boss_key()
@@ -144,40 +183,6 @@ class BossCoreMetaValidRequestTests(APITestCase):
         value = ret.get_value()
         self.assertEqual(value, expected_value)
 
-    def test_bossrequest_init_layer(self):
-        """
-        Test initialization of requests from the meta data service with a valid collection and experiment and layer
-        """
-        # create the request with collection name and experiment name and channel name
-        url = '/' + version + '/meta/col1/exp1/layer1/?key=mkey&value=TestValue'
-        expected_col = 'col1'
-        expected_exp = 'exp1'
-        expected_layer = 'layer1'
-
-        expected_bosskey = 'col1&exp1&layer1'
-        expected_key = 'mkey'
-        expected_value = 'TestValue'
-
-        request = self.rf.get(url)
-        force_authenticate(request, user=self.user)
-        drfrequest = BossMeta().initialize_request(request)
-        drfrequest.version = version
-
-        # Datamodel object
-        ret = BossRequest(drfrequest)
-        self.assertEqual(ret.get_collection(), expected_col)
-        self.assertEqual(ret.get_experiment(), expected_exp)
-        self.assertEqual(ret.get_channel_layer(), expected_layer)
-
-        # Boss key
-        boss_key = ret.get_boss_key()
-        self.assertEqual(boss_key, expected_bosskey)
-
-        # Key and value
-        key = ret.get_key()
-        self.assertEqual(key, expected_key)
-        value = ret.get_value()
-        self.assertEqual(value, expected_value)
 
     def test_bossrequest_init_coordinateframe(self):
         """
@@ -193,12 +198,24 @@ class BossCoreMetaValidRequestTests(APITestCase):
         force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+
+        # Create the request dict
+        request_args = {
+            "user": self.user,
+            "method": request.method,
+            "service": "meta",
+            "version": version,
+            "collection_name": expected_col,
+            "experiment_name": expected_exp,
+            "channel_name": expected_channel,
+            "key": "mkey",
+        }
+        ret = BossRequest(drfrequest, request_args)
 
         # Data model objects
         self.assertEqual(ret.get_collection(), expected_col)
         self.assertEqual(ret.get_experiment(), expected_exp)
-        self.assertEqual(ret.get_channel_layer(), expected_channel)
+        self.assertEqual(ret.get_channel(), expected_channel)
 
         # Check coordinate frame
         self.assertEqual(ret.get_coordinate_frame(), expected_coord)
@@ -217,12 +234,25 @@ class BossCoreMetaValidRequestTests(APITestCase):
         force_authenticate(request, user=self.user)
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
-        ret = BossRequest(drfrequest)
+        # Create the request dict
+        request_args = {
+            "user": self.user,
+            "method": request.method,
+            "service": "meta",
+            "version": version,
+            "collection_name": expected_col,
+            "experiment_name": expected_exp,
+            "channel_name": expected_channel,
+            "key": None,
+            "value": None
+        }
+
+        ret = BossRequest(drfrequest, request_args)
 
         # Data model objects
         self.assertEqual(ret.get_collection(), expected_col)
         self.assertEqual(ret.get_experiment(), expected_exp)
-        self.assertEqual(ret.get_channel_layer(), expected_channel)
+        self.assertEqual(ret.get_channel(), expected_channel)
 
         # Key and value should be empty
         self.assertEqual(ret.get_key(), None)
@@ -261,7 +291,19 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         drfrequest.version = version
 
         try:
-            BossRequest(drfrequest)
+            # Create the request dict
+            request_args = {
+                "user": self.user,
+                "method": request.method,
+                "service": "meta",
+                "version": version,
+                "collection_name": "col2",
+                "experiment_name": None,
+                "channel_name": None,
+                "key": "mkey",
+                "value": None
+            }
+            BossRequest(drfrequest, request_args)
         except BossError as err:
             assert err.status_code == 404
 
@@ -278,11 +320,23 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         drfrequest.version = version
 
         try:
-            BossRequest(drfrequest)
+            # Create the request dict
+            request_args = {
+                "user": self.user,
+                "method": request.method,
+                "service": "meta",
+                "version": version,
+                "collection_name": "col1",
+                "experiment_name": None,
+                "channel_name": None,
+                "key": "mkey",
+                "value": None
+            }
+            BossRequest(drfrequest, request_args)
         except BossError as err:
             assert err.status_code == 404
 
-    def test_bossrequest_channel_layer_not_found(self):
+    def test_bossrequest_channel_not_found(self):
         """
         Test initialization of requests with a channel that does not exist
 
@@ -294,7 +348,20 @@ class BossCoreMetaInvalidRequestTests(APITestCase):
         drfrequest = BossMeta().initialize_request(request)
         drfrequest.version = version
 
+        # Create the request dict
+        request_args = {
+            "user": self.user,
+            "method": request.method,
+            "service": "meta",
+            "version": version,
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "channel2",
+            "key": "mkey",
+            "value": None
+        }
+
         try:
-            BossRequest(drfrequest)
+            BossRequest(drfrequest,request_args)
         except BossError as err:
             assert err.args[0] == 404

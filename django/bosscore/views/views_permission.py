@@ -20,7 +20,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
-from bosscore.models import Collection, Experiment, ChannelLayer
+from bosscore.models import Collection, Experiment, Channel
 from bosscore.permissions import BossPermissionManager
 from bosscore.error import BossHTTPError, BossError, ErrorCodes, BossResourceNotFoundError,\
     BossGroupNotFoundError, BossPermissionError
@@ -34,24 +34,24 @@ class ResourceUserPermission(APIView):
     """
 
     @staticmethod
-    def get_object(collection, experiment=None, channel_layer=None):
+    def get_object(collection, experiment=None, channel=None):
         """ Return the resource from the request
 
         Args:
             collection: Collection name from the request
             experiment: Experiment name from the request
-            channel_layer: Channel or layer name
+            channel: Channel name
 
         Returns:
             Instance of the resource from the request
 
         """
         try:
-            if collection and experiment and channel_layer:
-                # Channel/ Layer specified
+            if collection and experiment and channel:
+                # Channel specified
                 collection_obj = Collection.objects.get(name=collection)
                 experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-                obj = ChannelLayer.objects.get(name=channel_layer, experiment=experiment_obj)
+                obj = Channel.objects.get(name=channel, experiment=experiment_obj)
 
             elif collection and experiment:
                 # Experiment
@@ -66,11 +66,11 @@ class ResourceUserPermission(APIView):
             raise BossError("{} does not exist".format(collection),ErrorCodes.RESOURCE_NOT_FOUND)
         except Experiment.DoesNotExist:
             raise BossError("{} does not exist".format(experiment), ErrorCodes.RESOURCE_NOT_FOUND)
-        except ChannelLayer.DoesNotExist:
-            raise BossError("{} does not exist".format(channel_layer), ErrorCodes.RESOURCE_NOT_FOUND)
+        except Channel.DoesNotExist:
+            raise BossError("{} does not exist".format(channel), ErrorCodes.RESOURCE_NOT_FOUND)
 
     @check_role("resource-manager")
-    def get(self, request, group_name, collection, experiment=None, channel_layer=None):
+    def get(self, request, group_name, collection, experiment=None, channel=None):
         """Return a list of permissions
 
         Get the list of the permissions for a group on a resource. These determine the access for the users
@@ -81,7 +81,7 @@ class ResourceUserPermission(APIView):
            group_name: Group name of an existing group
            collection: Collection name from the request
            experiment: Experiment name from the request
-           channel_layer: Channel or Layer name from the request
+           channel: Channel name from the request
 
        Returns:
            List of permissions
@@ -89,7 +89,7 @@ class ResourceUserPermission(APIView):
         """
         try:
 
-            obj = self.get_object(collection, experiment, channel_layer)
+            obj = self.get_object(collection, experiment, channel)
 
             perm = BossPermissionManager.get_permissions_group(group_name, obj)
             data = {'group': group_name, 'permissions': perm}
@@ -105,7 +105,7 @@ class ResourceUserPermission(APIView):
 
     @transaction.atomic
     @check_role("resource-manager")
-    def post(self, request, group_name, collection, experiment=None, channel_layer=None):
+    def post(self, request, group_name, collection, experiment=None, channel=None):
         """ Add permissions to a resource
 
         Add new permissions for a existing group and resource object
@@ -115,7 +115,7 @@ class ResourceUserPermission(APIView):
             group_name: Group name of an existing group
             collection: Collection name from the request
             experiment: Experiment name from the request
-            channel_layer: Channel or layer name from the request
+            channel: Channel name from the request
 
         Returns:
             Http status code
@@ -127,7 +127,7 @@ class ResourceUserPermission(APIView):
             perm_list = dict(request.data)['permissions']
 
         try:
-            obj = self.get_object(collection, experiment, channel_layer)
+            obj = self.get_object(collection, experiment, channel)
 
             if request.user.has_perm("assign_group", obj):
                 BossPermissionManager.add_permissions_group(group_name, obj, perm_list)
@@ -145,7 +145,7 @@ class ResourceUserPermission(APIView):
 
     @transaction.atomic
     @check_role("resource-manager")
-    def delete(self, request, group_name, collection, experiment=None, channel_layer=None):
+    def delete(self, request, group_name, collection, experiment=None, channel=None):
         """ Delete permissions for a resource object
 
        Remove specific permissions for a existing group and resource object
@@ -155,7 +155,7 @@ class ResourceUserPermission(APIView):
             group_name: Group name of an existing group
             collection: Collection name from the request
             experiment: Experiment name from the request
-            channel_layer: Channel or layer name from the request
+            channel: Channel name from the request
         Returns:
             Http status code
 
@@ -166,7 +166,7 @@ class ResourceUserPermission(APIView):
             perm_list = dict(request.data)['permissions']
 
         try:
-            obj = self.get_object(collection, experiment, channel_layer)
+            obj = self.get_object(collection, experiment, channel)
             if request.user.has_perm("remove_group", obj):
                 BossPermissionManager.delete_permissions_group(group_name, obj, perm_list)
                 return Response(status=status.HTTP_200_OK)

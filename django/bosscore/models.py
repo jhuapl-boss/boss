@@ -143,36 +143,38 @@ class Experiment(models.Model):
     def __str__(self):
         return self.name
 
-
-class ChannelLayer(models.Model):
+class Channel(models.Model):
     """
-    Object representing a channel or layer. For image datasets these are channels and for annotations datasets these
-    are layers.
+    Object representing a channel
     """
-    name = models.CharField(max_length=255, verbose_name="Name of the Channel or Layer", validators=[NameValidator()])
+    name = models.CharField(max_length=255, verbose_name="Name of the Channel", validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
-    creator = models.ForeignKey('auth.User', related_name='ChannelLayer')
+    creator = models.ForeignKey('auth.User', related_name='Channel')
 
-    experiment = models.ForeignKey(Experiment, related_name='channellayer', on_delete=models.PROTECT)
-    is_channel = models.BooleanField()
+    experiment = models.ForeignKey(Experiment, related_name='channels', on_delete=models.PROTECT)
     base_resolution = models.IntegerField(default=0)
     default_time_step = models.IntegerField(default=0)
+
+    TYPE_CHOICES = (
+        ('image', 'IMAGE'),
+        ('annotation', 'ANNOTATION'),
+    )
+    type = models.CharField(choices=TYPE_CHOICES, max_length=100)
+
     DATATYPE_CHOICES = (
         ('uint8', 'UINT8'),
         ('uint16', 'UINT16'),
         ('uint32', 'UINT32'),
         ('uint64', 'UINT64'),
     )
-
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
-
-    # channels = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False,
-    # related_name='ref_channels')
-    linked_channel_layers = models.ManyToManyField('self', through='ChannelLayerMap', symmetrical=False,
-                                                   related_name='ref_layers_channels')
+    sources = models.ManyToManyField('self', through = 'Source',
+                                    symmetrical=False,
+                                    related_name='derived', blank=True)
+    related = models.ManyToManyField('self', related_name='related', blank=True)
 
     class Meta:
-        db_table = u"channel_layer"
+        db_table = u"channel"
         unique_together = ('experiment', 'name')
         default_permissions = ()
         permissions = (
@@ -183,30 +185,30 @@ class ChannelLayer(models.Model):
             ('add', 'Can add resources '),
             ('assign_group', 'Can assign groups permissions for the resource'),
             ('remove_group', 'Can remove groups permissions for the resource'),
-            ('add_volumetric_data', 'Can add volumetric data for the channel or layer'),
-            ('read_volumetric_data', 'Can read volumetric data for the channel or layer'),
-            ('delete_volumetric_data', 'Can delete volumetric data for the channel or layer'),
+            ('add_volumetric_data', 'Can add volumetric data for the channel'),
+            ('read_volumetric_data', 'Can read volumetric data for the channel'),
+            ('delete_volumetric_data', 'Can delete volumetric data for the channel'),
 
         )
+
+    def add_source(self, source):
+        source, created = Source.objects.get_or_create(
+            derived_channel= self,
+            source_channel = source)
+        return source
+
+    def remove_source(self, source):
+        Source.objects.filter(
+            derived_channel=self,
+            source_channel=source).delete()
+        return
 
     def __str__(self):
         return self.name
 
-
-class ChannelLayerMap(models.Model):
-    """
-    Many to many mapping between channels and layers
-    """
-    channel = models.ForeignKey(ChannelLayer, related_name='channel', on_delete=models.PROTECT)
-    layer = models.ForeignKey(ChannelLayer, related_name='layer')
-
-    class Meta:
-        db_table = u"channel_layer_map"
-        unique_together = ('channel', 'layer')
-
-    def __str__(self):
-        return 'Channel = {}, Layer = {}'.format(self.channel.name, self.layer.name)
-
+class Source(models.Model):
+    derived_channel = models.ForeignKey(Channel, related_name='derived_channel')
+    source_channel = models.ForeignKey(Channel, related_name='source_channel', on_delete=models.PROTECT)
 
 class BossLookup(models.Model):
     """
@@ -218,7 +220,7 @@ class BossLookup(models.Model):
 
     collection_name = models.CharField(max_length=255)
     experiment_name = models.CharField(max_length=255, blank=True, null=True)
-    channel_layer_name = models.CharField(max_length=255, blank=True, null=True)
+    channel_name = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         db_table = u"lookup"
