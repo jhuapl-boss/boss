@@ -145,7 +145,7 @@ REST_FRAMEWORK = {
 # Version that unit tests are being run against
 BOSS_VERSION = 'v0.7'
 # Maximum number of bytes in an uncompressed matrix supported by the Cutout Service
-CUTOUT_MAX_SIZE = 10 ** 9
+CUTOUT_MAX_SIZE = 5 * 10 ** 8
 
 # Allow all cross site origins
 CORS_ORIGIN_ALLOW_ALL = True
