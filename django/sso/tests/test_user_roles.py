@@ -90,14 +90,24 @@ class TestBossUserRole(TestBase):
     def test_post_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(post='/v0.6/sso/user-role/test/admin')
-        response = BossUserRole.as_view()(request, 'test', 'admin')
+        request = self.makeRequest(post='/v0.6/sso/user-role/test/user-manager')
+        response = BossUserRole.as_view()(request, 'test', 'user-manager')
 
         self.assertEqual(response.status_code, 201)
         self.assertIsNone(response.data)
 
-        call = mock.call.map_role_to_user('test', 'admin')
+        call = mock.call.map_role_to_user('test', 'user-manager')
         self.assertEqual(ctxMgr.mock_calls, [call])
+
+    @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
+    def test_failed_post_admin_role(self, mKCC):
+        """The admin roles is not allowed to be assigned through the API"""
+        ctxMgr = mKCC.return_value.__enter__.return_value
+
+        request = self.makeRequest(post='/v0.6/sso/user-role/test/admin')
+        response = BossUserRole.as_view()(request, 'test', 'admin')
+
+        self.assertEqual(response.status_code, 403)
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
     def test_failed_post_role_bad_role(self, mKCC):
@@ -113,8 +123,8 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.map_role_to_user.side_effect = raise_error
 
-        request = self.makeRequest(post='/v0.6/sso/user-role/test/admin')
-        response = BossUserRole.as_view()(request, 'test', 'admin')
+        request = self.makeRequest(post='/v0.6/sso/user-role/test/user-manager')
+        response = BossUserRole.as_view()(request, 'test', 'user-manager')
 
         self.assertEqual(response.status_code, 500)
 
