@@ -205,13 +205,10 @@ class PermissionViewsCollectionTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        url = '/' + version + '/permissions/test/col1'
-        data = {
-            'group': 'test',
-            'collection': 'col1',
-        }
-        response = self.client.delete(url, data=data)
-        self.assertEqual(response.status_code, 200)
+        url = '/' + version + '/permissions/?group=test&collection=col1'
+
+        response = self.client.delete(url, None)
+        self.assertEqual(response.status_code, 204)
 
     def test_patch_permission_for_collection(self):
         """
@@ -401,14 +398,36 @@ class PermissionViewsExperimentTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        url = '/' + version + '/permissions/test/col1'
-        data = {
-            'group': 'test',
-            'collection': 'col1',
-            'experiment': 'exp1'
-        }
-        response = self.client.delete(url, data=data)
-        self.assertEqual(response.status_code, 200)
+        url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1'
+        response = self.client.delete(url, None)
+        self.assertEqual(response.status_code, 204)
+
+    def test_delete_permission_for_experiment_invalid_group(self):
+        """
+        Delete a subset of permissions for a experiment
+
+        """
+        url = '/' + version + '/permissions/?group=testeeee&collection=col1&experiment=exp1'
+        response = self.client.delete(url, None)
+        self.assertEqual(response.status_code, 404)
+
+    def test_delete_permission_for_experiment_missing_group(self):
+        """
+        Delete a subset of permissions for a experiment
+
+        """
+        url = '/' + version + '/permissions/?collection=col1&experiment=exp1'
+        response = self.client.delete(url, None)
+        self.assertEqual(response.status_code, 400)
+
+    def test_delete_permission_for_experiment_missing_resource(self):
+        """
+        Delete a subset of permissions for a experiment
+
+        """
+        url = '/' + version + '/permissions/?group=test'
+        response = self.client.delete(url, None)
+        self.assertEqual(response.status_code, 400)
 
     def test_patch_permission_for_experiment(self):
         """
@@ -607,15 +626,9 @@ class PermissionViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        url = '/' + version + '/permissions/test/col1'
-        data = {
-            'group': 'test',
-            'collection': 'col1',
-            'experiment': 'exp1',
-            'channel': 'channel1'
-        }
-        response = self.client.delete(url, data=data)
-        self.assertEqual(response.status_code, 200)
+        url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1&channel=channel1'
+        response = self.client.delete(url, None)
+        self.assertEqual(response.status_code, 204)
 
     def test_patch_permission_for_channel(self):
         """

@@ -49,8 +49,6 @@ class ResourceUserPermission(APIView):
 
         """
         try:
-            obj = None
-            type = None
             if collection and experiment and channel:
                 # Channel specified
                 collection_obj = Collection.objects.get(name=collection)
@@ -68,7 +66,7 @@ class ResourceUserPermission(APIView):
             else:
                 return None
 
-            return (obj,type)
+            return (obj, type)
         except Collection.DoesNotExist:
             raise BossError("{} does not exist".format(collection), ErrorCodes.RESOURCE_NOT_FOUND)
         except Experiment.DoesNotExist:
@@ -126,7 +124,7 @@ class ResourceUserPermission(APIView):
                     obj_list.append(obj)
                     data = {'permission-sets': obj_list}
                 elif type == 'experiment':
-                    obj = {'group': group.name, 'collection': resource.collection.name, 'experiment':resource.name,
+                    obj = {'group': group.name, 'collection': resource.collection.name, 'experiment': resource.name,
                            'permissions': perms}
                     obj_list.append(obj)
                     data = {'permission-sets': obj_list}
@@ -170,14 +168,14 @@ class ResourceUserPermission(APIView):
                 for exp in exp_list:
                     exp_perms = get_perms(group, exp)
                     obj_list.append({'group': group.name, 'collection': exp.collection.name, 'experiment': exp.name,
-                                     'permissions': col_perms})
+                                     'permissions': exp_perms})
 
                 ch_list = get_objects_for_group(group, perms=channel_perms, klass=Channel, any_perm=True)
                 for channel in ch_list:
                     channel_perms = get_perms(group, channel)
                     obj_list.append({'group': group.name, 'collection': channel.experiment.collection.name,
                                      'experiment': channel.experiment.name, 'channel': channel.name,
-                                     'permissions': col_perms})
+                                     'permissions': channel_perms})
 
                 data = {'permission-sets': obj_list}
             else:
@@ -201,8 +199,8 @@ class ResourceUserPermission(APIView):
                     for channel in ch_list:
                         channel_perms = get_perms(group, channel)
                         obj_list.append({'group': group.name, 'collection': channel.experiment.collection.name,
-                                     'experiment': channel.experiment.name, 'channel': channel.name,
-                                     'permissions': col_perms})
+                                         'experiment': channel.experiment.name, 'channel': channel.name,
+                                         'permissions': col_perms})
 
                 data = {'permission-sets': obj_list}
             return Response(data, status=status.HTTP_200_OK)
@@ -234,34 +232,26 @@ class ResourceUserPermission(APIView):
 
         """
         if 'permissions' not in request.data:
-            return BossHTTPError("Permission are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
+            return BossHTTPError("Permission are not included in the request", ErrorCodes.INVALID_URL)
         else:
             perm_list = dict(request.data)['permissions']
 
         if 'group' not in request.data:
-            return BossHTTPError("Group are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
-        else:
-            group_name = request.data['group']
+            return BossHTTPError("Group are not included in the request", ErrorCodes.INVALID_URL)
 
         if 'collection' not in request.data:
-            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INCOMPLETE_REQUEST)
-        else:
-            collection = request.data['collection']
+            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INVALID_URL)
 
-        if 'experiment' not in request.data:
-            experiment = None
-        else:
-            experiment = request.data['experiment']
-
-        if 'channel' not in request.data:
-            channel = None
-        else:
-            channel = request.data['channel']
-
+        group_name = request.data.get('group', None)
+        collection = request.data.get('collection', None)
+        experiment = request.data.get('experiment', None)
+        channel = request.data.get('channel', None)
 
         try:
-            (obj,type) = self.get_object(collection, experiment, channel)
-
+            resource = self.get_object(collection, experiment, channel)
+            if resource == None:
+                return BossHTTPError("Unable to validate the resource", ErrorCodes.UNABLE_TO_VALIDATE)
+            obj = resource[0]
             if request.user.has_perm("assign_group", obj):
                 BossPermissionManager.add_permissions_group(group_name, obj, perm_list)
                 return Response(status=status.HTTP_201_CREATED)
@@ -294,15 +284,15 @@ class ResourceUserPermission(APIView):
 
         """
         if 'permissions' not in request.data:
-            return BossHTTPError("Permission are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
+            return BossHTTPError("Permission are not included in the request", ErrorCodes. UNABLE_TO_VALIDATE)
         else:
             perm_list = dict(request.data)['permissions']
 
         if 'group' not in request.data:
-            return BossHTTPError("Group are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
+            return BossHTTPError("Group are not included in the request", ErrorCodes. UNABLE_TO_VALIDATE)
 
         if 'collection' not in request.data:
-            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INCOMPLETE_REQUEST)
+            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes. UNABLE_TO_VALIDATE)
 
         group_name = request.data.get('group', None)
         collection = request.data.get('collection', None)
@@ -310,7 +300,11 @@ class ResourceUserPermission(APIView):
         channel = request.data.get('channel', None)
 
         try:
-            (obj,type) = self.get_object(collection, experiment, channel)
+            resource = self.get_object(collection, experiment, channel)
+            if resource == None:
+                return BossHTTPError("Unable to validate the resource", ErrorCodes.UNABLE_TO_VALIDATE)
+
+            obj = resource[0]
             # remove all existing permission for the group
             if request.user.has_perm("remove_group", obj) and request.user.has_perm("assign_group", obj):
                 BossPermissionManager.delete_all_permissions_group(group_name, obj)
@@ -344,22 +338,25 @@ class ResourceUserPermission(APIView):
             Http status code
 
         """
-        if 'group' not in request.data:
-            return BossHTTPError("Group are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
+        if 'group' not in request.query_params:
+            return BossHTTPError("Group are not included in the request", ErrorCodes.INVALID_URL)
 
-        if 'collection' not in request.data:
-            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INCOMPLETE_REQUEST)
+        if 'collection' not in request.query_params:
+            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INVALID_URL)
 
-        group_name = request.data.get('group', None)
-        collection = request.data.get('collection', None)
-        experiment = request.data.get('experiment', None)
-        channel = request.data.get('channel', None)
+        group_name = request.query_params.get('group', None)
+        collection = request.query_params.get('collection', None)
+        experiment = request.query_params.get('experiment', None)
+        channel = request.query_params.get('channel', None)
 
         try:
             resource = self.get_object(collection, experiment, channel)
-            if resource is not None and request.user.has_perm("remove_group", resource[0]):
+            if resource is None :
+                return BossHTTPError ("Unable to validate the resource", ErrorCodes.UNABLE_TO_VALIDATE)
+
+            if request.user.has_perm("remove_group", resource[0]):
                 BossPermissionManager.delete_all_permissions_group(group_name, resource[0])
-                return Response(status=status.HTTP_200_OK)
+                return Response(status=status.HTTP_204_NO_CONTENT)
             else:
                 return BossPermissionError('remove group', resource[0].name)
 
@@ -369,6 +366,6 @@ class ResourceUserPermission(APIView):
             return BossHTTPError("Invalid permissions in post".format(request.data['permissions']),
                                  ErrorCodes.UNRECOGNIZED_PERMISSION)
         except Exception as e:
-            return BossHTTPError("{}".format(e),ErrorCodes.UNHANDLED_EXCEPTION)
+            return BossHTTPError("{}".format(e), ErrorCodes.UNHANDLED_EXCEPTION)
         except BossError as err:
             return err.to_http()
