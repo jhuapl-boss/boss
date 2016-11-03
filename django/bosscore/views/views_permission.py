@@ -193,8 +193,8 @@ class ResourceUserPermission(APIView):
                                      'experiment': channel.experiment.name, 'channel': channel.name,
                                      'permissions': col_perms})
 
-                data = {'resource-permissions': obj_list}
-            return Response(data, status=status.HTTP_200_OK, content_type='application/json')
+                data = {'permission-set': obj_list}
+            return Response(data, status=status.HTTP_200_OK)
 
         except Group.DoesNotExist:
             return BossGroupNotFoundError(group)
