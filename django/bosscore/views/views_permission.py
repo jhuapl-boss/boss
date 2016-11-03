@@ -109,20 +109,21 @@ class ResourceUserPermission(APIView):
             object = self.get_object(collection, experiment, channel)
 
             if group and object :
-                resource = object[0]
+                group = Group.objects.get(name=group)
                 type = object[1]
+
                 # filtering on both group and resource
                 resource = object[0]
                 perms = get_perms(group, resource)
                 if type == 'collection':
-                    obj = {'group': group, 'collection': resource.name, 'permissions': perms}
-                    data = {'resource-permissions': obj}
+                    obj = {'group': group.name, 'collection': resource.name, 'permissions': perms}
+                    data = {'permission-sets': obj}
                 elif type == 'experiment':
-                    obj = {'group': group, 'collection': resource.collection.name, 'experiment':resource.name,
+                    obj = {'group': group.name, 'collection': resource.collection.name, 'experiment':resource.name,
                            'permissions': perms}
-                    data = {'resource-permissions': obj}
+                    data = {'permission-sets': obj}
                 else:
-                    obj = {'group': group, 'collection': resource.experiment.collection.name,
+                    obj = {'group': group.name, 'collection': resource.experiment.collection.name,
                            'experiment':resource.experiment.name, 'channel': resource.name,
                            'permissions': perms}
                     data = {'permission-sets': obj}
@@ -256,6 +257,57 @@ class ResourceUserPermission(APIView):
                 return Response(status=status.HTTP_201_CREATED)
             else:
                 return BossPermissionError('assign group', collection)
+
+        except Group.DoesNotExist:
+            return BossGroupNotFoundError(group_name)
+        except Permission.DoesNotExist:
+            return BossHTTPError("Invalid permissions in post".format(request.data['permissions']),
+                                 ErrorCodes.UNRECOGNIZED_PERMISSION)
+        except BossError as err:
+            return err.to_http()
+
+    @transaction.atomic
+    @check_role("resource-manager")
+    def patch(self, request):
+        """ Patch permissions for a resource
+
+       Remove specific permissions for a existing group and resource object
+
+       Args:
+            request: Django rest framework request
+            group_name: Group name of an existing group
+            collection: Collection name from the request
+            experiment: Experiment name from the request
+            channel: Channel name from the request
+        Returns:
+            Http status code
+
+        """
+        if 'permissions' not in request.data:
+            return BossHTTPError("Permission are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
+        else:
+            perm_list = dict(request.data)['permissions']
+
+        if 'group' not in request.data:
+            return BossHTTPError("Group are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
+
+        if 'collection' not in request.data:
+            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INCOMPLETE_REQUEST)
+
+        group_name = request.data.get('group', None)
+        collection = request.data.get('collection', None)
+        experiment = request.data.get('experiment', None)
+        channel = request.data.get('channel', None)
+
+        try:
+            (obj,type) = self.get_object(collection, experiment, channel)
+            # remove all existing permission for the group
+            if request.user.has_perm("remove_group", obj) and request.user.has_perm("assign_group", obj):
+                BossPermissionManager.delete_all_permissions_group(group_name, obj)
+                BossPermissionManager.add_permissions_group(group_name, obj, perm_list)
+                return Response(status=status.HTTP_200_OK)
+            else:
+                return BossPermissionError('remove group', obj.name)
 
         except Group.DoesNotExist:
             return BossGroupNotFoundError(group_name)

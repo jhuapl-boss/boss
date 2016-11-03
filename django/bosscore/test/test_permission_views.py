@@ -145,6 +145,26 @@ class PermissionViewsCollectionTests(APITestCase):
         resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
 
+
+    def test_get_permission_for_collection_filter_collection_group(self):
+        """
+        Get permissions for a collection
+        """
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/permissions/?group=test&collection=col1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+
     def test_get_permission_invalid(self):
         """
        Get permissions for a resource that does not exist or a group that does not exist
@@ -181,6 +201,42 @@ class PermissionViewsCollectionTests(APITestCase):
             'collection': 'col1',
         }
         response = self.client.delete(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_patch_permission_for_collection(self):
+        """
+        Delete a subset of permissions for a collection
+
+        """
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/permissions/?group=test&collection=col1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(set(resp["permission-sets"]["permissions"]), set(['read', 'add', 'update']))
+        self.assertEqual(response.status_code, 200)
+
+        url = '/' + version + '/permissions/test/col1'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'permissions': ['read']
+        }
+        response = self.client.patch(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+        url = '/' + version + '/permissions/?group=test&collection=col1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(set(resp["permission-sets"]["permissions"]),set(['read']))
         self.assertEqual(response.status_code, 200)
 
 
@@ -343,6 +399,45 @@ class PermissionViewsExperimentTests(APITestCase):
         }
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
+
+    def test_patch_permission_for_experiment(self):
+        """
+        Delete a subset of permissions for a experiment
+
+        """
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(set(resp["permission-sets"]["permissions"]), set(['read', 'add', 'update']))
+        self.assertEqual(response.status_code, 200)
+
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read']
+        }
+        response = self.client.patch(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+        url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(set(resp["permission-sets"]["permissions"]),set(['read']))
+        self.assertEqual(response.status_code, 200)
+
 
 class PermissionViewsChannelTests(APITestCase):
     """
@@ -510,5 +605,45 @@ class PermissionViewsChannelTests(APITestCase):
             'channel': 'channel1'
         }
         response = self.client.delete(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_patch_permission_for_channel(self):
+        """
+        Delete a subset of permissions for a channel
+
+        """
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel' : 'channel1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1&channel=channel1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(set(resp["permission-sets"]["permissions"]), set(['read', 'add', 'update']))
+        self.assertEqual(response.status_code, 200)
+
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read']
+        }
+        response = self.client.patch(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+        url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1&channel=channel1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(set(resp["permission-sets"]["permissions"]),set(['read']))
         self.assertEqual(response.status_code, 200)
 
