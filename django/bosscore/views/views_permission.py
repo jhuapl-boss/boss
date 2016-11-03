@@ -20,6 +20,8 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 
+from guardian.shortcuts import get_objects_for_user, get_perms_for_model, get_objects_for_group, get_perms
+
 from bosscore.models import Collection, Experiment, Channel
 from bosscore.permissions import BossPermissionManager
 from bosscore.error import BossHTTPError, BossError, ErrorCodes, BossResourceNotFoundError,\
@@ -47,30 +49,35 @@ class ResourceUserPermission(APIView):
 
         """
         try:
+            obj = None
+            type = None
             if collection and experiment and channel:
                 # Channel specified
                 collection_obj = Collection.objects.get(name=collection)
                 experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
                 obj = Channel.objects.get(name=channel, experiment=experiment_obj)
-
+                type = 'channel'
             elif collection and experiment:
                 # Experiment
                 collection_obj = Collection.objects.get(name=collection)
                 obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-
-            else:
+                type = 'experiment'
+            elif collection:
                 obj = Collection.objects.get(name=collection)
+                type = 'collection'
+            else:
+                return None
 
-            return obj
+            return (obj,type)
         except Collection.DoesNotExist:
-            raise BossError("{} does not exist".format(collection),ErrorCodes.RESOURCE_NOT_FOUND)
+            raise BossError("{} does not exist".format(collection), ErrorCodes.RESOURCE_NOT_FOUND)
         except Experiment.DoesNotExist:
             raise BossError("{} does not exist".format(experiment), ErrorCodes.RESOURCE_NOT_FOUND)
         except Channel.DoesNotExist:
             raise BossError("{} does not exist".format(channel), ErrorCodes.RESOURCE_NOT_FOUND)
 
     @check_role("resource-manager")
-    def get(self, request, group_name, collection, experiment=None, channel=None):
+    def get(self, request):
         """Return a list of permissions
 
         Get the list of the permissions for a group on a resource. These determine the access for the users
@@ -88,15 +95,109 @@ class ResourceUserPermission(APIView):
 
         """
         try:
+            obj_list = []
+            group = request.query_params.get('group', None)
+            collection = request.query_params.get('collection', None)
+            experiment = request.query_params.get('experiment', None)
+            channel = request.query_params.get('channel', None)
 
-            obj = self.get_object(collection, experiment, channel)
+            # get permission sets for models
+            col_perms = [perm.codename for perm in get_perms_for_model(Collection)]
+            exp_perms = [perm.codename for perm in get_perms_for_model(Experiment)]
+            channel_perms = [perm.codename for perm in get_perms_for_model(Channel)]
 
-            perm = BossPermissionManager.get_permissions_group(group_name, obj)
-            data = {'group': group_name, 'permissions': perm}
-            return Response(data, status=status.HTTP_201_CREATED, content_type='application/json')
+            object = self.get_object(collection, experiment, channel)
+
+            if group and object :
+                resource = object[0]
+                type = object[1]
+                # filtering on both group and resource
+                resource = object[0]
+                perms = get_perms(group, resource)
+                if type == 'collection':
+                    obj = {'group': group, 'collection': resource.name, 'permissions': perms}
+                    data = {'resource-permissions': obj}
+                elif type == 'experiment':
+                    obj = {'group': group, 'collection': resource.collection.name, 'experiment':resource.name,
+                           'permissions': perms}
+                    data = {'resource-permissions': obj}
+                else:
+                    obj = {'group': group, 'collection': resource.experiment.collection.name,
+                           'experiment':resource.experiment.name, 'channel': resource.name,
+                           'permissions': perms}
+                    data = {'resource-permissions': obj}
+            elif object and not group :
+                # filtering on resource
+                resource = object[0]
+                type = object[1]
+                list_member_groups = request.user.groups.all()
+                for group in list_member_groups:
+                    perms = get_perms(group, resource)
+                    if type == 'collection':
+                        obj = {'group': group.name, 'collection': resource.name, 'permissions': perms}
+                        obj_list.append(obj)
+                    elif type == 'experiment':
+                        obj = {'group': group.name, 'collection': resource.collection.name, 'experiment': resource.name,
+                               'permissions': perms}
+                        obj_list.append(obj)
+                    else:
+                        obj = {'group': group.name, 'collection': resource.experiment.collection.name,
+                               'experiment': resource.experiment.name, 'channel': resource.name,
+                               'permissions': perms}
+                        obj_list.append(obj)
+                data = {'resource-permissions': obj_list}
+            elif group and not object:
+                # filtering on group
+                group = Group.objects.get(name = group)
+                col_list = get_objects_for_group(group, perms=col_perms, klass=Collection, any_perm=True)
+                for col in col_list:
+                    col_perms = get_perms(group, col)
+                    obj = {'group': group.name, 'collection': col.name, 'permissions': col_perms}
+                    obj_list.append(obj)
+
+                exp_list = get_objects_for_group(group, perms=exp_perms, klass=Experiment, any_perm=True)
+                for exp in exp_list:
+                    exp_perms = get_perms(group, exp)
+                    obj_list.append({'group': group.name, 'collection': exp.collection.name, 'experiment': exp.name,
+                                     'permissions': col_perms})
+
+                ch_list = get_objects_for_group(group, perms=channel_perms, klass=Channel, any_perm=True)
+                for channel in ch_list:
+                    channel_perms = get_perms(group, channel)
+                    obj_list.append({'group': group.name, 'collection': channel.experiment.collection.name,
+                                     'experiment': channel.experiment.name, 'channel': channel.name,
+                                     'permissions': col_perms})
+
+                data = {'resource-permissions': obj_list}
+            else:
+                # no filtering
+
+                list_member_groups = request.user.groups.all()
+                for group in list_member_groups:
+                    col_list = get_objects_for_group(group, perms=col_perms, klass=Collection, any_perm=True)
+                    for col in col_list:
+                        col_perms = get_perms(group, col)
+                        obj = {'group': group.name, 'collection': col.name, 'permissions': col_perms}
+                        obj_list.append(obj)
+
+                    exp_list = get_objects_for_group(group, perms=exp_perms, klass=Experiment, any_perm=True)
+                    for exp in exp_list:
+                        exp_perms = get_perms(group, exp)
+                        obj_list.append({'group': group.name, 'collection': exp.collection.name, 'experiment': exp.name,
+                                     'permissions': col_perms})
+
+                    ch_list = get_objects_for_group(group, perms=channel_perms, klass=Channel, any_perm=True)
+                    for channel in ch_list:
+                        channel_perms = get_perms(group, channel)
+                        obj_list.append({'group': group.name, 'collection': channel.experiment.collection.name,
+                                     'experiment': channel.experiment.name, 'channel': channel.name,
+                                     'permissions': col_perms})
+
+                data = {'resource-permissions': obj_list}
+            return Response(data, status=status.HTTP_200_OK, content_type='application/json')
 
         except Group.DoesNotExist:
-            return BossGroupNotFoundError(group_name)
+            return BossGroupNotFoundError(group)
         except Permission.DoesNotExist:
             return BossHTTPError("Invalid permissions in post".format(request.data['permissions']),
                                  ErrorCodes.UNRECOGNIZED_PERMISSION)
@@ -105,7 +206,7 @@ class ResourceUserPermission(APIView):
 
     @transaction.atomic
     @check_role("resource-manager")
-    def post(self, request, group_name, collection, experiment=None, channel=None):
+    def post(self, request):
         """ Add permissions to a resource
 
         Add new permissions for a existing group and resource object
@@ -126,8 +227,29 @@ class ResourceUserPermission(APIView):
         else:
             perm_list = dict(request.data)['permissions']
 
+        if 'group' not in request.data:
+            return BossHTTPError("Group are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
+        else:
+            group_name = request.data['group']
+
+        if 'collection' not in request.data:
+            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INCOMPLETE_REQUEST)
+        else:
+            collection = request.data['collection']
+
+        if 'experiment' not in request.data:
+            experiment = None
+        else:
+            experiment = request.data['experiment']
+
+        if 'channel' not in request.data:
+            channel = None
+        else:
+            channel = request.data['channel']
+
+
         try:
-            obj = self.get_object(collection, experiment, channel)
+            (obj,type) = self.get_object(collection, experiment, channel)
 
             if request.user.has_perm("assign_group", obj):
                 BossPermissionManager.add_permissions_group(group_name, obj, perm_list)
@@ -145,7 +267,7 @@ class ResourceUserPermission(APIView):
 
     @transaction.atomic
     @check_role("resource-manager")
-    def delete(self, request, group_name, collection, experiment=None, channel=None):
+    def delete(self, request):
         """ Delete permissions for a resource object
 
        Remove specific permissions for a existing group and resource object
@@ -160,15 +282,30 @@ class ResourceUserPermission(APIView):
             Http status code
 
         """
-        if 'permissions' not in request.data:
-            return BossHTTPError("Permission are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
+        if 'group' not in request.data:
+            return BossHTTPError("Group are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
         else:
-            perm_list = dict(request.data)['permissions']
+            group_name = request.data['group']
+
+        if 'collection' not in request.data:
+            return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INCOMPLETE_REQUEST)
+        else:
+            collection = request.data['collection']
+
+        if 'experiment' not in request.data:
+            experiment = None
+        else:
+            experiment = request.data['experiment']
+
+        if 'channel' not in request.data:
+            channel = None
+        else:
+            channel = request.data['channel']
 
         try:
-            obj = self.get_object(collection, experiment, channel)
+            (obj,type) = self.get_object(collection, experiment, channel)
             if request.user.has_perm("remove_group", obj):
-                BossPermissionManager.delete_permissions_group(group_name, obj, perm_list)
+                BossPermissionManager.delete_all_permissions_group(group_name, obj)
                 return Response(status=status.HTTP_200_OK)
             else:
                 return BossPermissionError('remove group', obj.name)

@@ -39,13 +39,28 @@ class PermissionViewsCollectionTests(APITestCase):
         dbsetup.create_group('test')
         dbsetup.insert_test_data()
 
+    def test_get_permission(self):
+        """
+        Post permissions for a valid group and collection
+
+        """
+        url = '/' + version + '/permissions/'
+        data = {'permissions': ['read', 'add', 'update']}
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
     def test_post_permission_collection(self):
         """
         Post permissions for a valid group and collection
 
         """
-        url = '/' + version + '/permission/test/col1'
-        data = {'permissions': ['read', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group' : 'test',
+            'collection': 'col1',
+            'permissions': ['read', 'add', 'update']
+        }
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
@@ -54,8 +69,13 @@ class PermissionViewsCollectionTests(APITestCase):
         """
         Post  invalid  permissions strings
         """
-        url = '/' + version + '/permission/test/col1'
-        data = {'permissions': ['readeeee', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'permissions':  ['readeeee', 'add', 'update']
+        }
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
@@ -66,31 +86,64 @@ class PermissionViewsCollectionTests(APITestCase):
 
         """
         # Resource does not exist
-        url = '/' + version + '/permission/test/col1eee'
-        data = {'permissions': ['read', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1eee',
+            'permissions': ['read', 'add', 'update']
+        }
+
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
         # group does not exist
-        url = '/' + version + '/permission/testee/col1'
-        data = {'permissions': ['read', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'testeee',
+            'collection': 'col1',
+            'permissions': ['read', 'add', 'update']
+        }
+
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
-    def test_get_permission_for_collection(self):
+    def test_get_permission_for_collection_filter_group(self):
         """
         Get permissions for a collection
         """
-        url = '/' + version + '/permission/test/col1'
-        data = {'permissions': ['read', 'add', 'update']}
-        self.client.post(url, data=data)
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'permissions': ['read', 'add', 'update']
+        }
 
-        url = '/' + version + '/permission/test/col1'
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
 
+        url = '/' + version + '/permissions/?group=test'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_permission_for_collection_filter_collection(self):
+        """
+        Get permissions for a collection
+        """
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 3)
+
+        url = '/' + version + '/permissions/?collection=col1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
 
     def test_get_permission_invalid(self):
         """
@@ -98,12 +151,12 @@ class PermissionViewsCollectionTests(APITestCase):
 
         """
         # group does not exist
-        url = '/' + version + '/permission/testee/col1'
+        url = '/' + version + '/permissions/?group=testeee'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
         # resource does not exist
-        url = '/' + version + '/permission/test/col1ee'
+        url = '/' + version + '/permissions/test/?collection=col1ee'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
@@ -112,22 +165,23 @@ class PermissionViewsCollectionTests(APITestCase):
         Delete a subset of permissions for a collection
 
         """
-        url = '/' + version + '/permission/test/col1'
-        data = {'permissions': ['read', 'add', 'update']}
-        self.client.post(url, data=data)
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'permissions': ['read', 'add', 'update']
+        }
 
-        url = '/' + version + '/permission/test/col1'
-        response = self.client.get(url)
+        response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        url = '/' + version + '/permission/test/col1'
-        data = {'permissions': ['update']}
+        url = '/' + version + '/permissions/test/col1'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+        }
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
-
-        url = '/' + version + '/permission/test/col1'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 201)
 
 
 class PermissionViewsExperimentTests(APITestCase):
@@ -138,7 +192,7 @@ class PermissionViewsExperimentTests(APITestCase):
     def setUp(self):
         """
         Initialize the database
-
+        :return:
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
@@ -151,13 +205,17 @@ class PermissionViewsExperimentTests(APITestCase):
 
     def test_post_permission_experiment(self):
         """
-        Post new permissions for a experiment
+        Post permissions for a valid group and experiment
 
         """
-        url = '/' + version + '/permission/test/col1/exp1'
-        data = {'permissions': ['read']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group' : 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
 
-        # Get an existing collection
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -165,89 +223,136 @@ class PermissionViewsExperimentTests(APITestCase):
         """
         Post  invalid  permissions strings
         """
-        url = '/' + version + '/permission/test/col1/exp1'
-        data = {'permissions': ['readeeee', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions':  ['readeeee', 'add', 'update']
+        }
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
-    def test_post_permissions_invalid_experiment(self):
+    def test_post_permissions_invalid(self):
         """
         Post permissions to a resource or group  that does not exist
 
         """
         # Resource does not exist
-        url = '/' + version + '/permission/test/col1/exp1ee'
-        data = {'permissions': ['read', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1eee',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
+
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
         # group does not exist
-        url = '/' + version + '/permission/testee/col1/exp1'
-        data = {'permissions': ['read', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'testeee',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
+
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
-    def test_get_permission_for_experiment(self):
+    def test_get_permission_for_collection_filter_group(self):
+        """
+        Get permissions for a collection
+        """
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/permissions/?group=test'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_permission_for_experiment_filter_experiment(self):
         """
         Get permissions for a experiment
         """
-        url = '/' + version + '/permission/test/col1/exp1'
-        data = {'permissions': ['read', 'add', 'update']}
-        self.client.post(url, data=data)
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
 
-        url = '/' + version + '/permission/test/col1/exp1'
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
 
+        url = '/' + version + '/permissions/?collection=col1&experiment=exp1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 3)
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_permission_invalid(self):
+        """
+       Get permissions for a resource that does not exist or a group that does not exist
+
+        """
+        # group does not exist
+        url = '/' + version + '/permissions/?group=testeee'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # resource does not exist
+        url = '/' + version + '/permissions/test/?collection=col1&experiment=exp1eeeee'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_delete_permission_for_experiment(self):
         """
-        Delete permission for a experiment
+        Delete a subset of permissions for a experiment
 
         """
-        # Post some permissions
-        url = '/' + version + '/permission/test/col1/exp1'
-        data = {'permissions': ['read', 'add', 'update']}
-        self.client.post(url, data=data)
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
 
-        response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
+        response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 3)
 
-        # delete a subset of permissions
-        data = {'permissions': ['update']}
+        url = '/' + version + '/permissions/test/col1'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1'
+        }
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
-
-        response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 2)
-
-        # delete all permissions
-        data = {'permissions': ['read', 'update', 'add']}
-        response = self.client.delete(url, data=data)
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 0)
-
 
 class PermissionViewsChannelTests(APITestCase):
     """
-    Class to test the permission service which assigns permissions to Channel
+    Class to test the permission service which assigns permissions to channels
     """
 
     def setUp(self):
         """
         Initialize the database
-
+        :return:
         """
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
@@ -260,87 +365,150 @@ class PermissionViewsChannelTests(APITestCase):
 
     def test_post_permission_channel(self):
         """
-        Post a new collection (valid)
+        Post permissions for a valid group and channel
 
         """
-        url = '/' + version + '/permission/test/col1/exp1/channel1/'
-        data = {'permissions': ['read']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group' : 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read', 'add', 'update']
+        }
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
     def test_post_invalid_permissions_channel(self):
         """
-        Post  invalid  permissions
+        Post  invalid  permissions strings
         """
-        url = '/' + version + '/permission/test/col1/exp1/channel1'
-        data = {'permissions': ['readeeee', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions':  ['readeeee', 'add', 'update']
+        }
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
-    def test_post_permissions_invalid_channel(self):
+    def test_post_permissions_invalid(self):
         """
         Post permissions to a resource or group  that does not exist
 
         """
         # Resource does not exist
-        url = '/' + version + '/permission/test/col1/exp1/cheeeee'
-        data = {'permissions': ['read', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1eee',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read', 'add', 'update']
+        }
+
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
         # group does not exist
-        url = '/' + version + '/permission/testee/col1/exp1/channel1'
-        data = {'permissions': ['read', 'add', 'update']}
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'testeee',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read', 'add', 'update']
+        }
+
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 404)
 
-    def test_get_permission_for_channel(self):
+    def test_get_permission_for_channel_filter_group(self):
         """
-        Post a new collection (valid)
-
+        Get permissions for a channel
         """
-        url = '/' + version + '/permission/test/col1/exp1/channel1'
-        data = {'permissions': ['read', 'add', 'update']}
-        self.client.post(url, data=data)
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read', 'add', 'update']
+        }
 
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/permissions/?group=test'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_permission_for_channel_filter_channel(self):
+        """
+        Get permissions for a channel
+        """
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 3)
+
+        url = '/' + version + '/permissions/?collection=col1&experiment=exp1&channel=channel1'
+        response = self.client.get(url)
+        resp = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_permission_invalid(self):
+        """
+       Get permissions for a resource that does not exist or a group that does not exist
+
+        """
+        # group does not exist
+        url = '/' + version + '/permissions/?group=testeee'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # resource does not exist
+        url = '/' + version + '/permissions/test/?collection=col1&experiment=exp1eeeee&channel=exp1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
 
     def test_delete_permission_for_channel(self):
         """
-        Delete permission for a channel
+        Delete a subset of permissions for a channel
 
         """
-        # Post some permissions
-        url = '/' + version + '/permission/test/col1/exp1/channel1'
-        data = {'permissions': ['read', 'add', 'update']}
-        self.client.post(url, data=data)
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read', 'add', 'update']
+        }
 
-        response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
+        response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 3)
 
-        # delete a subset of permissions
-        data = {'permissions': ['update']}
+        url = '/' + version + '/permissions/test/col1'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1'
+        }
         response = self.client.delete(url, data=data)
         self.assertEqual(response.status_code, 200)
 
-        response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 2)
-
-        # delete all permissions
-        data = {'permissions': ['read', 'update', 'add']}
-        response = self.client.delete(url, data=data)
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(len(resp['permissions']), 0)

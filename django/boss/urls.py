@@ -58,7 +58,7 @@ urlpatterns = [
 
     # API version 0.7
     url(r'^v0.7/meta/', include('bossmeta.urls', namespace='v0.7')),
-    url(r'^v0.7/permission/', include('bosscore.urls.permission-urls', namespace='v0.7')),
+    url(r'^v0.7/permissions/?', include('bosscore.urls.permission-urls', namespace='v0.7')),
     url(r'^v0.7/groups/', include('bosscore.urls.group-urls', namespace='v0.7')),
     url(r'^v0.7/cutout/', include('bossspatialdb.urls', namespace='v0.7')),
     url(r'^v0.7/image/', include('bosstiles.image_urls', namespace='v0.7')),

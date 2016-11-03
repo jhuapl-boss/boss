@@ -89,38 +89,50 @@ class BossCoreResourceRoutingTests(APITestCase):
 
 class BossCorePermissionRoutingTests(APITestCase):
 
-    def test_permission_collection_resolves(self):
+    def test_permission_resolves(self):
         """
         Test that all permission urls for collections resolves correctly
 
         Returns: None
 
         """
-
-        match = resolve('/' + version + '/permission/test/col1/')
+        match = resolve('/' + version + '/permissions/')
         self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
 
-    def test_permission_experiment_resolves(self):
-        """
-        Test that all permission urls for experiments resolves correctly
+    # def test_permission_collection_resolves(self):
+    #     """
+    #     Test that all permission urls for collections resolves correctly
+    #
+    #     Returns: None
+    #
+    #     """
+    #
+    #     match = resolve('/' + version + '/permissions/test/col1/')
+    #     self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
+    #
 
-        Returns: None
 
-        """
-
-        match = resolve('/' + version + '/permission/test/col1/exp1/')
-        self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
-
-    def test_permission_channel_resolves(self):
-        """
-        Test that all permission urls for channel resolves correctly
-
-        Returns: None
-
-        """
-
-        match = resolve('/' + version + '/permission/test/col1/exp1/ch1/')
-        self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
+            # def test_permission_experiment_resolves(self):
+    #     """
+    #     Test that all permission urls for experiments resolves correctly
+    #
+    #     Returns: None
+    #
+    #     """
+    #
+    #     match = resolve('/' + version + '/permissions/test/col1/exp1/')
+    #     self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
+    #
+    # def test_permission_channel_resolves(self):
+    #     """
+    #     Test that all permission urls for channel resolves correctly
+    #
+    #     Returns: None
+    #
+    #     """
+    #
+    #     match = resolve('/' + version + '/permissions/test/col1/exp1/ch1/')
+    #     self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
 
 
 class BossCoreGroupsRoutingTests(APITestCase):

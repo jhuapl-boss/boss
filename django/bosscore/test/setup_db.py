@@ -57,6 +57,7 @@ class SetupTestDB:
     def create_group(self, group_name):
         group, created = Group.objects.get_or_create(name=group_name)
         if created:
+            self.user.groups.add(group)
             bgrp,created = BossGroup.objects.get_or_create(group=group, creator=self.user)
             assign_perm('maintain_group', self.user, bgrp)
         return created

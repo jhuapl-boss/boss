@@ -374,7 +374,6 @@ class BossUserGroup(APIView):
         group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
         for permission in group_perms:
             assign_perm(permission, request.user, bgroup)
-        #print(request.user.has_perm("maintain_group", bgroup))
 
         # add the creator to the group
         bgroup.group.user_set.add(request.user)

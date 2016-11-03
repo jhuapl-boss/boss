@@ -18,8 +18,10 @@ from bosscore.views import views_permission
 urlpatterns = [
 
     # URLS for permissions - Group to resource
-    url(r'(?P<group_name>[\w_-]+)/(?P<collection>[\w_-]+)/?(?P<experiment>[\w_-]+)?/?(?P<channel>[\w_-]+)?/?',
-        views_permission.ResourceUserPermission.as_view()),
+    #url(r'(?P<group_name>[\w_-]+)/(?P<collection>[\w_-]+)/?(?P<experiment>[\w_-]+)?/?(?P<channel>[\w_-]+)?/?',
+    #    views_permission.ResourceUserPermission.as_view()),
+
+    url(r'^', views_permission.ResourceUserPermission.as_view()),
 
 
 ]

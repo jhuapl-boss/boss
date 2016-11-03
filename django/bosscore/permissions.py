@@ -112,6 +112,24 @@ class BossPermissionManager:
             remove_perm(perm, group, obj)
 
     @staticmethod
+    def delete_all_permissions_group(group_name, obj):
+        """
+        Delete  all permissions for a resource
+        Args:
+            group_name : Name of existing group
+            obj: Object that we are getting permission for
+            perm_list : List of permissions to be deleted
+
+        Returns:
+
+        """
+        # Get the type of model
+        group = Group.objects.get(name=group_name)
+        perm_list = get_perms(group, obj)
+        for perm in perm_list:
+            remove_perm(perm, group, obj)
+
+    @staticmethod
     def add_permissions_admin_group(obj):
         """
         Grant permissions to the admin group for an object
