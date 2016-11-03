@@ -50,6 +50,17 @@ class PermissionViewsCollectionTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+    def test_get_permission(self):
+        """
+        Post permissions for a valid group and collection
+
+        """
+        url = '/' + version + '/permissions/'
+        data = {'permissions': ['read', 'add', 'update']}
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
     def test_post_permission_collection(self):
         """
         Post permissions for a valid group and collection
@@ -221,7 +232,7 @@ class PermissionViewsCollectionTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(set(resp["permission-sets"]["permissions"]), set(['read', 'add', 'update']))
+        self.assertEqual(set(resp["permission-sets"][0]["permissions"]), set(['read', 'add', 'update']))
         self.assertEqual(response.status_code, 200)
 
         url = '/' + version + '/permissions/test/col1'
@@ -236,7 +247,7 @@ class PermissionViewsCollectionTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(set(resp["permission-sets"]["permissions"]),set(['read']))
+        self.assertEqual(set(resp["permission-sets"][0]["permissions"]),set(['read']))
         self.assertEqual(response.status_code, 200)
 
 
@@ -419,7 +430,7 @@ class PermissionViewsExperimentTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(set(resp["permission-sets"]["permissions"]), set(['read', 'add', 'update']))
+        self.assertEqual(set(resp["permission-sets"][0]["permissions"]), set(['read', 'add', 'update']))
         self.assertEqual(response.status_code, 200)
 
         url = '/' + version + '/permissions/'
@@ -435,7 +446,7 @@ class PermissionViewsExperimentTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(set(resp["permission-sets"]["permissions"]),set(['read']))
+        self.assertEqual(set(resp["permission-sets"][0]["permissions"]),set(['read']))
         self.assertEqual(response.status_code, 200)
 
 
@@ -627,7 +638,7 @@ class PermissionViewsChannelTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1&channel=channel1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(set(resp["permission-sets"]["permissions"]), set(['read', 'add', 'update']))
+        self.assertEqual(set(resp["permission-sets"][0]["permissions"]), set(['read', 'add', 'update']))
         self.assertEqual(response.status_code, 200)
 
         url = '/' + version + '/permissions/'
@@ -644,6 +655,6 @@ class PermissionViewsChannelTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1&channel=channel1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(set(resp["permission-sets"]["permissions"]),set(['read']))
+        self.assertEqual(set(resp["permission-sets"][0]["permissions"]),set(['read']))
         self.assertEqual(response.status_code, 200)
 

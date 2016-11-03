@@ -114,19 +114,29 @@ class ResourceUserPermission(APIView):
 
                 # filtering on both group and resource
                 resource = object[0]
+
                 perms = get_perms(group, resource)
+                if len(perms) == 0:
+                    # Nothing to return
+                    data = {'permission-sets': []}
+                    return Response(data, status=status.HTTP_200_OK)
+
                 if type == 'collection':
                     obj = {'group': group.name, 'collection': resource.name, 'permissions': perms}
-                    data = {'permission-sets': obj}
+                    obj_list.append(obj)
+                    data = {'permission-sets': obj_list}
                 elif type == 'experiment':
                     obj = {'group': group.name, 'collection': resource.collection.name, 'experiment':resource.name,
                            'permissions': perms}
-                    data = {'permission-sets': obj}
+                    obj_list.append(obj)
+                    data = {'permission-sets': obj_list}
                 else:
                     obj = {'group': group.name, 'collection': resource.experiment.collection.name,
                            'experiment':resource.experiment.name, 'channel': resource.name,
                            'permissions': perms}
-                    data = {'permission-sets': obj}
+                    obj_list.append(obj)
+                    data = {'permission-sets': obj_list}
+
             elif object and not group :
                 # filtering on resource
                 resource = object[0]
@@ -134,14 +144,14 @@ class ResourceUserPermission(APIView):
                 list_member_groups = request.user.groups.all()
                 for group in list_member_groups:
                     perms = get_perms(group, resource)
-                    if type == 'collection':
+                    if type == 'collection' and len(perms)> 0:
                         obj = {'group': group.name, 'collection': resource.name, 'permissions': perms}
                         obj_list.append(obj)
-                    elif type == 'experiment':
+                    elif type == 'experiment' and len(perms)> 0:
                         obj = {'group': group.name, 'collection': resource.collection.name, 'experiment': resource.name,
                                'permissions': perms}
                         obj_list.append(obj)
-                    else:
+                    elif type == 'channel' and len(perms)> 0:
                         obj = {'group': group.name, 'collection': resource.experiment.collection.name,
                                'experiment': resource.experiment.name, 'channel': resource.name,
                                'permissions': perms}
