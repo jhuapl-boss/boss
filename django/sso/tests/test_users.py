@@ -19,6 +19,8 @@ from .test_base import TestBase, raise_error
 
 from sso.views.views_user import BossUser
 
+from django.conf import settings
+version = settings.BOSS_VERSION
 
 class TestBossUser(TestBase):
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
@@ -27,7 +29,7 @@ class TestBossUser(TestBase):
         ctxMgr.get_userdata.return_value = {'name':'test'}
         ctxMgr.get_realm_roles.return_value = [{'name': 'test'},{'name': 'admin'}]
 
-        request = self.makeRequest(get='/v0.6/sso/user/test')
+        request = self.makeRequest(get='/' + version + '/sso/user/test')
         response = BossUser.as_view()(request, 'test') # arguments are not parsed out
 
         self.assertEqual(response.status_code, 200)
@@ -45,7 +47,7 @@ class TestBossUser(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.get_userdata.side_effect = raise_error
 
-        request = self.makeRequest(get='/v0.6/sso/user/test')
+        request = self.makeRequest(get='/' + version + '/sso/user/test')
         response = BossUser.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 500)
@@ -58,7 +60,7 @@ class TestBossUser(TestBase):
                 'last_name': 'last',
                 'email': 'email',
                 'password': 'password'}
-        request = self.makeRequest(post='/v0.6/sso/user/test', data=data)
+        request = self.makeRequest(post='/' + version + '/sso/user/test', data=data)
         response = BossUser.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 201)
@@ -79,7 +81,7 @@ class TestBossUser(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.create_user.side_effect = raise_error
 
-        request = self.makeRequest(post='/v0.6/sso/user/test', data={})
+        request = self.makeRequest(post='/' + version + '/sso/user/test', data={})
         response = BossUser.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 500)
@@ -93,7 +95,7 @@ class TestBossUser(TestBase):
                 'last_name': 'last',
                 'email': 'email',
                 'password': 'password'}
-        request = self.makeRequest(post='/v0.6/sso/user/test', data=data)
+        request = self.makeRequest(post='/' + version + '/sso/user/test', data=data)
         response = BossUser.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 500)
@@ -113,7 +115,7 @@ class TestBossUser(TestBase):
     def test_delete_user(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(delete='/v0.6/sso/user/test')
+        request = self.makeRequest(delete='/' + version + '/sso/user/test')
         response = BossUser.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 204)
@@ -127,7 +129,7 @@ class TestBossUser(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.delete_user.side_effect = raise_error
 
-        request = self.makeRequest(delete='/v0.6/sso/user/test')
+        request = self.makeRequest(delete='/' + version + '/sso/user/test')
         response = BossUser.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 500)

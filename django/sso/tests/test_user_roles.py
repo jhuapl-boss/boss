@@ -19,13 +19,16 @@ from .test_base import TestBase, raise_error
 
 from sso.views.views_user import BossUserRole
 
+from django.conf import settings
+version = settings.BOSS_VERSION
+
 class TestBossUserRole(TestBase):
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
     def test_get_role_no_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.get_realm_roles.return_value = [{'name': 'test'},{'name': 'admin'}]
 
-        request = self.makeRequest(get='/v0.6/sso/user-role/test')
+        request = self.makeRequest(get='/' + version + '/sso/user-role/test')
         response = BossUserRole.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 200)
@@ -41,7 +44,7 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.get_realm_roles.return_value = [{'name': 'test'},{'name': 'admin'}]
 
-        request = self.makeRequest(get='/v0.6/sso/user-role/test/admin')
+        request = self.makeRequest(get='/' + version + '/sso/user-role/test/admin')
         response = BossUserRole.as_view()(request, 'test', 'admin')
 
         self.assertEqual(response.status_code, 200)
@@ -56,7 +59,7 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.get_realm_roles.return_value = [{'name': 'test'},{'name': 'admin'}]
 
-        request = self.makeRequest(get='/v0.6/sso/user-role/test/admin')
+        request = self.makeRequest(get='/' + version + '/sso/user-role/test/admin')
         response = BossUserRole.as_view()(request, 'test', role_name='admin')
 
         self.assertEqual(response.status_code, 200)
@@ -71,7 +74,7 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.get_realm_roles.return_value = [{'name': 'test'},{'name': 'admin'}]
 
-        request = self.makeRequest(get='/v0.6/sso/user-role/test/test')
+        request = self.makeRequest(get='/' + version + '/sso/user-role/test/test')
         response = BossUserRole.as_view()(request, 'test', 'test')
 
         self.assertEqual(response.status_code, 403)
@@ -81,7 +84,7 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.get_realm_roles.side_effect = raise_error
 
-        request = self.makeRequest(get='/v0.6/sso/user-role/test')
+        request = self.makeRequest(get='/' + version + '/sso/user-role/test')
         response = BossUserRole.as_view()(request, 'test')
 
         self.assertEqual(response.status_code, 500)
@@ -90,7 +93,7 @@ class TestBossUserRole(TestBase):
     def test_post_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(post='/v0.6/sso/user-role/test/user-manager')
+        request = self.makeRequest(post='/' + version + '/sso/user-role/test/user-manager')
         response = BossUserRole.as_view()(request, 'test', 'user-manager')
 
         self.assertEqual(response.status_code, 201)
@@ -104,7 +107,7 @@ class TestBossUserRole(TestBase):
         """The admin roles is not allowed to be assigned through the API"""
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(post='/v0.6/sso/user-role/test/admin')
+        request = self.makeRequest(post='/' + version + '/sso/user-role/test/admin')
         response = BossUserRole.as_view()(request, 'test', 'admin')
 
         self.assertEqual(response.status_code, 403)
@@ -113,7 +116,7 @@ class TestBossUserRole(TestBase):
     def test_failed_post_role_bad_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(post='/v0.6/sso/user-role/test/test')
+        request = self.makeRequest(post='/' + version + '/sso/user-role/test/test')
         response = BossUserRole.as_view()(request, 'test', 'test')
 
         self.assertEqual(response.status_code, 403)
@@ -123,7 +126,7 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.map_role_to_user.side_effect = raise_error
 
-        request = self.makeRequest(post='/v0.6/sso/user-role/test/user-manager')
+        request = self.makeRequest(post='/' + version + '/sso/user-role/test/user-manager')
         response = BossUserRole.as_view()(request, 'test', 'user-manager')
 
         self.assertEqual(response.status_code, 500)
@@ -132,7 +135,7 @@ class TestBossUserRole(TestBase):
     def test_delete_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(delete='/v0.6/sso/user-role/test/admin')
+        request = self.makeRequest(delete='/' + version + '/sso/user-role/test/admin')
         response = BossUserRole.as_view()(request, 'test', 'admin')
 
         self.assertEqual(response.status_code, 204)
@@ -145,7 +148,7 @@ class TestBossUserRole(TestBase):
     def test_failed_delete_role_bad_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(delete='/v0.6/sso/user-role/test/test')
+        request = self.makeRequest(delete='/' + version + '/sso/user-role/test/test')
         response = BossUserRole.as_view()(request, 'test', 'test')
 
         self.assertEqual(response.status_code, 403)
@@ -155,7 +158,7 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.remove_role_from_user.side_effect = raise_error
 
-        request = self.makeRequest(delete='/v0.6/sso/user-role/test/admin')
+        request = self.makeRequest(delete='/' + version + '/sso/user-role/test/admin')
         response = BossUserRole.as_view()(request, 'test', 'admin')
 
         self.assertEqual(response.status_code, 500)
