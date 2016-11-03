@@ -69,6 +69,7 @@ class BossRequest:
         # Timesample argument
         self.time_start = 0
         self.time_stop = 0
+        self.time_request = False  # Flag indicating if the REQUEST contained a time range (True) or if auto-pop (False)
 
         # Request variables
         self.user = request.user
@@ -128,8 +129,10 @@ class BossRequest:
             # get default time
             self.time_start = self.channel.default_time_step
             self.time_stop = self.channel.default_time_step + 1
+            self.time_request = False
         else:
             self.set_time(time)
+            self.time_request = True
 
         self.set_cutoutargs(int(self.bossrequest['resolution']), self.bossrequest['x_args'],
                             self.bossrequest['y_args'], self.bossrequest['z_args'])

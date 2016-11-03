@@ -80,6 +80,7 @@ class CutoutRequestTests(APITestCase):
         self.assertEqual(ret.get_channel(), channel)
         self.assertEqual(ret.get_boss_key(), boss_key)
         self.assertEqual(ret.get_boss_key_list()[0], boss_key_list)
+        self.assertEqual(ret.time_request, False)
 
     def test_request_cutout_init_cutoutargs_channel(self):
         """
@@ -193,6 +194,7 @@ class CutoutRequestTests(APITestCase):
         boss_keys = ret.get_boss_key_list()
         self.assertEqual(time, range(1, 5))
         self.assertEqual(boss_keys, exp_boss_keys)
+        self.assertEqual(ret.time_request, True)
 
     def test_request_cutout_bosskey_time(self):
         """

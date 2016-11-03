@@ -43,7 +43,7 @@ class BloscParser(BaseParser):
         """
         # Process request and validate
         try:
-            request_args={
+            request_args = {
                 "service": "cutout",
                 "collection_name": parser_context['kwargs']['collection'],
                 "experiment_name": parser_context['kwargs']['experiment'],
@@ -86,21 +86,26 @@ class BloscParser(BaseParser):
             data_mat = np.fromstring(raw_data, dtype=resource.get_numpy_data_type())
         except:
             return BossParserError("Failed to decompress data. Verify the datatype/bitdepth of your data "
-                                        "matches the channel.", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
+                                   "matches the channel.", ErrorCodes.DATATYPE_DOES_NOT_MATCH)
 
         # Reshape and return
         try:
-            if len(req.get_time()) > 1:
-                # Time series data
-                parsed_data = np.reshape(data_mat, (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span()),
-                                  order='C')
+            if req.time_request:
+                # Time series request (even if single time point) - Get 4D matrix
+                parsed_data = np.reshape(data_mat,
+                                         (len(req.get_time()),
+                                          req.get_z_span(),
+                                          req.get_y_span(),
+                                          req.get_x_span()),
+                                         order='C')
             else:
+                # Not a time series request (time range [0,1] auto-populated) - Get 3D matrix
                 parsed_data = np.reshape(data_mat, (req.get_z_span(), req.get_y_span(), req.get_x_span()), order='C')
         except ValueError:
             return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
                                    "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
 
-        return (req, resource, parsed_data)
+        return req, resource, parsed_data
 
 
 class BloscPythonParser(BaseParser):
@@ -165,4 +170,4 @@ class BloscPythonParser(BaseParser):
             return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
                                    "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
 
-        return (req, resource, parsed_data)
+        return req, resource, parsed_data

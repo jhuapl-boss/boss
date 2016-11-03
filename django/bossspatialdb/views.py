@@ -108,9 +108,11 @@ class Cutout(APIView):
 
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
+        to_renderer = {"time_request": req.time_request,
+                       "data": data}
 
         # Send data to renderer
-        return Response(data)
+        return Response(to_renderer)
 
     def post(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, t_range=None):
         """

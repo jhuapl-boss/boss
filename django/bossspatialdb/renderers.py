@@ -29,15 +29,14 @@ class BloscPythonRenderer(renderers.BaseRenderer):
 
     def render(self, data, media_type=None, renderer_context=None):
 
-        if not data.data.flags['C_CONTIGUOUS']:
-            data.data = data.data.copy(order='C')
+        if not data["data"].data.flags['C_CONTIGUOUS']:
+            data["data"].data = np.ascontiguousarray(data["data"].data, dtype=data["data"].data.dtype)
 
         # Return data, squeezing time dimension if only a single point
-        try:
-            return blosc.pack_array(np.squeeze(data.data, axis=(0,)))
-        except ValueError:
-            # The are more than 1 time points so don't squeeze.
-            return blosc.pack_array(data.data)
+        if data["time_request"]:
+            return blosc.pack_array(data["data"].data)
+        else:
+            return blosc.pack_array(np.squeeze(data["data"].data, axis=(0,)))
 
 
 class BloscRenderer(renderers.BaseRenderer):
@@ -51,13 +50,15 @@ class BloscRenderer(renderers.BaseRenderer):
 
     def render(self, data, media_type=None, renderer_context=None):
 
-        if not data.data.flags['C_CONTIGUOUS']:
-            data.data = data.data.copy(order='C')
+        if not data["data"].data.flags['C_CONTIGUOUS']:
+            data["data"].data = np.ascontiguousarray(data["data"].data, dtype=data["data"].data.dtype)
 
         # Return data, squeezing time dimension if only a single point
-        try:
-            return blosc.compress(np.squeeze(data.data, axis=(0,)), typesize=renderer_context['view'].bit_depth)
-        except ValueError:
-            # The are more than 1 time points so don't squeeze.
-            return blosc.compress(data.data, typesize=renderer_context['view'].bit_depth)
+        if data["time_request"]:
+            return blosc.compress(data["data"].data, typesize=renderer_context['view'].bit_depth)
+        else:
+            return blosc.compress(np.squeeze(data["data"].data, axis=(0,)),
+                                  typesize=renderer_context['view'].bit_depth)
+
+
 
