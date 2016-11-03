@@ -118,7 +118,8 @@ class BossGroupMember(APIView):
                 # Both group name and user name are specified. Return the membership status for the user
                 group = Group.objects.get(name=group_name)
                 usr = User.objects.get(username=user_name)
-                data = group.user_set.filter(id=usr.id).exists()
+                status = group.user_set.filter(id=usr.id).exists()
+                data = {"result": status}
 
             return Response(data, status=200)
         except Group.DoesNotExist:
@@ -222,7 +223,8 @@ class BossGroupMaintainer(APIView):
             else:
                 # Both group name and user name are specified. Return the membership status for the user
                 usr = User.objects.get(username=user_name)
-                data = usr.has_perm("maintain_group", bgroup)
+                status = usr.has_perm("maintain_group", bgroup)
+                data = {"result" : status}
 
             return Response(data, status=200)
         except Group.DoesNotExist:
