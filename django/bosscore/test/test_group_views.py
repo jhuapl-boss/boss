@@ -333,7 +333,6 @@ class GroupMaintainerTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['maintainers']), 2)
-        self.assertEqual(response.data['maintainers'][0], 'testuser2555')
 
     def test_remove_maintainer_group(self):
         """ Remove a maintainer from the group. """
@@ -353,7 +352,6 @@ class GroupMaintainerTests(APITestCase):
         url = '/' + version + '/groups/unittest/maintainers'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['maintainers'][0], 'testuser2555')
 
         # Remove user from the group
         url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
@@ -370,7 +368,6 @@ class GroupMaintainerTests(APITestCase):
         url = '/' + version + '/groups/unittest/maintainers'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        print ()
         self.assertIn('testuser',response.data['maintainers'])
 
     def test_group_maintainer_invalid_group(self):
