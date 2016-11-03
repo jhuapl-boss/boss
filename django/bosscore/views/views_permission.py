@@ -125,7 +125,7 @@ class ResourceUserPermission(APIView):
                     obj = {'group': group, 'collection': resource.experiment.collection.name,
                            'experiment':resource.experiment.name, 'channel': resource.name,
                            'permissions': perms}
-                    data = {'resource-permissions': obj}
+                    data = {'permission-sets': obj}
             elif object and not group :
                 # filtering on resource
                 resource = object[0]
@@ -145,7 +145,7 @@ class ResourceUserPermission(APIView):
                                'experiment': resource.experiment.name, 'channel': resource.name,
                                'permissions': perms}
                         obj_list.append(obj)
-                data = {'resource-permissions': obj_list}
+                data = {'permission-sets': obj_list}
             elif group and not object:
                 # filtering on group
                 group = Group.objects.get(name = group)
@@ -168,7 +168,7 @@ class ResourceUserPermission(APIView):
                                      'experiment': channel.experiment.name, 'channel': channel.name,
                                      'permissions': col_perms})
 
-                data = {'resource-permissions': obj_list}
+                data = {'permission-sets': obj_list}
             else:
                 # no filtering
 
@@ -193,7 +193,7 @@ class ResourceUserPermission(APIView):
                                      'experiment': channel.experiment.name, 'channel': channel.name,
                                      'permissions': col_perms})
 
-                data = {'permission-set': obj_list}
+                data = {'permission-sets': obj_list}
             return Response(data, status=status.HTTP_200_OK)
 
         except Group.DoesNotExist:
