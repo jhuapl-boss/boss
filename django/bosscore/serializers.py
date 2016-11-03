@@ -15,7 +15,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User, Group
 from guardian.shortcuts import get_objects_for_user
-from .models import Collection, Experiment, Channel, CoordinateFrame, BossLookup, BossRole
+from .models import Collection, Experiment, Channel, CoordinateFrame, BossLookup, BossRole, BossGroup
 
 
 class CoordinateFrameSerializer(serializers.ModelSerializer):
@@ -210,6 +210,12 @@ class BossRoleSerializer(serializers.ModelSerializer):
         model = BossRole
         fields = ('user', 'role')
 
+
+class BossGroupSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = BossGroup
+        fields = ('group', 'creator')
 
 class GroupSerializer(serializers.ModelSerializer):
 

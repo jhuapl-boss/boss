@@ -17,8 +17,18 @@ from bosscore.views import views_group
 
 urlpatterns = [
 
+    # urls to manage adding and removing users from groups
+    url(r'(?P<group_name>[\w_-]+)/maintainers/?(?P<user_name>[\w_-]+)?/?',views_group.BossGroupMaintainer.as_view()),
+
+    # urls to manage adding and removing users from groups
+    url(r'(?P<group_name>[\w_-]+)/members/?(?P<user_name>[\w_-]+)?/?',views_group.BossGroupMember.as_view()),
+
+
     # urls to manage creation and deletion of groups
-    url(r'(?P<group_name>[\w_-]+)/?',views_group.BossGroup.as_view()),
+    url(r'(?P<group_name>[\w_-]+)/?',views_group.BossUserGroup.as_view()),
+
+    # URLS to manage groups
+    url(r'^', views_group.BossUserGroup.as_view()),
 
 
 ]

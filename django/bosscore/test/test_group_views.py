@@ -20,211 +20,7 @@ from .setup_db import SetupTestDB
 version = settings.BOSS_VERSION
 
 
-class GroupMemberTests(APITestCase):
-    """
-    Class to test the manage-data service
-    """
-
-    def setUp(self):
-        """
-        Initialize the database
-        :return:
-        """
-        dbsetup = SetupTestDB()
-        user = dbsetup.create_user('testuser')
-        dbsetup.add_role('resource-manager')
-        dbsetup.create_group('unittest')
-        dbsetup.set_user(user)
-
-        self.client.force_login(user)
-        dbsetup.insert_test_data()
-
-    def test_get_groups_for_current_user(self):
-        """
-        Test group membership for a logged in user
-        Returns:
-
-        """
-        # Get all groups for the user
-        url = '/' + version + '/group-member/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data['groups']), 2)
-        self.assertEqual(response.data['groups'], ['testuser-primary', 'bosspublic'])
-
-    def test_get_groups_for_user(self):
-        """
-        Get groups for a specified user
-        Returns:
-
-        """
-        # Get all groups for the user
-        url = '/' + version + '/group-member/?username=testuser'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data['groups']), 2)
-        self.assertEqual(response.data['groups'], ['testuser-primary', 'bosspublic'])
-
-    def test_get_members_for_group(self):
-        """
-        Get users for a specified group
-        Returns:
-
-        """
-        # Get all groups for the user
-        url = '/' + version + '/group-member/?groupname=bosspublic'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data['group-members']), 1)
-        self.assertEqual(response.data['group-members'], ['testuser'])
-
-    def test_get_membership_status(self):
-        """
-        Get membership status for a user
-        Returns:
-
-        """
-        # Get all groups for the user
-        url = '/' + version + '/group-member/?groupname=bosspublic&username=testuser'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, True)
-
-        # Get all groups for the user
-        url = '/' + version + '/group-member/?groupname=bosspublic&username=testusereee'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-
-    def test_get_groups_for_invalid_user(self):
-        """
-        Get groups for a invalid user
-        Returns:
-
-        """
-        # Get all groups for the user
-        url = '/' + version + '/group-member/?username=testusereee'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-
-    def test_get_member_group(self):
-        """ Check for usermember ship in a group. """
-
-        # Check if user is a member of the group
-        url = '/' + version + '/group-member/testuser-primary/testuser/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, True)
-
-        url = '/' + version + '/group-member/bosspublic/testuser/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, True)
-
-        # Check if user is a member of the group
-        url = '/' + version + '/group-member/unittest/testuser/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, False)
-
-    def test_get_all_group_member(self):
-        """ Get a list of all members in the group """
-
-        url = '/' + version + '/group-member/?groupname=testuser-primary'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data['group-members']), 1)
-        self.assertEqual(response.data['group-members'][0], 'testuser')
-
-    def test_add_member_group(self):
-        """ Add a new member to a group. """
-
-        # Check if user is a member of the group
-        url = '/' + version + '/group-member/unittest/testuser/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, False)
-
-        # Add user to the group
-        url = '/' + version + '/group-member/unittest/testuser/'
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, 201)
-
-        # Check if user is a member of the group
-        url = '/' + version + '/group-member/unittest/testuser/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, True)
-
-        # List all members of the group
-        url = '/' + version + '/group-member/?groupname=unittest'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.data['group-members']), 1)
-        self.assertEqual(response.data['group-members'][0], 'testuser')
-
-    def test_remove_member_group(self):
-        """ Remove a member from the group. """
-
-        # Add user to the group
-        url = '/' + version + '/group-member/unittest/testuser/'
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, 201)
-
-        # Check if user is a member of the group
-        url = '/' + version + '/group-member/unittest/testuser/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, True)
-
-        # Remove user from the group
-        url = '/' + version + '/group-member/unittest/testuser/'
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, 204)
-
-        # Check if user is a member of the group
-        url = '/' + version + '/group-member/unittest/testuser/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, False)
-
-    def test_group_member_invalid_group(self):
-        """ Test group-memeber api calls with a group that does not exist """
-
-        # Get with invalid groups
-        url = '/' + version + '/group-member/unittesteee/testuser/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-
-        # Post with invalid groups
-        url = '/' + version + '/group-member/unittesteee/testuser/'
-        response = self.client.post(url)
-        self.assertEqual(response.status_code, 404)
-
-        # delete with invalid groups
-        url = '/' + version + '/group-member/unittesteee/testuser/'
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
-
-    def test_group_member_invalid_user(self):
-        """ Test group-memeber api calls with a user that does not exist """
-
-        # Get with invalid user
-        url = '/' + version + '/group-member/unittest/testusereee/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-
-        # Post with invalid user
-        url = '/' + version + '/group-member/unittest/testusereee/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
-
-        # delete with invalid user
-        url = '/' + version + '/group-member/unittesteee/testuser/'
-        response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
-
-
-class GroupTests(APITestCase):
+class GroupsTests(APITestCase):
     """
     Class to test the manage-data service
     """
@@ -243,41 +39,373 @@ class GroupTests(APITestCase):
         self.client.force_login(user)
         dbsetup.insert_test_data()
 
-    def test_post_group(self):
-        """ Add a new member to a group. """
+    def test_get_groups(self):
+        """ Get all groups for a user"""
 
-        # Create a new group
-        url = '/' + version + '/group/unittestnew/'
+        # get a group
+        url = '/' + version + '/groups/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['groups']), set(['bosspublic', 'testuser-primary', 'unittest']))
+
+    def test_get_groups_filter_members(self):
+        """ Get all groups for a user is a member of """
+
+        # get a group
+        url = '/' + version + '/groups/?filter=member'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['groups']), set(['bosspublic', 'testuser-primary']))
+
+    def test_get_groups_filter_maintainers(self):
+        """ Get all groups for a user is a member of """
+
+        # get a group
+        url = '/' + version + '/groups/?filter=maintainer'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['groups']), set(['unittest']))
+
+    def test_post_groups(self):
+        """ Post new group """
+
+        # post a group
+        url = '/' + version + '/groups/pjm55'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 201)
 
-        # get a group
-        url = '/' + version + '/group/unittestnew/'
+        # get the group
+        url = '/' + version + '/groups/?filter=maintainer'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, True)
+        self.assertEqual(set(response.data['groups']), set(['pjm55', 'unittest']))
 
-    def test_delete_group(self):
-        """ Add a new member to a group. """
+    def test_delete_groups(self):
+        """ Post new group """
 
-        # Create a new group
-        url = '/' + version + '/group/unittestnew/'
+        # post a group
+        url = '/' + version + '/groups/pjm55'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 201)
 
-        # get a group
-        url = '/' + version + '/group/unittestnew/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, True)
-
-        # delete
-        url = '/' + version + '/group/unittestnew/'
+        # delete a group
+        url = '/' + version + '/groups/pjm55'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
+
+class GroupMemberTests(APITestCase):
+    """
+    Class to test gropup member views
+    """
+
+    def setUp(self):
+        """
+        Initialize the database
+        :return:
+        """
+        dbsetup = SetupTestDB()
+        user = dbsetup.create_user('testuser2555')
+        dbsetup.set_user(user)
+        dbsetup.create_group('unittest2555')
+
+        user = dbsetup.create_user('testuser')
+        dbsetup.add_role("resource-manager")
+        dbsetup.create_group('unittest')
+        dbsetup.set_user(user)
+
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
+
+    def test_get_members(self):
+        """ Get all members of a group"""
+
         # get a group
-        url = '/' + version + '/group/unittestnew/'
+        url = '/' + version + '/groups/testuser-primary/members'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['members']), set(['testuser']))
+
+    def test_get_members_username(self):
+        """ Get all members of a group"""
+
+        # get a group
+        url = '/' + version + '/groups/testuser-primary/members/testuser'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+    def test_add_member_group(self):
+        """ Add a new member to a group. """
+
+        # Check if user is a member of the group
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, False)
+
+        # Add user to the group
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        # Check if user is a member of the group
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+        # List all members of the group
+        url = '/' + version + '/groups/unittest/members'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['members']), 1)
+        self.assertEqual(response.data['members'][0], 'testuser2555')
+
+    def test_remove_member_group(self):
+        """ Remove a member from the group. """
+
+        # Add user to the group
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        # Check if user is a member of the group
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+        # Remove user from the group
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+
+        # Check if user is a member of the group
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, False)
+
+    def test_group_member_invalid_group(self):
+        """ Test group-memeber api calls with a group that does not exist """
+
+        # get a group
+        url = '/' + version + '/groups/eeeeee/members'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # Post with invalid groups
+        url = '/' + version + '/groups/eeeeee/members/testuser/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 404)
+
+        # delete with invalid groups
+        url = '/' + version + '/groups/eeeeee/members/testuser/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_group_member_invalid_user(self):
+        """ Test group member api calls with a user that does not exist """
+
+        # Get with invalid user
+        url = '/' + version + '/groups/unittest/members/testusereee/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # Post with invalid user
+        url = '/' + version + '/groups/unittest/members/testusereee/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # delete with invalid user
+        url = '/' + version + '/groups/unittest/members/testusereee/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_group_member_missing_permission(self):
+        """ Test group member api calls with a user that does not exist """
+
+        # Post with invalid user
+        url = '/' + version + '/groups/unittest2555/members/testuser/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 403)
+
+        # delete with invalid user
+        url = '/' + version + '/groups/unittest2555/members/testuser/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+
+class GroupMaintainerTests(APITestCase):
+    """
+    Class to test group maintainer views
+    """
+
+    def setUp(self):
+        """
+        Initialize the database
+        :return:
+        """
+        dbsetup = SetupTestDB()
+        user = dbsetup.create_user('testuser2555')
+        dbsetup.set_user(user)
+        dbsetup.create_group('unittest2555')
+
+        user = dbsetup.create_user('testuser')
+        dbsetup.add_role("resource-manager")
+        dbsetup.create_group('unittest')
+        dbsetup.set_user(user)
+
+        self.client.force_login(user)
+        dbsetup.insert_test_data()
+
+    def test_get_maintainers(self):
+        """ Get all members of a group"""
+
+        # get a group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['maintainers']), set(['testuser']))
+
+    def test_get_maintainers_username(self):
+        """ Get all members of a group"""
+
+        # get a group
+        url = '/' + version + '/groups/unittest/maintainers/testuser'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, False)
+
+    def test_add_maintainer_invalid(self):
+        """ Add a new member to a group. """
+
+        # Add maintainer to the group
+        url = '/' + version + '/groups/unittest/maintainers/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 400)
+
+    def test_add_maintainer_group(self):
+        """ Add a new member to a group. """
+
+        # Check if user is a maintainer of the group
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, False)
+
+        # Add user to the group
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        # Check if user is a member of the group
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+        # List all members of the group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data['maintainers']), 2)
+        self.assertEqual(response.data['maintainers'][0], 'testuser2555')
+
+    def test_remove_maintainer_group(self):
+        """ Remove a maintainer from the group. """
+
+        # Add maintainer to the group
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        # Check if user is a member of the group
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, True)
+
+        # List all members of the group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['maintainers'][0], 'testuser2555')
+
+        # Remove user from the group
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+
+        # Check if user is a member of the group
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, False)
+
+        # List all members of the group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['maintainers'][0], 'testuser')
+
+    def test_group_maintainer_invalid_group(self):
+        """ Test group-maintainer api calls with a group that does not exist """
+
+        # get a group
+        url = '/' + version + '/groups/eeeeee/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # Post with invalid groups
+        url = '/' + version + '/groups/eeeeee/maintainers/testuser/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 404)
+
+        # delete with invalid groups
+        url = '/' + version + '/groups/eeeeee/maintainers/testuser/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_group_member_invalid_user(self):
+        """ Test group member api calls with a user that does not exist """
+
+        # Get with invalid user
+        url = '/' + version + '/groups/unittest/maintainers/testusereee/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # Post with invalid user
+        url = '/' + version + '/groups/unittest/maintainers/testusereee/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # delete with invalid user
+        url = '/' + version + '/groups/unittest/maintainers/testusereee/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_group_member_missing_permission(self):
+        """ Test group member api calls with a user that does not exist """
+
+        # Post with invalid user
+        url = '/' + version + '/groups/unittest2555/maintainers/testuser/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 403)
+
+        # delete with invalid user
+        url = '/' + version + '/groups/unittest2555/maintainers/testuser/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)

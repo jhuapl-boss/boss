@@ -15,6 +15,8 @@
 from django.db import models
 from django.contrib.auth.models import Group
 from django.core.validators import RegexValidator
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class NameValidator(RegexValidator):
@@ -262,3 +264,15 @@ class BossGroup(models.Model):
 
     class Meta:
         db_table = u"bossgroup"
+        default_permissions = ()
+        permissions = (
+            ('maintain_group', 'Can add and remove people from the group'),
+        )
+
+    # @receiver(post_save, sender=Group)
+    # def create_boss_group(sender, instance, created, **kwargs):
+    #     if created:
+    #         BossGroup.objects.create(group=instance)
+
+    def create_boss_group(sender, **kwargs):
+        BossGroup.objects.create(group=sender, creator = kwargs['creator'])
