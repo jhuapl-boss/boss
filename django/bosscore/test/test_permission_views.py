@@ -50,16 +50,15 @@ class PermissionViewsCollectionTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-    def test_get_permission(self):
+    def test_get_permission_empty(self):
         """
         Post permissions for a valid group and collection
 
         """
-        url = '/' + version + '/permissions/'
-        data = {'permissions': ['read', 'add', 'update']}
-
+        url = '/' + version + '/permissions/?group=test'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['permission-sets'],[])
 
     def test_post_permission_collection(self):
         """

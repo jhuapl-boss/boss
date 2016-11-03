@@ -346,36 +346,29 @@ class ResourceUserPermission(APIView):
         """
         if 'group' not in request.data:
             return BossHTTPError("Group are not included in the request", ErrorCodes.INCOMPLETE_REQUEST)
-        else:
-            group_name = request.data['group']
 
         if 'collection' not in request.data:
             return BossHTTPError("Invalid resource or missing resource name in request", ErrorCodes.INCOMPLETE_REQUEST)
-        else:
-            collection = request.data['collection']
 
-        if 'experiment' not in request.data:
-            experiment = None
-        else:
-            experiment = request.data['experiment']
-
-        if 'channel' not in request.data:
-            channel = None
-        else:
-            channel = request.data['channel']
+        group_name = request.data.get('group', None)
+        collection = request.data.get('collection', None)
+        experiment = request.data.get('experiment', None)
+        channel = request.data.get('channel', None)
 
         try:
-            (obj,type) = self.get_object(collection, experiment, channel)
-            if request.user.has_perm("remove_group", obj):
-                BossPermissionManager.delete_all_permissions_group(group_name, obj)
+            resource = self.get_object(collection, experiment, channel)
+            if resource is not None and request.user.has_perm("remove_group", resource[0]):
+                BossPermissionManager.delete_all_permissions_group(group_name, resource[0])
                 return Response(status=status.HTTP_200_OK)
             else:
-                return BossPermissionError('remove group', obj.name)
+                return BossPermissionError('remove group', resource[0].name)
 
         except Group.DoesNotExist:
             return BossGroupNotFoundError(group_name)
         except Permission.DoesNotExist:
             return BossHTTPError("Invalid permissions in post".format(request.data['permissions']),
                                  ErrorCodes.UNRECOGNIZED_PERMISSION)
+        except Exception as e:
+            return BossHTTPError("{}".format(e),ErrorCodes.UNHANDLED_EXCEPTION)
         except BossError as err:
             return err.to_http()
