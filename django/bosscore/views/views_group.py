@@ -255,7 +255,11 @@ class BossGroupMaintainer(APIView):
             # Check the users permissions.
             if request.user.has_perm("maintain_group", bgroup):
                 usr = User.objects.get(username=user_name)
-                assign_perm('maintain_group',usr, bgroup)
+
+                # assign permissions to the creator of the group
+                group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
+                for permission in group_perms:
+                    assign_perm(permission, usr, bgroup)
                 return HttpResponse(status=204)
 
             else:
