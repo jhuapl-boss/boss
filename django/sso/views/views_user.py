@@ -212,6 +212,10 @@ class BossUserRole(APIView):
         Returns:
             None
         """
+        # DP NOTE: admin role has to be assigned manually in Keycloak
+        if role_name == 'admin':
+            return BossHTTPError("Cannot assign 'admin' role", ErrorCodes.INVALID_ROLE)
+
         try:
             with KeyCloakClient('BOSS') as kc:
                 response = kc.map_role_to_user(user_name, role_name)
