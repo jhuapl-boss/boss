@@ -31,7 +31,7 @@ urlpatterns = [
     url(r'(?P<collection>[\w_-]+)/experiment/?', views_resource.ExperimentList.as_view()),
 
     # An instance of a collection
-    url(r'(?P<collection>[\w_-]+)/?(?!.)', views_resource.CollectionDetail.as_view()),
+    url(r'(?P<collection>[\w-]+)/?', views_resource.CollectionDetail.as_view()),
     # All collections
     url(r'^', views_resource.CollectionList.as_view()),
 

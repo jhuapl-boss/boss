@@ -18,14 +18,15 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import HttpResponse
 
-from guardian.shortcuts import get_objects_for_user, get_perms_for_model, assign_perm, get_users_with_perms, remove_perm
+from guardian.shortcuts import get_objects_for_user, get_perms_for_model, assign_perm, get_users_with_perms, \
+    remove_perm, get_objects_for_group, get_perms
 
 
 from bosscore.privileges import check_role, BossPrivilegeManager
 from bosscore.error import BossHTTPError, ErrorCodes, BossGroupNotFoundError, BossUserNotFoundError
 from bosscore.serializers import GroupSerializer, UserSerializer
 
-from bosscore.models import BossGroup
+from bosscore.models import BossGroup, Collection, Experiment, Channel
 
 
 class BossGroupMemberList(APIView):
@@ -335,8 +336,39 @@ class BossUserGroup(APIView):
             Group if the group exists
         """
         if group_name is not None:
-            exists = Group.objects.filter(name=group_name).exists()
-            return Response(exists, status=200)
+            try:
+                group = Group.objects.get(name=group_name)
+                bgroup = BossGroup.objects.get(group=group)
+                data = {"name" : group.name, "creator" : bgroup.creator.username}
+                resources = []
+
+                # get permission sets for models
+                col_perms = [perm.codename for perm in get_perms_for_model(Collection)]
+                exp_perms = [perm.codename for perm in get_perms_for_model(Experiment)]
+                channel_perms = [perm.codename for perm in get_perms_for_model(Channel)]
+
+                # get objects for the group
+                col_list = get_objects_for_group(group, perms=col_perms, klass=Collection, any_perm=True)
+                exp_list = get_objects_for_group(group, perms=exp_perms, klass=Experiment, any_perm=True)
+                ch_list = get_objects_for_group(group, perms=channel_perms, klass=Channel, any_perm=True)
+
+                for col in col_list:
+                    obj = {'collection': col.name }
+                    resources.append(obj)
+
+                for exp in exp_list:
+                    obj = {'collection': exp.collection.name, 'experiment': exp.name}
+                    resources.append(obj)
+
+                for ch in ch_list:
+                    obj = {'collection': ch.experiment.collection.name, 'experiment': ch.experiment.name,
+                           'channel': ch.name }
+                    resources.append(obj)
+
+                data['resources']= resources
+                return Response(data, status=200)
+            except Group.DoesNotExist:
+                return BossGroupNotFoundError(group_name)
         else:
             # Get all the groups that the logged in user is a member of
             list_member_groups = request.user.groups.values_list('name', flat=True)

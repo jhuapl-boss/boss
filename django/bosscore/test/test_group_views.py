@@ -48,6 +48,58 @@ class GroupsTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.data['groups']), set(['bosspublic', 'testuser-primary', 'unittest']))
 
+    def test_get_groups_groupname(self):
+        """ Get all groups for a user"""
+
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'unittest',
+            'collection': 'col1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'unittest',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'unittest',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read', 'add', 'update']
+        }
+
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        # get a group
+        url = '/' + version + '/groups/unittest'
+        response = self.client.get(url)
+        resources = response.data['resources']
+        self.assertEqual(len(resources), 3)
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_groups_groupname_no_resources(self):
+        """ Get all groups for a user"""
+        # get a group
+        url = '/' + version + '/groups/unittest'
+        response = self.client.get(url)
+        resources = response.data['resources']
+        self.assertEqual(len(resources), 0)
+        self.assertEqual(response.status_code, 200)
+
     def test_get_groups_filter_members(self):
         """ Get all groups for a user is a member of """
 
