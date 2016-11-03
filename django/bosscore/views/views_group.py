@@ -216,6 +216,7 @@ class BossGroupMaintainer(APIView):
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
             if user_name is None:
+
                 # Return all maintainers for the group
                 list_maintainers = get_users_with_perms(bgroup)
                 maintainers = [user.username for user in list_maintainers]
@@ -295,11 +296,12 @@ class BossGroupMaintainer(APIView):
             # Check the users permissions.
             if request.user.has_perm("maintain_group", bgroup):
                 usr = User.objects.get(username=user_name)
+                group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
                 status = usr.has_perm('maintain_group',bgroup)
 
                 if status is False:
                     return BossHTTPError('The user {} does not have the {} permission on the group {}'
-                                         .format(request.user.username, 'maintain_group', group_name),
+                                         .format(usr.username, 'maintain_group', group_name),
                                          ErrorCodes.MISSING_PERMISSION)
                 else:
                     remove_perm('maintain_group',usr, bgroup)
