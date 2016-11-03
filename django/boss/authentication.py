@@ -30,6 +30,7 @@ class TokenAuthentication(DRFTokenAuthentication):
         try:
             kc_user = KeycloakModel.objects.get(user = user)
 
+            # DP ???: Should a user's roles be synced?
             if self.user_exist(kc_user.UID):
                 return (user, token) # regular return for authenticate_credentials()
             else:
