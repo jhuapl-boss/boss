@@ -15,8 +15,8 @@
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 
-from guardian.shortcuts import assign_perm, get_perms, remove_perm
-from .error import BossHTTPError, ErrorCodes
+from guardian.shortcuts import assign_perm, get_perms, remove_perm, get_perms_for_model
+from .error import BossHTTPError, ErrorCodes, BossError
 
 
 class BossPermissionManager:
@@ -73,6 +73,12 @@ class BossPermissionManager:
             None
 
         """
+        # Validate the list of permission
+        ct = ContentType.objects.get_for_model(obj)
+        perms = [perm.codename for perm in get_perms_for_model(ct.model_class())]
+        if not set(perm_list).issubset(perms):
+            raise BossError("Invalid permissions {} in the request".format(perm_list), ErrorCodes.INVALID_POST_ARGUMENT)
+
         # Get the type of model
         group = Group.objects.get(name=group_name)
         for perm in perm_list:

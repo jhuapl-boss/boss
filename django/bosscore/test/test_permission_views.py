@@ -88,7 +88,7 @@ class PermissionViewsCollectionTests(APITestCase):
         }
 
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_post_permissions_invalid(self):
         """
@@ -296,7 +296,7 @@ class PermissionViewsExperimentTests(APITestCase):
         }
 
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_post_permissions_invalid(self):
         """
@@ -519,7 +519,7 @@ class PermissionViewsChannelTests(APITestCase):
         }
 
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_post_permissions_invalid(self):
         """
