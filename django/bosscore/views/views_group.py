@@ -339,7 +339,7 @@ class BossUserGroup(APIView):
             try:
                 group = Group.objects.get(name=group_name)
                 bgroup = BossGroup.objects.get(group=group)
-                data = {"name" : group.name, "creator" : bgroup.creator.username}
+                data = {"name" : group.name, "owner" : bgroup.creator.username}
                 resources = []
 
                 # get permission sets for models
