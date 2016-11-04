@@ -596,15 +596,35 @@ class ChannelDetail(APIView):
         Returns :
             Channel
         """
+        if 'name' in request.data:
+            channel_name = request.data['name']
+        else:
+            channel_name = channel
         try:
             # Check if the object exists
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
+
+            # The source and related channels are names and need to be removed from the dict before serialization
+            source_channels = request.data.pop('sources', [])
+            related_channels = request.data.pop('related', [])
+
+            common = set(source_channels) & set(related_channels)
+            if len(common) > 0:
+                return BossHTTPError("Related channels have to be different from source channels",
+                                     ErrorCodes.INVALID_POST_ARGUMENT)
+
             if request.user.has_perm("update", channel_obj):
                 serializer = ChannelUpdateSerializer(channel_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
+
+                    channel_obj = Channel.objects.get(name=channel_name, experiment=experiment_obj)
+                    # Save source and related channels if they are valid
+                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj, source_channels,
+                                                                   related_channels)
+
                     # update the lookup key if you update the name
                     if 'name' in request.data and request.data['name'] != channel:
                         lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' \
