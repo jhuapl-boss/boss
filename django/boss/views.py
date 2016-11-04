@@ -18,8 +18,12 @@ from rest_framework.views import APIView
 from rest_framework import permissions
 from django.contrib.auth.mixins import LoginRequiredMixin
 
+from bosscore.error import BossHTTPError, ErrorCodes
+from django.conf import settings
+
 import socket
 
+version = settings.BOSS_VERSION
 
 class Ping(APIView):
     """
@@ -41,6 +45,28 @@ class Ping(APIView):
         """
         content = {'ip': socket.gethostbyname(socket.gethostname())}
         return Response(content)
+
+
+class Unsupported(APIView):
+    """
+    View to handle unsupported API versions
+
+    No Auth Required
+    """
+    authentication_classes = ()
+    permission_classes = (permissions.AllowAny,)
+    renderer_classes = (JSONRenderer, )
+
+    def get(self, request):
+        """
+        Return the server IP
+
+        :param request: DRF Request object
+        :type request: rest_framework.request.Request
+        :return:
+        """
+        return BossHTTPError(" This API version is unsupported. Update to version {}".format(version),
+                             ErrorCodes.UNSUPPORTED_VERSION)
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import View

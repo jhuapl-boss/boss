@@ -41,20 +41,13 @@ urlpatterns = [
     url(r'^ping/', views.Ping.as_view()),
     url(r'^token/', views.Token.as_view()),
 
-    #
-    #
-    # # API version 0.6
-    # url(r'^v0.6/meta/', include('bossmeta.urls', namespace='v0.6')),
-    # url(r'^v0.6/resource/', include('bosscore.urls.resource_urls_v6', namespace='v0.6')),
-    # url(r'^v0.6/permission/', include('bosscore.urls.permission-urls', namespace='v0.6')),
-    # url(r'^v0.6/group/', include('bosscore.urls.group-urls', namespace='v0.6')),
-    # url(r'^v0.6/group-member/', include('bosscore.urls.group-member-urls', namespace='v0.6')),
-    # url(r'^v0.6/cutout/', include('bossspatialdb.urls', namespace='v0.6')),
-    # url(r'^v0.6/image/', include('bosstiles.image_urls', namespace='v0.6')),
-    # url(r'^v0.6/tile/', include('bosstiles.tile_urls', namespace='v0.6')),
-    # url(r'^v0.6/sso/user/', include('sso.urls.user-urls', namespace='v0.6')),
-    # url(r'^v0.6/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.6')),
-    # url(r'^v0.6/ingest/', include('bossingest.urls', namespace='v0.6')),
+    # deprecated urls
+    url(r'^v0.1/', views.Unsupported.as_view()),
+    url(r'^v0.2/', views.Unsupported.as_view()),
+    url(r'^v0.3/', views.Unsupported.as_view()),
+    url(r'^v0.4/', views.Unsupported.as_view()),
+    url(r'^v0.5/', views.Unsupported.as_view()),
+    url(r'^v0.6/', views.Unsupported.as_view()),
 
     # API version 0.7
     url(r'^v0.7/meta/', include('bossmeta.urls', namespace='v0.7')),

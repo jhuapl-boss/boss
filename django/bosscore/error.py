@@ -64,6 +64,7 @@ class ErrorCodes(IntEnum):
     FUTURE = 9000
     BOSS_SYSTEM_ERROR = 9001
     UNHANDLED_EXCEPTION = 9002
+    UNSUPPORTED_VERSION = 9003
 
 
 RESP_CODES = {
@@ -94,8 +95,8 @@ RESP_CODES = {
     ErrorCodes.INVALID_ROLE: 403,
     ErrorCodes.FUTURE: 404,
     ErrorCodes.BOSS_SYSTEM_ERROR: 400,
-    ErrorCodes.UNHANDLED_EXCEPTION: 500
-
+    ErrorCodes.UNHANDLED_EXCEPTION: 500,
+    ErrorCodes.UNSUPPORTED_VERSION: 400
 
 }
 
