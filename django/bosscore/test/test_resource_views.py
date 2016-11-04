@@ -780,7 +780,10 @@ class ResourceViewsChannelTests(APITestCase):
 
         """
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
-        data = {'description': 'A new channel for unit tests. Updated', 'default_time_step': 1}
+        data = {'description': 'A new channel for unit tests. Updated', 'default_time_step': 1,
+                'sources': ['channel2'],
+                'related': ['channel3']
+                }
 
         # Get an existing collection
         response = self.client.put(url, data=data)
