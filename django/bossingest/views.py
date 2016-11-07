@@ -101,7 +101,7 @@ class IngestJobView(APIView):
             resource['experiment']['description'] = experiment.description
             resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
             resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
-            resource['experiment']['max_time_sample'] = experiment.max_time_sample
+            resource['experiment']['num_time_samples'] = experiment.num_time_samples
             resource['channel'] = {}
             resource['channel']['name'] = channel.name
             resource['channel']['description'] = channel.description
