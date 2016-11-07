@@ -84,7 +84,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     def test_meta_service_experiment(self):
         """
@@ -117,7 +117,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     def test_meta_service_channel(self):
         """
@@ -151,7 +151,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     def test_meta_service_layer(self):
         """
@@ -186,7 +186,7 @@ class MetaServiceViewTestsMixin(object):
 
         # delete the metadata
         response = self.client.delete(baseurl + argsget)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     def test_meta_service_collection_list(self):
         """
