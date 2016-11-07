@@ -63,7 +63,7 @@ class ChannelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'experiment', 'default_time_step', 'type',
+        fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
                   'base_resolution', 'datatype', 'creator')
 
 
@@ -74,7 +74,7 @@ class ChannelUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'default_time_step', 'base_resolution', 'sources', 'related')
+        fields = ('name', 'description', 'default_time_sample', 'base_resolution', 'sources', 'related')
 
     def is_valid(self, raise_exception=False):
         super().is_valid(False)
@@ -103,7 +103,7 @@ class ChannelReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'experiment', 'default_time_step', 'type',
+        fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
                   'base_resolution', 'datatype', 'creator', 'sources', 'related')
 
     def get_sources(self, channel):
@@ -135,7 +135,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Experiment
         fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
-                  'max_time_sample', 'creator')
+                  'num_time_samples', 'creator')
 
 
 class ExperimentUpdateSerializer(serializers.ModelSerializer):
@@ -145,7 +145,7 @@ class ExperimentUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('name', 'description', 'num_hierarchy_levels', 'hierarchy_method', 'max_time_sample')
+        fields = ('name', 'description', 'num_hierarchy_levels', 'hierarchy_method', 'num_time_samples')
 
     def is_valid(self, raise_exception=False):
         super().is_valid(False)
@@ -176,7 +176,7 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Experiment
         fields = ('channels', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels',
-                  'hierarchy_method', 'max_time_sample', 'creator')
+                  'hierarchy_method', 'num_time_samples', 'creator')
 
     def get_channels(self, experiment):
         return experiment.channels.values_list('name', flat=True)

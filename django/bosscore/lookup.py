@@ -24,7 +24,7 @@ class LookUpKey:
     """
     @staticmethod
     def add_lookup(lookup_key, boss_key, collection_name, experiment_name=None,
-                   channel_name=None, max_time_sample=None):
+                   channel_name=None):
         """
         Add the lookup key that correspond to a data model object
         Args:
@@ -33,7 +33,6 @@ class LookUpKey:
             collection_name: Collection name . Matches the collection in the bosskey
             experiment_name: Experiment name . Matches the experiment in the bosskey
             channel_name: Channel name . Matches the channel in the bosskey
-            max_time_sample: Time sample (optional argument)
 
         Returns: None
 
