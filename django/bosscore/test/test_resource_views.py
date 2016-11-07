@@ -253,7 +253,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -271,7 +271,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col2/experiment/exp1'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -290,7 +290,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -314,7 +314,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp1'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
@@ -378,7 +378,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -780,7 +780,7 @@ class ResourceViewsChannelTests(APITestCase):
 
         """
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
-        data = {'description': 'A new channel for unit tests. Updated', 'default_time_step': 1,
+        data = {'description': 'A new channel for unit tests. Updated', 'default_time_sample': 1,
                 'sources': ['channel2'],
                 'related': ['channel3']
                 }
