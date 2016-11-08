@@ -517,3 +517,71 @@ class UserPermissionsChannel(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['channels'][0], 'unittestchannel')
+
+
+class UserPermissionsCoordinateFrame(APITestCase):
+    """
+    Class to test the resource service
+    """
+
+    def setUp(self):
+        """
+        Initialize the database
+        :return:
+        """
+        dbsetup = SetupTestDB()
+        user1 = dbsetup.create_user()
+        dbsetup.set_user(user1)
+
+        self.client.force_login(user1)
+        dbsetup.insert_test_data()
+
+        # Create a new user with different objects
+        user2 = dbsetup.create_user('testuser1')
+        dbsetup.add_role('resource-manager')
+        dbsetup.set_user(user2)
+        self.client.force_login(user2)
+        dbsetup.add_collection("unittestcol", "testcollection")
+        dbsetup.add_coordinate_frame('unittestcf', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
+
+    def test_put_coordinate_frame_no_permissions(self):
+        """
+        Update an coordinate_frame for which the user does not have update permissions on
+
+        """
+        url = '/' + version + '/coord/cf1/'
+        data = {'description': 'A new channel for unit tests. Updated'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_put_channel_valid_permission(self):
+        """
+        Update a channel that  the user has permissions on
+
+        """
+        url = '/' + version + '/coord/unittestcf'
+        data = {'description': 'A new channel for unit tests. Updated'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_delete_coordinate_frames_no_permissions(self):
+        """
+        Delete an coordinate frame that the user does not have permission for
+
+        """
+        url = '/' + version + '/coord/cf1'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+
+    def test_delete_coordinate_frames_valid_permissions(self):
+        """
+        Delete an coordinate frame that the user has permissions for
+
+        """
+        url = '/' + version + '/coord/unittestcf'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+
