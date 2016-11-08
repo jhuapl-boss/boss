@@ -176,7 +176,7 @@ class BossMeta(APIView):
         response = mdb.delete_meta(lookup_key, mkey)
 
         if 'Attributes' in response:
-            return HttpResponse(status=204)
+            return HttpResponse(status=200)
         else:
             return BossHTTPError("[ERROR]- Key {} not found ".format(mkey), ErrorCodes.INVALID_POST_ARGUMENT)
 
