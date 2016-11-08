@@ -88,7 +88,7 @@ class ResourceUserPermission(APIView):
            experiment: Experiment name from the request
            channel: Channel name from the request
 
-        Returns:
+       Returns:
            List of permissions
 
         """
