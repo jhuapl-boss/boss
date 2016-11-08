@@ -164,7 +164,7 @@ class SetupTestDB:
 
         return cf
 
-    def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels, num_time_samples):
+    def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels, max_time_sample):
         """
 
         Args:
@@ -172,7 +172,7 @@ class SetupTestDB:
             experiment_name: Name of the experiment
             coordinate_name: Name of the coordinate frame
             num_hierarchy_levels:
-            num_time_samples:
+            max_time_sample:
 
         Returns:
             experiment
@@ -182,7 +182,7 @@ class SetupTestDB:
         cf = CoordinateFrame.objects.get(name=coordinate_name)
         exp = Experiment.objects.create(name=experiment_name, collection=col, coord_frame=cf,
                                         num_hierarchy_levels=num_hierarchy_levels,
-                                        num_time_samples=num_time_samples, creator=self.user)
+                                        max_time_sample=max_time_sample, creator=self.user)
 
         lkup_key = str(col.pk) + '&' + str(exp.pk)
         bs_key = col.name + '&' + str(exp.name)
@@ -196,14 +196,14 @@ class SetupTestDB:
         return exp
 
     def add_channel(self, collection_name, experiment_name, channel_name,
-                    default_time_sample, base_resolution, datatype, type = None):
+                    default_time_step, base_resolution, datatype, type = None):
         """
 
         Args:
             collection_name:
             experiment_name:
             channel_name:
-            default_time_sample:
+            default_time_step:
             base_resolution:
             datatype:
 
@@ -216,7 +216,7 @@ class SetupTestDB:
         col = Collection.objects.get(name=collection_name)
         exp = Experiment.objects.get(name=experiment_name, collection=col)
         channel = Channel.objects.create(name=channel_name, experiment=exp,
-                                         default_time_sample=default_time_sample, base_resolution=base_resolution,
+                                         default_time_step=default_time_step, base_resolution=base_resolution,
                                          type=type, datatype=datatype, creator=self.user)
 
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(channel.pk)

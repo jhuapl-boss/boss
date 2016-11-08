@@ -127,8 +127,8 @@ class BossRequest:
         time = self.bossrequest['time_args']
         if not time:
             # get default time
-            self.time_start = self.channel.default_time_sample
-            self.time_stop = self.channel.default_time_sample + 1
+            self.time_start = self.channel.default_time_step
+            self.time_stop = self.channel.default_time_step + 1
             self.time_request = False
         else:
             self.set_time(time)
@@ -152,8 +152,8 @@ class BossRequest:
         time = self.bossrequest['time_args']
         if not time:
             # get default time
-            self.time_start = self.channel.default_time_sample
-            self.time_stop = self.channel.default_time_sample + 1
+            self.time_start = self.channel.default_time_step
+            self.time_stop = self.channel.default_time_step + 1
         else:
             self.set_time(time)
 
@@ -175,8 +175,8 @@ class BossRequest:
         time = self.bossrequest['time_args']
         if not time:
             # get default time
-            self.time_start = self.channel.default_time_sample
-            self.time_stop = self.channel.default_time_sample + 1
+            self.time_start = self.channel.default_time_step
+            self.time_stop = self.channel.default_time_step + 1
         else:
             self.set_time(time)
 
@@ -742,17 +742,17 @@ class BossRequest:
             [tstart, tstop] = [arg for arg in m.groups()]
             if tstart:
                 self.time_start = int(tstart)
-                if self.time_start > self.experiment.num_time_samples:
+                if self.time_start > self.experiment.max_time_sample:
                     return BossHTTPError("Invalid time range {}. Start time is greater than the maximum time sample {}"
-                                         .format(time, str(self.experiment.num_time_samples)), ErrorCodes.INVALID_URL)
+                                         .format(time, str(self.experiment.max_time_sample)), ErrorCodes.INVALID_URL)
             else:
                 return BossHTTPError("Unable to parse time sample argument {}".format(time), ErrorCodes.INVALID_URL)
             if tstop:
                 self.time_stop = int(tstop)
-                if self.time_start > self.time_stop or self.time_stop > self.experiment.num_time_samples + 1:
+                if self.time_start > self.time_stop or self.time_stop > self.experiment.max_time_sample + 1:
                     return BossHTTPError("Invalid time range {}. End time is greater than the start time or out of "
                                          "bounds with maximum time sample {}".format
-                                         (time, str(self.experiment.num_time_samples)), ErrorCodes.INVALID_URL)
+                                         (time, str(self.experiment.max_time_sample)), ErrorCodes.INVALID_URL)
             else:
                 self.time_stop = self.time_start + 1
 

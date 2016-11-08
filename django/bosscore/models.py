@@ -80,14 +80,14 @@ class CoordinateFrame(models.Model):
         ('centimeters', 'CENTIMETERS')
     )
     voxel_unit = models.CharField(choices=VOXEL_UNIT_CHOICES, max_length=100)
-    time_step = models.IntegerField(blank=True, null=True)
+    time_step = models.IntegerField()
     TIMESTEP_UNIT_CHOICES = (
         ('nanoseconds', 'NANOSECONDS'),
         ('microseconds', 'MICROSECONDS'),
         ('milliseconds', 'MILLISECONDS'),
         ('seconds', 'SECONDS'),
     )
-    time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100, blank=True, null=True)
+    time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100)
 
     class Meta:
         db_table = u"coordinate_frame"
@@ -119,7 +119,7 @@ class Experiment(models.Model):
     creator = models.ForeignKey('auth.User', related_name='experiment')
 
     coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord', on_delete=models.PROTECT)
-    num_hierarchy_levels = models.IntegerField(default=1)
+    num_hierarchy_levels = models.IntegerField(default=0)
 
     HIERARCHY_METHOD_CHOICES = (
         ('near_iso', 'NEAR_ISO'),
@@ -127,7 +127,7 @@ class Experiment(models.Model):
         ('slice', 'SLICE'),
     )
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
-    num_time_samples = models.IntegerField(default=1)
+    max_time_sample = models.IntegerField(default=0)
 
     class Meta:
         db_table = u"experiment"
@@ -157,7 +157,7 @@ class Channel(models.Model):
 
     experiment = models.ForeignKey(Experiment, related_name='channels', on_delete=models.PROTECT)
     base_resolution = models.IntegerField(default=0)
-    default_time_sample = models.IntegerField(default=0)
+    default_time_step = models.IntegerField(default=0)
 
     TYPE_CHOICES = (
         ('image', 'IMAGE'),
