@@ -52,7 +52,6 @@ class CutoutRequestTests(APITestCase):
         exp = 'exp1'
         channel = 'channel1'
         boss_key = 'col1&exp1&channel1'
-        boss_key_list = 'col1&exp1&channel1&2&0'
 
         # Create the request
         req = HttpRequest()
@@ -79,7 +78,6 @@ class CutoutRequestTests(APITestCase):
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel(), channel)
         self.assertEqual(ret.get_boss_key(), boss_key)
-        self.assertEqual(ret.get_boss_key_list()[0], boss_key_list)
         self.assertEqual(ret.time_request, False)
 
     def test_request_cutout_init_cutoutargs_channel(self):
@@ -164,10 +162,6 @@ class CutoutRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
-        exp_boss_keys = ['col1&exp1&channel1&2&1',
-                         'col1&exp1&channel1&2&2',
-                         'col1&exp1&channel1&2&3',
-                         'col1&exp1&channel1&2&4']
 
         # Create the request
         req = HttpRequest()
@@ -191,72 +185,8 @@ class CutoutRequestTests(APITestCase):
 
         ret = BossRequest(drfrequest, request_args)
         time = ret.get_time()
-        boss_keys = ret.get_boss_key_list()
         self.assertEqual(time, range(1, 5))
-        self.assertEqual(boss_keys, exp_boss_keys)
         self.assertEqual(ret.time_request, True)
-
-    def test_request_cutout_bosskey_time(self):
-        """
-        Test initialization of boss_key for a time sample range
-        :return:
-        """
-        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
-        exp_boss_keys = ['col1&exp1&channel1&2&1',
-                         'col1&exp1&channel1&2&2',
-                         'col1&exp1&channel1&2&3',
-                         'col1&exp1&channel1&2&4']
-
-        # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
-        drfrequest.version = version
-
-        # Create the request dict
-        request_args = {
-            "service": "cutout",
-            "version": version,
-            "collection_name": 'col1',
-            "experiment_name": 'exp1',
-            "channel_name": 'channel1',
-            "resolution": 2,
-            "x_args": "0:5",
-            "y_args": "0:6",
-            "z_args": "0:2",
-            "time_args": "1:5"
-        }
-        ret = BossRequest(drfrequest, request_args)
-        boss_keys = ret.get_boss_key_list()
-        self.assertEqual(boss_keys, exp_boss_keys)
-
-        url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/1:2/'
-        exp_boss_keys = ['col1&exp1&channel1&2&0']
-
-
-
-        # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
-        drfrequest.version = version
-
-        # Create the request dict
-        request_args = {
-            "service": "cutout",
-            "version": version,
-            "collection_name": 'col1',
-            "experiment_name": 'exp1',
-            "channel_name": 'channel1',
-            "resolution": 2,
-            "x_args": "0:5",
-            "y_args": "0:6",
-            "z_args": "1:2",
-            "time_args": None
-        }
-        ret = BossRequest(drfrequest, request_args)
-        boss_keys = ret.get_boss_key_list()
-        self.assertEqual(boss_keys, exp_boss_keys)
 
     def test_request_cutout_lookupkey(self):
         """
@@ -290,15 +220,7 @@ class CutoutRequestTests(APITestCase):
         exp_id = ret.experiment.pk
         channel_id = ret.channel.pk
         base_lookup = str(col_id) + '&' + str(exp_id) + '&' + str(channel_id)
-        exp_lookup_keys = []
-        exp_lookup_keys.append(base_lookup+'&2&1')
-        exp_lookup_keys.append(base_lookup+'&2&2')
-        exp_lookup_keys.append(base_lookup+'&2&3')
-        exp_lookup_keys.append(base_lookup+'&2&4')
-
-        lookup_keys = ret.get_lookup_key_list()
         self.assertEqual(base_lookup, ret.get_lookup_key())
-        self.assertEqual(lookup_keys, exp_lookup_keys)
 
     def test_request_cutout_invalid_xargs(self):
         """

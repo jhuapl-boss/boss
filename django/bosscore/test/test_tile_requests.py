@@ -52,7 +52,6 @@ class BossTileRequestTests(APITestCase):
         exp = 'exp1'
         channel = 'channel1'
         boss_key = 'col1&exp1&channel1'
-        boss_key_list = 'col1&exp1&channel1&2&0'
 
         # Create the request dict
         request_args = {
@@ -80,8 +79,7 @@ class BossTileRequestTests(APITestCase):
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel(), channel)
         self.assertEqual(ret.get_boss_key(), boss_key)
-        self.assertEqual(ret.get_boss_key_list()[0], boss_key_list)
-
+        
     def test_request_tile_init_tileargs_channel(self):
         """
         Test initialization of tile arguments for a tile request for a channel
@@ -189,66 +187,6 @@ class BossTileRequestTests(APITestCase):
         ret = BossRequest(drfrequest, request_args)
         time = ret.get_time()
         self.assertEqual(time, range(1, 2))
-
-    def test_request_tile_bosskey_time(self):
-        """
-        Test initialization of boss_key for a time sample range
-        :return:
-        """
-
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1/'
-        exp_boss_keys = ['col1&exp1&channel1&2&0']
-
-        # Create the request dict
-        request_args = {
-            "service": "tile",
-            "collection_name": "col1",
-            "experiment_name": "exp1",
-            "channel_name": "channel1",
-            "orientation": "xy",
-            "tile_size": 512,
-            "resolution": 2,
-            "x_args": "0",
-            "y_args": "0",
-            "z_args": "1",
-            "time_args": None
-        }
-
-        # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
-        drfrequest.version = version
-        ret = BossRequest(drfrequest, request_args)
-        boss_keys = ret.get_boss_key_list()
-        self.assertEqual(boss_keys, exp_boss_keys)
-
-        url = '/' + version + '/tile/col1/exp1/channel1/xy/512/2/0/0/1/1/'
-        exp_boss_keys = ['col1&exp1&channel1&2&1']
-
-        # Create the request dict
-        request_args = {
-            "service": "tile",
-            "collection_name": "col1",
-            "experiment_name": "exp1",
-            "channel_name": "channel1",
-            "orientation": "xy",
-            "tile_size": 512,
-            "resolution": 2,
-            "x_args": "0",
-            "y_args": "0",
-            "z_args": "1",
-            "time_args": "1"
-        }
-
-        # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
-        drfrequest.version = version
-        ret = BossRequest(drfrequest, request_args)
-        boss_keys = ret.get_boss_key_list()
-        self.assertEqual(boss_keys, exp_boss_keys)
 
     def test_request_tile_invalid_xargs(self):
         """
