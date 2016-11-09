@@ -20,7 +20,7 @@ from django.conf import settings
 from bosscore.views.views_resource import CollectionList, CollectionDetail, ExperimentList, ExperimentDetail, \
     ChannelList, ChannelDetail, CoordinateFrameList, CoordinateFrameDetail
 from bosscore.views.views_permission import ResourceUserPermission
-from bosscore.views.views_group import BossGroupMember, BossUserGroup, BossGroupMemberList, BossGroupMaintainer
+from bosscore.views.views_group import BossGroupMember, BossUserGroup, BossGroupMaintainer
 
 version = 'v0.7'
 
