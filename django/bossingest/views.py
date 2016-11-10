@@ -76,37 +76,17 @@ class IngestJobView(APIView):
                                                       data['ingest_job']["experiment"],
                                                       data['ingest_job']["channel"])
             resource['lookup_key'] = '{}&{}&{}'.format(collection.id,
-                                                        experiment.id,
-                                                        channel.id)
-            resource['collection'] = {}
-            resource['collection']['name'] = collection.name
-            resource['collection']['description'] = collection.description
-            resource['coord_frame'] = {}
-            resource['coord_frame']['name'] = ""
-            resource['coord_frame']['description'] = ""
-            resource['coord_frame']['x_start'] = 0
-            resource['coord_frame']['x_stop'] = 0
-            resource['coord_frame']['y_start'] = 0
-            resource['coord_frame']['y_stop'] = 0
-            resource['coord_frame']['z_start'] = 0
-            resource['coord_frame']['z_stop'] = 0
-            resource['coord_frame']['x_voxel_size'] = 0
-            resource['coord_frame']['y_voxel_size'] = 0
-            resource['coord_frame']['z_voxel_size'] = 0
-            resource['coord_frame']['voxel_unit'] = "nanometers"
-            resource['coord_frame']['time_step'] = 0
-            resource['coord_frame']['time_step_unit'] = "nm"
-            resource['experiment'] = {}
-            resource['experiment']['name'] = experiment.name
-            resource['experiment']['description'] = experiment.description
-            resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
-            resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
-            resource['experiment']['max_time_sample'] = experiment.max_time_sample
+                                                       experiment.id,
+                                                       channel.id)
             resource['channel'] = {}
             resource['channel']['name'] = channel.name
-            resource['channel']['description'] = channel.description
+            resource['channel']['description'] = ""
             resource['channel']['type'] = channel.type
             resource['channel']['datatype'] = channel.datatype
+            resource['channel']['base_resolution'] = channel.base_resolution
+            resource['channel']['sources'] = [x.name for x in channel.sources.all()]
+            resource['channel']['related'] = [x.name for x in channel.related.all()]
+            resource['channel']['default_time_step'] = channel.default_time_step
 
             # Set resource
             data['resource'] = resource
