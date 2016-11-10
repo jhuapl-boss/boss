@@ -49,9 +49,17 @@ class BossGroupMember(APIView):
 
         """
         try:
+            group = Group.objects.get(name=group_name)
+            bgroup = BossGroup.objects.get(group=group)
+
+            # Check for permissions. The logged in user has to be a member or group maintainer
+            if not request.user.has_perm("maintain_group", bgroup) and \
+                    not group.user_set.filter(id=request.user.id).exists():
+                return BossHTTPError('The user {} is not a member or maintainer of the group {} '
+                                     .format(request.user.username, group_name),
+                                     ErrorCodes.MISSING_PERMISSION)
             if user_name is None:
                 # Return all users for the group
-                group = Group.objects.get(name=group_name)
                 list_users = group.user_set.all().values_list('username', flat=True)
                 list_users = [name for name in list_users]
                 data = {"members": list_users}
@@ -156,6 +164,13 @@ class BossGroupMaintainer(APIView):
         try:
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
+
+            # Check for permissions. The logged in user has to be a member or group maintainer
+            if not request.user.has_perm("maintain_group", bgroup) and \
+                    not group.user_set.filter(id=request.user.id).exists():
+                return BossHTTPError('The user {} is not a member or maintainer of the group {} '
+                                     .format(request.user.username, group_name),
+                                     ErrorCodes.MISSING_PERMISSION)
             if user_name is None:
 
                 # Return all maintainers for the group
@@ -166,7 +181,7 @@ class BossGroupMaintainer(APIView):
                 # Both group name and user name are specified. Return the membership status for the user
                 usr = User.objects.get(username=user_name)
                 status = usr.has_perm("maintain_group", bgroup)
-                data = {"result" : status}
+                data = {"result": status}
 
             return Response(data, status=200)
         except Group.DoesNotExist:
@@ -189,7 +204,7 @@ class BossGroupMaintainer(APIView):
         """
         try:
             if user_name is None:
-                return BossHTTPError ('Missing username parameter in post.',ErrorCodes.INVALID_URL)
+                return BossHTTPError('Missing username in post.', ErrorCodes.INVALID_URL)
 
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
@@ -206,7 +221,7 @@ class BossGroupMaintainer(APIView):
 
             else:
                 return BossHTTPError('The user {} does not have the {} permission on the group {}'
-                                     .format(request.user.username,'maintain_group', group_name),
+                                     .format(request.user.username, 'maintain_group', group_name),
                                      ErrorCodes.MISSING_PERMISSION)
 
         except Group.DoesNotExist:
@@ -217,7 +232,7 @@ class BossGroupMaintainer(APIView):
     @check_role("resource-manager")
     def delete(self, request, group_name, user_name):
         """
-        Removes a user from a group
+        Removes a maintainer form the group
         Args:
             request: Django rest framework request
             group_name:Group name from the request
@@ -229,7 +244,7 @@ class BossGroupMaintainer(APIView):
         """
         try:
             if user_name is None:
-                return BossHTTPError ('Missing username parameter in post.',ErrorCodes.INVALID_URL)
+                return BossHTTPError('Missing username parameter in post.', ErrorCodes.INVALID_URL)
 
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
@@ -237,15 +252,14 @@ class BossGroupMaintainer(APIView):
             # Check the users permissions.
             if request.user.has_perm("maintain_group", bgroup):
                 usr = User.objects.get(username=user_name)
-                group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
-                status = usr.has_perm('maintain_group',bgroup)
+                status = usr.has_perm('maintain_group', bgroup)
 
                 if status is False:
                     return BossHTTPError('The user {} does not have the {} permission on the group {}'
                                          .format(usr.username, 'maintain_group', group_name),
                                          ErrorCodes.MISSING_PERMISSION)
                 else:
-                    remove_perm('maintain_group',usr, bgroup)
+                    remove_perm('maintain_group', usr, bgroup)
 
                 return HttpResponse(status=204)
             else:
@@ -279,7 +293,7 @@ class BossUserGroup(APIView):
             try:
                 group = Group.objects.get(name=group_name)
                 bgroup = BossGroup.objects.get(group=group)
-                data = {"name" : group.name, "owner" : bgroup.creator.username}
+                data = {"name": group.name, "owner": bgroup.creator.username}
                 resources = []
 
                 # get permission sets for models
@@ -293,7 +307,7 @@ class BossUserGroup(APIView):
                 ch_list = get_objects_for_group(group, perms=channel_perms, klass=Channel, any_perm=True)
 
                 for col in col_list:
-                    obj = {'collection': col.name }
+                    obj = {'collection': col.name}
                     resources.append(obj)
 
                 for exp in exp_list:
@@ -302,10 +316,10 @@ class BossUserGroup(APIView):
 
                 for ch in ch_list:
                     obj = {'collection': ch.experiment.collection.name, 'experiment': ch.experiment.name,
-                           'channel': ch.name }
+                           'channel': ch.name}
                     resources.append(obj)
 
-                data['resources']= resources
+                data['resources'] = resources
                 return Response(data, status=200)
             except Group.DoesNotExist:
                 return BossGroupNotFoundError(group_name)
