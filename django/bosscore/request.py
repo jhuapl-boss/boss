@@ -668,27 +668,6 @@ class BossRequest:
         """
         return self.base_boss_key
 
-    # def get_boss_key_list(self):
-    #     """
-    #     Get the boss_key list for the current object including the resolution and time samples
-    #
-    #     The boss key is the compound identifier using the "name" attribute of the data model resources used
-    #     in the request
-    #
-    #     Returns:
-    #         self.boss_key (list(str)) : List of boss keys for the request
-    #     """
-    #     request_boss_keys = []
-    #
-    #     # For services that are not part of the core services, append resolution and time to the key
-    #     if self.service == 'meta':
-    #         request_boss_keys = [self.base_boss_key]
-    #     else:
-    #         for time_step in range(self.time_start, self.time_stop):
-    #             request_boss_keys.append(self.base_boss_key + '&' + str(self.resolution) + '&' + str(time_step))
-    #
-    #     return request_boss_keys
-
     def get_lookup_key(self):
         """
         Returns the base lookup key for the request, excluding the resolution and time sample

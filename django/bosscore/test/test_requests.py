@@ -394,6 +394,40 @@ class CutoutInvalidRequestTests(APITestCase):
         with self.assertRaises(BossError):
             BossRequest(drfrequest, request_args)
 
+    def test_request_cutout_invalid_channel(self):
+        """
+        Test initialization of cutout requests for an invalid datamodel - Channel does not exist
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp56668/channel1/2/0:5/0:6/0:2/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel133323'
+
+        # Create the request
+        req = HttpRequest()
+        req.META = {'PATH_INFO': url}
+        drfrequest = Request(req)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+
     def test_request_cutout_invalid_datamodel(self):
         """
         Test initialization of cutout requests for an invalid datamodel - experiment  does not exist for the collection
