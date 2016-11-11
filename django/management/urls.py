@@ -18,5 +18,6 @@ from management import views
 urlpatterns = [
     url(r'users/?', views.Users.as_view(), name='manage-users'),
     url(r'user/(?P<username>[\w_-]+)/?', views.User.as_view(), name='manage-user'),
+    url(r'token/?', views.Token.as_view(), name='manage-token'),
     url(r'', views.Home.as_view(), name='manage-home'),
 ]

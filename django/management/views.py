@@ -8,6 +8,9 @@ from django import forms
 
 from sso.views.views_user import BossUser, BossUserRole
 
+# import as to deconflict with our Token class
+from rest_framework.authtoken.models import Token as TokenModel
+
 class Home(LoginRequiredMixin, View):
     def get(self, request):
         return HttpResponse(render_to_string('base.html'))
@@ -65,3 +68,28 @@ class User(LoginRequiredMixin, View):
                 return resp # should reformat to a webpage
 
             return HttpResponseRedirect('/v0.7/mgmt/user/' + username)
+
+class Token(LoginRequiredMixin, View):
+    def get(self, request):
+        try:
+            token = TokenModel.objects.get(user = request.user)
+            button = "Revoke Token"
+        except:
+            token = None
+            button = "Generate Token"
+
+        args = {
+            'username': request.user,
+            'token': token,
+            'button': button,
+        }
+        return HttpResponse(render_to_string('token.html', args, RequestContext(request)))
+
+    def post(self, request):
+        try:
+            token = TokenModel.objects.get(user = request.user)
+            token.delete()
+        except:
+            token = TokenModel.objects.create(user = request.user)
+
+        return HttpResponseRedirect('/v0.7/mgmt/token/')
