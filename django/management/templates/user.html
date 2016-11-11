@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+Manage SSO Roles for User '{{ username }}'<br/>
+<br/>
+<table>
+    <thead>
+        <tr>
+            <th>Roles</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for role in roles %}
+        <tr>
+            <td>{{ role }}</td>
+            <td><a href="/v0.7/mgmt/user/{{ username }}?remove={{ role }}">Remove Role</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br/>
+<form action="/v0.7/mgmt/user/{{ username }}" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Add Role" />
+</form>
+{% endblock %}

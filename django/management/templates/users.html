@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+Manage SSO User Accounts<br/>
+<br/>
+<table>
+    <thead>
+        <tr>
+            <th>Username</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td><a href="/v0.7/mgmt/user/{{ user.username }}">{{ user.username }}</a></td>
+            <td><a href="/v0.7/mgmt/users/?delete={{ user.username }}">Remove User</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br/>
+<form action="/v0.7/mgmt/users/" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Add User" />
+</form>
+{% endblock %}
