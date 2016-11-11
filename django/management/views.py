@@ -15,13 +15,50 @@ class Home(LoginRequiredMixin, View):
     def get(self, request):
         return HttpResponse(render_to_string('base.html'))
 
+class UserForm(forms.Form):
+    username = forms.CharField()
+    first_name = forms.CharField()
+    last_name = forms.CharField()
+    email = forms.EmailField()
+    password = forms.CharField(widget=forms.PasswordInput())
+    verify_password = forms.CharField(widget=forms.PasswordInput())
+
 class Users(LoginRequiredMixin, View):
     def get(self, request):
+        boss = BossUser()
+        boss.request = request
+
+        delete = request.GET.get('delete')
+        if delete:
+            resp = boss.delete(request, delete)
+            if resp.status_code != 204:
+                return resp
+            return HttpResponseRedirect('/v0.7/mgmt/users/')
+
         user = {'username': 'bossadmin'} # DP TODO: build needed API
+        user1 = {'username': 'test'}
         args = {
-            'users': [user],
+            'users': [user, user1],
+            'form': UserForm(),
         }
         return HttpResponse(render_to_string('users.html', args, RequestContext(request)))
+
+    def post(self, request):
+        form = UserForm(request.POST)
+        if form.is_valid():
+            if form.cleaned_data['password'] != form.cleaned_data['verify_password']:
+                pass # ERROR
+
+            username = form.cleaned_data['username']
+
+            boss = BossUser()
+            boss.request = request # needed for check_role() to work
+            boss.request.data = request.POST # simulate the DRF request object
+            resp = boss.post(request, username)
+            if resp.status_code != 201:
+                return resp # should reformat to a webpage
+
+            return HttpResponseRedirect('/v0.7/mgmt/users/')
 
 class RoleForm(forms.Form):
     role = forms.ChoiceField(choices=[(c,c) for c in ['', 'user-manager', 'resource-manager']])
