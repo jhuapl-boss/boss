@@ -7,6 +7,7 @@ from django.shortcuts import redirect
 from django import forms
 
 from sso.views.views_user import BossUser, BossUserRole
+from bosscore.views.views_group import BossUserGroup, BossGroupMaintainer, BossGroupMember
 
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
@@ -130,3 +131,119 @@ class Token(LoginRequiredMixin, View):
             token = TokenModel.objects.create(user = request.user)
 
         return HttpResponseRedirect('/v0.7/mgmt/token/')
+
+class GroupForm(forms.Form):
+    group_name = forms.CharField()
+
+class Groups(LoginRequiredMixin, View):
+    def get(self, request):
+        boss = BossUserGroup()
+        boss.request = request
+
+        delete = request.GET.get('delete')
+        if delete:
+            resp = boss.delete(request, delete)
+            if resp.status_code != 204:
+                return resp
+            return HttpResponseRedirect('/v0.7/mgmt/groups/')
+
+        boss.request.query_params = {}
+        # can only modify groups the user is a maintainer of
+        boss.request.query_params['filter'] = 'maintainer' 
+        groups = boss.get(request)
+        if groups.status_code != 200:
+            return groups
+
+        args = {
+            'groups': groups.data['groups'],
+            'form': GroupForm(),
+        }
+        return HttpResponse(render_to_string('groups.html', args, RequestContext(request)))
+
+    def post(self, request):
+        form = GroupForm(request.POST)
+        if form.is_valid():
+            group_name = form.cleaned_data['group_name']
+
+            boss = BossUserGroup()
+            boss.request = request # needed for check_role() to work
+            resp = boss.post(request, group_name)
+            if resp.status_code != 201:
+                return resp # should reformat to a webpage
+
+            return HttpResponseRedirect('/v0.7/mgmt/groups/')
+
+class GroupMemberForm(forms.Form):
+    user = forms.CharField()
+    role = forms.ChoiceField(choices=[(c,c) for c in ['', 'member', 'maintainer', 'member+maintainer']])
+
+class Group(LoginRequiredMixin, View):
+    def get(self, request, group_name):
+        boss_memb = BossGroupMember()
+        boss_memb.request = request
+        members = boss_memb.get(request, group_name)
+        if members.status_code != 200:
+            return members
+        members = members.data['members']
+
+        remove = request.GET.get('rem_memb')
+        if remove is not None:
+            resp = boss_memb.delete(request, group_name, remove)
+            if resp.status_code != 204:
+                return resp # should reformt to a webpage
+            return HttpResponseRedirect('/v0.7/mgmt/group/' + group_name)
+
+        boss_maint = BossGroupMaintainer()
+        boss_maint.request = request
+        maintainers = boss_maint.get(request, group_name)
+        if maintainers.status_code !=200:
+            return maintainers
+        maintainers = maintainers.data['maintainers']
+
+        remove = request.GET.get('rem_maint')
+        if remove is not None:
+            resp = boss_maint.delete(request, group_name, remove)
+            if resp.status_code != 204:
+                return resp # should reformt to a webpage
+            return HttpResponseRedirect('/v0.7/mgmt/group/' + group_name)
+
+        data = {}
+        for member in members:
+            data[member] = 'member'
+            if member in maintainers:
+                data[member] += '+maintainer'
+        for maintainer in maintainers:
+            if maintainer not in members:
+                data[maintainer] = 'maintainer'
+
+
+        args = {
+            'group_name': group_name,
+            'rows': data.items(),
+            'members': members,
+            'maintainers': maintainers,
+            'form': GroupMemberForm(),
+        }
+        return HttpResponse(render_to_string('group.html', args, RequestContext(request)))
+
+    def post(self, request, group_name):
+        form = GroupMemberForm(request.POST)
+        if form.is_valid():
+            user = form.cleaned_data['user']
+            role = form.cleaned_data['role']
+
+            if 'member' in role:
+                boss_memb = BossGroupMember()
+                boss_memb.request = request
+                resp = boss_memb.post(request, group_name, user)
+                if resp.status_code != 204:
+                    return resp
+
+            if 'maintainer' in role:
+                boss_maint = BossGroupMaintainer()
+                boss_maint.request = request
+                resp = boss_maint.post(request, group_name, user)
+                if resp.status_code !=204:
+                    return resp
+
+            return HttpResponseRedirect('/v0.7/mgmt/group/' + group_name)
