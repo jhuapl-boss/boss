@@ -56,12 +56,17 @@ urlpatterns = [
     url(r'^v0.7/cutout/', include('bossspatialdb.urls', namespace='v0.7')),
     url(r'^v0.7/image/', include('bosstiles.image_urls', namespace='v0.7')),
     url(r'^v0.7/tile/', include('bosstiles.tile_urls', namespace='v0.7')),
-    url(r'^v0.7/sso/user/', include('sso.urls.user-urls', namespace='v0.7')),
-    url(r'^v0.7/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.7')),
     url(r'^v0.7/ingest/', include('bossingest.urls', namespace='v0.7')),
     url(r'^v0.7/collection/', include('bosscore.urls.resource_urls', namespace='v0.7')),
     url(r'^v0.7/coord/', include('bosscore.urls.coord_urls', namespace='v0.7')),
 
+    # SSO Urls
+    url(r'^v0.7/sso/user/', include('sso.urls.user-urls', namespace='v0.7')),
+    url(r'^v0.7/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.7')),
+
+
+    # Management Console Urls
+    url(r'^v0.7/mgmt/', include('management.urls', namespace='v0.7')),
 ]
 
 if 'djangooidc' in settings.INSTALLED_APPS:
