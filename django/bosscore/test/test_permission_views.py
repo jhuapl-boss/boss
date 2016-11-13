@@ -713,3 +713,60 @@ class PermissionViewsChannelTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1&channel=channel1'
         response = self.client.delete(url, None)
         self.assertEqual(response.status_code, 403)
+
+    def test_post_permissions_bosspublic(self):
+        """
+        Post  invalid  permissions strings
+        """
+        url = '/' + version + '/permissions/'
+
+        data = {
+            'group': 'bosspublic',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read']
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_permissions_bosspublic_invalid(self):
+        """
+        Post invalid  permissions strings for bosspublic
+        """
+        url = '/' + version + '/permissions/'
+
+        data = {
+            'group': 'bosspublic',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['add']
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+        data = {
+            'group': 'bosspublic',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add']
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_patch_permission_bosspublic_invalid(self):
+        """
+        Test patch permission for group bosspublic using invalid permissions
+
+        """
+        self.client.force_login(self.user1)
+        # patch permission on a group that the user is not a member or maintainer of.
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'bosspublic',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read', 'add']
+        }
+        response = self.client.patch(url, data=data)
+        self.assertEqual(response.status_code, 400)
