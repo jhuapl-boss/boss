@@ -84,7 +84,7 @@ class CollectionDetail(APIView):
             serializer.save(creator=self.request.user)
             collection_obj = Collection.objects.get(name=col_data['name'])
 
-            # Assign permissions to the users primary group
+            # Assign permissions to the users primary group and admin group
             BossPermissionManager.add_permissions_primary_group(self.request.user, collection_obj)
             BossPermissionManager.add_permissions_admin_group(collection_obj)
 
@@ -206,8 +206,9 @@ class CoordinateFrameDetail(APIView):
             serializer.save(creator=self.request.user)
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe_data['name'])
 
-            # Assign permissions to the users primary group
+            # Assign permissions to the users primary group and admin group
             BossPermissionManager.add_permissions_primary_group(self.request.user, coordframe_obj)
+            BossPermissionManager.add_permissions_admin_group(coordframe_obj)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
@@ -336,8 +337,9 @@ class ExperimentDetail(APIView):
                     serializer.save(creator=self.request.user)
                     experiment_obj = Experiment.objects.get(name=experiment_data['name'], collection = collection_obj)
 
-                    # Assign permissions to the users primary group
+                    # Assign permissions to the users primary group and admin group
                     BossPermissionManager.add_permissions_primary_group(self.request.user, experiment_obj)
+                    BossPermissionManager.add_permissions_admin_group(experiment_obj)
 
                     lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk)
                     boss_key = collection_obj.name + '&' + experiment_obj.name
@@ -557,8 +559,9 @@ class ChannelDetail(APIView):
                     channel_obj = self.add_source_related_channels(channel_obj, experiment_obj, source_channels,
                                                                    related_channels)
 
-                    # Assign permissions to the users primary group
+                    # Assign permissions to the users primary group and admin group
                     BossPermissionManager.add_permissions_primary_group(self.request.user, channel_obj)
+                    BossPermissionManager.add_permissions_admin_group(channel_obj)
 
                     # Add Lookup key
                     lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' + str(channel_obj.pk)

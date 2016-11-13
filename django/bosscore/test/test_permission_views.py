@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 from rest_framework.test import APITestCase
 from django.conf import settings
 from .setup_db import SetupTestDB
