@@ -241,7 +241,7 @@ class ResourceUserPermission(APIView):
 
         try:
             # Bosspublic can only have read permission
-            if group_name == 'bosspublic' and (len(perm_list) != 1 or perm_list[0] != 'read'):
+            if group_name == 'bosspublic' and not (set(perm_list).issubset({'read','read_volumetric_data'})):
                 return BossHTTPError("The bosspublic group can only have read permissions",
                                      ErrorCodes.INVALID_POST_ARGUMENT)
 
