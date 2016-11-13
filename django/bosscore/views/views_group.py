@@ -23,6 +23,7 @@ from guardian.shortcuts import get_objects_for_user, get_perms_for_model, assign
 
 
 from bosscore.privileges import check_role, BossPrivilegeManager
+from bosscore.permissions import check_is_member_or_maintainer
 from bosscore.error import BossHTTPError, ErrorCodes, BossGroupNotFoundError, BossUserNotFoundError
 from bosscore.serializers import GroupSerializer, UserSerializer
 
@@ -50,11 +51,9 @@ class BossGroupMember(APIView):
         """
         try:
             group = Group.objects.get(name=group_name)
-            bgroup = BossGroup.objects.get(group=group)
 
             # Check for permissions. The logged in user has to be a member or group maintainer
-            if not request.user.has_perm("maintain_group", bgroup) and \
-                    not group.user_set.filter(id=request.user.id).exists():
+            if not check_is_member_or_maintainer(request.user, group_name):
                 return BossHTTPError('The user {} is not a member or maintainer of the group {} '
                                      .format(request.user.username, group_name),
                                      ErrorCodes.MISSING_PERMISSION)
@@ -65,7 +64,6 @@ class BossGroupMember(APIView):
                 data = {"members": list_users}
             else:
                 # Both group name and user name are specified. Return the membership status for the user
-                group = Group.objects.get(name=group_name)
                 usr = User.objects.get(username=user_name)
                 status = group.user_set.filter(id=usr.id).exists()
                 data = {"result": status}
@@ -144,14 +142,14 @@ class BossGroupMember(APIView):
 
 class BossGroupMaintainer(APIView):
     """
-    View to add a user to a group
+    View to add a maintainer to a group
 
     """
 
     @check_role("resource-manager")
     def get(self, request, group_name, user_name=None):
         """
-        Gets the membership status of a user for a group
+        Gets the maintianer status of a user for a group
         Args:
            request: Django rest framework request
            group_name: Group name from the request
@@ -166,8 +164,7 @@ class BossGroupMaintainer(APIView):
             bgroup = BossGroup.objects.get(group=group)
 
             # Check for permissions. The logged in user has to be a member or group maintainer
-            if not request.user.has_perm("maintain_group", bgroup) and \
-                    not group.user_set.filter(id=request.user.id).exists():
+            if not check_is_member_or_maintainer(request.user, group_name):
                 return BossHTTPError('The user {} is not a member or maintainer of the group {} '
                                      .format(request.user.username, group_name),
                                      ErrorCodes.MISSING_PERMISSION)
@@ -178,7 +175,7 @@ class BossGroupMaintainer(APIView):
                 maintainers = [user.username for user in list_maintainers]
                 data = {"maintainers": maintainers}
             else:
-                # Both group name and user name are specified. Return the membership status for the user
+                # Both group name and user name are specified. Return the maintainer status for the user
                 usr = User.objects.get(username=user_name)
                 status = usr.has_perm("maintain_group", bgroup)
                 data = {"result": status}
@@ -192,7 +189,7 @@ class BossGroupMaintainer(APIView):
     @check_role("resource-manager")
     def post(self, request, group_name, user_name):
         """
-        Adds a user to a group
+        Adds a maintainer to a group
         Args:
             request: Django rest framework request
             group_name: Group name from the request
@@ -281,7 +278,7 @@ class BossUserGroup(APIView):
     @check_role("resource-manager")
     def get(self, request, group_name=None):
         """
-        Get all group s
+        Get all groups
         Args:
            request: Django rest framework request
            group_name: Group name from the request

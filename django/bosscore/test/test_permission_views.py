@@ -45,8 +45,6 @@ class PermissionViewsCollectionTests(APITestCase):
 
         """
         url = '/' + version + '/permissions/'
-        data = {'permissions': ['read', 'add', 'update']}
-
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -58,7 +56,7 @@ class PermissionViewsCollectionTests(APITestCase):
         url = '/' + version + '/permissions/?group=test'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['permission-sets'],[])
+        self.assertEqual(response.data['permission-sets'], [])
 
     def test_post_permission_collection(self):
         """
@@ -67,7 +65,7 @@ class PermissionViewsCollectionTests(APITestCase):
         """
         url = '/' + version + '/permissions/'
         data = {
-            'group' : 'test',
+            'group': 'test',
             'collection': 'col1',
             'permissions': ['read', 'add', 'update']
         }
@@ -133,7 +131,6 @@ class PermissionViewsCollectionTests(APITestCase):
 
         url = '/' + version + '/permissions/?group=test'
         response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
 
     def test_get_permission_for_collection_filter_collection(self):
@@ -152,9 +149,7 @@ class PermissionViewsCollectionTests(APITestCase):
 
         url = '/' + version + '/permissions/?collection=col1'
         response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
-
 
     def test_get_permission_for_collection_filter_collection_group(self):
         """
@@ -172,7 +167,6 @@ class PermissionViewsCollectionTests(APITestCase):
 
         url = '/' + version + '/permissions/?group=test&collection=col1'
         response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
 
     def test_get_permission_invalid(self):
@@ -258,11 +252,15 @@ class PermissionViewsExperimentTests(APITestCase):
         :return:
         """
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user('testuser')
-        dbsetup.add_role('resource-manager')
-        dbsetup.set_user(user)
+        self.user1 = dbsetup.create_user('testuser2555')
+        dbsetup.set_user(self.user1)
+        dbsetup.create_group('unittest2555')
 
-        self.client.force_login(user)
+        self.user2 = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
+        dbsetup.set_user(self.user2)
+
+        self.client.force_login(self.user2)
         dbsetup.create_group('test')
         dbsetup.insert_test_data()
 
@@ -273,7 +271,7 @@ class PermissionViewsExperimentTests(APITestCase):
         """
         url = '/' + version + '/permissions/'
         data = {
-            'group' : 'test',
+            'group': 'test',
             'collection': 'col1',
             'experiment': 'exp1',
             'permissions': ['read', 'add', 'update']
@@ -344,7 +342,6 @@ class PermissionViewsExperimentTests(APITestCase):
 
         url = '/' + version + '/permissions/?group=test'
         response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
 
     def test_get_permission_for_experiment_filter_experiment(self):
@@ -364,7 +361,6 @@ class PermissionViewsExperimentTests(APITestCase):
 
         url = '/' + version + '/permissions/?collection=col1&experiment=exp1'
         response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
 
     def test_get_permission_invalid(self):
@@ -464,7 +460,7 @@ class PermissionViewsExperimentTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(set(resp["permission-sets"][0]["permissions"]),set(['read']))
+        self.assertEqual(set(resp["permission-sets"][0]["permissions"]), set(['read']))
         self.assertEqual(response.status_code, 200)
 
 
@@ -479,11 +475,16 @@ class PermissionViewsChannelTests(APITestCase):
         :return:
         """
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user('testuser')
+        self.user1 = dbsetup.create_user('testuser2555')
         dbsetup.add_role('resource-manager')
-        dbsetup.set_user(user)
+        dbsetup.set_user(self.user1)
+        dbsetup.create_group('unittest2555')
 
-        self.client.force_login(user)
+        self.user2 = dbsetup.create_user('testuser')
+        dbsetup.add_role('resource-manager')
+        dbsetup.set_user(self.user2)
+
+        self.client.force_login(self.user2)
         dbsetup.create_group('test')
         dbsetup.insert_test_data()
 
@@ -494,7 +495,7 @@ class PermissionViewsChannelTests(APITestCase):
         """
         url = '/' + version + '/permissions/'
         data = {
-            'group' : 'test',
+            'group': 'test',
             'collection': 'col1',
             'experiment': 'exp1',
             'channel': 'channel1',
@@ -570,7 +571,6 @@ class PermissionViewsChannelTests(APITestCase):
 
         url = '/' + version + '/permissions/?group=test'
         response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
 
     def test_get_permission_for_channel_filter_channel(self):
@@ -591,7 +591,6 @@ class PermissionViewsChannelTests(APITestCase):
 
         url = '/' + version + '/permissions/?collection=col1&experiment=exp1&channel=channel1'
         response = self.client.get(url)
-        resp = json.loads(response.content.decode('utf-8'))
         self.assertEqual(response.status_code, 200)
 
     def test_get_permission_invalid(self):
@@ -640,7 +639,7 @@ class PermissionViewsChannelTests(APITestCase):
             'group': 'test',
             'collection': 'col1',
             'experiment': 'exp1',
-            'channel' : 'channel1',
+            'channel': 'channel1',
             'permissions': ['read', 'add', 'update']
         }
 
@@ -667,6 +666,50 @@ class PermissionViewsChannelTests(APITestCase):
         url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1&channel=channel1'
         response = self.client.get(url)
         resp = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(set(resp["permission-sets"][0]["permissions"]),set(['read']))
+        self.assertEqual(set(resp["permission-sets"][0]["permissions"]), set(['read']))
         self.assertEqual(response.status_code, 200)
 
+    def test_post_permissions_for_channel_not_member_maintainer(self):
+        """
+        Post  invalid  permissions strings
+        """
+        self.client.force_login(self.user1)
+        url = '/' + version + '/permissions/'
+
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'permissions': ['read', 'add', 'update']
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_patch_permission_for_channel_not_member_maintainer(self):
+        """
+        Test patch permission if user is not a member or maintainer
+
+        """
+        self.client.force_login(self.user1)
+        # patch permission on a group that the user is not a member or maintainer of.
+        url = '/' + version + '/permissions/'
+        data = {
+            'group': 'test',
+            'collection': 'col1',
+            'experiment': 'exp1',
+            'channel': 'channel1',
+            'permissions': ['read']
+        }
+        response = self.client.patch(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_delete_permission_for_channel_not_member_maintainer(self):
+        """
+        Delete a subset of permissions for a channel
+
+        """
+        self.client.force_login(self.user1)
+        # patch permission on a group that the user is not a member or maintainer of.
+        url = '/' + version + '/permissions/?group=test&collection=col1&experiment=exp1&channel=channel1'
+        response = self.client.delete(url, None)
+        self.assertEqual(response.status_code, 403)

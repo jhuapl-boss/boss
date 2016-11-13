@@ -22,8 +22,8 @@ from rest_framework.response import Response
 
 from guardian.shortcuts import get_objects_for_user, get_perms_for_model, get_objects_for_group, get_perms
 
-from bosscore.models import Collection, Experiment, Channel
-from bosscore.permissions import BossPermissionManager
+from bosscore.models import Collection, Experiment, Channel, BossGroup
+from bosscore.permissions import BossPermissionManager, check_is_member_or_maintainer
 from bosscore.error import BossHTTPError, BossError, ErrorCodes, BossResourceNotFoundError,\
     BossGroupNotFoundError, BossPermissionError
 from bosscore.privileges import check_role
@@ -247,7 +247,13 @@ class ResourceUserPermission(APIView):
         experiment = request.data.get('experiment', None)
         channel = request.data.get('channel', None)
 
+
+
         try:
+            if not check_is_member_or_maintainer(request.user, group_name):
+                return BossHTTPError('The user {} is not a member or maintainer of the group {} '.
+                                     format(request.user.username, group_name), ErrorCodes.MISSING_PERMISSION)
+
             resource = self.get_object(collection, experiment, channel)
             if resource == None:
                 return BossHTTPError("Unable to validate the resource", ErrorCodes.UNABLE_TO_VALIDATE)
@@ -300,6 +306,10 @@ class ResourceUserPermission(APIView):
         channel = request.data.get('channel', None)
 
         try:
+            if not check_is_member_or_maintainer(request.user, group_name):
+                return BossHTTPError('The user {} is not a member or maintainer of the group {} '.
+                                     format(request.user.username, group_name),ErrorCodes.MISSING_PERMISSION)
+
             resource = self.get_object(collection, experiment, channel)
             if resource == None:
                 return BossHTTPError("Unable to validate the resource", ErrorCodes.UNABLE_TO_VALIDATE)
@@ -334,10 +344,10 @@ class ResourceUserPermission(APIView):
             collection: Collection name from the request
             experiment: Experiment name from the request
             channel: Channel name from the request
-        Returns:
+       Returns:
             Http status code
 
-        """
+       """
         if 'group' not in request.query_params:
             return BossHTTPError("Group are not included in the request", ErrorCodes.INVALID_URL)
 
@@ -348,8 +358,11 @@ class ResourceUserPermission(APIView):
         collection = request.query_params.get('collection', None)
         experiment = request.query_params.get('experiment', None)
         channel = request.query_params.get('channel', None)
-
         try:
+            if not check_is_member_or_maintainer(request.user, group_name):
+                return BossHTTPError('The user {} is not a member or maintainer of the group {} '.
+                                     format(request.user.username, group_name), ErrorCodes.MISSING_PERMISSION)
+
             resource = self.get_object(collection, experiment, channel)
             if resource is None :
                 return BossHTTPError ("Unable to validate the resource", ErrorCodes.UNABLE_TO_VALIDATE)
