@@ -19,13 +19,11 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 
 from guardian.shortcuts import get_objects_for_user, get_perms_for_model, assign_perm, get_users_with_perms, \
-    remove_perm, get_objects_for_group, get_perms
-
+    remove_perm, get_objects_for_group
 
 from bosscore.privileges import check_role, BossPrivilegeManager
 from bosscore.permissions import check_is_member_or_maintainer
 from bosscore.error import BossHTTPError, ErrorCodes, BossGroupNotFoundError, BossUserNotFoundError
-from bosscore.serializers import GroupSerializer, UserSerializer
 
 from bosscore.models import BossGroup, Collection, Experiment, Channel
 
@@ -356,19 +354,24 @@ class BossUserGroup(APIView):
             Http status of the request
 
         """
-        group, created = Group.objects.get_or_create(name=group_name)
-        if not created:
-            return BossHTTPError("A group  with name {} already exist".format(group_name), ErrorCodes.GROUP_EXISTS)
-        bgroup = BossGroup.objects.create(group=group, creator=request.user)
+        try:
+            group, created = Group.objects.get_or_create(name=group_name)
+            if not created:
+                return BossHTTPError("A group  with name {} already exist".format(group_name), ErrorCodes.GROUP_EXISTS)
+            bgroup = BossGroup.objects.create(group=group, creator=request.user)
+            admin_user = User.objects.get(username='bossadmin')
 
-        # assign permissions to the creator of the group
-        group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
-        for permission in group_perms:
-            assign_perm(permission, request.user, bgroup)
+            # assign permissions to the creator of the group
+            group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
+            for permission in group_perms:
+                assign_perm(permission, request.user, bgroup)
+                assign_perm(permission, admin_user, bgroup)
 
-        # add the creator to the group
-        bgroup.group.user_set.add(request.user)
-        return Response(status=201)
+            # add the creator to the group
+            bgroup.group.user_set.add(request.user)
+            return Response(status=201)
+        except User.DoesNotExist:
+            return BossUserNotFoundError('bossadmin')
 
     @check_role("resource-manager")
     def delete(self, request, group_name):

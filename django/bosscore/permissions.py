@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.contrib.contenttypes.models import ContentType
 
 from guardian.shortcuts import assign_perm, get_perms, remove_perm, get_perms_for_model
@@ -170,6 +170,10 @@ class BossPermissionManager:
         # Get the type of model
         try:
             admin_group, created = Group.objects.get_or_create(name="admin")
+            if created:
+                admin_user = User.objects.get(username='bossadmin')
+                bgroup = BossGroup.objects.create(group=admin_group, creator=admin_user)
+                
             ct = ContentType.objects.get_for_model(obj)
             assign_perm('read', admin_group, obj)
             assign_perm('add', admin_group, obj)

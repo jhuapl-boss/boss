@@ -27,6 +27,7 @@ test_group = 'testuser-primary'
 class SetupTestDB:
     def __init__(self):
         self.user = None
+        self.create_super_user()
 
     def create_user(self, username=None):
         if not username:
@@ -34,9 +35,12 @@ class SetupTestDB:
 
         self.user = User.objects.create_user(username=username, email=username+'@test.com', password=username)
         user_primary_group, created = Group.objects.get_or_create(name=username + '-primary')
+
+        # add the user to the public group
         public_group, created = Group.objects.get_or_create(name='bosspublic')
         self.user.groups.add(user_primary_group)
         public_group.user_set.add(self.user)
+
         return self.user
 
     def add_role(self, role_name, user=None):
@@ -45,7 +49,8 @@ class SetupTestDB:
         BossRole.objects.create(user=user, role=role_name)
 
     def create_super_user(self):
-        self.user = User.objects.create_superuser(username=test_user, email='test@test.com', password='testuser')
+        self.user = User.objects.create_superuser(username='bossadmin', email='bossadmin@theboss.io',
+                                                  password='bossadmin')
         return self.user
 
     def get_user(self):
