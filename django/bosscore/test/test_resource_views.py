@@ -699,6 +699,50 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
+    def test_post_channel_with_valid_timestep(self):
+        """
+        Post a new channel with the default_time_step
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'default_time_sample': 5}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_with_invalid_timestep(self):
+        """
+        Post a new channel with the default_time_step
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'default_time_sample': 15}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_channel_with_valid_base_resolution(self):
+        """
+        Post a new channel with the base_resolution
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'base_resolution': 5}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_with_invalid_base_resolution(self):
+        """
+        Post a new channel with the an invalid base_resolution
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'base_resolution': 15}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
     def test_post_channel_no_experiment(self):
         """
         Post a new channel (valid - No experiment in the post data. This is picked up from the request)
