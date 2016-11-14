@@ -36,10 +36,13 @@ class Users(LoginRequiredMixin, View):
                 return resp
             return HttpResponseRedirect('/v0.7/mgmt/users/')
 
-        user = {'username': 'bossadmin'} # DP TODO: build needed API
-        user1 = {'username': 'test'}
+        users = boss.get(request) # search query parameter will be automatically passed
+        if users.status_code != 200:
+            return users # should reformat to a webpage
+
+        users = users.data
         args = {
-            'users': [user, user1],
+            'users': users,
             'form': UserForm(),
         }
         return HttpResponse(render_to_string('users.html', args, RequestContext(request)))
