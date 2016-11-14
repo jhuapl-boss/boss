@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+Manage {{ username }}'s API Token<br/>
+<br/>
+{% if token %}
+<label for="token">Token:</label>
+<textarea id="token" cols="40" rows="1">{{ token }}</textarea>
+<br/>
+{% endif %}
+<br/>
+<form action="/v0.7/mgmt/token/" method="post">
+    {% csrf_token %}
+    <input type="submit" value="{{ button }}" />
+</form>
+{% endblock %}

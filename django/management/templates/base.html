@@ -1,0 +1,55 @@
+<html>
+<head>
+  <title>BOSS Management Console</title>
+  <style type="text/css">
+    #menu {
+        float: left;
+        padding: 10px;
+        margin-right: 20px;
+        border: 1px solid black;
+    }
+
+    #content {
+        padding: 10px;
+        float: left;
+    }
+
+    .pannel {
+        display: none;
+    }
+
+    table {
+        border: 1px solid black;
+    }
+
+    td {
+        padding: 5px;
+    }
+
+    th {
+        padding: 5px;
+        background-color: lightblue;
+    }
+  </style>
+</head>
+<body>
+    <div id="menu">
+        SSO
+        <ul>
+            <li><a href="/v0.7/mgmt/users/">Manage Users</a></li>
+        </ul>
+
+        BOSS
+        <ul>
+            <li><a href="/v0.7/mgmt/token/">Token</a></li>
+            <li><a href="/v0.7/mgmt/groups/">Manage Groups</a></li>
+            <li><a href="/v0.7/mgmt/collections/">Manage Resources</a></li>
+        </ul>
+    </div>
+    <div id="content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
+
+

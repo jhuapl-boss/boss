@@ -77,7 +77,7 @@ def check_role(role_name):
     def check_role_decorator(func):
         @wraps(func)
         def wrapped(self, *args, **kwargs):
-            if check_role:
+            if check_role: # DP ???: Why is this here?
                 bpm = BossPrivilegeManager(self.request.user)
                 if not bpm.has_role(role_name) and not bpm.has_role('admin'):
                     return BossHTTPError("{} does not have the required role {}"
