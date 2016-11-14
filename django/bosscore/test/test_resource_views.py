@@ -294,6 +294,32 @@ class ResourceViewsExperimentTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
+    def test_post_experiment_no_time(self):
+        """
+        Post a new experiment (valid - No time in post data)
+
+        """
+
+        # Get the coordinate frame id
+        url = '/' + version + '/coord/cf1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        cf = response.data['name']
+
+        # Post a new experiment
+        url = '/' + version + '/collection/col1/experiment/exp2'
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/collection/col1/experiment/exp2/'
+        # Get an existing experiment
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], 'exp2')
+        self.assertEqual(response.data['num_time_samples'], 1)
+
     def test_post_experiment_exists(self):
         """
         Post a new collection (invalid - Collection,experiment already exist)
@@ -491,6 +517,30 @@ class ResourceViewsCoordinateTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
+    def test_post_coordinateframe_no_time_step(self):
+        """
+        Post a new coordinate frame without a time_step. This is set ot None (valid)
+
+        """
+        url = '/' + version + '/coord/cf10'
+        data = {'description': 'This is a test coordinateframe', 'x_start': 0, 'x_stop': 1000,
+                'y_start': 0, 'y_stop': 1000, 'z_start': 0, 'z_stop': 1000,
+                'x_voxel_size': 4, 'y_voxel_size': 4, 'z_voxel_size': 4, 'voxel_unit': 'nanometers'}
+
+        # Get an existing collection
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/coord/cf10'
+
+        # Get an existing collection
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.data['name'], 'cf10')
+        self.assertEqual(response.data['time_step'], None)
+        self.assertEqual(response.data['time_step_unit'], None)
+
     def test_post_coordinateframe_already_exists(self):
         """
         Post a new coordinate frame (invalid - Name already exists)
@@ -648,6 +698,50 @@ class ResourceViewsChannelTests(APITestCase):
         data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_with_valid_timestep(self):
+        """
+        Post a new channel with the default_time_step
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'default_time_sample': 5}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_with_invalid_timestep(self):
+        """
+        Post a new channel with the default_time_step
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'default_time_sample': 15}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_channel_with_valid_base_resolution(self):
+        """
+        Post a new channel with the base_resolution
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'base_resolution': 5}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_with_invalid_base_resolution(self):
+        """
+        Post a new channel with the an invalid base_resolution
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'base_resolution': 15}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
 
     def test_post_channel_no_experiment(self):
         """

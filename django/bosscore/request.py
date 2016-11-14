@@ -668,27 +668,6 @@ class BossRequest:
         """
         return self.base_boss_key
 
-    def get_boss_key_list(self):
-        """
-        Get the boss_key list for the current object including the resolution and time samples
-
-        The boss key is the compound identifier using the "name" attribute of the data model resources used
-        in the request
-
-        Returns:
-            self.boss_key (list(str)) : List of boss keys for the request
-        """
-        request_boss_keys = []
-
-        # For services that are not part of the core services, append resolution and time to the key
-        if self.service == 'meta':
-            request_boss_keys = [self.base_boss_key]
-        else:
-            for time_step in range(self.time_start, self.time_stop):
-                request_boss_keys.append(self.base_boss_key + '&' + str(self.resolution) + '&' + str(time_step))
-
-        return request_boss_keys
-
     def get_lookup_key(self):
         """
         Returns the base lookup key for the request, excluding the resolution and time sample
@@ -702,31 +681,31 @@ class BossRequest:
         """
         return LookUpKey.get_lookup_key(self.base_boss_key).lookup_key
 
-    def get_lookup_key_list(self):
-        """
-        Returns the list of lookup keys for the request when including the resolution and time sample
-
-        The lookup key is the compound identifier using the "id" attribute of the data model resources used
-        in the request
-
-        Returns:
-            lookup (list(str))) : List of Lookup keys that correspond to the request
-
-        """
-        request_lookup_keys = []
-        if self.base_boss_key:
-            # Get the lookup key for the bosskey
-            base_lookup = LookUpKey.get_lookup_key(self.base_boss_key)
-
-            # If not a core service, append resolution and time
-            if self.service == 'meta':
-                request_lookup_keys = [base_lookup.lookup_key]
-            else:
-                for time_step in range(self.time_start, self.time_stop):
-                    request_lookup_keys.append(base_lookup.lookup_key + '&' +
-                                               str(self.resolution) + '&' + str(time_step))
-
-        return request_lookup_keys
+    # def get_lookup_key_list(self):
+    #     """
+    #     Returns the list of lookup keys for the request when including the resolution and time sample
+    #
+    #     The lookup key is the compound identifier using the "id" attribute of the data model resources used
+    #     in the request
+    #
+    #     Returns:
+    #         lookup (list(str))) : List of Lookup keys that correspond to the request
+    #
+    #     """
+    #     request_lookup_keys = []
+    #     if self.base_boss_key:
+    #         # Get the lookup key for the bosskey
+    #         base_lookup = LookUpKey.get_lookup_key(self.base_boss_key)
+    #
+    #         # If not a core service, append resolution and time
+    #         if self.service == 'meta':
+    #             request_lookup_keys = [base_lookup.lookup_key]
+    #         else:
+    #             for time_step in range(self.time_start, self.time_stop):
+    #                 request_lookup_keys.append(base_lookup.lookup_key + '&' +
+    #                                            str(self.resolution) + '&' + str(time_step))
+    #
+    #     return request_lookup_keys
 
     def set_time(self, time):
         """

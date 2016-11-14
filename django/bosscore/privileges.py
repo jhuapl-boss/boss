@@ -15,8 +15,7 @@ from django.contrib.auth.models import User, Group
 from functools import wraps
 from bosscore.error import BossHTTPError, ErrorCodes
 from bosscore.serializers import BossRoleSerializer
-from .models import BossRole
-from bossutils.keycloak import KeyCloakClient
+from .models import BossRole, BossGroup
 
 VALID_ROLES = ('admin', 'user-manager', 'resource-manager')
 
@@ -58,6 +57,11 @@ def load_user_roles(user, roles):
         group, created = Group.objects.get_or_create(name=name)
         if group not in groups:
             user.groups.add(group)
+
+        # primary and bosspublic are owned by the admin
+        if created:
+            admin_user = User.objects.get(username='bossadmin')
+            bgroup = BossGroup.objects.create(group=group, creator=admin_user)
 
 # Decorators to check that the user has the right role
 def check_role(role_name):

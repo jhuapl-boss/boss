@@ -19,74 +19,14 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 
 from guardian.shortcuts import get_objects_for_user, get_perms_for_model, assign_perm, get_users_with_perms, \
-    remove_perm, get_objects_for_group, get_perms
-
+    remove_perm, get_objects_for_group
 
 from bosscore.privileges import check_role, BossPrivilegeManager
+from bosscore.permissions import check_is_member_or_maintainer
 from bosscore.error import BossHTTPError, ErrorCodes, BossGroupNotFoundError, BossUserNotFoundError
-from bosscore.serializers import GroupSerializer, UserSerializer
 
 from bosscore.models import BossGroup, Collection, Experiment, Channel
-
-
-class BossGroupMemberList(APIView):
-    """
-    Class to get group membership information
-
-    """
-
-    @check_role("resource-manager")
-    def get(self, request):
-        """
-        Gets the membership status of a user for a group
-        Args:
-           request: Django rest framework request
-           group_name: Group name from the request
-           user_name: User name from the request
-
-       Returns:
-           bool : True if the user is a member of the group
-
-        """
-        if 'groupname' in request.query_params:
-            groupname = request.query_params['groupname']
-        else:
-            groupname = None
-
-        if 'username' in request.query_params:
-            username = request.query_params['username']
-        else:
-            username = None
-
-        try:
-            if username is None and groupname is None:
-                #  Both the user-name and group name is not specified. Return all groups for the logged in user
-                list_groups = request.user.groups.values_list('name', flat=True)
-                list_groups = [name for name in list_groups]
-                data = {"groups": list_groups}
-            elif username is not None and groupname is None:
-                # username without groupname. Return all groups for this user
-                user = User.objects.get(username=username)
-                list_groups = user.groups.values_list('name', flat=True)
-                list_groups = [name for name in list_groups]
-                data = {"groups": list_groups}
-            elif username is None and groupname is not None:
-                # The group name is specified without the username. Return a list of all users in the group
-                group = Group.objects.get(name=groupname)
-                list_users = group.user_set.all().values_list('username', flat=True)
-                list_users = [name for name in list_users]
-                data = {"group-members": list_users}
-            else:
-                # Both group name and user name are specified. Return the membership status for the user
-                group = Group.objects.get(name=groupname)
-                usr = User.objects.get(username=username)
-                data = group.user_set.filter(id=usr.id).exists()
-
-            return Response(data, status=200)
-        except Group.DoesNotExist:
-            return BossGroupNotFoundError(groupname)
-        except User.DoesNotExist:
-            return BossUserNotFoundError(username)
+from bosscore.constants import ADMIN_USER, ADMIN_GRP, PUBLIC_GRP
 
 
 class BossGroupMember(APIView):
@@ -109,15 +49,20 @@ class BossGroupMember(APIView):
 
         """
         try:
+            group = Group.objects.get(name=group_name)
+
+            # Check for permissions. The logged in user has to be a member or group maintainer
+            if not check_is_member_or_maintainer(request.user, group_name):
+                return BossHTTPError('The user {} is not a member or maintainer of the group {} '
+                                     .format(request.user.username, group_name),
+                                     ErrorCodes.MISSING_PERMISSION)
             if user_name is None:
                 # Return all users for the group
-                group = Group.objects.get(name=group_name)
                 list_users = group.user_set.all().values_list('username', flat=True)
                 list_users = [name for name in list_users]
                 data = {"members": list_users}
             else:
                 # Both group name and user name are specified. Return the membership status for the user
-                group = Group.objects.get(name=group_name)
                 usr = User.objects.get(username=user_name)
                 status = group.user_set.filter(id=usr.id).exists()
                 data = {"result": status}
@@ -196,14 +141,14 @@ class BossGroupMember(APIView):
 
 class BossGroupMaintainer(APIView):
     """
-    View to add a user to a group
+    View to add a maintainer to a group
 
     """
 
     @check_role("resource-manager")
     def get(self, request, group_name, user_name=None):
         """
-        Gets the membership status of a user for a group
+        Gets the maintianer status of a user for a group
         Args:
            request: Django rest framework request
            group_name: Group name from the request
@@ -216,6 +161,12 @@ class BossGroupMaintainer(APIView):
         try:
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
+
+            # Check for permissions. The logged in user has to be a member or group maintainer
+            if not check_is_member_or_maintainer(request.user, group_name):
+                return BossHTTPError('The user {} is not a member or maintainer of the group {} '
+                                     .format(request.user.username, group_name),
+                                     ErrorCodes.MISSING_PERMISSION)
             if user_name is None:
 
                 # Return all maintainers for the group
@@ -223,10 +174,10 @@ class BossGroupMaintainer(APIView):
                 maintainers = [user.username for user in list_maintainers]
                 data = {"maintainers": maintainers}
             else:
-                # Both group name and user name are specified. Return the membership status for the user
+                # Both group name and user name are specified. Return the maintainer status for the user
                 usr = User.objects.get(username=user_name)
                 status = usr.has_perm("maintain_group", bgroup)
-                data = {"result" : status}
+                data = {"result": status}
 
             return Response(data, status=200)
         except Group.DoesNotExist:
@@ -237,7 +188,7 @@ class BossGroupMaintainer(APIView):
     @check_role("resource-manager")
     def post(self, request, group_name, user_name):
         """
-        Adds a user to a group
+        Adds a maintainer to a group
         Args:
             request: Django rest framework request
             group_name: Group name from the request
@@ -249,7 +200,7 @@ class BossGroupMaintainer(APIView):
         """
         try:
             if user_name is None:
-                return BossHTTPError ('Missing username parameter in post.',ErrorCodes.INVALID_URL)
+                return BossHTTPError('Missing username in post.', ErrorCodes.INVALID_URL)
 
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
@@ -266,7 +217,7 @@ class BossGroupMaintainer(APIView):
 
             else:
                 return BossHTTPError('The user {} does not have the {} permission on the group {}'
-                                     .format(request.user.username,'maintain_group', group_name),
+                                     .format(request.user.username, 'maintain_group', group_name),
                                      ErrorCodes.MISSING_PERMISSION)
 
         except Group.DoesNotExist:
@@ -277,7 +228,7 @@ class BossGroupMaintainer(APIView):
     @check_role("resource-manager")
     def delete(self, request, group_name, user_name):
         """
-        Removes a user from a group
+        Removes a maintainer form the group
         Args:
             request: Django rest framework request
             group_name:Group name from the request
@@ -289,7 +240,7 @@ class BossGroupMaintainer(APIView):
         """
         try:
             if user_name is None:
-                return BossHTTPError ('Missing username parameter in post.',ErrorCodes.INVALID_URL)
+                return BossHTTPError('Missing username parameter in post.', ErrorCodes.INVALID_URL)
 
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
@@ -297,15 +248,14 @@ class BossGroupMaintainer(APIView):
             # Check the users permissions.
             if request.user.has_perm("maintain_group", bgroup):
                 usr = User.objects.get(username=user_name)
-                group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
-                status = usr.has_perm('maintain_group',bgroup)
+                status = usr.has_perm('maintain_group', bgroup)
 
                 if status is False:
                     return BossHTTPError('The user {} does not have the {} permission on the group {}'
                                          .format(usr.username, 'maintain_group', group_name),
                                          ErrorCodes.MISSING_PERMISSION)
                 else:
-                    remove_perm('maintain_group',usr, bgroup)
+                    remove_perm('maintain_group', usr, bgroup)
 
                 return HttpResponse(status=204)
             else:
@@ -327,7 +277,7 @@ class BossUserGroup(APIView):
     @check_role("resource-manager")
     def get(self, request, group_name=None):
         """
-        Get all group s
+        Get all groups
         Args:
            request: Django rest framework request
            group_name: Group name from the request
@@ -339,7 +289,7 @@ class BossUserGroup(APIView):
             try:
                 group = Group.objects.get(name=group_name)
                 bgroup = BossGroup.objects.get(group=group)
-                data = {"name" : group.name, "owner" : bgroup.creator.username}
+                data = {"name": group.name, "owner": bgroup.creator.username}
                 resources = []
 
                 # get permission sets for models
@@ -353,7 +303,7 @@ class BossUserGroup(APIView):
                 ch_list = get_objects_for_group(group, perms=channel_perms, klass=Channel, any_perm=True)
 
                 for col in col_list:
-                    obj = {'collection': col.name }
+                    obj = {'collection': col.name}
                     resources.append(obj)
 
                 for exp in exp_list:
@@ -362,10 +312,10 @@ class BossUserGroup(APIView):
 
                 for ch in ch_list:
                     obj = {'collection': ch.experiment.collection.name, 'experiment': ch.experiment.name,
-                           'channel': ch.name }
+                           'channel': ch.name}
                     resources.append(obj)
 
-                data['resources']= resources
+                data['resources'] = resources
                 return Response(data, status=200)
             except Group.DoesNotExist:
                 return BossGroupNotFoundError(group_name)
@@ -405,19 +355,32 @@ class BossUserGroup(APIView):
             Http status of the request
 
         """
-        group, created = Group.objects.get_or_create(name=group_name)
-        if not created:
-            return BossHTTPError("A group  with name {} already exist".format(group_name), ErrorCodes.GROUP_EXISTS)
-        bgroup = BossGroup.objects.create(group=group, creator=request.user)
+        try:
+            group, created = Group.objects.get_or_create(name=group_name)
+            if not created:
+                return BossHTTPError("A group  with name {} already exist".format(group_name), ErrorCodes.GROUP_EXISTS)
+            bgroup = BossGroup.objects.create(group=group, creator=request.user)
+            admin_user = User.objects.get(username=ADMIN_USER)
 
-        # assign permissions to the creator of the group
-        group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
-        for permission in group_perms:
-            assign_perm(permission, request.user, bgroup)
+            # assign permissions to the creator of the group
+            # Get the primary group of the creator
+            group_name = request.user.username + "-primary"
+            user_primary_group = Group.objects.get(name=group_name)
 
-        # add the creator to the group
-        bgroup.group.user_set.add(request.user)
-        return Response(status=201)
+            admin_group = Group.objects.get(name=ADMIN_GRP)
+
+            group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
+            for permission in group_perms:
+                assign_perm(permission, user_primary_group, bgroup)
+                assign_perm(permission, admin_group, bgroup)
+
+            # add the creator to the group
+            bgroup.group.user_set.add(request.user)
+            return Response(status=201)
+        except User.DoesNotExist:
+            return BossUserNotFoundError(ADMIN_USER)
+        except Group.DoesNotExist:
+            return BossGroupNotFoundError(ADMIN_GRP)
 
     @check_role("resource-manager")
     def delete(self, request, group_name):

@@ -157,26 +157,34 @@ class GroupMemberTests(APITestCase):
         :return:
         """
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user('testuser2555')
-        dbsetup.set_user(user)
+        self.user1 = dbsetup.create_user('testuser2555')
+        dbsetup.set_user(self.user1)
         dbsetup.create_group('unittest2555')
 
-        user = dbsetup.create_user('testuser')
+        self.user2 = dbsetup.create_user('testuser')
         dbsetup.add_role("resource-manager")
         dbsetup.create_group('unittest')
-        dbsetup.set_user(user)
+        dbsetup.set_user(self.user2)
 
-        self.client.force_login(user)
+        self.client.force_login(self.user2)
         dbsetup.insert_test_data()
 
     def test_get_members(self):
         """ Get all members of a group"""
 
         # get a group
-        url = '/' + version + '/groups/testuser-primary/members'
+        url = '/' + version + '/groups/unittest/members'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.data['members']), set(['testuser']))
+
+    def test_get_members_no_permission(self):
+        """ Get all members of a group"""
+
+        # get a group
+        url = '/' + version + '/groups/unittest2555/members'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
 
     def test_get_members_username(self):
         """ Get all members of a group"""
@@ -299,6 +307,49 @@ class GroupMemberTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
 
+    def test_get_members_permission(self):
+        """ Test that group maintainers can query the list of members"""
+        self.client.force_login(self.user1)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/members'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+        self.client.force_login(self.user2)
+        #
+        # # Add user1 to the group maintainer
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/members'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['members']), set(['testuser']))
+
+    def test_get_members_permission_for_group_member(self):
+        """ Test that group members can query the list of maintainers"""
+        self.client.force_login(self.user1)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/members'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+        self.client.force_login(self.user2)
+        #
+        # # Add user1 to the group
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/members'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['members']), set(['testuser','testuser2555']))
 
 class GroupMaintainerTests(APITestCase):
     """
@@ -311,16 +362,16 @@ class GroupMaintainerTests(APITestCase):
         :return:
         """
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user('testuser2555')
-        dbsetup.set_user(user)
+        self.user1 = dbsetup.create_user('testuser2555')
+        dbsetup.set_user(self.user1)
         dbsetup.create_group('unittest2555')
 
-        user = dbsetup.create_user('testuser')
+        self.user2 = dbsetup.create_user('testuser')
         dbsetup.add_role("resource-manager")
         dbsetup.create_group('unittest')
-        dbsetup.set_user(user)
+        dbsetup.set_user(self.user2)
 
-        self.client.force_login(user)
+        self.client.force_login(self.user2)
         dbsetup.insert_test_data()
 
     def test_get_maintainers(self):
@@ -331,6 +382,14 @@ class GroupMaintainerTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.data['maintainers']), set(['testuser']))
+
+    def test_get_maintainers_no_permissions(self):
+        """ Get all maintainers of a group without permissions"""
+
+        # get a group
+        url = '/' + version + '/groups/unittest2555/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
 
     def test_get_maintainers_username(self):
         """ Get all members of a group"""
@@ -420,7 +479,7 @@ class GroupMaintainerTests(APITestCase):
         url = '/' + version + '/groups/unittest/maintainers'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('testuser',response.data['maintainers'])
+        self.assertIn('testuser', response.data['maintainers'])
 
     def test_group_maintainer_invalid_group(self):
         """ Test group-maintainer api calls with a group that does not exist """
@@ -470,3 +529,48 @@ class GroupMaintainerTests(APITestCase):
         url = '/' + version + '/groups/unittest2555/maintainers/testuser/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
+
+    def test_get_maintainers_permission(self):
+        """ Test that group maintainers can query the list of maintainers"""
+        self.client.force_login(self.user1)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+        self.client.force_login(self.user2)
+        #
+        # # Add user1 to the group maintainer
+        url = '/' + version + '/groups/unittest/maintainers/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['maintainers']), set(['testuser','testuser2555']))
+
+    def test_get_maintainers_permission_for_group_member(self):
+        """ Test that group members can query the list of maintainers"""
+        self.client.force_login(self.user1)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+        self.client.force_login(self.user2)
+        #
+        # # Add user1 to the group maintainer
+        url = '/' + version + '/groups/unittest/members/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        # get a group
+        url = '/' + version + '/groups/unittest/maintainers'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['maintainers']), set(['testuser']))
+

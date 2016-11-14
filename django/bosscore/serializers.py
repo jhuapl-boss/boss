@@ -66,6 +66,42 @@ class ChannelSerializer(serializers.ModelSerializer):
         fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
                   'base_resolution', 'datatype', 'creator')
 
+    def validate(self, data):
+        """Validate the default_time_step and base_resolution
+
+        If these are included,validate that they are within the bounds of num_time_samples and num_hierarchy_levels.
+        Args:
+            data (dict): The data fields to be validated.
+        Returns:
+            data (dict): The validated data fields.
+        Raises:
+            ValidationError: If values are out of range.
+        """
+        errors = {}
+
+        # Get the experiment
+        exp = data.get('experiment')
+        num_time_samples = exp.num_time_samples
+        num_hierarchy_levels = exp.num_hierarchy_levels
+
+        default_time_sample = data.get('default_time_sample', None)
+        base_resolution = data.get('base_resolution', None)
+
+        # Validate that default_time_step is less than the num_time_samples
+        if default_time_sample is not None and default_time_sample >= num_time_samples:
+            errors['default_time_step'] = 'Ensure this value is less that the experiments num_time_samples {}.'\
+                .format(num_time_samples)
+
+        # Validate that base_Resolution is less than the num_hierarchy_levels
+        if base_resolution is not None and base_resolution >= num_hierarchy_levels:
+            errors['base_resolution'] = 'Ensure this value is less that the experiments maximum number of ' \
+                                        'hierarchy levels {}.'.format(num_hierarchy_levels)
+
+        if len(errors):
+            raise serializers.ValidationError(errors)
+
+        return data
+
 
 class ChannelUpdateSerializer(serializers.ModelSerializer):
     """
@@ -92,6 +128,7 @@ class ChannelUpdateSerializer(serializers.ModelSerializer):
 
         return not bool(self._errors)
 
+
 class ChannelReadSerializer(serializers.ModelSerializer):
     """
     Channel serializer for GETS
@@ -107,16 +144,30 @@ class ChannelReadSerializer(serializers.ModelSerializer):
                   'base_resolution', 'datatype', 'creator', 'sources', 'related')
 
     def get_sources(self, channel):
+        """
+        Returns a list of source channel names for a given channel
+        Args:
+            channel:
+
+        Returns:
+            List of source channel names
+        """
         source_names = channel.sources.values_list('name', flat=True)
-        list_sources = [name for name in source_names ]
+        list_sources = [name for name in source_names]
         return list_sources
 
     def get_related(self, channel):
+        """
+            Returns a list of related channel names for a given channel
+            Args:
+                channel:
+
+            Returns:
+                List of source related names
+        """
         related_names = channel.related.values_list('name', flat=True)
-        list_related = [name for name in related_names ]
+        list_related = [name for name in related_names]
         return list_related
-
-
 
 
 class ExperimentSerializer(serializers.ModelSerializer):
@@ -216,6 +267,7 @@ class BossGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = BossGroup
         fields = ('group', 'creator')
+
 
 class GroupSerializer(serializers.ModelSerializer):
 

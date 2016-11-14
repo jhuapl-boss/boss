@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import url
-from bosscore.views import views_user
-
-urlpatterns = [
-
-    # URLS to add role
-    url(r'(?P<user_name>[\w_-]+)/(?P<role_name>[\w_-]+)?/?',views_user.BossUserRole.as_view()),
 
 
-]
+# Admin user
+ADMIN_USER = 'bossadmin'
+
+# Admin group
+ADMIN_GRP = 'admin'
+
+# Public group
+PUBLIC_GRP = 'bosspublic'
+
