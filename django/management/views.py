@@ -8,6 +8,7 @@ from django import forms
 
 from sso.views.views_user import BossUser, BossUserRole
 from bosscore.views.views_group import BossUserGroup, BossGroupMaintainer, BossGroupMember
+from bosscore.views.views_resource import CollectionList, CollectionDetail
 
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
@@ -250,3 +251,45 @@ class Group(LoginRequiredMixin, View):
                     return resp
 
             return HttpResponseRedirect('/v0.7/mgmt/group/' + group_name)
+
+class CollectionForm(forms.Form):
+    collection = forms.CharField()
+    description = forms.CharField(required=False)
+
+class Collections(LoginRequiredMixin, View):
+    def get(self, request):
+        delete = request.GET.get('delete')
+        if delete:
+            boss = CollectionDetail()
+            boss.request = request
+            resp = boss.delete(request, delete)
+            if resp.status_code != 204:
+                return resp
+            return HttpResponseRedirect('/v0.7/mgmt/collections/')
+
+        boss = CollectionList()
+        boss.request = request
+        collections = boss.get(request)
+        if collections.status_code != 200:
+            return collections
+
+        args = {
+            'collections': collections.data['collections'],
+            'form': CollectionForm(),
+        }
+        return HttpResponse(render_to_string('collections.html', args, RequestContext(request)))
+
+    def post(self, request):
+        form = CollectionForm(request.POST)
+        if form.is_valid():
+            collection = form.cleaned_data['collection']
+            description = form.cleaned_data['description']
+
+            boss = CollectionDetail()
+            boss.request = request # needed for check_role() to work
+            boss.request.data = {'description': description} # simulate the DRF request object
+            resp = boss.post(request, collection)
+            if resp.status_code != 201:
+                return resp # should reformat to a webpage
+
+            return HttpResponseRedirect('/v0.7/mgmt/collections/')
