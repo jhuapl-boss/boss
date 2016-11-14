@@ -22,5 +22,6 @@ urlpatterns = [
     url(r'groups/?', views.Groups.as_view(), name='manage-groups'),
     url(r'group/(?P<group_name>[\w_-]+)/?', views.Group.as_view(), name='manage-group'),
     url(r'collections/?', views.Collections.as_view(), name='manage-collections'),
+    url(r'collection/(?P<collection_name>[\w_-]+)/?', views.Collection.as_view(), name='manage-collection'),
     url(r'', views.Home.as_view(), name='manage-home'),
 ]

@@ -9,6 +9,10 @@ from django import forms
 from sso.views.views_user import BossUser, BossUserRole
 from bosscore.views.views_group import BossUserGroup, BossGroupMaintainer, BossGroupMember
 from bosscore.views.views_resource import CollectionList, CollectionDetail
+from bosscore.views.views_resource import ExperimentList, ExperimentDetail
+from bosscore.views.views_resource import CoordinateFrameList, CoordinateFrameDetail
+from bosscore.views.views_resource import ChannelList, ChannelDetail
+from bossmeta.views import BossMeta
 
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
@@ -293,3 +297,142 @@ class Collections(LoginRequiredMixin, View):
                 return resp # should reformat to a webpage
 
             return HttpResponseRedirect('/v0.7/mgmt/collections/')
+
+class CoordinateFrameForm(forms.Form):
+    coordinate_frame = forms.CharField()
+    description = forms.CharField(required=False)
+
+    x_start = forms.IntegerField()
+    x_stop = forms.IntegerField()
+
+    y_start = forms.IntegerField()
+    y_stop = forms.IntegerField()
+
+    z_start = forms.IntegerField()
+    z_stop = forms.IntegerField()
+
+    x_voxel_size = forms.IntegerField()
+    y_voxel_size = forms.IntegerField()
+    z_voxel_size = forms.IntegerField()
+    voxel_units = forms.ChoiceField(choices=[(c,c) for c in ['', 
+                                                             'nanometers', 
+                                                             'micrometers', 
+                                                             'millimeters', 
+                                                             'centimeters']])
+
+    time_step = forms.IntegerField(required=False)
+    time_step_units = forms.ChoiceField(required=False,
+                                        choices=[(c,c) for c in ['', 
+                                                                 'nanoseconds', 
+                                                                 'microseconds', 
+                                                                 'milliseconds', 
+                                                                 'seconds']]) 
+
+class ExperimentForm(forms.Form):
+    experiment = forms.CharField()
+    description = forms.CharField(required=False)
+
+    coord_frame_name = forms.CharField() # DP TODO: make a drop down with valid coord frame names
+    num_hierarchy_levels = forms.IntegerField()
+    hierarchy_method = forms.ChoiceField(choices=[(c,c) for c in ['', 'near_iso', 'iso', 'slice']])
+    max_time_sample = forms.IntegerField()
+
+class MetaForm(forms.Form):
+    key = forms.CharField()
+    value = forms.CharField(widget=forms.Textarea)
+
+class Collection(LoginRequiredMixin, View):
+    def get(self, request, collection_name):
+        # Load data from different models
+        boss = CollectionDetail()
+        boss.request = request
+        collection = boss.get(request, collection_name)
+        if collection.status_code != 200:
+            return collection
+        collection = collection.data
+
+        boss = ExperimentList()
+        boss.request = request
+        experiments = boss.get(request, collection_name)
+        if experiments.status_code != 200:
+            return experiments
+        experiments = experiments.data['experiments']
+
+        boss = CoordinateFrameList()
+        boss.request = request
+        coords = boss.get(request, collection_name)
+        if coords.status_code != 200:
+            return coords
+        coords = coords.data['coords']
+
+        boss = BossMeta()
+        boss.request = request
+        boss.request.version = 'v0.7' # DP HACK: reference config file
+        boss.request.query_params = {}
+        metas = boss.get(request, collection_name)
+        if metas.status_code != 200:
+            return metas
+        metas = metas.data['keys']
+
+        # Handle deleting items from data models
+        remove = request.GET.get('rem_exp')
+        if remove is not None:
+            boss = ExperimentDetail()
+            boss.request = request
+            resp = boss.delete(request, collection_name, remove)
+            if resp.status_code != 204:
+                return resp # should reformt to a webpage
+            return HttpResponseRedirect('/v0.7/mgmt/collection/' + collection_name)
+
+        remove = request.GET.get('rem_coord')
+        if remove is not None:
+            boss = CoordinateFrameDetail()
+            boss.request = request
+            resp = boss.delete(request, collection_name, remove)
+            if resp.status_code != 204:
+                return resp # should reformt to a webpage
+            return HttpResponseRedirect('/v0.7/mgmt/collection/' + collection_name)
+
+        remove = request.GET.get('rem_meta')
+        if remove is not None:
+            boss = BossMeta()
+            boss.request = request
+            boss.request.query_params = {'key': remove}
+            resp = boss.delete(request, collection_name)
+            if resp.status_code != 204:
+                return resp # should reformt to a webpage
+            return HttpResponseRedirect('/v0.7/mgmt/collection/' + collection_name)
+
+        args = {
+            'collection_name': collection_name,
+            'collection': collection,
+            'experiments': experiments,
+            'coords': coords,
+            'metas': metas,
+            'exp_form': ExperimentForm(),
+            'coord_form': CoordinateFrameForm(),
+            'meta_form': MetaForm(),
+        }
+        return HttpResponse(render_to_string('collection.html', args, RequestContext(request)))
+
+    def post(self, request, group_name):
+        form = GroupMemberForm(request.POST)
+        if form.is_valid():
+            user = form.cleaned_data['user']
+            role = form.cleaned_data['role']
+
+            if 'member' in role:
+                boss_memb = BossGroupMember()
+                boss_memb.request = request
+                resp = boss_memb.post(request, group_name, user)
+                if resp.status_code != 204:
+                    return resp
+
+            if 'maintainer' in role:
+                boss_maint = BossGroupMaintainer()
+                boss_maint.request = request
+                resp = boss_maint.post(request, group_name, user)
+                if resp.status_code !=204:
+                    return resp
+
+            return HttpResponseRedirect('/v0.7/mgmt/group/' + group_name)
