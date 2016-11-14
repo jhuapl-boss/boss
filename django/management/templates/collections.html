@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+Manage BOSS Collections<br/>
+<br/>
+<table>
+    <thead>
+        <tr>
+            <th>Collection</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for collection in collections %}
+        <tr>
+            <td><a href="/v0.7/mgmt/collection/{{ collection }}">{{ collection }}</a></td>
+            <td><a href="/v0.7/mgmt/collections/?delete={{ collection }}">Remove Collection</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br/>
+<form action="/v0.7/mgmt/collections/" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Add Collection" />
+</form>
+{% endblock %}
+

@@ -1,0 +1,26 @@
+{
+    "KeySchema": [
+        {
+            "AttributeName": "channel_id_key",
+            "KeyType": "HASH"
+        },
+        {
+            "AttributeName": "version",
+            "KeyType": "RANGE"
+        }
+    ],
+    "AttributeDefinitions":[
+        {
+            "AttributeName": "channel_id_key",
+            "AttributeType": "S"
+        },
+        {
+            "AttributeName": "version",
+            "AttributeType": "N"
+        }
+    ],
+    "ProvisionedThroughput":{
+        "ReadCapacityUnits": 10,
+        "WriteCapacityUnits": 10
+    }
+}

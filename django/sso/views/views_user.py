@@ -66,7 +66,7 @@ class BossUser(APIView):
     """
     View to manage users
     """
-    def get(self, request, user_name):
+    def get(self, request, user_name=None):
         """
         Get information about a user
 
@@ -79,10 +79,15 @@ class BossUser(APIView):
         """
         try:
             with KeyCloakClient('BOSS') as kc:
-                response = kc.get_userdata(user_name)
-                roles = kc.get_realm_roles(user_name)
-                response["realmRoles"] = filter_roles([r['name'] for r in roles])
-                return Response(response, status=200)
+                if user_name is None: # Get all users
+                    search = request.GET.get('search')
+                    response = kc.get_all_users(search)
+                    return Response(response, status=200)
+                else:
+                    response = kc.get_userdata(user_name)
+                    roles = kc.get_realm_roles(user_name)
+                    response["realmRoles"] = filter_roles([r['name'] for r in roles])
+                    return Response(response, status=200)
         except KeyCloakError:
             msg = "Error getting user '{}' from Keycloak".format(user_name)
             return BossKeycloakError(msg)
