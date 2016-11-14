@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+Manage BOSS Experiment '{{ experiment_name }}'<br/>
+<br/>
+<table>
+{{ exp_form.as_table }}
+</table>
+<br/>
+<table>
+    <thead>
+        <tr>
+            <th>Channel</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for channel in channels %}
+        <tr>
+            <td><a href="/v0.7/mgmt/resources/{{ collection_name }}/{{ experiment_name }}/{{ channel }}">{{ channel }}</a></td>
+            <td><a href="/v0.7/mgmt/resources/{{ collection_name }}/{{ experiment_name }}?rem_chan={{ channel }}">Remove Channel</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br/>
+<table>
+    <thead>
+        <tr>
+            <th>Collection Meta Key</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for meta in metas %}
+        <tr>
+            <td><a href="/v0.7/mgmt/meta/{{ collection_name }}/{{ experiment_name }}/?key={{ meta }}">{{ meta }}</a></td>
+            <td><a href="/v0.7/mgmt/resources/{{ collection_name }}/{{ experiment_name }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br/>
+<form action="/v0.7/mgmt/resources/{{ collection_name }}/{{ experiment_name }}?action=chan" method="post">
+    {% csrf_token %}
+    {{ chan_form.as_p }}
+    <input type="submit" value="Add Experiment" />
+</form>
+<br/>
+<form action="/v0.7/mgmt/collection/{{ collection_name }}/{{ experiment_name }}?action=meta" method="post">
+    {% csrf_token %}
+    {{ meta_form.as_p }}
+    <input type="submit" value="Add Meta Value" />
+</form>
+{% endblock %}

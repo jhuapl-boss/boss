@@ -261,7 +261,7 @@ class CollectionForm(forms.Form):
     description = forms.CharField(required=False)
 
 class CoordinateFrameForm(forms.Form):
-    coordinate_frame = forms.CharField()
+    name = forms.CharField(label="Coordinate Frame")
     description = forms.CharField(required=False)
 
     x_start = forms.IntegerField()
@@ -364,13 +364,13 @@ class Resources(LoginRequiredMixin, View):
                 return HttpResponseRedirect('/v0.7/mgmt/resources/')
 
 class ExperimentForm(forms.Form):
-    experiment = forms.CharField()
+    name = forms.CharField(label="Experiment")
     description = forms.CharField(required=False)
 
     coord_frame = forms.CharField() # DP TODO: make a drop down with valid coord frame names
     num_hierarchy_levels = forms.IntegerField()
     hierarchy_method = forms.ChoiceField(choices=[(c,c) for c in ['', 'near_iso', 'iso', 'slice']])
-    max_time_sample = forms.IntegerField()
+    num_time_samples = forms.IntegerField()
 
 class MetaForm(forms.Form):
     key = forms.CharField()
@@ -432,8 +432,7 @@ class Collection(LoginRequiredMixin, View):
             form = ExperimentForm(request.POST)
             if form.is_valid():
                 data = form.cleaned_data.copy()
-                experiment_name = data['experiment']
-                del data['experiment']
+                experiment_name = data['name']
 
                 boss = ExperimentDetail()
                 boss.request = request
@@ -458,3 +457,156 @@ class Collection(LoginRequiredMixin, View):
 
                 return HttpResponseRedirect('/v0.7/mgmt/collection/' + collection_name)
             raise Exception(form.errors)
+
+class Meta(LoginRequiredMixin, View):
+    def get(self, request, collection, experiment=None, channel=None):
+        boss = BossMeta()
+        boss.request = request # needed for check_role() to work
+        boss.request.version = 'v0.7' # DP HACK: reference config file
+        boss.request.query_params = request.GET
+
+        meta = boss.get(request, collection, experiment, channel)
+
+        if meta.status_code != 200:
+            return meta # should reformat to a webpage
+
+        if channel is not None:
+            category = "Channel"
+            category_name = channel
+        elif experiment is not None:
+            category = "Experiment"
+            category_name = experiment
+        else:
+            category = "Collection"
+            category_name = collection
+
+
+        args = {
+            'category': category,
+            'category_name': category_name,
+            'key': meta.data['key'],
+            'value': meta.data['value'],
+        }
+        return HttpResponse(render_to_string('meta.html', args, RequestContext(request)))
+
+class CoordinateFrame(LoginRequiredMixin, View):
+    def get(self, request, coord_name):
+        boss = CoordinateFrameDetail()
+        boss.request = request # needed for check_role() to work
+
+        coord = boss.get(request, coord_name)
+
+        if coord.status_code != 200:
+            return coord # should reformat to a webpage
+
+        args = {
+            'coord_name': coord_name,
+            'form': CoordinateFrameForm(coord.data)
+        }
+        return HttpResponse(render_to_string('coordinate_frame.html', args, RequestContext(request)))
+
+class ChannelForm(forms.Form):
+    name = forms.CharField(label="Channel")
+    description = forms.CharField(required=False)
+
+    type = forms.ChoiceField(choices=[(c,c) for c in ['', 'image', 'annotation']])
+    datatype = forms.ChoiceField(choices=[(c,c) for c in ['', 'uint8', 'uint16', 'uint32', 'uint64']])
+
+    base_resolution = forms.IntegerField(required=False)
+    default_time_step = forms.IntegerField(required=False)
+    source = forms.CharField(required=False) # DP TODO: create custom field type that splits on '.'
+    related = forms.CharField(required=False)
+
+class Experiment(LoginRequiredMixin, View):
+    def get(self, request, collection_name, experiment_name):
+        # Load data from different models
+        boss = ExperimentDetail()
+        boss.request = request
+        experiment = boss.get(request, collection_name, experiment_name)
+        if experiment.status_code != 200:
+            return experiment
+        experiment = experiment.data
+
+        boss = ChannelList()
+        boss.request = request
+        channels = boss.get(request, collection_name, experiment_name)
+        if channels.status_code != 200:
+            return channels
+        channels = channels.data['channels']
+
+        boss = BossMeta()
+        boss.request = request
+        boss.request.version = 'v0.7' # DP HACK: reference config file
+        boss.request.query_params = {}
+        metas = boss.get(request, collection_name, experiment_name)
+        if metas.status_code != 200:
+            return metas
+        metas = metas.data['keys']
+
+        # Handle deleting items from data models
+        remove = request.GET.get('rem_chan')
+        if remove is not None:
+            boss = ChannelDetail()
+            boss.request = request
+            resp = boss.delete(request, collection_name, experiment_name, remove)
+            if resp.status_code != 204:
+                return resp # should reformt to a webpage
+            return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}'.format(collection_name, experiment_name))
+
+        remove = request.GET.get('rem_meta')
+        if remove is not None:
+            boss = BossMeta()
+            boss.request = request
+            boss.request.version = 'v0.7' # DP HACK: reference config file
+            boss.request.query_params = {'key': remove}
+            resp = boss.delete(request, collection_name, experiment_name)
+            if resp.status_code != 204:
+                return resp # should reformt to a webpage
+            return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}'.format(collection_name, experiment_name))
+
+        args = {
+            'collection_name': collection_name,
+            'experiment_name': experiment_name,
+            'exp_form': ExperimentForm(experiment),
+            'channels': channels,
+            'metas': metas,
+            'chan_form': ChannelForm(),
+            'meta_form': MetaForm(),
+        }
+        return HttpResponse(render_to_string('experiment.html', args, RequestContext(request)))
+
+    def post(self, request, collection_name, experiment_name):
+        action = request.GET.get('action') # URL parameter
+
+        if action == 'chan':
+            form = ChannelForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data.copy()
+                channel_name = data['name']
+                if 'source' in data:
+                    data['source'] = data['source'].split(',')
+                if 'related' in data:
+                    data['related'] = data['related'].split(',')
+
+                boss = ChannelDetail()
+                boss.request = request
+                boss.request.data = data
+                resp = boss.post(request, collection_name, experiment_name, channel_name)
+                if resp.status_code != 201:
+                    return resp
+
+                return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}'.format(collection_name, experiment_name))
+        elif action == 'meta':
+            form = MetaForm(request.POST)
+            if form.is_valid():
+                params = form.cleaned_data.copy()
+
+                boss = BossMeta()
+                boss.request = request
+                boss.request.version = 'v0.7' # DP HACK: reference config file
+                boss.request.query_params = params
+                resp = boss.post(request, collection_name, experiment_name)
+                if resp.status_code != 201:
+                    return resp
+
+                return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}'.format(collection_name, experiment_name))
