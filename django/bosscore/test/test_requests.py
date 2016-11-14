@@ -311,6 +311,7 @@ class CutoutRequestTests(APITestCase):
         with self.assertRaises(BossError):
             BossRequest(drfrequest, request_args)
 
+
 class CutoutInvalidRequestTests(APITestCase):
     """
     Class to test boss invalid requests
@@ -426,7 +427,6 @@ class CutoutInvalidRequestTests(APITestCase):
 
         with self.assertRaises(BossError):
             BossRequest(drfrequest, request_args)
-
 
     def test_request_cutout_invalid_datamodel(self):
         """

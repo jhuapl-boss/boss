@@ -52,8 +52,3 @@ class UserPrivilegeTests(TestCase):
         bpm = BossPrivilegeManager('testuser')
         self.assertEqual(bpm.has_role('user-manager'), True)
         self.assertEqual(bpm.has_role('resource-manager'), False)
-
-
-
-
-

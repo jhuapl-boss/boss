@@ -26,6 +26,7 @@ from bosscore.permissions import check_is_member_or_maintainer
 from bosscore.error import BossHTTPError, ErrorCodes, BossGroupNotFoundError, BossUserNotFoundError
 
 from bosscore.models import BossGroup, Collection, Experiment, Channel
+from bosscore.constants import ADMIN_USER, ADMIN_GRP, PUBLIC_GRP
 
 
 class BossGroupMember(APIView):
@@ -359,19 +360,27 @@ class BossUserGroup(APIView):
             if not created:
                 return BossHTTPError("A group  with name {} already exist".format(group_name), ErrorCodes.GROUP_EXISTS)
             bgroup = BossGroup.objects.create(group=group, creator=request.user)
-            admin_user = User.objects.get(username='bossadmin')
+            admin_user = User.objects.get(username=ADMIN_USER)
 
             # assign permissions to the creator of the group
+            # Get the primary group of the creator
+            group_name = request.user.username + "-primary"
+            user_primary_group = Group.objects.get(name=group_name)
+
+            admin_group = Group.objects.get(name=ADMIN_GRP)
+
             group_perms = [perm.codename for perm in get_perms_for_model(BossGroup)]
             for permission in group_perms:
-                assign_perm(permission, request.user, bgroup)
-                assign_perm(permission, admin_user, bgroup)
+                assign_perm(permission, user_primary_group, bgroup)
+                assign_perm(permission, admin_group, bgroup)
 
             # add the creator to the group
             bgroup.group.user_set.add(request.user)
             return Response(status=201)
         except User.DoesNotExist:
-            return BossUserNotFoundError('bossadmin')
+            return BossUserNotFoundError(ADMIN_USER)
+        except Group.DoesNotExist:
+            return BossGroupNotFoundError(ADMIN_GRP)
 
     @check_role("resource-manager")
     def delete(self, request, group_name):
