@@ -86,7 +86,7 @@ class IngestJobView(APIView):
             resource['channel']['base_resolution'] = channel.base_resolution
             resource['channel']['sources'] = [x.name for x in channel.sources.all()]
             resource['channel']['related'] = [x.name for x in channel.related.all()]
-            resource['channel']['default_time_step'] = channel.default_time_step
+            resource['channel']['default_time_sample'] = channel.default_time_sample
 
             # Set resource
             data['resource'] = resource

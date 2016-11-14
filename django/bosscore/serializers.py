@@ -89,7 +89,7 @@ class ChannelSerializer(serializers.ModelSerializer):
 
         # Validate that default_time_step is less than the num_time_samples
         if default_time_sample is not None and default_time_sample >= num_time_samples:
-            errors['default_time_step'] = 'Ensure this value is less that the experiments num_time_samples {}.'\
+            errors['default_time_sample'] = 'Ensure this value is less that the experiments num_time_samples {}.'\
                 .format(num_time_samples)
 
         # Validate that base_Resolution is less than the num_hierarchy_levels
