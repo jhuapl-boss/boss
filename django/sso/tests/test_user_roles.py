@@ -141,7 +141,7 @@ class TestBossUserRole(TestBase):
         self.assertEqual(response.status_code, 204)
         self.assertIsNone(response.data)
 
-        call = mock.call.remove_role_from_user('test', 'admin')
+        call = mock.call.remove_role_from_user('test', 'resource-manager')
         self.assertEqual(ctxMgr.mock_calls, [call])
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
