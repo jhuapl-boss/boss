@@ -344,7 +344,7 @@ class IngestManager:
                                                                                 ingest_job.resolution,
                                                                                 chunk_x, chunk_y, chunk_z, time_step)
                         # get the tiles keys for this chunk
-                        for tile in range(0, num_of_tiles):
+                        for tile in range(z, z + num_of_tiles):
                             # get the tile key
                             tile_key = (BossBackend(self.config)).encode_tile_key(project_info, ingest_job.resolution,
                                                                                   chunk_x, chunk_y, tile, time_step)

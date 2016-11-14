@@ -12,11 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.contrib.contenttypes.models import ContentType
 
 from guardian.shortcuts import assign_perm, get_perms, remove_perm, get_perms_for_model
 from .error import BossHTTPError, ErrorCodes, BossError
+from bosscore.models import BossGroup
+
+def check_is_member_or_maintainer(user, group_name):
+    """
+    Check if a user is a member or maintainer of the a group
+    Args:
+        user: User_name
+        group_name: Group_name
+
+    Returns:
+
+    """
+    try:
+        group = Group.objects.get(name = group_name)
+        bgroup = BossGroup.objects.get(group=group)
+        if user.has_perm("maintain_group", bgroup) and group.user_set.filter(id=user.id).exists():
+            return True
+        else:
+            return False
+    except (Group.DoesNotExist , BossGroup.DoesNotExist) as e:
+        return BossError("{} does not exist".format(group_name), ErrorCodes.RESOURCE_NOT_FOUND)
 
 
 class BossPermissionManager:
@@ -149,6 +170,10 @@ class BossPermissionManager:
         # Get the type of model
         try:
             admin_group, created = Group.objects.get_or_create(name="admin")
+            if created:
+                admin_user = User.objects.get(username='bossadmin')
+                bgroup = BossGroup.objects.create(group=admin_group, creator=admin_user)
+                
             ct = ContentType.objects.get_for_model(obj)
             assign_perm('read', admin_group, obj)
             assign_perm('add', admin_group, obj)

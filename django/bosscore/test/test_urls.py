@@ -20,7 +20,7 @@ from django.conf import settings
 from bosscore.views.views_resource import CollectionList, CollectionDetail, ExperimentList, ExperimentDetail, \
     ChannelList, ChannelDetail, CoordinateFrameList, CoordinateFrameDetail
 from bosscore.views.views_permission import ResourceUserPermission
-from bosscore.views.views_group import BossGroupMember, BossUserGroup, BossGroupMemberList, BossGroupMaintainer
+from bosscore.views.views_group import BossGroupMember, BossUserGroup, BossGroupMaintainer
 
 version = 'v0.7'
 
@@ -99,41 +99,6 @@ class BossCorePermissionRoutingTests(APITestCase):
         match = resolve('/' + version + '/permissions/')
         self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
 
-    # def test_permission_collection_resolves(self):
-    #     """
-    #     Test that all permission urls for collections resolves correctly
-    #
-    #     Returns: None
-    #
-    #     """
-    #
-    #     match = resolve('/' + version + '/permissions/test/col1/')
-    #     self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
-    #
-
-
-            # def test_permission_experiment_resolves(self):
-    #     """
-    #     Test that all permission urls for experiments resolves correctly
-    #
-    #     Returns: None
-    #
-    #     """
-    #
-    #     match = resolve('/' + version + '/permissions/test/col1/exp1/')
-    #     self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
-    #
-    # def test_permission_channel_resolves(self):
-    #     """
-    #     Test that all permission urls for channel resolves correctly
-    #
-    #     Returns: None
-    #
-    #     """
-    #
-    #     match = resolve('/' + version + '/permissions/test/col1/exp1/ch1/')
-    #     self.assertEqual(match.func.__name__, ResourceUserPermission.as_view().__name__)
-
 
 class BossCoreGroupsRoutingTests(APITestCase):
 
@@ -150,7 +115,6 @@ class BossCoreGroupsRoutingTests(APITestCase):
 
         match = resolve('/' + version + '/groups/')
         self.assertEqual(match.func.__name__, BossUserGroup.as_view().__name__)
-
 
     def test_group_member_resolves(self):
         """
@@ -177,5 +141,3 @@ class BossCoreGroupsRoutingTests(APITestCase):
 
         match = resolve('/' + version + '/groups/test/maintainers/testuser')
         self.assertEqual(match.func.__name__, BossGroupMaintainer.as_view().__name__)
-
-

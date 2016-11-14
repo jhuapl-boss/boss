@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+Manage BOSS Users for Group '{{ group_name }}'<br/>
+<br/>
+<table>
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Permissions</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user, perms in rows %}
+        <tr>
+            <td>{{ user }}</td>
+            <td>{{ perms }}</td>
+            <td>
+                    {% if user in members %}
+                        <a href="/v0.7/mgmt/group/{{ group_name }}?rem_memb={{ user }}">Remove Member</a>
+                    {% endif %}
+                    {% if user in maintainers %}
+                        <a href="/v0.7/mgmt/group/{{ group_name }}?rem_maint={{ user }}">Remove Maintainer</a>
+                    {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br/>
+<form action="/v0.7/mgmt/group/{{ group_name }}" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Add Permission" />
+</form>
+{% endblock %}

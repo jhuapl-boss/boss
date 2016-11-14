@@ -1,3 +1,17 @@
+# Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from rest_framework.test import APITestCase
 from django.conf import settings
 from .setup_db import SetupTestDB
@@ -7,7 +21,7 @@ version = settings.BOSS_VERSION
 
 class UserPermissionsCollection(APITestCase):
     """
-    Class to test the resource service
+    Class to test the permissions for the resource service: Collection
     """
 
     def setUp(self):
@@ -31,7 +45,7 @@ class UserPermissionsCollection(APITestCase):
 
     def test_get_collection_no_permission(self):
         """
-        Get a collection that does not exist
+        Get a collection that the user does not have permissions on
 
         """
         url = '/' + version + '/collection/col1/'
@@ -42,7 +56,7 @@ class UserPermissionsCollection(APITestCase):
 
     def test_get_collection_valid_permission(self):
         """
-        Get a valid collection
+        Get a collection that the user has permission on
 
         """
         url = '/' + version + '/collection/unittestcol/'
@@ -52,11 +66,9 @@ class UserPermissionsCollection(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'unittestcol')
 
-    # TODO Add unit test for POST ??
-
     def test_put_collection_no_permissions(self):
         """
-        Update a collection for which the user does not have update permissions on
+        Update a collection for which the user does not have update permissions
 
         """
         url = '/' + version + '/collection/col1/'
@@ -68,7 +80,7 @@ class UserPermissionsCollection(APITestCase):
 
     def test_put_collection_valid_permission(self):
         """
-        Update a collection that  the user has permissions on
+        Update a collection that  the user has permissions
 
         """
         url = '/' + version + '/collection/unittestcol/'
@@ -80,7 +92,7 @@ class UserPermissionsCollection(APITestCase):
 
     def test_put_collection_name_valid_permission(self):
         """
-        Update collection name (valid)
+        Update collection name  with valid permissions
 
         """
         url = '/' + version + '/collection/unittestcol/'
@@ -102,7 +114,7 @@ class UserPermissionsCollection(APITestCase):
 
     def test_delete_collection_valid_permission(self):
         """
-        Delete a collection that the user has permission for
+        Delete a collection that the user has permissions
 
         """
         url = '/' + version + '/collection/unittestcol1/'
@@ -131,7 +143,7 @@ class UserPermissionsCollection(APITestCase):
 
 class UserPermissionsCoordinateFrame(APITestCase):
     """
-    Class to test the resource service
+    Class to test the permissions for the resource service: Coordinateframe
     """
 
     def setUp(self):
@@ -155,17 +167,16 @@ class UserPermissionsCoordinateFrame(APITestCase):
 
     def test_get_coordinate_frame_no_permission(self):
         """
-        Get a coordinate frame that the user has no permissions for
+        Get a coordinate frame that the user does not have permissions on
 
         """
         url = '/' + version + '/coord/cf1/'
-
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
     def test_get_coordinate_frame_valid_permission(self):
         """
-        Get a valid coordinate_frame
+        Get a valid coordinate_frame with permissions
 
         """
         url = '/' + version + '/coord/unittestcf/'
@@ -174,8 +185,6 @@ class UserPermissionsCoordinateFrame(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'unittestcf')
-
-    # TODO Add unit test for POST ??
 
     def test_put_coordinate_frame_no_permissions(self):
         """
@@ -213,7 +222,7 @@ class UserPermissionsCoordinateFrame(APITestCase):
 
     def test_delete_coordinate_frames_no_permissions(self):
         """
-        Delete a coordinate frame that the user does not have permission for
+        Delete a coordinate frame that without permissions
 
         """
         url = '/' + version + '/coord/cf1/'
@@ -305,7 +314,7 @@ class UserPermissionsExperiment(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/unittestcol/experiment/unittestexpnew'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -324,7 +333,7 @@ class UserPermissionsExperiment(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/unittestexpnew'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'max_time_sample': 10, 'dummy': 'dummy'}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 403)
 
@@ -422,7 +431,6 @@ class UserPermissionsChannel(APITestCase):
 
         dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestchannel', 0, 0, 'uint8')
         dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestlayer', 0, 0, 'uint16', 'annotation')
-        #dbsetup.add_channel_layer_map('unittestcol', 'unittestexp', 'unittestchannel', 'unittestlayer')
 
     def test_get_channel_no_permission(self):
         """

@@ -93,13 +93,13 @@ class TestBossUserRole(TestBase):
     def test_post_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(post='/' + version + '/sso/user-role/test/user-manager')
-        response = BossUserRole.as_view()(request, 'test', 'user-manager')
+        request = self.makeRequest(post='/' + version + '/sso/user-role/test/resource-manager')
+        response = BossUserRole.as_view()(request, 'test', 'resource-manager')
 
         self.assertEqual(response.status_code, 201)
         self.assertIsNone(response.data)
 
-        call = mock.call.map_role_to_user('test', 'user-manager')
+        call = mock.call.map_role_to_user('test', 'resource-manager')
         self.assertEqual(ctxMgr.mock_calls, [call])
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
@@ -126,8 +126,8 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.map_role_to_user.side_effect = raise_error
 
-        request = self.makeRequest(post='/' + version + '/sso/user-role/test/user-manager')
-        response = BossUserRole.as_view()(request, 'test', 'user-manager')
+        request = self.makeRequest(post='/' + version + '/sso/user-role/test/resource-manager')
+        response = BossUserRole.as_view()(request, 'test', 'resource-manager')
 
         self.assertEqual(response.status_code, 500)
 
@@ -135,13 +135,13 @@ class TestBossUserRole(TestBase):
     def test_delete_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
-        request = self.makeRequest(delete='/' + version + '/sso/user-role/test/admin')
-        response = BossUserRole.as_view()(request, 'test', 'admin')
+        request = self.makeRequest(delete='/' + version + '/sso/user-role/test/resource-manager')
+        response = BossUserRole.as_view()(request, 'test', 'resource-manager')
 
         self.assertEqual(response.status_code, 204)
         self.assertIsNone(response.data)
 
-        call = mock.call.remove_role_from_user('test', 'admin')
+        call = mock.call.remove_role_from_user('test', 'resource-manager')
         self.assertEqual(ctxMgr.mock_calls, [call])
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
@@ -158,7 +158,7 @@ class TestBossUserRole(TestBase):
         ctxMgr = mKCC.return_value.__enter__.return_value
         ctxMgr.remove_role_from_user.side_effect = raise_error
 
-        request = self.makeRequest(delete='/' + version + '/sso/user-role/test/admin')
-        response = BossUserRole.as_view()(request, 'test', 'admin')
+        request = self.makeRequest(delete='/' + version + '/sso/user-role/test/resource-manager')
+        response = BossUserRole.as_view()(request, 'test', 'resource-manager')
 
         self.assertEqual(response.status_code, 500)

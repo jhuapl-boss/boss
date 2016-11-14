@@ -26,7 +26,7 @@ test_group = 'testuser-primary'
 
 class SetupTestDB:
     def __init__(self):
-        self.user = None
+        self.user = self.create_super_user()
 
     def create_user(self, username=None):
         if not username:
@@ -34,6 +34,8 @@ class SetupTestDB:
 
         self.user = User.objects.create_user(username=username, email=username+'@test.com', password=username)
         user_primary_group, created = Group.objects.get_or_create(name=username + '-primary')
+
+        # add the user to the public group and primary group
         public_group, created = Group.objects.get_or_create(name='bosspublic')
         self.user.groups.add(user_primary_group)
         public_group.user_set.add(self.user)
@@ -45,7 +47,17 @@ class SetupTestDB:
         BossRole.objects.create(user=user, role=role_name)
 
     def create_super_user(self):
-        self.user = User.objects.create_superuser(username=test_user, email='test@test.com', password='testuser')
+        self.user = User.objects.create_superuser(username='bossadmin', email='bossadmin@theboss.io',
+                                                  password='bossadmin')
+        user_primary_group, created = Group.objects.get_or_create(name='bossadmin' + '-primary')
+
+        # add the user to the public group and primary group and admin group
+        public_group, created = Group.objects.get_or_create(name='bosspublic')
+        admin_group, created = Group.objects.get_or_create(name='admin')
+        self.user.groups.add(user_primary_group)
+        self.user.groups.add(public_group)
+        self.user.groups.add(admin_group)
+
         return self.user
 
     def get_user(self):
@@ -58,8 +70,12 @@ class SetupTestDB:
         group, created = Group.objects.get_or_create(name=group_name)
         if created:
             self.user.groups.add(group)
-            bgrp,created = BossGroup.objects.get_or_create(group=group, creator=self.user)
-            assign_perm('maintain_group', self.user, bgrp)
+            bgrp, created = BossGroup.objects.get_or_create(group=group, creator=self.user)
+
+            # Assign permission to the users primary group
+            group_name = self.user.username + "-primary"
+            user_primary_group = Group.objects.get(name=group_name)
+            assign_perm('maintain_group', user_primary_group, bgrp)
         return created
 
     def insert_test_data(self):
@@ -91,7 +107,8 @@ class SetupTestDB:
         self.add_experiment('my_col_1', 'my_exp_1', 'cf1', 10, 500)
         self.add_channel('my_col_1', 'my_exp_1', 'my_ch_1', 0, 0, 'uint8', 'image')
 
-    def add_permissions(self, group, obj):
+    @staticmethod
+    def add_permissions(group, obj):
         # Get the type of model
         ct = ContentType.objects.get_for_model(obj)
         user_primary_group, created = Group.objects.get_or_create(name=group)
@@ -164,7 +181,7 @@ class SetupTestDB:
 
         return cf
 
-    def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels, max_time_sample):
+    def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels, num_time_samples):
         """
 
         Args:
@@ -172,7 +189,7 @@ class SetupTestDB:
             experiment_name: Name of the experiment
             coordinate_name: Name of the coordinate frame
             num_hierarchy_levels:
-            max_time_sample:
+            num_time_samples:
 
         Returns:
             experiment
@@ -182,7 +199,7 @@ class SetupTestDB:
         cf = CoordinateFrame.objects.get(name=coordinate_name)
         exp = Experiment.objects.create(name=experiment_name, collection=col, coord_frame=cf,
                                         num_hierarchy_levels=num_hierarchy_levels,
-                                        max_time_sample=max_time_sample, creator=self.user)
+                                        num_time_samples=num_time_samples, creator=self.user)
 
         lkup_key = str(col.pk) + '&' + str(exp.pk)
         bs_key = col.name + '&' + str(exp.name)
@@ -196,28 +213,29 @@ class SetupTestDB:
         return exp
 
     def add_channel(self, collection_name, experiment_name, channel_name,
-                    default_time_step, base_resolution, datatype, type = None):
+                    default_time_sample, base_resolution, datatype, channel_type=None):
         """
 
         Args:
-            collection_name:
-            experiment_name:
-            channel_name:
-            default_time_step:
-            base_resolution:
-            datatype:
+            collection_name: Name of the collection
+            experiment_name: Name of the experiment
+            channel_name: Name of the channel
+            default_time_sample: Default time sample
+            base_resolution: Base resolution of the channel
+            datatype: Data type
+            channel_type:  Channel Type (image or annotation)
 
         Returns:
             Channel
 
         """
-        if type is None:
-            type = 'image'
+        if channel_type is None:
+            channel_type = 'image'
         col = Collection.objects.get(name=collection_name)
         exp = Experiment.objects.get(name=experiment_name, collection=col)
         channel = Channel.objects.create(name=channel_name, experiment=exp,
-                                         default_time_step=default_time_step, base_resolution=base_resolution,
-                                         type=type, datatype=datatype, creator=self.user)
+                                         default_time_sample=default_time_sample, base_resolution=base_resolution,
+                                         type=channel_type, datatype=datatype, creator=self.user)
 
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(channel.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + channel.name
@@ -232,4 +250,3 @@ class SetupTestDB:
         self.add_permissions(primary_group, channel)
 
         return channel
-

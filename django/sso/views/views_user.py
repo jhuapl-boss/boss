@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from bosscore.error import BossKeycloakError, BossHTTPError, ErrorCodes
 from bosscore.models import BossRole
 from bosscore.serializers import UserSerializer, BossRoleSerializer
-from bosscore.privileges import check_role
+from bosscore.privileges import check_role, BossPrivilegeManager
 
 from bossutils.keycloak import KeyCloakClient, KeyCloakError
 from bossutils.logger import BossLogger
@@ -55,12 +55,18 @@ def validate_role(arg=3, kwarg="role_name"):
 def filter_roles(roles):
     return [r for r in roles if r in VALID_ROLES]
 
+def check_for_admin(user):
+    bpm = BossPrivilegeManager(user)
+    if not bpm.has_role('admin'):
+        return BossHTTPError(str(user) + " does not have the required role 'admin'", ErrorCodes.MISSING_ROLE)
+    else:
+        return None
 
 class BossUser(APIView):
     """
     View to manage users
     """
-    def get(self, request, user_name):
+    def get(self, request, user_name=None):
         """
         Get information about a user
 
@@ -73,10 +79,15 @@ class BossUser(APIView):
         """
         try:
             with KeyCloakClient('BOSS') as kc:
-                response = kc.get_userdata(user_name)
-                roles = kc.get_realm_roles(user_name)
-                response["realmRoles"] = filter_roles([r['name'] for r in roles])
-                return Response(response, status=200)
+                if user_name is None: # Get all users
+                    search = request.GET.get('search')
+                    response = kc.get_all_users(search)
+                    return Response(response, status=200)
+                else:
+                    response = kc.get_userdata(user_name)
+                    roles = kc.get_realm_roles(user_name)
+                    response["realmRoles"] = filter_roles([r['name'] for r in roles])
+                    return Response(response, status=200)
         except KeyCloakError:
             msg = "Error getting user '{}' from Keycloak".format(user_name)
             return BossKeycloakError(msg)
@@ -151,6 +162,7 @@ class BossUser(APIView):
         Returns:
             None
         """
+        # DP TODO: verify user_name is not an admin
         try:
             with KeyCloakClient('BOSS') as kc:
                 kc.delete_user(user_name)
@@ -216,6 +228,12 @@ class BossUserRole(APIView):
         if role_name == 'admin':
             return BossHTTPError("Cannot assign 'admin' role", ErrorCodes.INVALID_ROLE)
 
+        # DP NOTE: user-manager role can only be modified by an admin
+        if role_name == 'user-manager':
+            resp = check_for_admin(request.user)
+            if resp is not None:
+                return resp
+
         try:
             with KeyCloakClient('BOSS') as kc:
                 response = kc.map_role_to_user(user_name, role_name)
@@ -239,6 +257,16 @@ class BossUserRole(APIView):
         Returns:
             None
         """
+        # DP NOTE: admin role has to be removed manually in Keycloak
+        if role_name == 'admin':
+            return BossHTTPError("Cannot remove 'admin' role", ErrorCodes.INVALID_ROLE)
+
+        # DP NOTE: user-manager role can only be modified by an admin
+        if role_name == 'user-manager':
+            resp = check_for_admin(request.user)
+            if resp is not None:
+                return resp
+
         try:
             with KeyCloakClient('BOSS') as kc:
                 response = kc.remove_role_from_user(user_name, role_name)

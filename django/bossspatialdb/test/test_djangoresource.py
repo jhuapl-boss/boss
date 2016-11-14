@@ -184,7 +184,7 @@ class TestDjangoResource(APITestCase):
         assert channel.datatype == self.request_channel.channel.datatype
         assert channel.type == self.request_channel.channel.type
         assert channel.base_resolution == self.request_channel.channel.base_resolution
-        assert channel.default_time_step == self.request_channel.channel.default_time_step
+        assert channel.default_time_sample == self.request_channel.channel.default_time_sample
         assert channel.related == []
         assert channel.sources == []
 
@@ -205,7 +205,7 @@ class TestDjangoResource(APITestCase):
         assert channel.datatype == self.request_annotation.channel.datatype
         assert channel.type == self.request_annotation.channel.type
         assert channel.base_resolution == self.request_annotation.channel.base_resolution
-        assert channel.default_time_step == self.request_annotation.channel.default_time_step
+        assert channel.default_time_sample == self.request_annotation.channel.default_time_sample
         assert channel.related == []
         assert channel.sources == []
 
@@ -226,7 +226,7 @@ class TestDjangoResource(APITestCase):
         assert channel.datatype == self.request_channel_links.channel.datatype
         assert channel.type == self.request_channel_links.channel.type
         assert channel.base_resolution == self.request_channel_links.channel.base_resolution
-        assert channel.default_time_step == self.request_channel_links.channel.default_time_step
+        assert channel.default_time_sample == self.request_channel_links.channel.default_time_sample
         assert channel.related == ['channel2', 'channel3']
         assert channel.sources == ['channel1']
 
