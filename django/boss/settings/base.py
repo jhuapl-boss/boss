@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'sso',
     'management', # for templating to work
     'bossingest',
+    'bossobject',
     'rest_framework_swagger',
     'guardian'
 ]
