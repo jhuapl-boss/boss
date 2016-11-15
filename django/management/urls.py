@@ -24,6 +24,7 @@ urlpatterns = [
     url(r'groups/?', views.Groups.as_view(), name='manage-groups'),
     url(r'group/(?P<group_name>[\w_-]+)/?', views.Group.as_view(), name='manage-group'),
 
+    url(r'resources/(?P<collection_name>[\w_-]+)/(?P<experiment_name>[\w_-]+)/(?P<channel_name>[\w_-]+)/?', views.Channel.as_view(), name='manage-channel'),
     url(r'resources/(?P<collection_name>[\w_-]+)/(?P<experiment_name>[\w_-]+)/?', views.Experiment.as_view(), name='manage-experiment'),
     url(r'collection/(?P<collection_name>[\w_-]+)/?', views.Collection.as_view(), name='manage-collection'),
     url(r'resources/?', views.Resources.as_view(), name='manage-resources'),
