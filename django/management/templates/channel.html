@@ -22,7 +22,7 @@ Manage BOSS Channel '{{ channel_name }}'<br/>
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/collection/{{ collection_name }}/{{ experiment_name }}/{{ channel_name }}?action=meta" method="post">
+<form action="/v0.7/mgmt/resources/{{ collection_name }}/{{ experiment_name }}/{{ channel_name }}?action=meta" method="post">
     {% csrf_token %}
     {{ meta_form.as_p }}
     <input type="submit" value="Add Meta Value" />

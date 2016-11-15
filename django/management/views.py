@@ -351,8 +351,7 @@ class Resources(LoginRequiredMixin, View):
             form = CoordinateFrameForm(request.POST)
             if form.is_valid():
                 data = form.cleaned_data.copy()
-                coord_name = data['coordinate_frame']
-                del data['coordinate_frame']
+                coord_name = data['name']
 
                 boss = CoordinateFrameDetail()
                 boss.request = request
@@ -584,9 +583,13 @@ class Experiment(LoginRequiredMixin, View):
             if form.is_valid():
                 data = form.cleaned_data.copy()
                 channel_name = data['name']
-                if 'source' in data:
+                if 'source' not in data or len(data['source']) == 0:
+                    data['source'] = []
+                else:
                     data['source'] = data['source'].split(',')
-                if 'related' in data:
+                if 'related' not in data or len(data['related']) == 0:
+                    data['related'] = []
+                else:
                     data['related'] = data['related'].split(',')
 
                 boss = ChannelDetail()
