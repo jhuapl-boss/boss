@@ -512,7 +512,7 @@ class ChannelForm(forms.Form):
     datatype = forms.ChoiceField(choices=[(c,c) for c in ['', 'uint8', 'uint16', 'uint32', 'uint64']])
 
     base_resolution = forms.IntegerField(required=False)
-    default_time_step = forms.IntegerField(required=False)
+    default_time_sample = forms.IntegerField(required=False)
     source = forms.CharField(required=False) # DP TODO: create custom field type that splits on '.'
     related = forms.CharField(required=False)
 
