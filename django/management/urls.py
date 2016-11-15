@@ -18,10 +18,21 @@ from management import views
 urlpatterns = [
     url(r'users/?', views.Users.as_view(), name='manage-users'),
     url(r'user/(?P<username>[\w_-]+)/?', views.User.as_view(), name='manage-user'),
+
     url(r'token/?', views.Token.as_view(), name='manage-token'),
+
     url(r'groups/?', views.Groups.as_view(), name='manage-groups'),
     url(r'group/(?P<group_name>[\w_-]+)/?', views.Group.as_view(), name='manage-group'),
-    url(r'collections/?', views.Collections.as_view(), name='manage-collections'),
+
+    url(r'resources/(?P<collection_name>[\w_-]+)/(?P<experiment_name>[\w_-]+)/?', views.Experiment.as_view(), name='manage-experiment'),
     url(r'collection/(?P<collection_name>[\w_-]+)/?', views.Collection.as_view(), name='manage-collection'),
+    url(r'resources/?', views.Resources.as_view(), name='manage-resources'),
+
+    url(r'coord/(?P<coord_name>[\w_-]+)/?', views.CoordinateFrame.as_view(), name='manage-coord'),
+
+    url(r'meta/(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/?', views.Meta.as_view()),
+    url(r'meta/(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/?', views.Meta.as_view()),
+    url(r'meta/(?P<collection>[\w_\-]+)/?$', views.Meta.as_view()),
+
     url(r'', views.Home.as_view(), name='manage-home'),
 ]
