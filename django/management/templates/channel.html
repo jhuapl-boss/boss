@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
+{% block content %}
 {% url 'mgmt:meta' collection_name experiment_name channel_name as meta_url %}
 {% url 'mgmt:channel' collection_name experiment_name channel_name as current_url %}
 
-{% block content %}
 Manage BOSS Channel '{{ channel_name }}'<br/>
 <br/>
 {{ form.as_p }}

@@ -159,11 +159,11 @@ class Group(LoginRequiredMixin, View):
                 return err
             return redirect('mgmt:group', group_name)
 
-        members, err = api.get_members(request, group)
+        members, err = api.get_members(request, group_name)
         if err:
             return err
 
-        maintainers, err = api.get_maintainers(request, group)
+        maintainers, err = api.get_maintainers(request, group_name)
         if err:
             return err
 
@@ -226,7 +226,7 @@ class Resources(LoginRequiredMixin, View):
         if err:
             return err
 
-        coords, err = api.get_collections(request)
+        coords, err = api.get_coords(request)
         if err:
             return err
 
@@ -260,7 +260,7 @@ class Resources(LoginRequiredMixin, View):
                 data = form.cleaned_data.copy()
                 coord_name = data['name']
 
-                err = api.add_coord(request, coord, data)
+                err = api.add_coord(request, coord_name, data)
                 if err:
                     return err
                 return redirect('mgmt:resources')
@@ -271,13 +271,13 @@ class Resources(LoginRequiredMixin, View):
 
 class CoordinateFrame(LoginRequiredMixin, View):
     def get(self, request, coord_name):
-        coord, err = api.get_coord(request, coord)
+        coord, err = api.get_coord(request, coord_name)
         if err:
             return err
 
         args = {
             'coord_name': coord_name,
-            'form': CoordinateFrameForm(coord.data)
+            'form': CoordinateFrameForm(coord)
         }
         return HttpResponse(render_to_string('coordinate_frame.html', args, RequestContext(request)))
 
@@ -442,7 +442,7 @@ class Channel(LoginRequiredMixin, View):
             'collection_name': collection_name,
             'experiment_name': experiment_name,
             'channel_name': channel_name,
-            'form': ChannelForm(channel.data),
+            'form': ChannelForm(channel),
             'metas': metas,
             'meta_form': meta_form if meta_form else MetaForm(),
         }
@@ -486,7 +486,7 @@ class Meta(LoginRequiredMixin, View):
         args = {
             'category': category,
             'category_name': category_name,
-            'key': meta.data['key'],
-            'value': meta.data['value'],
+            'key': meta['key'],
+            'value': meta['value'],
         }
         return HttpResponse(render_to_string('meta.html', args, RequestContext(request)))

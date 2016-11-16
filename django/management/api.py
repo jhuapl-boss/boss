@@ -13,13 +13,20 @@ from bossmeta.views import BossMeta
 
 from rest_framework import status
 
+import json
+
 def error_message(resp):
-    if 'message' in resp.data:
-        return resp.data['message']
-    elif 'detail' in resp.data:
-        return resp.data['detail']
-    else:
-        return "" # DP TODO: create an appropriate generic error message
+    try:
+        data = json.loads(resp.content.decode('ASCII'))
+        if 'message' in data:
+            return data['message']
+        elif 'detail' in data:
+            return data['detail']
+        else:
+            return str(resp.content)
+            return "" # DP TODO: create an appropriate generic error message
+    except:
+        return str(resp.content)
 
 def error_response(request, resp, category, category_name=None):
     args = {
@@ -75,10 +82,10 @@ def get_roles(request, username):
     return _get('User', BossUserRole, request, username)
 
 def del_role(request, username, role):
-    return _del('Role', BossUserRole, request, role)
+    return _del('Role', BossUserRole, request, username, role)
 
 def add_role(request, username, role):
-    return _post('Role', BossUserRole, None, request, role)
+    return _post('Role', BossUserRole, request, None, username, role)
 
 
 """BOSS API for Groups and Group Members / Maintainers"""

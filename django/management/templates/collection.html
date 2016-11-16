@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
+{% block content %}
 {% url 'mgmt:meta' collection_name as meta_url %}
 {% url 'mgmt:collection' collection_name as current_url %}
 
-{% block content %}
 Manage BOSS Collection '{{ collection_name }}'<br/>
 <br/>
 <table>

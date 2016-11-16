@@ -10,7 +10,7 @@ class UserForm(forms.Form):
 
     def clean(self):
         super(UserForm, self).clean()
-        password = self.cleaned_data.get'password')
+        password = self.cleaned_data.get('password')
         verify_password = self.cleaned_data.get('verify_password')
 
         if password or verify_password:
