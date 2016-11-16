@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% url 'mgmt:group' group_name as current_url %}
+
 {% block content %}
 Manage BOSS Users for Group '{{ group_name }}'<br/>
 <br/>
@@ -18,17 +20,17 @@ Manage BOSS Users for Group '{{ group_name }}'<br/>
             <td>{{ perms }}</td>
             <td>
                     {% if user in members %}
-                        <a href="/v0.7/mgmt/group/{{ group_name }}?rem_memb={{ user }}">Remove Member</a>
+                        <a href="{{ current_url }}?rem_memb={{ user }}">Remove Member</a>
                     {% endif %}
                     {% if user in maintainers %}
-                        <a href="/v0.7/mgmt/group/{{ group_name }}?rem_maint={{ user }}">Remove Maintainer</a>
+                        <a href="{{ current_url }}?rem_maint={{ user }}">Remove Maintainer</a>
                     {% endif %}
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/group/{{ group_name }}" method="post">
+<form action="{{ current_url }}" method="post">
     {% csrf_token %}
     {{ form }}
     <input type="submit" value="Add Permission" />

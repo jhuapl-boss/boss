@@ -66,7 +66,7 @@ urlpatterns = [
 
 
     # Management Console Urls
-    url(r'^v0.7/mgmt/', include('management.urls', namespace='v0.7')),
+    url(r'^v0.7/mgmt/', include('management.urls', namespace='mgmt')),
 ]
 
 if 'djangooidc' in settings.INSTALLED_APPS:

@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% url 'mgmt:resources' as current_url %}
+
 {% block content %}
 Manage BOSS Collections<br/>
 <br/>
@@ -13,8 +15,8 @@ Manage BOSS Collections<br/>
     <tbody>
         {% for collection in collections %}
         <tr>
-            <td><a href="/v0.7/mgmt/collection/{{ collection }}">{{ collection }}</a></td>
-            <td><a href="/v0.7/mgmt/resources/?del_col={{ collection }}">Remove Collection</a></td>
+            <td><a href="{% url 'mgmt:collection' collection %}">{{ collection }}</a></td>
+            <td><a href="{{ current_url }}?del_col={{ collection }}">Remove Collection</a></td>
         </tr>
         {% endfor %}
     </tbody>
@@ -30,20 +32,20 @@ Manage BOSS Collections<br/>
     <tbody>
         {% for coord in coords %}
         <tr>
-            <td><a href="/v0.7/mgmt/coord/{{ coord }}">{{ coord }}</a></td>
-            <td><a href="/v0.7/mgmt/resources/?del_coord={{ coord }}">Remove Coordinate Frame</a></td>
+            <td><a href="{% url 'mgmt:coord' coord %}">{{ coord }}</a></td>
+            <td><a href="{{ current_url }}?del_coord={{ coord }}">Remove Coordinate Frame</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/resources/?action=col" method="post">
+<form action="{{ current_url }}?action=col" method="post">
     {% csrf_token %}
     {{ col_form.as_p }}
     <input type="submit" value="Add Collection" />
 </form>
 <br/>
-<form action="/v0.7/mgmt/resources/?action=coord" method="post">
+<form action="{{ current_url }}?action=coord" method="post">
     {% csrf_token %}
     {{ coord_form.as_p }}
     <input type="submit" value="Add Coordinate Frame" />

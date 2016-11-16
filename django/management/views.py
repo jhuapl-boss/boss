@@ -1,4 +1,4 @@
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.views.generic import View
 from django.template.loader import render_to_string
 from django.template import RequestContext
@@ -39,7 +39,7 @@ class Users(LoginRequiredMixin, View):
             resp = boss.delete(request, delete)
             if resp.status_code != 204:
                 return resp
-            return HttpResponseRedirect('/v0.7/mgmt/users/')
+            return redirect('mgmt:users')
 
         users = boss.get(request) # search query parameter will be automatically passed
         if users.status_code != 200:
@@ -67,7 +67,7 @@ class Users(LoginRequiredMixin, View):
             if resp.status_code != 201:
                 return resp # should reformat to a webpage
 
-            return HttpResponseRedirect('/v0.7/mgmt/users/')
+            return redirect('mgmt:users')
 
 class RoleForm(forms.Form):
     role = forms.ChoiceField(choices=[(c,c) for c in ['', 'user-manager', 'resource-manager']])
@@ -85,7 +85,7 @@ class User(LoginRequiredMixin, View):
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
             #return redirect('/v0.7/mgmt/user/' + username)
-            return HttpResponseRedirect('/v0.7/mgmt/user/' + username)
+            return redirect('mgmt:user', username)
 
         roles = boss.get(request, username)
 
@@ -113,7 +113,7 @@ class User(LoginRequiredMixin, View):
             if resp.status_code != 201:
                 return resp # should reformat to a webpage
 
-            return HttpResponseRedirect('/v0.7/mgmt/user/' + username)
+            return redirect('mgmt:user', username)
 
 class Token(LoginRequiredMixin, View):
     def get(self, request):
@@ -138,7 +138,7 @@ class Token(LoginRequiredMixin, View):
         except:
             token = TokenModel.objects.create(user = request.user)
 
-        return HttpResponseRedirect('/v0.7/mgmt/token/')
+        return redirect('mgmt:token')
 
 class GroupForm(forms.Form):
     group_name = forms.CharField()
@@ -153,11 +153,11 @@ class Groups(LoginRequiredMixin, View):
             resp = boss.delete(request, delete)
             if resp.status_code != 204:
                 return resp
-            return HttpResponseRedirect('/v0.7/mgmt/groups/')
+            return redirect('mgmt:groups')
 
         boss.request.query_params = {}
         # can only modify groups the user is a maintainer of
-        boss.request.query_params['filter'] = 'maintainer' 
+        boss.request.query_params['filter'] = 'maintainer'
         groups = boss.get(request)
         if groups.status_code != 200:
             return groups
@@ -179,7 +179,7 @@ class Groups(LoginRequiredMixin, View):
             if resp.status_code != 201:
                 return resp # should reformat to a webpage
 
-            return HttpResponseRedirect('/v0.7/mgmt/groups/')
+            return redirect('mgmt:groups')
 
 class GroupMemberForm(forms.Form):
     user = forms.CharField()
@@ -199,7 +199,7 @@ class Group(LoginRequiredMixin, View):
             resp = boss_memb.delete(request, group_name, remove)
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
-            return HttpResponseRedirect('/v0.7/mgmt/group/' + group_name)
+            return redirect('mgmt:group', group_name)
 
         boss_maint = BossGroupMaintainer()
         boss_maint.request = request
@@ -213,7 +213,7 @@ class Group(LoginRequiredMixin, View):
             resp = boss_maint.delete(request, group_name, remove)
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
-            return HttpResponseRedirect('/v0.7/mgmt/group/' + group_name)
+            return redirect('mgmt:group', group_name)
 
         data = {}
         for member in members:
@@ -254,7 +254,7 @@ class Group(LoginRequiredMixin, View):
                 if resp.status_code !=204:
                     return resp
 
-            return HttpResponseRedirect('/v0.7/mgmt/group/' + group_name)
+            return redirect('mgmt:group', group_name)
 
 class CollectionForm(forms.Form):
     collection = forms.CharField()
@@ -276,19 +276,19 @@ class CoordinateFrameForm(forms.Form):
     x_voxel_size = forms.IntegerField()
     y_voxel_size = forms.IntegerField()
     z_voxel_size = forms.IntegerField()
-    voxel_unit = forms.ChoiceField(choices=[(c,c) for c in ['', 
-                                                            'nanometers', 
-                                                            'micrometers', 
-                                                            'millimeters', 
+    voxel_unit = forms.ChoiceField(choices=[(c,c) for c in ['',
+                                                            'nanometers',
+                                                            'micrometers',
+                                                            'millimeters',
                                                             'centimeters']])
 
     time_step = forms.IntegerField(required=False)
     time_step_unit = forms.ChoiceField(required=False,
-                                       choices=[(c,c) for c in ['', 
-                                                                'nanoseconds', 
-                                                                'microseconds', 
-                                                                'milliseconds', 
-                                                                'seconds']]) 
+                                       choices=[(c,c) for c in ['',
+                                                                'nanoseconds',
+                                                                'microseconds',
+                                                                'milliseconds',
+                                                                'seconds']])
 
 class Resources(LoginRequiredMixin, View):
     def get(self, request):
@@ -299,7 +299,7 @@ class Resources(LoginRequiredMixin, View):
             resp = boss.delete(request, delete)
             if resp.status_code != 204:
                 return resp
-            return HttpResponseRedirect('/v0.7/mgmt/resources/')
+            return redirect('mgmt:resources')
 
         delete = request.GET.get('del_coord')
         if delete:
@@ -308,7 +308,7 @@ class Resources(LoginRequiredMixin, View):
             resp = boss.delete(request, delete)
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
-            return HttpResponseRedirect('/v0.7/mgmt/resources/')
+            return redirect('mgmt:resources')
 
         boss = CollectionList()
         boss.request = request
@@ -346,7 +346,7 @@ class Resources(LoginRequiredMixin, View):
                 if resp.status_code != 201:
                     return resp # should reformat to a webpage
 
-                return HttpResponseRedirect('/v0.7/mgmt/resources/')
+                return redirect('mgmt:resources')
         elif action == 'coord':
             form = CoordinateFrameForm(request.POST)
             if form.is_valid():
@@ -360,7 +360,7 @@ class Resources(LoginRequiredMixin, View):
                 if resp.status_code != 201:
                     return resp
 
-                return HttpResponseRedirect('/v0.7/mgmt/resources/')
+                return redirect('mgmt:resources')
 
 class ExperimentForm(forms.Form):
     name = forms.CharField(label="Experiment")
@@ -402,7 +402,7 @@ class Collection(LoginRequiredMixin, View):
             resp = boss.delete(request, collection_name, remove)
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
-            return HttpResponseRedirect('/v0.7/mgmt/collection/' + collection_name)
+            return redirect('mgmt:collection', collection_name)
 
         remove = request.GET.get('rem_meta')
         if remove is not None:
@@ -413,7 +413,7 @@ class Collection(LoginRequiredMixin, View):
             resp = boss.delete(request, collection_name)
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
-            return HttpResponseRedirect('/v0.7/mgmt/collection/' + collection_name)
+            return redirect('mgmt:collection', collection_name)
 
         args = {
             'collection_name': collection_name,
@@ -440,7 +440,7 @@ class Collection(LoginRequiredMixin, View):
                 if resp.status_code != 201:
                     return resp
 
-                return HttpResponseRedirect('/v0.7/mgmt/collection/' + collection_name)
+                return redirect('mgmt:collection', collection_name)
         elif action == 'meta':
             form = MetaForm(request.POST)
             if form.is_valid():
@@ -454,7 +454,7 @@ class Collection(LoginRequiredMixin, View):
                 if resp.status_code != 201:
                     return resp
 
-                return HttpResponseRedirect('/v0.7/mgmt/collection/' + collection_name)
+                return redirect('mgmt:collection', collection_name)
             raise Exception(form.errors)
 
 class Meta(LoginRequiredMixin, View):
@@ -551,7 +551,7 @@ class Experiment(LoginRequiredMixin, View):
             resp = boss.delete(request, collection_name, experiment_name, remove)
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
-            return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}'.format(collection_name, experiment_name))
+            return redirect('mgmt:experiment', collection_name, experiment_name)
 
         remove = request.GET.get('rem_meta')
         if remove is not None:
@@ -562,7 +562,7 @@ class Experiment(LoginRequiredMixin, View):
             resp = boss.delete(request, collection_name, experiment_name)
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
-            return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}'.format(collection_name, experiment_name))
+            return redirect('mgmt:experiment', collection_name, experiment_name)
 
         args = {
             'collection_name': collection_name,
@@ -599,7 +599,7 @@ class Experiment(LoginRequiredMixin, View):
                 if resp.status_code != 201:
                     return resp
 
-                return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}'.format(collection_name, experiment_name))
+                return redirect('mgmt:experiment', collection_name, experiment_name)
         elif action == 'meta':
             form = MetaForm(request.POST)
             if form.is_valid():
@@ -613,7 +613,7 @@ class Experiment(LoginRequiredMixin, View):
                 if resp.status_code != 201:
                     return resp
 
-                return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}'.format(collection_name, experiment_name))
+                return redirect('mgmt:experiment', collection_name, experiment_name)
 
 class Channel(LoginRequiredMixin, View):
     def get(self, request, collection_name, experiment_name, channel_name):
@@ -626,7 +626,7 @@ class Channel(LoginRequiredMixin, View):
             resp = boss.delete(request, collection_name, experiment_name, channel_name)
             if resp.status_code != 204:
                 return resp # should reformt to a webpage
-            return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}/{}'.format(collection_name, experiment_name, channel_name))
+            return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
 
         boss = ChannelDetail()
         boss.request = request # needed for check_role() to work
@@ -669,5 +669,5 @@ class Channel(LoginRequiredMixin, View):
                 if resp.status_code != 201:
                     return resp
 
-                return HttpResponseRedirect('/v0.7/mgmt/resources/{}/{}/{}'.format(collection_name, experiment_name, channel_name))
+                return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
 

@@ -36,14 +36,14 @@
     <div id="menu">
         SSO
         <ul>
-            <li><a href="/v0.7/mgmt/users/">Manage Users</a></li>
+            <li><a href="{% url 'mgmt:users' %}">Manage Users</a></li>
         </ul>
 
         BOSS
         <ul>
-            <li><a href="/v0.7/mgmt/token/">Token</a></li>
-            <li><a href="/v0.7/mgmt/groups/">Manage Groups</a></li>
-            <li><a href="/v0.7/mgmt/resources/">Manage Resources</a></li>
+            <li><a href="{% url 'mgmt:token' %}">Token</a></li>
+            <li><a href="{% url 'mgmt:groups' %}">Manage Groups</a></li>
+            <li><a href="{% url 'mgmt:resources' %}">Manage Resources</a></li>
         </ul>
     </div>
     <div id="content">

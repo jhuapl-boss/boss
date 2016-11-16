@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 
+{% url 'mgmt:meta' collection_name experiment_name channel_name as meta_url %}
+{% url 'mgmt:channel' collection_name experiment_name channel_name as current_url %}
+
 {% block content %}
 Manage BOSS Channel '{{ channel_name }}'<br/>
 <br/>
@@ -15,14 +18,14 @@ Manage BOSS Channel '{{ channel_name }}'<br/>
     <tbody>
         {% for meta in metas %}
         <tr>
-            <td><a href="/v0.7/mgmt/meta/{{ collection_name }}/{{ experiment_name }}/{{ channel_name }}/?key={{ meta }}">{{ meta }}</a></td>
-            <td><a href="/v0.7/mgmt/resources/{{ collection_name }}/{{ experiment_name }}/{{ channel_name }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
+            <td><a href="{{ meta_url }}?key={{ meta }}">{{ meta }}</a></td>
+            <td><a href="{{ current_url }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/resources/{{ collection_name }}/{{ experiment_name }}/{{ channel_name }}?action=meta" method="post">
+<form action="{{ current_url }}?action=meta" method="post">
     {% csrf_token %}
     {{ meta_form.as_p }}
     <input type="submit" value="Add Meta Value" />

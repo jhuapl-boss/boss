@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% url 'mgmt:user' username as current_url %}
+
 {% block content %}
 Manage SSO Roles for User '{{ username }}'<br/>
 <br/>
@@ -14,13 +16,13 @@ Manage SSO Roles for User '{{ username }}'<br/>
         {% for role in roles %}
         <tr>
             <td>{{ role }}</td>
-            <td><a href="/v0.7/mgmt/user/{{ username }}?remove={{ role }}">Remove Role</a></td>
+            <td><a href="{{ current_url }}?remove={{ role }}">Remove Role</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/user/{{ username }}" method="post">
+<form action="{{ current_url }}" method="post">
     {% csrf_token %}
     {{ form }}
     <input type="submit" value="Add Role" />

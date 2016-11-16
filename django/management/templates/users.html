@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% url 'mgmt:users' as current_url %}
+
 {% block content %}
 Manage SSO User Accounts<br/>
 <br/>
@@ -13,14 +15,14 @@ Manage SSO User Accounts<br/>
     <tbody>
         {% for user in users %}
         <tr>
-            <td><a href="/v0.7/mgmt/user/{{ user.username }}">{{ user.username }}</a></td>
-            <td><a href="/v0.7/mgmt/users/?delete={{ user.username }}">Remove User</a></td>
+            <td><a href="{% url 'mgmt:user' user.username %}">{{ user.username }}</a></td>
+            <td><a href="{{ current_url }}?delete={{ user.username }}">Remove User</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/users/" method="post">
+<form action="{{ current_url }}" method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <input type="submit" value="Add User" />
