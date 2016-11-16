@@ -51,15 +51,23 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
     </tbody>
 </table>
 <br/>
-<form action="{{ current_url }}?action=exp" method="post">
-    {% csrf_token %}
-    {{ exp_form.as_p }}
-    <input type="submit" value="Add Experiment" />
-</form>
+<div>
+    <form action="{{ current_url }}?action=exp" method="post" class="add" id="Experiment">
+        {% csrf_token %}
+        <table>
+            {{ exp_form.as_table }}
+        </table>
+        <input type="submit" value="Add Experiment" />
+    </form>
+</div>
 <br/>
-<form action="{{ current_url }}?action=meta" method="post">
-    {% csrf_token %}
-    {{ meta_form.as_p }}
-    <input type="submit" value="Add Meta Value" />
-</form>
+<div>
+    <form action="{{ current_url }}?action=meta" method="post" class="add" id="Metadata">
+        {% csrf_token %}
+        <table>
+            {{ meta_form.as_table }}
+        </table>
+        <input type="submit" value="Add Meta Value" />
+    </form>
+</div>
 {% endblock %}

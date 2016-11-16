@@ -39,16 +39,24 @@ Manage BOSS Collections<br/>
     </tbody>
 </table>
 <br/>
-<form action="{{ current_url }}?action=col" method="post">
-    {% csrf_token %}
-    {{ col_form.as_p }}
-    <input type="submit" value="Add Collection" />
-</form>
+<div>
+    <form action="{{ current_url }}?action=col" method="post" class="add" id="Collection">
+        {% csrf_token %}
+        <table>
+            {{ col_form.as_table }}
+        </table>
+        <input type="submit" value="Add Collection" />
+    </form>
+</div>
 <br/>
-<form action="{{ current_url }}?action=coord" method="post">
-    {% csrf_token %}
-    {{ coord_form.as_p }}
-    <input type="submit" value="Add Coordinate Frame" />
-</form>
+<div>
+    <form action="{{ current_url }}?action=coord" method="post" class="add" id="Coordinate Frame">
+        {% csrf_token %}
+        <table>
+            {{ coord_form.as_table }}
+        </table>
+        <input type="submit" value="Add Coordinate Frame" />
+    </form>
+</div>
 {% endblock %}
 

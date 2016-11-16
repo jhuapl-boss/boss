@@ -22,10 +22,14 @@ Manage BOSS Groups<br/>
     </tbody>
 </table>
 <br/>
-<form action="{{ current_url }}" method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" value="Add Group" />
-</form>
+<div>
+    <form action="{{ current_url }}" method="post" class="add" id="Group">
+        {% csrf_token %}
+        <table>
+            {{ form.as_table }}
+        </table>
+        <input type="submit" value="Add Group" />
+    </form>
+</div>
 {% endblock %}
 

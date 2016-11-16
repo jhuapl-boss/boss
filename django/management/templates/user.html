@@ -22,9 +22,13 @@ Manage SSO Roles for User '{{ username }}'<br/>
     </tbody>
 </table>
 <br/>
-<form action="{{ current_url }}" method="post">
-    {% csrf_token %}
-    {{ form }}
-    <input type="submit" value="Add Role" />
-</form>
+<div>
+    <form action="{{ current_url }}" method="post" class="add" id="Role">
+        {% csrf_token %}
+        <table>
+            {{ form.as_table }}
+        </table>
+        <input type="submit" value="Add Role" />
+    </form>
+</div>
 {% endblock %}

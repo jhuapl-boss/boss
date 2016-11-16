@@ -30,7 +30,51 @@
         padding: 5px;
         background-color: lightblue;
     }
+
+    form {
+        background-color: white;
+    }
   </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script type="text/javascript">
+    // From: http://stackoverflow.com/questions/9447980/set-the-popup-window-to-center-jquery
+    jQuery.fn.center = function() {
+        this.css("position", "absolute");
+        //this.css("top", Math.abs( jQuery(window).height() - this.height() ) / 2+jQuery(window).scrollTop() + "px");
+        this.css("top", "2em");
+        this.css("left", Math.abs( jQuery(window).width() - this.width() ) / 2+jQuery(window).scrollLeft() + "px");
+        return this;
+    };
+
+    $(document).ready(function() {
+        $(".add").each(function(i, tbl) {
+            // set table to hidden
+            $(tbl).center().parent().hide();
+
+            // create add button to show
+            var add = document.createElement("button");
+            $(add).click(function() { 
+                var bg = $(tbl).parent();
+                bg.fadeIn()
+                .css({'display': 'block', 'position': 'absolute'})
+                //.css({'width': '100%', 'height': '100%'})
+                .css({'width': $(window).width(), 'height': $(document).height()})
+                .css({ 'top': '0px', 'left': '0px' })
+                .css({'background-color': 'rgba(0,0,0,0.5)'});
+            })
+            add.innerText = "Add " + tbl.id
+            $(tbl).parent().before(add);
+
+            // create cancel button to hide again
+            var cancel = document.createElement("button");
+            $(cancel).click(function() { $(tbl).parent().fadeOut(); return false; })
+            cancel.innerText = "Cancel";
+            $(tbl).children().last().after(cancel);
+        });
+
+        $(".add.error").each(function(i, tbl){ $(tbl).show(); });
+    });
+  </script>
 </head>
 <body>
     <div id="menu">
