@@ -335,7 +335,7 @@ class ExperimentDetail(APIView):
                 serializer = ExperimentSerializer(data=experiment_data)
                 if serializer.is_valid():
                     serializer.save(creator=self.request.user)
-                    experiment_obj = Experiment.objects.get(name=experiment_data['name'], collection = collection_obj)
+                    experiment_obj = Experiment.objects.get(name=experiment_data['name'], collection=collection_obj)
 
                     # Assign permissions to the users primary group and admin group
                     BossPermissionManager.add_permissions_primary_group(self.request.user, experiment_obj)
@@ -444,6 +444,37 @@ class ChannelDetail(APIView):
     View to access a channel
 
     """
+    @staticmethod
+    def validate_source_related_channels(experiment, source_channels, related_channels):
+        """
+        Validate that the list of source and related channels are channels that exist
+        Args:
+            experiment:
+            source_channels:
+            related_channels:
+
+        Returns:
+
+        """
+        common = set(source_channels) & set(related_channels)
+        if len(common) > 0:
+            raise BossError("Related channels have to be different from source channels",
+                            ErrorCodes.INVALID_POST_ARGUMENT)
+
+        source_channel_obj = []
+        related_channel_obj = []
+
+        try:
+            for name in source_channels:
+                source_channel_obj.append(Channel.objects.get(name=name, experiment=experiment))
+
+            for name in related_channels:
+                related_channel_obj.append(Channel.objects.get(name=name, experiment=experiment))
+
+            return (source_channel_obj,related_channel_obj)
+        except Channel.DoesNotExist:
+            raise BossError("Invalid channel names {} in the list of source/related channels channels ".format(name),
+                            ErrorCodes.INVALID_POST_ARGUMENT)
 
     @staticmethod
     def add_source_related_channels(channel, experiment, source_channels, related_channels):
@@ -461,19 +492,17 @@ class ChannelDetail(APIView):
 
         """
         try:
-            for name in source_channels:
-                source_channel_obj = Channel.objects.get(name=name, experiment=experiment)
-                channel.add_source(source_channel_obj)
+            for source_channel in source_channels:
+                channel.add_source(source_channel)
 
-            for name in related_channels:
-                related_channel_obj = Channel.objects.get(name=name, experiment=experiment)
-                channel.related.add(related_channel_obj.pk)
+            for related_channel in related_channels:
+                channel.related.add(related_channel.pk)
 
             channel.save()
             return channel
-        except Channel.DoesNotExist:
-            raise BossError("Invalid channel names {} in the list of source/related channels channels ".format(name),
-                            ErrorCodes.INVALID_POST_ARGUMENT)
+        except Exception as err:
+            channel.delete()
+            raise BossError("Exception adding source/related channels.{}".format(err), ErrorCodes.INVALID_POST_ARGUMENT)
 
     def get(self, request, collection, experiment, channel):
         """
@@ -544,10 +573,10 @@ class ChannelDetail(APIView):
                     return BossHTTPError("Annotation channels require the source channel to be set. "
                                          "Specify a valid source channel in the post", ErrorCodes.INVALID_POST_ARGUMENT)
 
-                common = set(source_channels) & set(related_channels)
-                if len(common) > 0:
-                    return BossHTTPError("Related channels have to be different from source channels",
-                                         ErrorCodes.INVALID_POST_ARGUMENT)
+                # Validate the source and related channels if they are incuded
+                channels = self.validate_source_related_channels(experiment_obj, source_channels, related_channels)
+                source_channels_objs = channels[0]
+                related_channels_objs = channels[1]
 
                 # Validate and create the channel
                 serializer = ChannelSerializer(data=channel_data)
@@ -556,8 +585,8 @@ class ChannelDetail(APIView):
                     channel_obj = Channel.objects.get(name=channel_data['name'], experiment=experiment_obj)
 
                     # Save source and related channels if they are valid
-                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj, source_channels,
-                                                                   related_channels)
+                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj, source_channels_objs,
+                                                                   related_channels_objs)
 
                     # Assign permissions to the users primary group and admin group
                     BossPermissionManager.add_permissions_primary_group(self.request.user, channel_obj)
@@ -609,24 +638,25 @@ class ChannelDetail(APIView):
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
 
-            # The source and related channels are names and need to be removed from the dict before serialization
-            source_channels = request.data.pop('sources', [])
-            related_channels = request.data.pop('related', [])
-
-            common = set(source_channels) & set(related_channels)
-            if len(common) > 0:
-                return BossHTTPError("Related channels have to be different from source channels",
-                                     ErrorCodes.INVALID_POST_ARGUMENT)
-
             if request.user.has_perm("update", channel_obj):
+
+                # The source and related channels are names and need to be removed from the dict before serialization
+                source_channels = request.data.pop('sources', [])
+                related_channels = request.data.pop('related', [])
+
+                # Validate the source and related channels if they are incuded
+                channels = self.validate_source_related_channels(experiment_obj, source_channels, related_channels)
+                source_channels_objs = channels[0]
+                related_channels_objs = channels[1]
+
                 serializer = ChannelUpdateSerializer(channel_obj, data=request.data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
 
                     channel_obj = Channel.objects.get(name=channel_name, experiment=experiment_obj)
                     # Save source and related channels if they are valid
-                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj, source_channels,
-                                                                   related_channels)
+                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj, source_channels_objs,
+                                                                   related_channels_objs)
 
                     # update the lookup key if you update the name
                     if 'name' in request.data and request.data['name'] != channel:
