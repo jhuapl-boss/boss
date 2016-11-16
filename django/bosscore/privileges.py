@@ -53,15 +53,13 @@ def load_user_roles(user, roles):
                 return BossHTTPError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
 
     groups = user.groups.all()
-    for name in [user.username + '-primary', 'bosspublic']:
+    to_assign = [user.username + '-primary', 'bosspublic']
+    if 'superuser' in roles:
+        to_assign.append('admin')
+    for name in to_assign:
         group, created = Group.objects.get_or_create(name=name)
         if group not in groups:
             user.groups.add(group)
-
-        # primary and bosspublic are owned by the admin
-        if created:
-            admin_user = User.objects.get(username='bossadmin')
-            bgroup = BossGroup.objects.create(group=group, creator=admin_user)
 
 # Decorators to check that the user has the right role
 def check_role(role_name):
