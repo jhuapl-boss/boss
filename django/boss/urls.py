@@ -64,9 +64,13 @@ urlpatterns = [
     url(r'^v0.7/sso/user/', include('sso.urls.user-urls', namespace='v0.7')),
     url(r'^v0.7/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.7')),
 
-
     # Management Console Urls
     url(r'^v0.7/mgmt/', include('management.urls', namespace='v0.7')),
+
+    #Object urls
+    url(r'^v0.7/reserve/', include('bossobject.urls.reserve_urls', namespace='v0.7')),
+    url(r'^v0.7/ids/', include('bossobject.urls.ids_urls', namespace='v0.7')),
+    url(r'^v0.7/boundingbox/', include('bossobject.urls.boundingbox_urls', namespace='v0.7')),
 ]
 
 if 'djangooidc' in settings.INSTALLED_APPS:

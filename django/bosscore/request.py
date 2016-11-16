@@ -38,6 +38,7 @@ class BossRequest:
 
         """
         self.bossrequest = bossrequest
+
         # Datamodel objects
         self.collection = None
         self.experiment = None
@@ -180,8 +181,9 @@ class BossRequest:
         else:
             self.set_time(time)
 
-        self.set_tileargs(self.bossrequest['tile_size'], self.bossrequest['orientation'], self.bossrequest['resolution'],
-                          self.bossrequest['x_args'], self.bossrequest['y_args'], self.bossrequest['z_args'])
+        self.set_tileargs(self.bossrequest['tile_size'], self.bossrequest['orientation'],
+                          self.bossrequest['resolution'], self.bossrequest['x_args'], self.bossrequest['y_args'],
+                          self.bossrequest['z_args'])
 
     def initialize_request(self, collection_name, experiment_name, channel_name):
         """
@@ -232,7 +234,6 @@ class BossRequest:
             y_coords = y_range.split(":")
             z_coords = z_range.split(":")
 
-
             self.x_start = int(x_coords[0])
             self.x_stop = int(x_coords[1])
 
@@ -278,7 +279,7 @@ class BossRequest:
             if orientation == 'xy':
                 x_coords = x_args.split(":")
                 y_coords = y_args.split(":")
-                z_coords = [int(z_args) , int(z_args)+1]
+                z_coords = [int(z_args), int(z_args)+1]
 
             elif orientation == 'xz':
                 x_coords = x_args.split(":")
@@ -349,18 +350,16 @@ class BossRequest:
                 corner = (tile_size * x_idx, y_idx, tile_size * z_idx)
                 extent = (tile_size, 1, tile_size)
             else:
-                raise BossHTTPError("Invalid orientation: {}".format(orientation),
-                                         ErrorCodes.INVALID_CUTOUT_ARGS)
+                raise BossHTTPError("Invalid orientation: {}".format(orientation), ErrorCodes.INVALID_CUTOUT_ARGS)
 
             self.x_start = int(corner[0])
-            self.x_stop = int(corner[0]+ extent[0])
+            self.x_stop = int(corner[0] + extent[0])
 
             self.y_start = int(corner[1])
-            self.y_stop = int(corner[1]+ extent[1])
+            self.y_stop = int(corner[1] + extent[1])
 
             self.z_start = int(corner[2])
-            self.z_stop = int(corner[2]+ extent[2])
-
+            self.z_stop = int(corner[2] + extent[2])
 
             # Check for valid arguments
             if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop) or \
@@ -373,14 +372,11 @@ class BossRequest:
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_idx, y_idx, z_idx),
                             ErrorCodes.TYPE_ERROR)
 
-
     def initialize_view_request(self, webargs):
         """
         Validate and initialize views
         Args:
             webargs:
-
-
         """
         print(webargs)
 
@@ -639,10 +635,9 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-        if self.service =='cutout' or self.service == 'image' or self.service == 'tile':
-            perm = BossPermissionManager.check_data_permissions(self.user, self.channel,
-                                                                  self.method)
-        elif self.service =='meta':
+        if self.service == 'cutout' or self.service == 'image' or self.service == 'tile':
+            perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
+        elif self.service == 'meta':
             if self.collection and self.experiment and self.channel:
                 obj = self.channel
             elif self.collection and self.experiment:
@@ -734,7 +729,6 @@ class BossRequest:
                                          (time, str(self.experiment.num_time_samples)), ErrorCodes.INVALID_URL)
             else:
                 self.time_stop = self.time_start + 1
-
 
     def get_time(self):
         """
