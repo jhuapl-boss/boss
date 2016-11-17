@@ -13,7 +13,9 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from rest_framework.request import Request
+from rest_framework.test import force_authenticate
+from rest_framework.test import APIRequestFactory
+
 from django.http import HttpRequest
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -21,6 +23,7 @@ from django.contrib.auth.models import User
 from ..request import BossRequest
 from bosscore.error import BossError
 from .setup_db import SetupTestDB
+from bossspatialdb.views import Cutout
 
 version = settings.BOSS_VERSION
 
@@ -35,6 +38,7 @@ class CutoutRequestTests(APITestCase):
             Initialize the database
             :return:
         """
+        self.rf = APIRequestFactory()
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
         dbsetup.set_user(user)
@@ -54,9 +58,9 @@ class CutoutRequestTests(APITestCase):
         boss_key = 'col1&exp1&channel1'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -93,9 +97,9 @@ class CutoutRequestTests(APITestCase):
         (z_start, z_stop) = (0, 2)
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -134,9 +138,9 @@ class CutoutRequestTests(APITestCase):
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -164,9 +168,9 @@ class CutoutRequestTests(APITestCase):
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -196,9 +200,9 @@ class CutoutRequestTests(APITestCase):
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/1:5/'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -231,9 +235,9 @@ class CutoutRequestTests(APITestCase):
         url = '/' + version + '/cutout/col1/exp1/channel1/0/990:1010/0:6/0:2/'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -261,9 +265,9 @@ class CutoutRequestTests(APITestCase):
         url = '/' + version + '/cutout/col1/exp1/channel1/0/0:6/0:1010/0:2/'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
         # Create the request dict
         request_args = {
@@ -291,9 +295,9 @@ class CutoutRequestTests(APITestCase):
         url = '/' + version + '/cutout/col1/exp1/channel1/0/0:6/0:6/0:1040/'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -322,6 +326,7 @@ class CutoutInvalidRequestTests(APITestCase):
             Initialize the database
             :return:
         """
+        self.rf = APIRequestFactory()
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
         dbsetup.set_user(user)
@@ -340,9 +345,9 @@ class CutoutInvalidRequestTests(APITestCase):
         channel = 'channel1'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -373,9 +378,9 @@ class CutoutInvalidRequestTests(APITestCase):
         channel = 'channel1'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -406,9 +411,9 @@ class CutoutInvalidRequestTests(APITestCase):
         channel = 'channel133323'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -439,9 +444,9 @@ class CutoutInvalidRequestTests(APITestCase):
         channel = 'channel12345'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -472,9 +477,9 @@ class CutoutInvalidRequestTests(APITestCase):
         channel = 'channel1'
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict

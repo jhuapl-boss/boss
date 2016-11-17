@@ -80,7 +80,7 @@ class Cutout(APIView):
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
         # Convert to Resource
         resource = project.BossResourceDjango(req)
