@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% url 'mgmt:coord' coord_name %}
+{% url 'mgmt:coord' coord_name as current_url %}
 
 Manage BOSS Coodinate Frame '{{ coord_name }}'<br/>
 <br/>
