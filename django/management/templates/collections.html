@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% url 'mgmt:resources' as current_url %}
+
 Manage BOSS Collections<br/>
 <br/>
 <table>
@@ -13,8 +15,8 @@ Manage BOSS Collections<br/>
     <tbody>
         {% for collection in collections %}
         <tr>
-            <td><a href="/v0.7/mgmt/collection/{{ collection }}">{{ collection }}</a></td>
-            <td><a href="/v0.7/mgmt/resources/?del_col={{ collection }}">Remove Collection</a></td>
+            <td><a href="{% url 'mgmt:collection' collection %}">{{ collection }}</a></td>
+            <td><a href="{{ current_url }}?del_col={{ collection }}">Remove Collection</a></td>
         </tr>
         {% endfor %}
     </tbody>
@@ -30,23 +32,31 @@ Manage BOSS Collections<br/>
     <tbody>
         {% for coord in coords %}
         <tr>
-            <td><a href="/v0.7/mgmt/coord/{{ coord }}">{{ coord }}</a></td>
-            <td><a href="/v0.7/mgmt/resources/?del_coord={{ coord }}">Remove Coordinate Frame</a></td>
+            <td><a href="{% url 'mgmt:coord' coord %}">{{ coord }}</a></td>
+            <td><a href="{{ current_url }}?del_coord={{ coord }}">Remove Coordinate Frame</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/resources/?action=col" method="post">
-    {% csrf_token %}
-    {{ col_form.as_p }}
-    <input type="submit" value="Add Collection" />
-</form>
+<div>
+    <form action="{{ current_url }}?action=col" method="post" class="add {{ col_error }}" id="Collection">
+        {% csrf_token %}
+        <table>
+            {{ col_form.as_table }}
+        </table>
+        <input type="submit" value="Add Collection" />
+    </form>
+</div>
 <br/>
-<form action="/v0.7/mgmt/resources/?action=coord" method="post">
-    {% csrf_token %}
-    {{ coord_form.as_p }}
-    <input type="submit" value="Add Coordinate Frame" />
-</form>
+<div>
+    <form action="{{ current_url }}?action=coord" method="post" class="add {{ coord_error }}" id="Coordinate Frame">
+        {% csrf_token %}
+        <table>
+            {{ coord_form.as_table }}
+        </table>
+        <input type="submit" value="Add Coordinate Frame" />
+    </form>
+</div>
 {% endblock %}
 

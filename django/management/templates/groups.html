@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% url 'mgmt:groups' as current_url %}
+
 Manage BOSS Groups<br/>
 <br/>
 <table>
@@ -13,17 +15,21 @@ Manage BOSS Groups<br/>
     <tbody>
         {% for group in groups %}
         <tr>
-            <td><a href="/v0.7/mgmt/group/{{ group }}">{{ group }}</a></td>
-            <td><a href="/v0.7/mgmt/groups/?delete={{ group }}">Remove Group</a></td>
+            <td><a href="{% url 'mgmt:group' group %}">{{ group }}</a></td>
+            <td><a href="{{ current_url }}?delete={{ group }}">Remove Group</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/groups/" method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <input type="submit" value="Add Group" />
-</form>
+<div>
+    <form action="{{ current_url }}" method="post" class="add {{ group_error }}" id="Group">
+        {% csrf_token %}
+        <table>
+            {{ group_form.as_table }}
+        </table>
+        <input type="submit" value="Add Group" />
+    </form>
+</div>
 {% endblock %}
 

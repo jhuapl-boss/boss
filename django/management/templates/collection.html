@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% url 'mgmt:meta' collection_name as meta_url %}
+{% url 'mgmt:collection' collection_name as current_url %}
+
 Manage BOSS Collection '{{ collection_name }}'<br/>
 <br/>
 <table>
@@ -24,8 +27,8 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
     <tbody>
         {% for experiment in collection.experiments %}
         <tr>
-            <td><a href="/v0.7/mgmt/resources/{{ collection_name }}/{{ experiment }}">{{ experiment }}</a></td>
-            <td><a href="/v0.7/mgmt/collection/{{ collection_name }}?rem_exp={{ experiment }}">Remove Experiment</a></td>
+            <td><a href="{% url 'mgmt:experiment' collection_name experiment %}">{{ experiment }}</a></td>
+            <td><a href="{{ current_url }}?rem_exp={{ experiment }}">Remove Experiment</a></td>
         </tr>
         {% endfor %}
     </tbody>
@@ -41,22 +44,30 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
     <tbody>
         {% for meta in metas %}
         <tr>
-            <td><a href="/v0.7/mgmt/meta/{{ collection_name }}/?key={{ meta }}">{{ meta }}</a></td>
-            <td><a href="/v0.7/mgmt/collection/{{ collection_name }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
+            <td><a href="{{ meta_url }}?key={{ meta }}">{{ meta }}</a></td>
+            <td><a href="{{ current_url }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 <br/>
-<form action="/v0.7/mgmt/collection/{{ collection_name }}?action=exp" method="post">
-    {% csrf_token %}
-    {{ exp_form.as_p }}
-    <input type="submit" value="Add Experiment" />
-</form>
+<div>
+    <form action="{{ current_url }}?action=exp" method="post" class="add {{ exp_error }}" id="Experiment">
+        {% csrf_token %}
+        <table>
+            {{ exp_form.as_table }}
+        </table>
+        <input type="submit" value="Add Experiment" />
+    </form>
+</div>
 <br/>
-<form action="/v0.7/mgmt/collection/{{ collection_name }}?action=meta" method="post">
-    {% csrf_token %}
-    {{ meta_form.as_p }}
-    <input type="submit" value="Add Meta Value" />
-</form>
+<div>
+    <form action="{{ current_url }}?action=meta" method="post" class="add {{ meta_error }}" id="Metadata">
+        {% csrf_token %}
+        <table>
+            {{ meta_form.as_table }}
+        </table>
+        <input type="submit" value="Add Meta Value" />
+    </form>
+</div>
 {% endblock %}

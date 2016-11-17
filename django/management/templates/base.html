@@ -30,20 +30,66 @@
         padding: 5px;
         background-color: lightblue;
     }
+
+    form {
+        background-color: white;
+    }
   </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script type="text/javascript">
+    // From: http://stackoverflow.com/questions/9447980/set-the-popup-window-to-center-jquery
+    jQuery.fn.center = function() {
+        this.css("position", "absolute");
+        //this.css("top", Math.abs( jQuery(window).height() - this.height() ) / 2+jQuery(window).scrollTop() + "px");
+        this.css("top", "2em");
+        this.css("left", Math.abs( jQuery(window).width() - this.width() ) / 2+jQuery(window).scrollLeft() + "px");
+        return this;
+    };
+
+    $(document).ready(function() {
+        $(".add").each(function(i, tbl) {
+            // set table to hidden
+            $(tbl).center().parent().hide();
+
+            // create add button to show
+            var add = document.createElement("button");
+            $(add).click(function() { 
+                var bg = $(tbl).parent();
+                bg.fadeIn()
+                .css({'display': 'block', 'position': 'absolute'})
+                //.css({'width': '100%', 'height': '100%'})
+                .css({'width': $(window).width(), 'height': $(document).height()})
+                .css({ 'top': '0px', 'left': '0px' })
+                .css({'background-color': 'rgba(0,0,0,0.5)'});
+            })
+            add.innerText = "Add " + tbl.id
+            $(tbl).parent().before(add);
+
+            if( $(tbl).hasClass("error") ) {
+                $(add).click(); // automatically display a problem form
+            }
+
+            // create cancel button to hide again
+            var cancel = document.createElement("button");
+            $(cancel).click(function() { $(tbl).parent().fadeOut(); return false; })
+            cancel.innerText = "Cancel";
+            $(tbl).children().last().after(cancel);
+        });
+    });
+  </script>
 </head>
 <body>
     <div id="menu">
         SSO
         <ul>
-            <li><a href="/v0.7/mgmt/users/">Manage Users</a></li>
+            <li><a href="{% url 'mgmt:users' %}">Manage Users</a></li>
         </ul>
 
         BOSS
         <ul>
-            <li><a href="/v0.7/mgmt/token/">Token</a></li>
-            <li><a href="/v0.7/mgmt/groups/">Manage Groups</a></li>
-            <li><a href="/v0.7/mgmt/resources/">Manage Resources</a></li>
+            <li><a href="{% url 'mgmt:token' %}">Token</a></li>
+            <li><a href="{% url 'mgmt:groups' %}">Manage Groups</a></li>
+            <li><a href="{% url 'mgmt:resources' %}">Manage Resources</a></li>
         </ul>
     </div>
     <div id="content">

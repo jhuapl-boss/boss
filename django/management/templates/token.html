@@ -9,7 +9,7 @@ Manage {{ username }}'s API Token<br/>
 <br/>
 {% endif %}
 <br/>
-<form action="/v0.7/mgmt/token/" method="post">
+<form action="{% url 'mgmt:token' %}" method="post">
     {% csrf_token %}
     <input type="submit" value="{{ button }}" />
 </form>
