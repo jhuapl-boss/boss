@@ -15,6 +15,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from bosscore.request import BossRequest
+from bosscore.error import BossError, BossHTTPError
+
 
 class Reserve(APIView):
     """
@@ -42,6 +45,17 @@ class Reserve(APIView):
         # permissions?
         # validate that num_ids is an int
         # Check if this is annotation channel
+
+        try:
+            request_args = {
+                "service": "reserve",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+            }
+            req = BossRequest(request, request_args)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         data = {"start_id": 1000, "count": 1000}
         return Response(data, status=200)
@@ -71,6 +85,22 @@ class Ids(APIView):
         # validate resource
         # permissions?
         # Check if this is annotation channel
+        # Process request and validate
+        try:
+            request_args = {
+                "service": "ids",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "resolution": resolution,
+                "x_args": x_range,
+                "y_args": y_range,
+                "z_args": z_range,
+                "time_args": t_range
+            }
+            req = BossRequest(request, request_args)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
 
         data = {"ids": ["1", "2", "3", "4", "5"]}
         return Response(data, status=200)
@@ -101,5 +131,16 @@ class BoundingBox(APIView):
         # validate that id is an int
         # Check if this is annotation channel
 
+        try:
+            request_args = {
+                "service": "boundingbox",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "id": id
+            }
+            req = BossRequest(request, request_args)
+        except BossError as err:
+            return BossHTTPError(err.args[0], err.args[1], err.args[2])
         data = {"x_range": [0,1000], "y_range": [0,1000], "z_range": [0,1000], "t_range":[0,10]}
         return Response(data, status=200)
