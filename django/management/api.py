@@ -68,6 +68,17 @@ def _post(category, cls, request, data, *args):
         return error_response(request, resp, category, category_name)
     return None
 
+def _put(category, cls, request, data, *args):
+    boss = cls()
+    boss.request = request # needed for check_role() to work
+    if data:
+        boss.request.data = data # simulate the DRF request object
+    resp = boss.put(request, *args)
+    if not status.is_success(resp.status_code):
+        category_name = args[-1] if len(args) > 0 else None
+        return error_response(request, resp, category, category_name)
+    return None
+
 """SSO API for Users and Roles"""
 def get_users(request):
     return _get('Users', BossUser, request)
@@ -144,6 +155,9 @@ def del_coord(request, coord):
 
 def add_coord(request, coord, data):
     return _post('Coordinate Frame', CoordinateFrameDetail, request, data, coord)
+
+def up_coord(request, coord, data):
+    return _put('Coordinate Frame', CoordinateFrameDetail, request, data, coord)
 
 # Collections
 def get_collections(request):

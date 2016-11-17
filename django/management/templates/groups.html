@@ -23,10 +23,10 @@ Manage BOSS Groups<br/>
 </table>
 <br/>
 <div>
-    <form action="{{ current_url }}" method="post" class="add" id="Group">
+    <form action="{{ current_url }}" method="post" class="add {{ group_error }}" id="Group">
         {% csrf_token %}
         <table>
-            {{ form.as_table }}
+            {{ group_form.as_table }}
         </table>
         <input type="submit" value="Add Group" />
     </form>

@@ -40,7 +40,7 @@ Manage BOSS Collections<br/>
 </table>
 <br/>
 <div>
-    <form action="{{ current_url }}?action=col" method="post" class="add" id="Collection">
+    <form action="{{ current_url }}?action=col" method="post" class="add {{ col_error }}" id="Collection">
         {% csrf_token %}
         <table>
             {{ col_form.as_table }}
@@ -50,7 +50,7 @@ Manage BOSS Collections<br/>
 </div>
 <br/>
 <div>
-    <form action="{{ current_url }}?action=coord" method="post" class="add" id="Coordinate Frame">
+    <form action="{{ current_url }}?action=coord" method="post" class="add {{ coord_error }}" id="Coordinate Frame">
         {% csrf_token %}
         <table>
             {{ coord_form.as_table }}

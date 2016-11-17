@@ -45,7 +45,7 @@ Manage BOSS Experiment '{{ experiment_name }}'<br/>
 </table>
 <br/>
 <div>
-    <form action="{{ current_url }}?action=chan" method="post" class="add" id="Channel">
+    <form action="{{ current_url }}?action=chan" method="post" class="add {{ chan_error }}" id="Channel">
         {% csrf_token %}
         <table>
             {{ chan_form.as_table }}
@@ -55,7 +55,7 @@ Manage BOSS Experiment '{{ experiment_name }}'<br/>
 </div>
 <br/>
 <div>
-    <form action="{{ current_url }}?action=meta" method="post" class="add" id="Metadata">
+    <form action="{{ current_url }}?action=meta" method="post" class="add {{ meta_error }}" id="Metadata">
         {% csrf_token %}
         <table>
             {{ meta_form.as_table }}

@@ -19,7 +19,7 @@ class Home(LoginRequiredMixin, View):
         return HttpResponse(render_to_string('base.html'))
 
 class Users(LoginRequiredMixin, View):
-    def get(self, request, form=None):
+    def get(self, request, user_form=None):
         delete = request.GET.get('delete')
         if delete:
             err = api.del_user(request, delete)
@@ -33,7 +33,8 @@ class Users(LoginRequiredMixin, View):
 
         args = {
             'users': users,
-            'form': form if form else UserForm(),
+            'user_form': user_form if user_form else UserForm(),
+            'user_error': "error" if user_form else "",
         }
         return HttpResponse(render_to_string('users.html', args, RequestContext(request)))
 
@@ -50,10 +51,10 @@ class Users(LoginRequiredMixin, View):
                 return err
             return redirect('mgmt:users')
         else:
-            return self.get(request, form=form)
+            return self.get(request, user_form=form)
 
 class User(LoginRequiredMixin, View):
-    def get(self, request, username, form=None):
+    def get(self, request, username, role_form=None):
         # DP NOTE: Using BossUserRole because BossUser doesn't add anything
         #          that is useful to display
         remove = request.GET.get('remove')
@@ -70,7 +71,8 @@ class User(LoginRequiredMixin, View):
         args = {
             'username': username,
             'roles': roles,
-            'form': form if form else RoleForm(),
+            'role_form': role_form if role_form else RoleForm(),
+            'role_error': "error" if role_form else "",
         }
         return HttpResponse(render_to_string('user.html', args, RequestContext(request)))
 
@@ -84,7 +86,7 @@ class User(LoginRequiredMixin, View):
                 return err
             return redirect('mgmt:user', username)
         else:
-            return self.get(request, username, form=form)
+            return self.get(request, username, role_form=form)
 
 class Token(LoginRequiredMixin, View):
     def get(self, request):
@@ -112,7 +114,7 @@ class Token(LoginRequiredMixin, View):
         return redirect('mgmt:token')
 
 class Groups(LoginRequiredMixin, View):
-    def get(self, request, form=None):
+    def get(self, request, group_form=None):
         delete = request.GET.get('delete')
         if delete:
             err = api.del_group(request, delete)
@@ -127,7 +129,8 @@ class Groups(LoginRequiredMixin, View):
 
         args = {
             'groups': groups,
-            'form': form if form else GroupForm(),
+            'group_form': group_form if group_form else GroupForm(),
+            'group_error': "error" if group_form else ""
         }
         return HttpResponse(render_to_string('groups.html', args, RequestContext(request)))
 
@@ -141,10 +144,10 @@ class Groups(LoginRequiredMixin, View):
                 return err
             return redirect('mgmt:groups')
         else:
-            return self.get(request, form=form)
+            return self.get(request, group_form=form)
 
 class Group(LoginRequiredMixin, View):
-    def get(self, request, group_name, form=None):
+    def get(self, request, group_name, perm_form=None):
         remove = request.GET.get('rem_memb')
         if remove is not None:
             err = api.del_member(request, group_name, remove)
@@ -182,7 +185,8 @@ class Group(LoginRequiredMixin, View):
             'rows': data.items(),
             'members': members,
             'maintainers': maintainers,
-            'form': form if form else GroupMemberForm(),
+            'perm_form': perm_form if perm_form else GroupMemberForm(),
+            'perm_error': "error" if perm_form else "",
         }
         return HttpResponse(render_to_string('group.html', args, RequestContext(request)))
 
@@ -204,7 +208,7 @@ class Group(LoginRequiredMixin, View):
 
             return redirect('mgmt:group', group_name)
         else:
-            return self.get(request, group_name, form=form)
+            return self.get(request, group_name, perm_form=form)
 
 class Resources(LoginRequiredMixin, View):
     def get(self, request, col_form=None, coord_form=None):
@@ -234,7 +238,9 @@ class Resources(LoginRequiredMixin, View):
             'collections': collections,
             'coords': coords,
             'col_form': col_form if col_form else CollectionForm(),
+            'col_error': "error" if col_form else "",
             'coord_form': coord_form if coord_form else CoordinateFrameForm(),
+            'coord_error': "error" if coord_form else "",
         }
         return HttpResponse(render_to_string('collections.html', args, RequestContext(request)))
 
@@ -270,16 +276,45 @@ class Resources(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class CoordinateFrame(LoginRequiredMixin, View):
-    def get(self, request, coord_name):
+    def get(self, request, coord_name, coord_form=None):
         coord, err = api.get_coord(request, coord_name)
         if err:
             return err
 
         args = {
             'coord_name': coord_name,
-            'form': CoordinateFrameForm(coord)
+            'coord_form': coord_form if coord_form else CoordinateFrameForm(coord),
+            'coord_error': "error" if coord_form else "",
         }
         return HttpResponse(render_to_string('coordinate_frame.html', args, RequestContext(request)))
+
+    def post(self, request, coord_name):
+            form = CoordinateFrameForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data.copy()
+                # Cannot send readonly properties in the request
+                # If they were modified, it will be discarded
+                ro = ['z_start',
+                      'voxel_unit',
+                      'y_voxel_size',
+                      'time_step_unit',
+                      'y_start',
+                      'x_start',
+                      'time_step',
+                      'x_stop',
+                      'x_voxel_size',
+                      'y_stop',
+                      'z_stop',
+                      'z_voxel_size']
+                for key in ro:
+                    del data[key]
+
+                err = api.up_coord(request, coord_name, data)
+                if err:
+                    return err
+                return redirect('mgmt:coord', coord_name)
+            else:
+                return self.get(request, coord_name, coord_form=form)
 
 class Collection(LoginRequiredMixin, View):
     def get(self, request, collection_name, exp_form=None, meta_form=None):
@@ -310,7 +345,9 @@ class Collection(LoginRequiredMixin, View):
             'collection': collection,
             'metas': metas,
             'exp_form': exp_form if exp_form else ExperimentForm(),
+            'exp_error': "error" if exp_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
+            'meta_error': "error" if meta_form else "",
         }
         return HttpResponse(render_to_string('collection.html', args, RequestContext(request)))
 
@@ -379,7 +416,9 @@ class Experiment(LoginRequiredMixin, View):
             'channels': channels,
             'metas': metas,
             'chan_form': chan_form if chan_form else ChannelForm(),
+            'chan_error': "error" if chan_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
+            'meta_error': "error" if meta_form else "",
         }
         return HttpResponse(render_to_string('experiment.html', args, RequestContext(request)))
 
@@ -445,6 +484,7 @@ class Channel(LoginRequiredMixin, View):
             'form': ChannelForm(channel),
             'metas': metas,
             'meta_form': meta_form if meta_form else MetaForm(),
+            'meta_error': "error" if meta_form else "",
         }
         return HttpResponse(render_to_string('channel.html', args, RequestContext(request)))
 

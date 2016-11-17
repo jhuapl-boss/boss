@@ -52,7 +52,7 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
 </table>
 <br/>
 <div>
-    <form action="{{ current_url }}?action=exp" method="post" class="add" id="Experiment">
+    <form action="{{ current_url }}?action=exp" method="post" class="add {{ exp_error }}" id="Experiment">
         {% csrf_token %}
         <table>
             {{ exp_form.as_table }}
@@ -62,7 +62,7 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
 </div>
 <br/>
 <div>
-    <form action="{{ current_url }}?action=meta" method="post" class="add" id="Metadata">
+    <form action="{{ current_url }}?action=meta" method="post" class="add {{ meta_error }}" id="Metadata">
         {% csrf_token %}
         <table>
             {{ meta_form.as_table }}

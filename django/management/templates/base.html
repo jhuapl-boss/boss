@@ -65,14 +65,16 @@
             add.innerText = "Add " + tbl.id
             $(tbl).parent().before(add);
 
+            if( $(tbl).hasClass("error") ) {
+                $(add).click(); // automatically display a problem form
+            }
+
             // create cancel button to hide again
             var cancel = document.createElement("button");
             $(cancel).click(function() { $(tbl).parent().fadeOut(); return false; })
             cancel.innerText = "Cancel";
             $(tbl).children().last().after(cancel);
         });
-
-        $(".add.error").each(function(i, tbl){ $(tbl).show(); });
     });
   </script>
 </head>

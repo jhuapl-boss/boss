@@ -31,10 +31,10 @@ Manage BOSS Users for Group '{{ group_name }}'<br/>
 </table>
 <br/>
 <div>
-    <form action="{{ current_url }}" method="post" class="add" id="Permission">
+    <form action="{{ current_url }}" method="post" class="add {{ perm_error }}" id="Permission">
         {% csrf_token %}
         <table>
-            {{ form.as_table }}
+            {{ perm_form.as_table }}
         </table>
         <input type="submit" value="Add Permission" />
     </form>

@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% url 'mgmt:coord' coord_name %}
+
 Manage BOSS Coodinate Frame '{{ coord_name }}'<br/>
 <br/>
-{{ form.as_p }}
+<form action="{{ current_url }}" method="post" class="update {{ coord_error }}" id="Coordinate Frame">
+    {% csrf_token %}
+    <table>
+        {{ coord_form.as_table }}
+    </table>
+    <input type="submit" value="Update Coordinate Frame" />
+</form>
 {% endblock %}
