@@ -3,9 +3,11 @@
 {% block content %}
 BOSS Metadata for {{ category }} '{{ category_name }}'<br/>
 <br/>
-<table>
-    <tr>
-        <td>{{ key }}</td>
-        <td>{{ value }}</td> 
-</table>
+<form action="{{ current_url }}" method="post" class="update {{ meta_error }}" id="Metadata">
+    {% csrf_token %}
+    <table>
+        {{ meta_form.as_table }}
+    </table>
+    <input type="submit" value="Update Metadata" />
+</form>
 {% endblock %}

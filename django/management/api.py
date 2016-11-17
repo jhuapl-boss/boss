@@ -239,3 +239,8 @@ def add_meta(request, key, value, collection, experiment=None, channel=None):
     request.version = settings.BOSS_VERSION
     request.query_params = {'key': key, 'value': value}
     return _post('Metadata', BossMeta, request, None, collection, experiment, channel)
+
+def up_meta(request, key, value, collection, experiment=None, channel=None):
+    request.version = settings.BOSS_VERSION
+    request.query_params = {'key': key, 'value': value}
+    return _put('Metadata', BossMeta, request, None, collection, experiment, channel)

@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import View
 from django.template.loader import render_to_string
 from django.template import RequestContext
@@ -552,11 +552,17 @@ class Channel(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Meta(LoginRequiredMixin, View):
-    def get(self, request, collection, experiment=None, channel=None):
-        key = request.GET['key']
-        meta, err = api.get_meta(request, key, collection, experiment, channel)
-        if err:
-            return err
+    def get(self, request, collection, experiment=None, channel=None, meta_form=None):
+        if not meta_form:
+            key = request.GET['key']
+            meta, err = api.get_meta(request, key, collection, experiment, channel)
+            if err:
+                return err
+            meta_form = MetaForm(meta).is_update()
+            meta_error = ""
+        else:
+            meta_form.is_update()
+            meta_error = "error"
 
         if channel is not None:
             category = "Channel"
@@ -571,7 +577,20 @@ class Meta(LoginRequiredMixin, View):
         args = {
             'category': category,
             'category_name': category_name,
-            'key': meta['key'],
-            'value': meta['value'],
+            'meta_form': meta_form,
+            'meta_error': meta_error,
         }
         return HttpResponse(render_to_string('meta.html', args, RequestContext(request)))
+
+    def post(self, request, collection, experiment=None, channel=None):
+            form = MetaForm(request.POST)
+            if form.is_valid():
+                key = form.cleaned_data['key']
+                value = form.cleaned_data['value']
+
+                err = api.up_meta(request, key, value, collection, experiment, channel)
+                if err:
+                    return err
+                return HttpResponseRedirect('?key=' + key)
+            else:
+                return self.get(request, collection, experiment, channel, meta_form=form)

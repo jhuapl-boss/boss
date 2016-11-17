@@ -145,7 +145,9 @@ class ExperimentForm(UpdateForm):
     hierarchy_method = forms.ChoiceField(choices=[(c,c) for c in ['', 'near_iso', 'iso', 'slice']])
     num_time_samples = forms.IntegerField()
 
-class MetaForm(forms.Form):
+class MetaForm(UpdateForm):
+    UPDATE_FIELDS = ['value']
+
     key = forms.CharField()
     value = forms.CharField(widget=forms.Textarea)
 
