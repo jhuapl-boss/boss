@@ -6,6 +6,15 @@
 Manage SSO Roles for User '{{ username }}'<br/>
 <br/>
 <table>
+    {% for key,value in rows %}
+    <tr>
+        <th><label>{{ key }}:</label></th>
+        <td>{{ value }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<br/>
+<table>
     <thead>
         <tr>
             <th>Roles</th>

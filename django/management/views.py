@@ -69,13 +69,20 @@ class User(LoginRequiredMixin, View):
                 return err
             return redirect('mgmt:user', username)
 
-        roles, err = api.get_roles(request, username)
+        user, err = api.get_user(request, username)
         if err:
             return err
 
+        rows = []
+        rows.append(('Username', user['username']))
+        rows.append(('First Name', user.get('firstName', '')))
+        rows.append(('Last Name', user.get('lastName', '')))
+        rows.append(('Email', user.get('email', '')))
+
         args = {
             'username': username,
-            'roles': roles,
+            'rows': rows,
+            'roles': user['realmRoles'],
             'role_form': role_form if role_form else RoleForm(),
             'role_error': "error" if role_form else "",
         }

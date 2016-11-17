@@ -10,7 +10,7 @@ Manage BOSS Experiment '{{ experiment_name }}'<br/>
     {% csrf_token %}
     <table>
         <tr>
-            <th><label>Creator</label></th>
+            <th><label>Creator:</label></th>
             <td>{{ experiment.creator }}</td>
         </tr>
         {{ exp_form.as_table }}

@@ -10,7 +10,7 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
     {% csrf_token %}
     <table>
         <tr>
-            <th><label>Creator</label></th>
+            <th><label>Creator:</label></th>
             <td>{{ collection.creator }}</td>
         </tr>
         {{ col_form.as_table }}

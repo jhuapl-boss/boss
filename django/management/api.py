@@ -83,6 +83,9 @@ def _put(category, cls, request, data, *args):
 def get_users(request):
     return _get('Users', BossUser, request)
 
+def get_user(request, username):
+    return _get('User', BossUser, request, username)
+
 def del_user(request, username):
     return _del('User', BossUser, request, username)
 
