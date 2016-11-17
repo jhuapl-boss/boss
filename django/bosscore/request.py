@@ -693,7 +693,7 @@ class BossRequest:
                                 ErrorCodes.UNABLE_TO_VALIDATE)
             perm = BossPermissionManager.check_resource_permissions(self.user, obj, self.method)
         if not perm:
-            raise BossHTTPError("This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
+            raise BossError("This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
 
     def get_boss_key(self):
         """
