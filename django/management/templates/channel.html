@@ -6,7 +6,17 @@
 
 Manage BOSS Channel '{{ channel_name }}'<br/>
 <br/>
-{{ form.as_p }}
+<form action="{{ current_url }}?action=update" method="post" class="update {{ chan_error }}" id="Channel">
+    {% csrf_token %}
+    <table>
+        <tr>
+            <th><label>Creator</label></th>
+            <td>{{ channel.creator }}</td>
+        </tr>
+        {{ chan_form.as_table }}
+    </table>
+    <input type="submit" value="Update Channel" />
+</form>
 <br/>
 <table>
     <thead>

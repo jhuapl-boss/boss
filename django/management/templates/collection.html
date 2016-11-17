@@ -6,16 +6,17 @@
 
 Manage BOSS Collection '{{ collection_name }}'<br/>
 <br/>
-<table>
-    <tr>
-        <td>Creator</td>
-        <td>{{ collection.creator }}</td>
-    </tr>
-    <tr>
-        <td>Description</td>
-        <td>{{ collection.description }}</td>
-    </tr>
-</table>
+<form action="{{ current_url }}?action=update" method="post" class="update {{ col_error }}" id="Collection">
+    {% csrf_token %}
+    <table>
+        <tr>
+            <th><label>Creator</label></th>
+            <td>{{ collection.creator }}</td>
+        </tr>
+        {{ col_form.as_table }}
+    </table>
+    <input type="submit" value="Update Collection" />
+</form>
 <br/>
 <table>
     <thead>

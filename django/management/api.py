@@ -175,6 +175,9 @@ def del_collection(request, collection):
 def add_collection(request, collection, data):
     return _post('Collection', CollectionDetail, request, data, collection)
 
+def up_collection(request, collection, data):
+    return _put('Collection', CollectionDetail, request, data, collection)
+
 # Experiments
 def get_experiments(request, collection):
     data, err = _get('Experiments', ExperimentList, request, collection)
@@ -191,6 +194,9 @@ def del_experiment(request, collection, experiment):
 def add_experiment(request, collection, experiment, data):
     return _post('Experiment', ExperimentDetail, request, data, collection, experiment)
 
+def up_experiment(request, collection, experiment, data):
+    return _put('Experiment', ExperimentDetail, request, data, collection, experiment)
+
 # Channels
 def get_channels(request, collection, experiment):
     data, err = _get('Channels', ChannelList, request, collection, experiment)
@@ -206,6 +212,9 @@ def del_channel(request, collection, experiment, channel):
 
 def add_channel(request, collection, experiment, channel, data):
     return _post('Channel', ChannelDetail, request, data, collection, experiment, channel)
+
+def up_channel(request, collection, experiment, channel, data):
+    return _put('Channel', ChannelDetail, request, data, collection, experiment, channel)
 
 """BOSS API for Metadata"""
 def get_meta_keys(request, collection, experiment=None, channel=None):
