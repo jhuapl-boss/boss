@@ -80,6 +80,17 @@ def _put(category, cls, request, data, *args):
         return error_response(request, resp, category, category_name)
     return None
 
+def _patch(category, cls, request, data, *args):
+    boss = cls()
+    boss.request = request # needed for check_role() to work
+    if data:
+        boss.request.data = data # simulate the DRF request object
+    resp = boss.patch(request, *args)
+    if not status.is_success(resp.status_code):
+        category_name = args[-1] if len(args) > 0 else None
+        return error_response(request, resp, category, category_name)
+    return None
+
 """SSO API for Users and Roles"""
 def get_users(request):
     return _get('Users', BossUser, request)
@@ -250,7 +261,7 @@ def up_meta(request, key, value, collection, experiment=None, channel=None):
     return _put('Metadata', BossMeta, request, None, collection, experiment, channel)
 
 """BOSS API for Permissions"""
-def get_perms(request, collection=None, experiment=None, channel=None):
+def get_perms(request, collection=None, experiment=None, channel=None, group=None):
     request.query_params = {}
     if collection:
         request.query_params['collection'] = collection
@@ -258,10 +269,28 @@ def get_perms(request, collection=None, experiment=None, channel=None):
             request['experiment'] = experiment
             if channel:
                 request['channel'] = channel
+    if group:
+        request.query_params['group'] = group
     data, err = _get('Permissions', ResourceUserPermission, request)
     if data:
         data = data['permission-sets']
     return (data, err)
 
+def del_perms(request, collection=None, experiment=None, channel=None, group=None):
+    request.query_params = {}
+    if collection:
+        request.query_params['collection'] = collection
+        if experiment:
+            request['experiment'] = experiment
+            if channel:
+                request['channel'] = channel
+    if group:
+        request.query_params['group'] = group
+    return _del('Permissions', ResourceUserPermission, request)
+
 def add_perms(request, data):
     return _post('Permissions', ResourceUserPermission, request, data)
+
+def up_perms(request, data):
+    return _patch('Permissions', ResourceUserPermission, request, data)
+

@@ -7,7 +7,8 @@ from django.shortcuts import redirect
 
 from .forms import UserForm, RoleForm, GroupForm, GroupMemberForm
 from .forms import CollectionForm, ExperimentForm, ChannelForm
-from .forms import CoordinateFrameForm, MetaForm, PermissionsForm
+from .forms import CoordinateFrameForm, MetaForm
+from .forms import ResourcePermissionsForm, GroupPermissionsForm
 
 from . import api
 
@@ -60,8 +61,6 @@ class Users(LoginRequiredMixin, View):
 
 class User(LoginRequiredMixin, View):
     def get(self, request, username, role_form=None):
-        # DP NOTE: Using BossUserRole because BossUser doesn't add anything
-        #          that is useful to display
         remove = request.GET.get('remove')
         if remove is not None:
             err = api.del_role(request, username, remove)
@@ -333,6 +332,13 @@ class Collection(LoginRequiredMixin, View):
                 return err
             return redirect('mgmt:collection', collection_name)
 
+        remove = request.GET.get('rem_perms')
+        if remove is not None:
+            err = api.del_perms(request, collection_name, group=remove)
+            if err:
+                return err
+            return redirect('mgmt:collection', collection_name)
+
         collection, err = api.get_collection(request, collection_name)
         if err:
             return err
@@ -354,19 +360,22 @@ class Collection(LoginRequiredMixin, View):
         perm_rows = {}
         for perm in perms:
             perm_rows[perm['group']] = ", ".join(perm['permissions'])
+        # Sort based on group name, so list is always in the same order
+        perm_rows = list(perm_rows.items())
+        perm_rows.sort(key = lambda x: x[0])
 
         args = {
             'collection_name': collection_name,
             'collection': collection,
             'metas': metas,
-            'perms': perm_rows.items(),
+            'perms': perm_rows,
             'col_form': col_form,
             'col_error': col_error,
             'exp_form': exp_form if exp_form else ExperimentForm(),
             'exp_error': "error" if exp_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",
-            'perms_form': perms_form if perms_form else PermissionsForm(),
+            'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
         }
         return HttpResponse(render_to_string('collection.html', args, RequestContext(request)))
@@ -399,12 +408,22 @@ class Collection(LoginRequiredMixin, View):
             else:
                 return self.get(request, collection_name, meta_form=form)
         elif action == 'perms':
-            form = PermissionsForm(request.POST)
+            form = ResourcePermissionsForm(request.POST)
             if form.is_valid():
                 data = form.cleaned_data.copy()
                 data['collection'] = collection_name
 
-                err = api.add_perms(request, data)
+                groups = []
+                group = data['group']
+                perms, err = api.get_perms(request, collection_name)
+                if not err:
+                    groups = [p['group'] for p in perms]
+
+                if group in groups:
+                    err = api.up_perms(request, data)
+                else:
+                    err = api.add_perms(request, data)
+
                 if err:
                     return err
                 return redirect('mgmt:collection', collection_name)
