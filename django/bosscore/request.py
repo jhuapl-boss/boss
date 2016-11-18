@@ -294,7 +294,7 @@ class BossRequest:
                 raise BossError("Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                                 ErrorCodes.INVALID_CUTOUT_ARGS)
 
-        except TypeError:
+        except (TypeError, ValueError):
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_range, y_range, z_range),
                             ErrorCodes.TYPE_ERROR)
 
@@ -323,16 +323,25 @@ class BossRequest:
                 x_coords = x_args.split(":")
                 y_coords = y_args.split(":")
                 z_coords = [int(z_args), int(z_args)+1]
+                if len(x_coords) < 2 or len(y_coords) < 2:
+                    raise BossError("Incorrect cutout arguments {}/{}/{}".format(x_args, y_args, z_args),
+                                ErrorCodes.INVALID_CUTOUT_ARGS)
 
             elif orientation == 'xz':
                 x_coords = x_args.split(":")
                 y_coords = [int(y_args), int(y_args) + 1]
                 z_coords = z_args.split(":")
+                if len(x_coords) < 2 or len(z_coords) < 2:
+                    raise BossError("Incorrect cutout arguments {}/{}/{}".format(x_args, y_args, z_args),
+                                ErrorCodes.INVALID_CUTOUT_ARGS)
 
             elif orientation == 'yz':
                 x_coords = [int(x_args), int(x_args) + 1]
                 y_coords = y_args.split(":")
                 z_coords = z_args.split(":")
+                if len(y_coords) < 2 or len(z_coords) < 2:
+                    raise BossError("Incorrect cutout arguments {}/{}/{}".format(x_args, y_args, z_args),
+                                ErrorCodes.INVALID_CUTOUT_ARGS)
             else:
                 raise BossError("Incorrect orientation {}".format(orientation), ErrorCodes.INVALID_URL)
 
@@ -352,7 +361,7 @@ class BossRequest:
                     (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
                 raise BossError("Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
                                 ErrorCodes.INVALID_CUTOUT_ARGS)
-        except TypeError:
+        except (TypeError, ValueError):
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_args, y_args, z_args),
                             ErrorCodes.TYPE_ERROR)
 
@@ -370,12 +379,11 @@ class BossRequest:
             BossError: For invalid requests
 
         """
-        tile_size = int(tile_size)
-        x_idx = int(x_idx)
-        y_idx = int(y_idx)
-        z_idx = int(z_idx)
-
         try:
+            tile_size = int(tile_size)
+            x_idx = int(x_idx)
+            y_idx = int(y_idx)
+            z_idx = int(z_idx)
 
             if int(resolution) in range(0, self.experiment.num_hierarchy_levels):
                 self.resolution = int(resolution)
@@ -411,7 +419,7 @@ class BossRequest:
                     (self.z_start < self.coord_frame.z_start) or (self.z_stop > self.coord_frame.z_stop):
                 raise BossError("Incorrect cutout arguments {}/{}/{}/{}".format(resolution, x_idx, y_idx, z_idx),
                                 ErrorCodes.INVALID_CUTOUT_ARGS)
-        except TypeError:
+        except (TypeError, ValueError):
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_idx, y_idx, z_idx),
                             ErrorCodes.TYPE_ERROR)
 
