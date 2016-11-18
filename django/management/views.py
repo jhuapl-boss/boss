@@ -357,9 +357,36 @@ class Collection(LoginRequiredMixin, View):
         if err:
             return err
 
+        t = True; f = False;
+        read    = [t,f,f,f,f,f]
+        write   = [t,t,t,f,f,f]
+        admin   = [t,t,t,f,t,t]
+        admin_d = [t,t,t,t,t,t]
+
+        def make_selection(p):
+            chk = [
+                'read' in p,
+                'add' in p,
+                'update' in p,
+                'delete' in p,
+                'assign_group' in p,
+                'remove_group' in p,
+            ]
+
+            if chk == read:
+                return "read"
+            elif chk == write:
+                return "write"
+            elif chk == admin:
+                return "admin"
+            elif chk == admin_d:
+                return "admin+delete"
+            else:
+                return "Raw: " + ", ".join(p)
+
         perm_rows = {}
         for perm in perms:
-            perm_rows[perm['group']] = ", ".join(perm['permissions'])
+            perm_rows[perm['group']] = make_selection(perm['permissions'])
         # Sort based on group name, so list is always in the same order
         perm_rows = list(perm_rows.items())
         perm_rows.sort(key = lambda x: x[0])
@@ -412,6 +439,19 @@ class Collection(LoginRequiredMixin, View):
             if form.is_valid():
                 data = form.cleaned_data.copy()
                 data['collection'] = collection_name
+
+                perms = data['permissions']
+                if perms == "read":
+                    perms = ['read']
+                elif perms == "write":
+                    perms = ['read', 'add', 'update']
+                elif perms == "admin":
+                    perms = ['read', 'add', 'update', 'assign_group', 'remove_group']
+                elif perms == "admin+delete":
+                    perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']
+                else:
+                    raise Exception("Unknown permissions: " + perms)
+                data['permissions'] = perms
 
                 groups = []
                 group = data['group']
