@@ -946,6 +946,17 @@ class ResourceViewsChannelTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.data['sources']), {'channel2'})
 
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33'
+        data = {'description': 'A new channel for unit tests. Updated', 'sources': []}
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+        # Get an existing channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['sources'], [])
+
     def test_put_channel_remove_related(self):
         """
         Update a channel (Valid - The channel exists)
