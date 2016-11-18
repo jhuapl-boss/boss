@@ -77,4 +77,7 @@ OBJECTIO_CONFIG = {"s3_flush_queue": config['aws']['s3-flush-queue'],
                    "cuboid_bucket": config['aws']['cuboid_bucket'],
                    "page_in_lambda_function": config['lambda']['page_in_function'],
                    "page_out_lambda_function": config['lambda']['flush_function'],
-                   "s3_index_table": config['aws']['s3-index-table']}
+                   "s3_index_table": config['aws']['s3-index-table'],
+                   "id_index_table": config['aws']['id-index-table'],
+                   "id_count_table": config['aws']['id-count-table']
+                   }
