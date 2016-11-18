@@ -21,6 +21,23 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
 <table>
     <thead>
         <tr>
+            <th>Permitted Groups</th>
+            <th>Permissions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for group, perm in perms %}
+        <tr>
+            <td>{{ group }}</td>
+            <td>{{ perm }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br/>
+<table>
+    <thead>
+        <tr>
             <th>Experiment</th>
             <th>Actions</th>
         </tr>
@@ -69,6 +86,16 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
             {{ meta_form.as_table }}
         </table>
         <input type="submit" value="Add Meta Value" />
+    </form>
+</div>
+<br/>
+<div>
+    <form action="{{ current_url }}?action=perms" method="post" class="add {{ perms_error }}" id="Permissions">
+        {% csrf_token %}
+        <table>
+            {{ perms_form.as_table }}
+        </table>
+        <input type="submit" value="Add Permissions" />
     </form>
 </div>
 {% endblock %}

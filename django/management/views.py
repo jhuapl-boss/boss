@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 
 from .forms import UserForm, RoleForm, GroupForm, GroupMemberForm
 from .forms import CollectionForm, ExperimentForm, ChannelForm
-from .forms import CoordinateFrameForm, MetaForm
+from .forms import CoordinateFrameForm, MetaForm, PermissionsForm
 
 from . import api
 
@@ -318,7 +318,7 @@ class CoordinateFrame(LoginRequiredMixin, View):
                 return self.get(request, coord_name, coord_form=form)
 
 class Collection(LoginRequiredMixin, View):
-    def get(self, request, collection_name, col_form=None, exp_form=None, meta_form=None):
+    def get(self, request, collection_name, col_form=None, exp_form=None, meta_form=None, perms_form=None):
         remove = request.GET.get('rem_exp')
         if remove is not None:
             err = api.del_experiment(request, collection_name, remove)
@@ -347,16 +347,27 @@ class Collection(LoginRequiredMixin, View):
         if err:
             return err
 
+        perms, err = api.get_perms(request, collection_name)
+        if err:
+            return err
+
+        perm_rows = {}
+        for perm in perms:
+            perm_rows[perm['group']] = ", ".join(perm['permissions'])
+
         args = {
             'collection_name': collection_name,
             'collection': collection,
             'metas': metas,
+            'perms': perm_rows.items(),
             'col_form': col_form,
             'col_error': col_error,
             'exp_form': exp_form if exp_form else ExperimentForm(),
             'exp_error': "error" if exp_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",
+            'perms_form': perms_form if perms_form else PermissionsForm(),
+            'perms_error': "error" if perms_form else "",
         }
         return HttpResponse(render_to_string('collection.html', args, RequestContext(request)))
 
@@ -387,6 +398,18 @@ class Collection(LoginRequiredMixin, View):
                 return redirect('mgmt:collection', collection_name)
             else:
                 return self.get(request, collection_name, meta_form=form)
+        elif action == 'perms':
+            form = PermissionsForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data.copy()
+                data['collection'] = collection_name
+
+                err = api.add_perms(request, data)
+                if err:
+                    return err
+                return redirect('mgmt:collection', collection_name)
+            else:
+                return self.get(request, collection_name, perms_form=form)
         elif action == 'update':
             form = CollectionForm(request.POST)
             if form.is_valid():

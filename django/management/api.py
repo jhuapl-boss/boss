@@ -9,6 +9,7 @@ from bosscore.views.views_resource import CollectionList, CollectionDetail
 from bosscore.views.views_resource import ExperimentList, ExperimentDetail
 from bosscore.views.views_resource import CoordinateFrameList, CoordinateFrameDetail
 from bosscore.views.views_resource import ChannelList, ChannelDetail
+from bosscore.views.views_permission import ResourceUserPermission
 from bossmeta.views import BossMeta
 
 from rest_framework import status
@@ -247,3 +248,20 @@ def up_meta(request, key, value, collection, experiment=None, channel=None):
     request.version = settings.BOSS_VERSION
     request.query_params = {'key': key, 'value': value}
     return _put('Metadata', BossMeta, request, None, collection, experiment, channel)
+
+"""BOSS API for Permissions"""
+def get_perms(request, collection=None, experiment=None, channel=None):
+    request.query_params = {}
+    if collection:
+        request.query_params['collection'] = collection
+        if experiment:
+            request['experiment'] = experiment
+            if channel:
+                request['channel'] = channel
+    data, err = _get('Permissions', ResourceUserPermission, request)
+    if data:
+        data = data['permission-sets']
+    return (data, err)
+
+def add_perms(request, data):
+    return _post('Permissions', ResourceUserPermission, request, data)

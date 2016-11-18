@@ -168,3 +168,12 @@ class ChannelForm(UpdateForm):
     source = DelimitedCharField(required=False)
     related = DelimitedCharField(required=False)
 
+class PermissionsForm(forms.Form):
+    group = forms.CharField()
+    permissions = forms.MultipleChoiceField(choices=[(c,c) for c in ['read',
+                                                               'add',
+                                                               'update',
+                                                               'delete',
+                                                               'assign_group',
+                                                               'remove_group']])
+

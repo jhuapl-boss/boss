@@ -19,12 +19,13 @@ Manage BOSS Users for Group '{{ group_name }}'<br/>
             <td>{{ user }}</td>
             <td>{{ perms }}</td>
             <td>
-                    {% if user in members %}
-                        <a href="{{ current_url }}?rem_memb={{ user }}">Remove Member</a>
-                    {% endif %}
-                    {% if user in maintainers %}
-                        <a href="{{ current_url }}?rem_maint={{ user }}">Remove Maintainer</a>
-                    {% endif %}
+                {% if user in members %}
+                    <a href="{{ current_url }}?rem_memb={{ user }}">Remove Member</a>
+                {% endif %}
+                {% if user in maintainers %}
+                    <a href="{{ current_url }}?rem_maint={{ user }}">Remove Maintainer</a>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
