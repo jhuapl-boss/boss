@@ -117,7 +117,7 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
     def tearDownClass(cls):
         super(CutoutViewIntegration64BitTests, cls).tearDownClass()
         try:
-            cls.setup_helper.delete_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except Exception as e:
             print("Failed to cleanup S3 Index Table: {}".format(e))
             pass

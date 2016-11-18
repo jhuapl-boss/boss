@@ -159,10 +159,10 @@ class CutoutViewIntegration8BitTests(CutoutInterfaceViewUint8TestMixin, APITestC
         dbsetup.insert_spatialdb_test_data()
 
         try:
-            cls.setup_helper.create_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except ClientError:
-            cls.setup_helper.delete_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
-            cls.setup_helper.create_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["s3_index_table"])
 
         try:
             cls.setup_helper.create_cuboid_bucket(OBJECTIO_CONFIG["cuboid_bucket"])
@@ -185,7 +185,7 @@ class CutoutViewIntegration8BitTests(CutoutInterfaceViewUint8TestMixin, APITestC
     def tearDownClass(cls):
         super(CutoutViewIntegration8BitTests, cls).tearDownClass()
         try:
-            cls.setup_helper.delete_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except Exception as e:
             print("Failed to cleanup S3 Index Table: {}".format(e))
             pass
