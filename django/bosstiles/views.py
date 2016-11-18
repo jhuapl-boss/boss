@@ -68,7 +68,7 @@ class CutoutTile(APIView):
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossError.to_http()
+            return err.to_http()
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -161,7 +161,7 @@ class Tile(APIView):
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossError.to_http()
+            return err.to_http()
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)

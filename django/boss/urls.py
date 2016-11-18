@@ -68,6 +68,11 @@ urlpatterns = [
     # Management Console Urls
     url(r'^v0.7/mgmt/', include('management.urls', namespace='mgmt')),
     url(r'^/?$', RedirectView.as_view(pattern_name='mgmt:home')),
+
+    #Object urls
+    url(r'^v0.7/reserve/', include('bossobject.urls.reserve_urls', namespace='v0.7')),
+    url(r'^v0.7/ids/', include('bossobject.urls.ids_urls', namespace='v0.7')),
+    url(r'^v0.7/boundingbox/', include('bossobject.urls.boundingbox_urls', namespace='v0.7')),
 ]
 
 if 'djangooidc' in settings.INSTALLED_APPS:

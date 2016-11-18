@@ -13,7 +13,9 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from rest_framework.request import Request
+from rest_framework.test import force_authenticate
+from rest_framework.test import APIRequestFactory
+
 from django.http import HttpRequest
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -21,6 +23,7 @@ from django.contrib.auth.models import User
 from bosscore.request import BossRequest
 from bosscore.error import BossError
 from bosscore.test.setup_db import SetupTestDB
+from bosstiles.views import Tile, CutoutTile
 
 version = settings.BOSS_VERSION
 
@@ -35,6 +38,7 @@ class BossTileRequestTests(APITestCase):
             Initialize the database
             :return:
         """
+        self.rf = APIRequestFactory()
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
         dbsetup.set_user(user)
@@ -69,9 +73,9 @@ class BossTileRequestTests(APITestCase):
         }
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Tile().initialize_request(request)
         drfrequest.version = version
 
         ret = BossRequest(drfrequest, request_args)
@@ -107,9 +111,9 @@ class BossTileRequestTests(APITestCase):
             "time_args": None
         }
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Tile().initialize_request(request)
         drfrequest.version = version
         ret = BossRequest(drfrequest, request_args)
 
@@ -149,10 +153,11 @@ class BossTileRequestTests(APITestCase):
         }
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Tile().initialize_request(request)
         drfrequest.version = version
+
         ret = BossRequest(drfrequest, request_args)
         time = ret.get_time()
         self.assertEqual(time, range(0, 1))
@@ -180,10 +185,11 @@ class BossTileRequestTests(APITestCase):
         }
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Tile().initialize_request(request)
         drfrequest.version = version
+
         ret = BossRequest(drfrequest, request_args)
         time = ret.get_time()
         self.assertEqual(time, range(1, 2))
@@ -212,9 +218,9 @@ class BossTileRequestTests(APITestCase):
         }
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Tile().initialize_request(request)
         drfrequest.version = version
 
         with self.assertRaises(BossError):
@@ -244,9 +250,9 @@ class BossTileRequestTests(APITestCase):
         }
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Tile().initialize_request(request)
         drfrequest.version = version
 
         with self.assertRaises(BossError):
@@ -276,9 +282,9 @@ class BossTileRequestTests(APITestCase):
         }
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Tile().initialize_request(request)
         drfrequest.version = version
 
         with self.assertRaises(BossError):
@@ -307,9 +313,9 @@ class BossTileRequestTests(APITestCase):
         }
 
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Tile().initialize_request(request)
         drfrequest.version = version
 
         with self.assertRaises(BossError):

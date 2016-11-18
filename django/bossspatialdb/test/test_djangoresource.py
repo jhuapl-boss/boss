@@ -17,13 +17,13 @@ from django.http import HttpRequest
 
 from rest_framework.test import APITestCase
 from rest_framework.request import Request
+from rest_framework.test import force_authenticate
+from rest_framework.test import APIRequestFactory
 
 from bosscore.request import BossRequest
-
-from spdb.project import BossResourceDjango
-
 from bosscore.test.setup_db import SetupTestDB
-
+from spdb.project import BossResourceDjango
+from bossspatialdb.views import Cutout
 
 version = settings.BOSS_VERSION
 
@@ -32,10 +32,11 @@ class TestDjangoResource(APITestCase):
 
     def setUp(self):
         """Setup test by inserting data model items into the database"""
+        self.rf = APIRequestFactory()
         dbsetup = SetupTestDB()
-        user = dbsetup.create_user()
-        dbsetup.add_role("resource-manager", user)
-        self.client.force_login(user)
+        self.user = dbsetup.create_user()
+        dbsetup.add_role("resource-manager", self.user)
+        self.client.force_login(self.user)
         dbsetup.insert_test_data()
 
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
@@ -45,10 +46,11 @@ class TestDjangoResource(APITestCase):
         response = self.client.post(url, data=data)
 
         url = '/' + version + '/cutout/col1/exp1/channel1/2/0:5/0:6/0:2/'
+
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -68,10 +70,11 @@ class TestDjangoResource(APITestCase):
 
         # Setup Layer
         url = '/' + version + '/cutout/col1/exp1/layer1/2/0:5/0:6/0:2/'
+
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict
@@ -90,10 +93,11 @@ class TestDjangoResource(APITestCase):
         self.request_annotation = BossRequest(drfrequest, request_args)
 
         url = '/' + version + '/cutout/col1/exp1/channel33/2/0:5/0:6/0:2/'
+
         # Create the request
-        req = HttpRequest()
-        req.META = {'PATH_INFO': url}
-        drfrequest = Request(req)
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
         drfrequest.version = version
 
         # Create the request dict

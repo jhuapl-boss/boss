@@ -187,7 +187,8 @@ class BossPermissionManager:
                 assign_perm('delete_volumetric_data', admin_group, obj)
 
         except Group.DoesNotExist:
-            BossHTTPError(404, "{Cannot assign permissions to the admin group because the group does not exist}", 30000)
+            raise BossError("Cannot assign permissions to the admin group because the group does not exist",
+                            ErrorCodes.GROUP_NOT_FOUND)
 
     @staticmethod
     def check_resource_permissions(user, obj, method_type):
@@ -211,7 +212,7 @@ class BossPermissionManager:
         elif method_type == 'DELETE':
             permission = 'delete'
         else:
-            return BossHTTPError(404, "Unable to get permissions for this request", 30000)
+            raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
 
         if permission in get_perms(user, obj):
             return True
@@ -238,7 +239,7 @@ class BossPermissionManager:
         elif method_type == 'DELETE':
             permission = 'delete_volumetric_data'
         else:
-            return BossHTTPError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
+            raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
 
         if permission in get_perms(user, obj):
             return True

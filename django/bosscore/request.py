@@ -38,6 +38,7 @@ class BossRequest:
 
         """
         self.bossrequest = bossrequest
+
         # Datamodel objects
         self.collection = None
         self.experiment = None
@@ -76,6 +77,9 @@ class BossRequest:
         self.method = request.method
         self.version = request.version
 
+        # object service
+        self.object_id = 0
+
         # Validate the request based on the service
         self.service = self.bossrequest['service']
 
@@ -90,6 +94,16 @@ class BossRequest:
 
         elif self.service == 'tile':
             self.validate_tile_service()
+
+        elif self.service == 'ids':
+            # Currently the validation is the same as the cutout service
+            self.validate_ids_service()
+
+        elif self.service == 'reserve':
+            self.validate_reserve_service()
+
+        elif self.service == 'boundingbox':
+            self.validate_bounding_box()
 
         else:
             self.validate_cutout_service()
@@ -180,8 +194,39 @@ class BossRequest:
         else:
             self.set_time(time)
 
-        self.set_tileargs(self.bossrequest['tile_size'], self.bossrequest['orientation'], self.bossrequest['resolution'],
-                          self.bossrequest['x_args'], self.bossrequest['y_args'], self.bossrequest['z_args'])
+        self.set_tileargs(self.bossrequest['tile_size'], self.bossrequest['orientation'],
+                          self.bossrequest['resolution'], self.bossrequest['x_args'], self.bossrequest['y_args'],
+                          self.bossrequest['z_args'])
+
+    def validate_reserve_service(self):
+        """
+
+        Args:
+            webargs:
+
+        Returns:
+
+        """
+        self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
+                                self.bossrequest['channel_name'])
+
+    def validate_bounding_box_service(self):
+        """
+
+            Args:
+                webargs:
+
+            Returns:
+
+        """
+        try:
+            self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
+                                    self.bossrequest['channel_name'])
+            # TODO : validate the object id
+            self.object_id = int(self.bossrequest['id'])
+        except TypeError:
+            raise BossError("The id of the object {} is not a valid int".format(self.bossrequest['id']),
+                            ErrorCodes.TYPE_ERROR)
 
     def initialize_request(self, collection_name, experiment_name, channel_name):
         """
@@ -232,7 +277,6 @@ class BossRequest:
             y_coords = y_range.split(":")
             z_coords = z_range.split(":")
 
-
             self.x_start = int(x_coords[0])
             self.x_stop = int(x_coords[1])
 
@@ -278,7 +322,7 @@ class BossRequest:
             if orientation == 'xy':
                 x_coords = x_args.split(":")
                 y_coords = y_args.split(":")
-                z_coords = [int(z_args) , int(z_args)+1]
+                z_coords = [int(z_args), int(z_args)+1]
 
             elif orientation == 'xz':
                 x_coords = x_args.split(":")
@@ -349,18 +393,16 @@ class BossRequest:
                 corner = (tile_size * x_idx, y_idx, tile_size * z_idx)
                 extent = (tile_size, 1, tile_size)
             else:
-                raise BossHTTPError("Invalid orientation: {}".format(orientation),
-                                         ErrorCodes.INVALID_CUTOUT_ARGS)
+                raise BossHTTPError("Invalid orientation: {}".format(orientation), ErrorCodes.INVALID_CUTOUT_ARGS)
 
             self.x_start = int(corner[0])
-            self.x_stop = int(corner[0]+ extent[0])
+            self.x_stop = int(corner[0] + extent[0])
 
             self.y_start = int(corner[1])
-            self.y_stop = int(corner[1]+ extent[1])
+            self.y_stop = int(corner[1] + extent[1])
 
             self.z_start = int(corner[2])
-            self.z_stop = int(corner[2]+ extent[2])
-
+            self.z_stop = int(corner[2] + extent[2])
 
             # Check for valid arguments
             if (self.x_start >= self.x_stop) or (self.y_start >= self.y_stop) or (self.z_start >= self.z_stop) or \
@@ -373,14 +415,11 @@ class BossRequest:
             raise BossError("Type error in cutout argument{}/{}/{}/{}".format(resolution, x_idx, y_idx, z_idx),
                             ErrorCodes.TYPE_ERROR)
 
-
     def initialize_view_request(self, webargs):
         """
         Validate and initialize views
         Args:
             webargs:
-
-
         """
         print(webargs)
 
@@ -630,7 +669,7 @@ class BossRequest:
         elif self.collection and self.service == 'meta':
             self.base_boss_key = self.collection.name
         else:
-            return BossHTTPError("Error creating the boss key", ErrorCodes.UNABLE_TO_VALIDATE)
+            raise BossError("Error creating the boss key", ErrorCodes.UNABLE_TO_VALIDATE)
 
     def check_permissions(self):
         """ Set the base boss key for the request
@@ -639,10 +678,10 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-        if self.service =='cutout' or self.service == 'image' or self.service == 'tile':
-            perm = BossPermissionManager.check_data_permissions(self.user, self.channel,
-                                                                  self.method)
-        elif self.service =='meta':
+        if self.service == 'cutout' or self.service == 'image' or self.service == 'tile' or self.service == 'ids':
+            perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
+
+        elif self.service == 'meta':
             if self.collection and self.experiment and self.channel:
                 obj = self.channel
             elif self.collection and self.experiment:
@@ -650,11 +689,11 @@ class BossRequest:
             elif self.collection:
                 obj = self.collection
             else:
-                return BossHTTPError("Error encountered while checking permissions for this request",
-                                     ErrorCodes.UNABLE_TO_VALIDATE)
+                raise BossError("Error encountered while checking permissions for this request",
+                                ErrorCodes.UNABLE_TO_VALIDATE)
             perm = BossPermissionManager.check_resource_permissions(self.user, obj, self.method)
         if not perm:
-            return BossHTTPError("This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
+            raise BossError("This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
 
     def get_boss_key(self):
         """
@@ -681,32 +720,6 @@ class BossRequest:
         """
         return LookUpKey.get_lookup_key(self.base_boss_key).lookup_key
 
-    # def get_lookup_key_list(self):
-    #     """
-    #     Returns the list of lookup keys for the request when including the resolution and time sample
-    #
-    #     The lookup key is the compound identifier using the "id" attribute of the data model resources used
-    #     in the request
-    #
-    #     Returns:
-    #         lookup (list(str))) : List of Lookup keys that correspond to the request
-    #
-    #     """
-    #     request_lookup_keys = []
-    #     if self.base_boss_key:
-    #         # Get the lookup key for the bosskey
-    #         base_lookup = LookUpKey.get_lookup_key(self.base_boss_key)
-    #
-    #         # If not a core service, append resolution and time
-    #         if self.service == 'meta':
-    #             request_lookup_keys = [base_lookup.lookup_key]
-    #         else:
-    #             for time_step in range(self.time_start, self.time_stop):
-    #                 request_lookup_keys.append(base_lookup.lookup_key + '&' +
-    #                                            str(self.resolution) + '&' + str(time_step))
-    #
-    #     return request_lookup_keys
-
     def set_time(self, time):
         """
         Set the time range for a request.
@@ -722,19 +735,18 @@ class BossRequest:
             if tstart:
                 self.time_start = int(tstart)
                 if self.time_start > self.experiment.num_time_samples:
-                    return BossHTTPError("Invalid time range {}. Start time is greater than the maximum time sample {}"
+                    raise BossError("Invalid time range {}. Start time is greater than the maximum time sample {}"
                                          .format(time, str(self.experiment.num_time_samples)), ErrorCodes.INVALID_URL)
             else:
-                return BossHTTPError("Unable to parse time sample argument {}".format(time), ErrorCodes.INVALID_URL)
+                raise BossError("Unable to parse time sample argument {}".format(time), ErrorCodes.INVALID_URL)
             if tstop:
                 self.time_stop = int(tstop)
                 if self.time_start > self.time_stop or self.time_stop > self.experiment.num_time_samples + 1:
-                    return BossHTTPError("Invalid time range {}. End time is greater than the start time or out of "
+                    raise BossError("Invalid time range {}. End time is greater than the start time or out of "
                                          "bounds with maximum time sample {}".format
                                          (time, str(self.experiment.num_time_samples)), ErrorCodes.INVALID_URL)
             else:
                 self.time_stop = self.time_start + 1
-
 
     def get_time(self):
         """
