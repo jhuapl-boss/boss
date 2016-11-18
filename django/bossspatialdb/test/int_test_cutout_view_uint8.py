@@ -48,7 +48,10 @@ OBJECTIO_CONFIG = {"s3_flush_queue": None,
                    "cuboid_bucket": "intTest.{}".format(config['aws']['cuboid_bucket']),
                    "page_in_lambda_function": config['lambda']['page_in_function'],
                    "page_out_lambda_function": config['lambda']['flush_function'],
-                   "s3_index_table": "intTest.{}".format(config['aws']['s3-index-table'])}
+                   "s3_index_table": "intTest.{}".format(config['aws']['s3-index-table']),
+                   "id_index_table": config['aws']['id-index-table'],
+                   "id_count_table": config['aws']['id-count-table']
+                   }
 
 config = bossutils.configuration.BossConfig()
 _, domain = config['aws']['cuboid_bucket'].split('.', 1)
