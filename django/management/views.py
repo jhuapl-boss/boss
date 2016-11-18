@@ -7,7 +7,8 @@ from django.shortcuts import redirect
 
 from .forms import UserForm, RoleForm, GroupForm, GroupMemberForm
 from .forms import CollectionForm, ExperimentForm, ChannelForm
-from .forms import CoordinateFrameForm, MetaForm, PermissionsForm
+from .forms import CoordinateFrameForm, MetaForm
+from .forms import ResourcePermissionsForm, GroupPermissionsForm
 
 from . import api
 
@@ -60,8 +61,6 @@ class Users(LoginRequiredMixin, View):
 
 class User(LoginRequiredMixin, View):
     def get(self, request, username, role_form=None):
-        # DP NOTE: Using BossUserRole because BossUser doesn't add anything
-        #          that is useful to display
         remove = request.GET.get('remove')
         if remove is not None:
             err = api.del_role(request, username, remove)
@@ -333,6 +332,13 @@ class Collection(LoginRequiredMixin, View):
                 return err
             return redirect('mgmt:collection', collection_name)
 
+        remove = request.GET.get('rem_perms')
+        if remove is not None:
+            err = api.del_perms(request, collection_name, group=remove)
+            if err:
+                return err
+            return redirect('mgmt:collection', collection_name)
+
         collection, err = api.get_collection(request, collection_name)
         if err:
             return err
@@ -351,22 +357,52 @@ class Collection(LoginRequiredMixin, View):
         if err:
             return err
 
+        t = True; f = False;
+        read    = [t,f,f,f,f,f]
+        write   = [t,t,t,f,f,f]
+        admin   = [t,t,t,f,t,t]
+        admin_d = [t,t,t,t,t,t]
+
+        def make_selection(p):
+            chk = [
+                'read' in p,
+                'add' in p,
+                'update' in p,
+                'delete' in p,
+                'assign_group' in p,
+                'remove_group' in p,
+            ]
+
+            if chk == read:
+                return "read"
+            elif chk == write:
+                return "write"
+            elif chk == admin:
+                return "admin"
+            elif chk == admin_d:
+                return "admin+delete"
+            else:
+                return "Raw: " + ", ".join(p)
+
         perm_rows = {}
         for perm in perms:
-            perm_rows[perm['group']] = ", ".join(perm['permissions'])
+            perm_rows[perm['group']] = make_selection(perm['permissions'])
+        # Sort based on group name, so list is always in the same order
+        perm_rows = list(perm_rows.items())
+        perm_rows.sort(key = lambda x: x[0])
 
         args = {
             'collection_name': collection_name,
             'collection': collection,
             'metas': metas,
-            'perms': perm_rows.items(),
+            'perms': perm_rows,
             'col_form': col_form,
             'col_error': col_error,
             'exp_form': exp_form if exp_form else ExperimentForm(),
             'exp_error': "error" if exp_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",
-            'perms_form': perms_form if perms_form else PermissionsForm(),
+            'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
         }
         return HttpResponse(render_to_string('collection.html', args, RequestContext(request)))
@@ -399,12 +435,35 @@ class Collection(LoginRequiredMixin, View):
             else:
                 return self.get(request, collection_name, meta_form=form)
         elif action == 'perms':
-            form = PermissionsForm(request.POST)
+            form = ResourcePermissionsForm(request.POST)
             if form.is_valid():
                 data = form.cleaned_data.copy()
                 data['collection'] = collection_name
 
-                err = api.add_perms(request, data)
+                perms = data['permissions']
+                if perms == "read":
+                    perms = ['read']
+                elif perms == "write":
+                    perms = ['read', 'add', 'update']
+                elif perms == "admin":
+                    perms = ['read', 'add', 'update', 'assign_group', 'remove_group']
+                elif perms == "admin+delete":
+                    perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']
+                else:
+                    raise Exception("Unknown permissions: " + perms)
+                data['permissions'] = perms
+
+                groups = []
+                group = data['group']
+                perms, err = api.get_perms(request, collection_name)
+                if not err:
+                    groups = [p['group'] for p in perms]
+
+                if group in groups:
+                    err = api.up_perms(request, data)
+                else:
+                    err = api.add_perms(request, data)
+
                 if err:
                     return err
                 return redirect('mgmt:collection', collection_name)

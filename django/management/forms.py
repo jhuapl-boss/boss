@@ -168,12 +168,32 @@ class ChannelForm(UpdateForm):
     source = DelimitedCharField(required=False)
     related = DelimitedCharField(required=False)
 
-class PermissionsForm(forms.Form):
+def PermField():
+    #perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']
+    #return forms.MultipleChoiceField(choices=[(c,c) for c in perms])
+    perms = ['read', 'write', 'admin', 'admin+delete']
+    return forms.ChoiceField(choices=[(c,c) for c in perms])
+
+class ResourcePermissionsForm(forms.Form):
     group = forms.CharField()
-    permissions = forms.MultipleChoiceField(choices=[(c,c) for c in ['read',
-                                                               'add',
-                                                               'update',
-                                                               'delete',
-                                                               'assign_group',
-                                                               'remove_group']])
+    permissions = PermField()
+
+class GroupPermissionsForm(forms.Form):
+    collection = forms.CharField()
+    experiment = forms.CharField(required=False)
+    channel = forms.CharField(required=False)
+    permissions = PermField()
+
+    def clean(self):
+        super(GroupPermissionsForm, self).clean()
+
+        channel = self.cleaned_data.get('channel')
+        experiment = self.cleaned_data.get('experiment')
+        collection = self.cleaned_data.get('collection')
+
+        if channel and not experiment:
+            raise forms.ValidationError("Experiment required")
+
+        if experiment and not collection:
+            raise forms.ValidationError("Collection required")
 

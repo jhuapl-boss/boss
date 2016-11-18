@@ -23,6 +23,7 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
         <tr>
             <th>Permitted Groups</th>
             <th>Permissions</th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -30,6 +31,7 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
         <tr>
             <td>{{ group }}</td>
             <td>{{ perm }}</td>
+            <td><a href="{{ current_url }}?rem_perms={{ group }}">Remove All Permissions</a></td>
         </tr>
         {% endfor %}
     </tbody>
@@ -95,7 +97,7 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
         <table>
             {{ perms_form.as_table }}
         </table>
-        <input type="submit" value="Add Permissions" />
+        <input type="submit" value="Edit Permissions" />
     </form>
 </div>
 {% endblock %}

@@ -62,7 +62,7 @@
                 .css({ 'top': '0px', 'left': '0px' })
                 .css({'background-color': 'rgba(0,0,0,0.5)'});
             })
-            add.innerText = "Add " + tbl.id
+            add.innerText = $(tbl).children().last().val();
             $(tbl).parent().before(add);
 
             if( $(tbl).hasClass("error") ) {
