@@ -832,6 +832,32 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
 
+    def test_post_channel_bad_source(self):
+        """
+        Post a new channel of type annotation(invalid - source missing)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'sources': ['channel1eeee'],
+                'related': ['channel1', 'channel3']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_channel_bad_related(self):
+        """
+        Post a new channel of type annotation(invalid - source missing)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'sources': ['channel1'],
+                'related': ['channel3eee']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
     def test_post_channel_annotation_with_multiple_related(self):
         """
         Post a new channel of type annotation(invalid - source missing)

@@ -1,4 +1,4 @@
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import View
 from django.template.loader import render_to_string
 from django.template import RequestContext
@@ -7,12 +7,17 @@ from django.shortcuts import redirect
 
 from .forms import UserForm, RoleForm, GroupForm, GroupMemberForm
 from .forms import CollectionForm, ExperimentForm, ChannelForm
-from .forms import CoordinateFrameForm, MetaForm
+from .forms import CoordinateFrameForm, MetaForm, PermissionsForm
 
 from . import api
 
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
+
+# DP NOTE: If a form fails validation in the post() method, then
+#          the populated form is passed to the get() method to
+#          generate the same submission page, but with a form
+#          that displays the validation errors
 
 class Home(LoginRequiredMixin, View):
     def get(self, request):
@@ -64,13 +69,20 @@ class User(LoginRequiredMixin, View):
                 return err
             return redirect('mgmt:user', username)
 
-        roles, err = api.get_roles(request, username)
+        user, err = api.get_user(request, username)
         if err:
             return err
 
+        rows = []
+        rows.append(('Username', user['username']))
+        rows.append(('First Name', user.get('firstName', '')))
+        rows.append(('Last Name', user.get('lastName', '')))
+        rows.append(('Email', user.get('email', '')))
+
         args = {
             'username': username,
-            'roles': roles,
+            'rows': rows,
+            'roles': user['realmRoles'],
             'role_form': role_form if role_form else RoleForm(),
             'role_error': "error" if role_form else "",
         }
@@ -250,9 +262,8 @@ class Resources(LoginRequiredMixin, View):
         if action == 'col':
             form = CollectionForm(request.POST)
             if form.is_valid():
-                collection = form.cleaned_data['collection']
-                description = form.cleaned_data['description']
-                data = {'description': description}
+                data = form.cleaned_data.copy()
+                collection = data['name']
 
                 err = api.add_collection(request, collection, data)
                 if err:
@@ -277,47 +288,37 @@ class Resources(LoginRequiredMixin, View):
 
 class CoordinateFrame(LoginRequiredMixin, View):
     def get(self, request, coord_name, coord_form=None):
-        coord, err = api.get_coord(request, coord_name)
-        if err:
-            return err
+        if not coord_form:
+            coord, err = api.get_coord(request, coord_name)
+            if err:
+                return err
+            coord_form = CoordinateFrameForm(coord).is_update()
+            coord_error = ""
+        else:
+            coord_form.is_update()
+            coord_error = "error"
 
         args = {
             'coord_name': coord_name,
-            'coord_form': coord_form if coord_form else CoordinateFrameForm(coord),
-            'coord_error': "error" if coord_form else "",
+            'coord_form': coord_form,
+            'coord_error': coord_error,
         }
         return HttpResponse(render_to_string('coordinate_frame.html', args, RequestContext(request)))
 
     def post(self, request, coord_name):
             form = CoordinateFrameForm(request.POST)
             if form.is_valid():
-                data = form.cleaned_data.copy()
-                # Cannot send readonly properties in the request
-                # If they were modified, it will be discarded
-                ro = ['z_start',
-                      'voxel_unit',
-                      'y_voxel_size',
-                      'time_step_unit',
-                      'y_start',
-                      'x_start',
-                      'time_step',
-                      'x_stop',
-                      'x_voxel_size',
-                      'y_stop',
-                      'z_stop',
-                      'z_voxel_size']
-                for key in ro:
-                    del data[key]
+                data = form.cleaned_update_data
 
                 err = api.up_coord(request, coord_name, data)
                 if err:
                     return err
-                return redirect('mgmt:coord', coord_name)
+                return redirect('mgmt:coord', data['name'])
             else:
                 return self.get(request, coord_name, coord_form=form)
 
 class Collection(LoginRequiredMixin, View):
-    def get(self, request, collection_name, exp_form=None, meta_form=None):
+    def get(self, request, collection_name, col_form=None, exp_form=None, meta_form=None, perms_form=None):
         remove = request.GET.get('rem_exp')
         if remove is not None:
             err = api.del_experiment(request, collection_name, remove)
@@ -336,18 +337,37 @@ class Collection(LoginRequiredMixin, View):
         if err:
             return err
 
+        if not col_form:
+            col_form = CollectionForm(collection)
+            col_error = ""
+        else:
+            col_error = "error"
+
         metas, err = api.get_meta_keys(request, collection_name)
         if err:
             return err
+
+        perms, err = api.get_perms(request, collection_name)
+        if err:
+            return err
+
+        perm_rows = {}
+        for perm in perms:
+            perm_rows[perm['group']] = ", ".join(perm['permissions'])
 
         args = {
             'collection_name': collection_name,
             'collection': collection,
             'metas': metas,
+            'perms': perm_rows.items(),
+            'col_form': col_form,
+            'col_error': col_error,
             'exp_form': exp_form if exp_form else ExperimentForm(),
             'exp_error': "error" if exp_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",
+            'perms_form': perms_form if perms_form else PermissionsForm(),
+            'perms_error': "error" if perms_form else "",
         }
         return HttpResponse(render_to_string('collection.html', args, RequestContext(request)))
 
@@ -378,11 +398,34 @@ class Collection(LoginRequiredMixin, View):
                 return redirect('mgmt:collection', collection_name)
             else:
                 return self.get(request, collection_name, meta_form=form)
+        elif action == 'perms':
+            form = PermissionsForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data.copy()
+                data['collection'] = collection_name
+
+                err = api.add_perms(request, data)
+                if err:
+                    return err
+                return redirect('mgmt:collection', collection_name)
+            else:
+                return self.get(request, collection_name, perms_form=form)
+        elif action == 'update':
+            form = CollectionForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_data.copy()
+
+                err = api.up_collection(request, collection_name, data)
+                if err:
+                    return err
+                return redirect('mgmt:collection', data['name'])
+            else:
+                return self.get(request, collection_name, col_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Experiment(LoginRequiredMixin, View):
-    def get(self, request, collection_name, experiment_name, chan_form=None, meta_form=None):
+    def get(self, request, collection_name, experiment_name, exp_form=None, chan_form=None, meta_form=None):
         remove = request.GET.get('rem_chan')
         if remove is not None:
             err = api.del_channel(request, collection_name, experiment_name, remove)
@@ -401,6 +444,13 @@ class Experiment(LoginRequiredMixin, View):
         if err:
             return err
 
+        if not exp_form:
+            exp_form = ExperimentForm(experiment).is_update()
+            exp_error = ""
+        else:
+            exp_form.is_update()
+            exp_error = "error"
+
         channels, err = api.get_channels(request, collection_name, experiment_name)
         if err:
             return err
@@ -412,9 +462,11 @@ class Experiment(LoginRequiredMixin, View):
         args = {
             'collection_name': collection_name,
             'experiment_name': experiment_name,
-            'exp_form': ExperimentForm(experiment),
+            'experiment': experiment,
             'channels': channels,
             'metas': metas,
+            'exp_form': exp_form,
+            'exp_error': exp_error,
             'chan_form': chan_form if chan_form else ChannelForm(),
             'chan_error': "error" if chan_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
@@ -430,14 +482,6 @@ class Experiment(LoginRequiredMixin, View):
             if form.is_valid():
                 data = form.cleaned_data.copy()
                 channel_name = data['name']
-                if 'source' not in data or len(data['source']) == 0:
-                    data['source'] = []
-                else:
-                    data['source'] = data['source'].split(',')
-                if 'related' not in data or len(data['related']) == 0:
-                    data['related'] = []
-                else:
-                    data['related'] = data['related'].split(',')
 
                 err = api.add_channel(request, collection_name, experiment_name, channel_name, data)
                 if err:
@@ -457,11 +501,22 @@ class Experiment(LoginRequiredMixin, View):
                 return redirect('mgmt:experiment', collection_name, experiment_name)
             else:
                 return self.get(request, collection_name, experiment_name, meta_form=form)
+        elif action == 'update':
+            form = ExperimentForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_update_data
+
+                err = api.up_experiment(request, collection_name, experiment_name, data)
+                if err:
+                    return err
+                return redirect('mgmt:experiment', collection_name, data['name'])
+            else:
+                return self.get(request, collection_name, experiment_name, exp_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Channel(LoginRequiredMixin, View):
-    def get(self, request, collection_name, experiment_name, channel_name, meta_form=None):
+    def get(self, request, collection_name, experiment_name, channel_name, chan_form=None, meta_form=None):
         remove = request.GET.get('rem_meta')
         if remove is not None:
             err = api.del_meta(request, remove, collection_name, experiment_name, channel_name)
@@ -473,6 +528,13 @@ class Channel(LoginRequiredMixin, View):
         if err:
             return err
 
+        if not chan_form:
+            chan_form = ChannelForm(channel).is_update()
+            chan_error = ""
+        else:
+            chan_form.is_update()
+            chan_error = "error"
+
         metas, err = api.get_meta_keys(request, collection_name, experiment_name, channel_name)
         if err:
             return err
@@ -481,8 +543,10 @@ class Channel(LoginRequiredMixin, View):
             'collection_name': collection_name,
             'experiment_name': experiment_name,
             'channel_name': channel_name,
-            'form': ChannelForm(channel),
+            'channel': channel,
             'metas': metas,
+            'chan_form': chan_form,
+            'chan_error': chan_error,
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",
         }
@@ -503,15 +567,32 @@ class Channel(LoginRequiredMixin, View):
                 return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
             else:
                 return self.get(request, collection_name, experiment_name, channel_name, meta_form=form)
+        elif action == 'update':
+            form = ChannelForm(request.POST)
+            if form.is_valid():
+                data = form.cleaned_update_data
+
+                err = api.up_channel(request, collection_name, experiment_name, channel_name, data)
+                if err:
+                    return err
+                return redirect('mgmt:channel', collection_name, experiment_name, data['name'])
+            else:
+                return self.get(request, collection_name, experiment_name, channel_name, chan_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Meta(LoginRequiredMixin, View):
-    def get(self, request, collection, experiment=None, channel=None):
-        key = request.GET['key']
-        meta, err = api.get_meta(request, key, collection, experiment, channel)
-        if err:
-            return err
+    def get(self, request, collection, experiment=None, channel=None, meta_form=None):
+        if not meta_form:
+            key = request.GET['key']
+            meta, err = api.get_meta(request, key, collection, experiment, channel)
+            if err:
+                return err
+            meta_form = MetaForm(meta).is_update()
+            meta_error = ""
+        else:
+            meta_form.is_update()
+            meta_error = "error"
 
         if channel is not None:
             category = "Channel"
@@ -526,7 +607,20 @@ class Meta(LoginRequiredMixin, View):
         args = {
             'category': category,
             'category_name': category_name,
-            'key': meta['key'],
-            'value': meta['value'],
+            'meta_form': meta_form,
+            'meta_error': meta_error,
         }
         return HttpResponse(render_to_string('meta.html', args, RequestContext(request)))
+
+    def post(self, request, collection, experiment=None, channel=None):
+            form = MetaForm(request.POST)
+            if form.is_valid():
+                key = form.cleaned_data['key']
+                value = form.cleaned_data['value']
+
+                err = api.up_meta(request, key, value, collection, experiment, channel)
+                if err:
+                    return err
+                return HttpResponseRedirect('?key=' + key)
+            else:
+                return self.get(request, collection, experiment, channel, meta_form=form)

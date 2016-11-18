@@ -9,6 +9,7 @@ from bosscore.views.views_resource import CollectionList, CollectionDetail
 from bosscore.views.views_resource import ExperimentList, ExperimentDetail
 from bosscore.views.views_resource import CoordinateFrameList, CoordinateFrameDetail
 from bosscore.views.views_resource import ChannelList, ChannelDetail
+from bosscore.views.views_permission import ResourceUserPermission
 from bossmeta.views import BossMeta
 
 from rest_framework import status
@@ -82,6 +83,9 @@ def _put(category, cls, request, data, *args):
 """SSO API for Users and Roles"""
 def get_users(request):
     return _get('Users', BossUser, request)
+
+def get_user(request, username):
+    return _get('User', BossUser, request, username)
 
 def del_user(request, username):
     return _del('User', BossUser, request, username)
@@ -175,6 +179,9 @@ def del_collection(request, collection):
 def add_collection(request, collection, data):
     return _post('Collection', CollectionDetail, request, data, collection)
 
+def up_collection(request, collection, data):
+    return _put('Collection', CollectionDetail, request, data, collection)
+
 # Experiments
 def get_experiments(request, collection):
     data, err = _get('Experiments', ExperimentList, request, collection)
@@ -191,6 +198,9 @@ def del_experiment(request, collection, experiment):
 def add_experiment(request, collection, experiment, data):
     return _post('Experiment', ExperimentDetail, request, data, collection, experiment)
 
+def up_experiment(request, collection, experiment, data):
+    return _put('Experiment', ExperimentDetail, request, data, collection, experiment)
+
 # Channels
 def get_channels(request, collection, experiment):
     data, err = _get('Channels', ChannelList, request, collection, experiment)
@@ -206,6 +216,9 @@ def del_channel(request, collection, experiment, channel):
 
 def add_channel(request, collection, experiment, channel, data):
     return _post('Channel', ChannelDetail, request, data, collection, experiment, channel)
+
+def up_channel(request, collection, experiment, channel, data):
+    return _put('Channel', ChannelDetail, request, data, collection, experiment, channel)
 
 """BOSS API for Metadata"""
 def get_meta_keys(request, collection, experiment=None, channel=None):
@@ -230,3 +243,25 @@ def add_meta(request, key, value, collection, experiment=None, channel=None):
     request.version = settings.BOSS_VERSION
     request.query_params = {'key': key, 'value': value}
     return _post('Metadata', BossMeta, request, None, collection, experiment, channel)
+
+def up_meta(request, key, value, collection, experiment=None, channel=None):
+    request.version = settings.BOSS_VERSION
+    request.query_params = {'key': key, 'value': value}
+    return _put('Metadata', BossMeta, request, None, collection, experiment, channel)
+
+"""BOSS API for Permissions"""
+def get_perms(request, collection=None, experiment=None, channel=None):
+    request.query_params = {}
+    if collection:
+        request.query_params['collection'] = collection
+        if experiment:
+            request['experiment'] = experiment
+            if channel:
+                request['channel'] = channel
+    data, err = _get('Permissions', ResourceUserPermission, request)
+    if data:
+        data = data['permission-sets']
+    return (data, err)
+
+def add_perms(request, data):
+    return _post('Permissions', ResourceUserPermission, request, data)

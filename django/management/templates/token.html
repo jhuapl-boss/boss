@@ -3,11 +3,18 @@
 {% block content %}
 Manage {{ username }}'s API Token<br/>
 <br/>
-{% if token %}
-<label for="token">Token:</label>
-<textarea id="token" cols="40" rows="1">{{ token }}</textarea>
-<br/>
-{% endif %}
+<table>
+    <tr>
+        <th><label>Token:</label></th>
+        <td>
+            {% if token %}
+            <input type="text" size="40" value="{{ token }}" readonly />
+            {% else %}
+            {{ username }} doesn't currently have a BOSS token
+            {% endif %}
+        </td>
+    </tr>
+</table>
 <br/>
 <form action="{% url 'mgmt:token' %}" method="post">
     {% csrf_token %}

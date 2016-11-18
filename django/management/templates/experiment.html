@@ -6,9 +6,17 @@
 
 Manage BOSS Experiment '{{ experiment_name }}'<br/>
 <br/>
-<table>
-{{ exp_form.as_table }}
-</table>
+<form action="{{ current_url }}?action=update" method="post" class="update {{ exp_error }}" id="Experiment">
+    {% csrf_token %}
+    <table>
+        <tr>
+            <th><label>Creator:</label></th>
+            <td>{{ experiment.creator }}</td>
+        </tr>
+        {{ exp_form.as_table }}
+    </table>
+    <input type="submit" value="Update Experiment" />
+</form>
 <br/>
 <table>
     <thead>

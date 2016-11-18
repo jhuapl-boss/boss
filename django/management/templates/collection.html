@@ -6,15 +6,33 @@
 
 Manage BOSS Collection '{{ collection_name }}'<br/>
 <br/>
+<form action="{{ current_url }}?action=update" method="post" class="update {{ col_error }}" id="Collection">
+    {% csrf_token %}
+    <table>
+        <tr>
+            <th><label>Creator:</label></th>
+            <td>{{ collection.creator }}</td>
+        </tr>
+        {{ col_form.as_table }}
+    </table>
+    <input type="submit" value="Update Collection" />
+</form>
+<br/>
 <table>
-    <tr>
-        <td>Creator</td>
-        <td>{{ collection.creator }}</td>
-    </tr>
-    <tr>
-        <td>Description</td>
-        <td>{{ collection.description }}</td>
-    </tr>
+    <thead>
+        <tr>
+            <th>Permitted Groups</th>
+            <th>Permissions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for group, perm in perms %}
+        <tr>
+            <td>{{ group }}</td>
+            <td>{{ perm }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 <br/>
 <table>
@@ -68,6 +86,16 @@ Manage BOSS Collection '{{ collection_name }}'<br/>
             {{ meta_form.as_table }}
         </table>
         <input type="submit" value="Add Meta Value" />
+    </form>
+</div>
+<br/>
+<div>
+    <form action="{{ current_url }}?action=perms" method="post" class="add {{ perms_error }}" id="Permissions">
+        {% csrf_token %}
+        <table>
+            {{ perms_form.as_table }}
+        </table>
+        <input type="submit" value="Add Permissions" />
     </form>
 </div>
 {% endblock %}
