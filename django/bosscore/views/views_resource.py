@@ -504,6 +504,50 @@ class ChannelDetail(APIView):
             channel.delete()
             raise BossError("Exception adding source/related channels.{}".format(err), ErrorCodes.INVALID_POST_ARGUMENT)
 
+    @staticmethod
+    def update_source_related_channels(channel, experiment, source_channels, related_channels):
+        """
+        Update a list of source and related channels
+
+        Args:
+            related_channels: New list of related channels
+            source_channels: New list of source channels
+            experiment: Experiment for the current channel
+            channel: Curren channel
+
+        Returns:
+            Updated Channel
+
+        """
+        try:
+            # update ist of sources
+            # Get all the source
+            cur_sources = channel.sources.all()
+            # Get the list of sources to remove
+            rm_sources = [ch for ch in cur_sources if ch not in source_channels]
+            for source in rm_sources:
+                channel.remove_source(source)
+
+            # add new sources
+            add_sources = [ch for ch in source_channels if ch not in cur_sources]
+            for source_channel in add_sources:
+                channel.add_source(source_channel)
+
+            cur_related = channel.related.all()
+            rm_related = [ch for ch in cur_related if ch not in related_channels]
+            for related in rm_related:
+                channel.related.remove(related)
+
+            add_related = [ch for ch in related_channels if ch not in cur_related]
+            for related_channel in add_related:
+                channel.related.add(related_channel.pk)
+
+            channel.save()
+            return channel
+        except Exception as err:
+            channel.delete()
+            raise BossError("Exception adding source/related channels.{}".format(err), ErrorCodes.INVALID_POST_ARGUMENT)
+
     def get(self, request, collection, experiment, channel):
         """
         Retrieve information about a channel.
@@ -655,7 +699,7 @@ class ChannelDetail(APIView):
 
                     channel_obj = Channel.objects.get(name=channel_name, experiment=experiment_obj)
                     # Save source and related channels if they are valid
-                    channel_obj = self.add_source_related_channels(channel_obj, experiment_obj, source_channels_objs,
+                    channel_obj = self.update_source_related_channels(channel_obj, experiment_obj, source_channels_objs,
                                                                    related_channels_objs)
 
                     # update the lookup key if you update the name

@@ -899,6 +899,14 @@ class ResourceViewsChannelTests(APITestCase):
         Update a channel (Valid - The channel exists)
 
         """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'sources': ['channel1'],
+                'related': ['channel2', 'channel3']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
         data = {'description': 'A new channel for unit tests. Updated', 'default_time_sample': 1,
                 'sources': ['channel2'],
@@ -908,6 +916,64 @@ class ResourceViewsChannelTests(APITestCase):
         # Get an existing collection
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
+
+    def test_put_channel_remove_source(self):
+        """
+        Update a channel (Valid - The channel exists)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'sources': ['channel1', 'channel2']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        # Get an existing channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['sources']), {'channel1', 'channel2'})
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33'
+        data = {'description': 'A new channel for unit tests. Updated','sources': ['channel2']}
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+        # Get an existing channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['sources']), {'channel2'})
+
+    def test_put_channel_remove_related(self):
+        """
+        Update a channel (Valid - The channel exists)
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'image', 'datatype': 'uint8',
+                'related': ['channel1', 'channel2']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        # Get an existing channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['related']), {'channel1', 'channel2'})
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33'
+        data = {'description': 'A new channel for unit tests. Updated','related': ['channel2']}
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+        # Get an existing channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(set(response.data['related']), {'channel2'})
 
     def test_put_channel_doesnotexist(self):
         """
