@@ -42,7 +42,10 @@ OBJECTIO_CONFIG = {"s3_flush_queue": None,
                    "cuboid_bucket": "intTest.{}".format(config['aws']['cuboid_bucket']),
                    "page_in_lambda_function": config['lambda']['page_in_function'],
                    "page_out_lambda_function": config['lambda']['flush_function'],
-                   "s3_index_table": "intTest.{}".format(config['aws']['s3-index-table'])}
+                   "s3_index_table": "intTest.{}".format(config['aws']['s3-index-table']),
+                   "id_index_table": config['aws']['id-index-table'],
+                   "id_count_table": config['aws']['id-count-table']
+                   }
 
 config = bossutils.configuration.BossConfig()
 _, domain = config['aws']['cuboid_bucket'].split('.', 1)
@@ -88,10 +91,10 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
         dbsetup.insert_spatialdb_test_data()
 
         try:
-            cls.setup_helper.create_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["s3_index_table"], cls.setup_helper.DYNAMODB_SCHEMA)
         except ClientError:
-            cls.setup_helper.delete_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
-            cls.setup_helper.create_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["s3_index_table"], cls.setup_helper.DYNAMODB_SCHEMA)
 
         try:
             cls.setup_helper.create_cuboid_bucket(OBJECTIO_CONFIG["cuboid_bucket"])
@@ -114,7 +117,7 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
     def tearDownClass(cls):
         super(CutoutViewIntegration64BitTests, cls).tearDownClass()
         try:
-            cls.setup_helper.delete_s3_index_table(OBJECTIO_CONFIG["s3_index_table"])
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except Exception as e:
             print("Failed to cleanup S3 Index Table: {}".format(e))
             pass
