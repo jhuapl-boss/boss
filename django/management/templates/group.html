@@ -31,13 +31,42 @@ Manage BOSS Users for Group '{{ group_name }}'<br/>
     </tbody>
 </table>
 <br/>
+<table>
+    <thead>
+        <tr>
+            <th>Permitted Resources</th>
+            <th>Permissions</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for resource, perm in perms %}
+        <tr>
+            <td>{{ resource }}</td>
+            <td>{{ perm }}</td>
+            <td><a href="{{ current_url }}?rem_perms={{ resource }}">Remove All Permissions</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<br/>
 <div>
-    <form action="{{ current_url }}" method="post" class="add {{ perm_error }}" id="Permission">
+    <form action="{{ current_url }}?action=memb" method="post" class="add {{ memb_error }}" id="Permission">
         {% csrf_token %}
         <table>
-            {{ perm_form.as_table }}
+            {{ memb_form.as_table }}
         </table>
-        <input type="submit" value="Add Permission" />
+        <input type="submit" value="Add User Permission" />
+    </form>
+</div>
+<br/>
+<div>
+    <form action="{{ current_url }}?action=perms" method="post" class="add {{ perms_error }}" id="Permissions">
+        {% csrf_token %}
+        <table>
+            {{ perms_form.as_table }}
+        </table>
+        <input type="submit" value="Edit Resource Permissions" />
     </form>
 </div>
 {% endblock %}

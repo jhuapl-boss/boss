@@ -266,9 +266,9 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
     if collection:
         request.query_params['collection'] = collection
         if experiment:
-            request['experiment'] = experiment
+            request.query_params['experiment'] = experiment
             if channel:
-                request['channel'] = channel
+                request.query_params['channel'] = channel
     if group:
         request.query_params['group'] = group
     data, err = _get('Permissions', ResourceUserPermission, request)
@@ -281,9 +281,9 @@ def del_perms(request, collection=None, experiment=None, channel=None, group=Non
     if collection:
         request.query_params['collection'] = collection
         if experiment:
-            request['experiment'] = experiment
+            request.query_params['experiment'] = experiment
             if channel:
-                request['channel'] = channel
+                request.query_params['channel'] = channel
     if group:
         request.query_params['group'] = group
     return _del('Permissions', ResourceUserPermission, request)

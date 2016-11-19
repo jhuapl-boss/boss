@@ -11,6 +11,7 @@ from .forms import CoordinateFrameForm, MetaForm
 from .forms import ResourcePermissionsForm, GroupPermissionsForm
 
 from . import api
+from . import utils
 
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
@@ -158,7 +159,7 @@ class Groups(LoginRequiredMixin, View):
             return self.get(request, group_form=form)
 
 class Group(LoginRequiredMixin, View):
-    def get(self, request, group_name, perm_form=None):
+    def get(self, request, group_name, memb_form=None, perms_form=None):
         remove = request.GET.get('rem_memb')
         if remove is not None:
             err = api.del_member(request, group_name, remove)
@@ -169,6 +170,13 @@ class Group(LoginRequiredMixin, View):
         remove = request.GET.get('rem_maint')
         if remove is not None:
             err = api.del_maintainer(request, group_name, remove)
+            if err:
+                return err
+            return redirect('mgmt:group', group_name)
+
+        remove = request.GET.get('rem_perms')
+        if remove is not None:
+            err = api.del_perms(request, *remove.split('/'), group=group_name)
             if err:
                 return err
             return redirect('mgmt:group', group_name)
@@ -190,36 +198,56 @@ class Group(LoginRequiredMixin, View):
             if maintainer not in members:
                 data[maintainer] = 'maintainer'
 
+        perms, err = utils.get_perms(request, group=group_name)
+        if err:
+            return err
 
         args = {
             'group_name': group_name,
             'rows': data.items(),
             'members': members,
             'maintainers': maintainers,
-            'perm_form': perm_form if perm_form else GroupMemberForm(),
-            'perm_error': "error" if perm_form else "",
+            'perms': perms,
+            'memb_form': memb_form if memb_form else GroupMemberForm(),
+            'memb_error': "error" if memb_form else "",
+            'perms_form': perms_form if perms_form else GroupPermissionsForm(),
+            'perms_error': "error" if perms_form else "",
         }
         return HttpResponse(render_to_string('group.html', args, RequestContext(request)))
 
     def post(self, request, group_name):
-        form = GroupMemberForm(request.POST)
-        if form.is_valid():
-            user = form.cleaned_data['user']
-            role = form.cleaned_data['role']
+        action = request.GET.get('action') # URL parameter
 
-            if 'member' in role:
-                err = api.add_member(request, group_name, user)
+        if action == 'memb':
+            form = GroupMemberForm(request.POST)
+            if form.is_valid():
+                user = form.cleaned_data['user']
+                role = form.cleaned_data['role']
+
+                if 'member' in role:
+                    err = api.add_member(request, group_name, user)
+                    if err:
+                        return err
+
+                if 'maintainer' in role:
+                    err = api.add_maintainer(request, group_name, user)
+                    if err:
+                        return err
+
+                return redirect('mgmt:group', group_name)
+            else:
+                return self.get(request, group_name, memb_form=form)
+        elif action == 'perms':
+            form = GroupPermissionsForm(request.POST)
+            if form.is_valid():
+                err = utils.set_perms(request, form, group=group_name)
                 if err:
                     return err
-
-            if 'maintainer' in role:
-                err = api.add_maintainer(request, group_name, user)
-                if err:
-                    return err
-
-            return redirect('mgmt:group', group_name)
+                return redirect('mgmt:group', group_name)
+            else:
+                return self.get(request, group_name, perms_form=form)
         else:
-            return self.get(request, group_name, perm_form=form)
+            return HttpResponse(status=400, reason="Unknown post action")
 
 class Resources(LoginRequiredMixin, View):
     def get(self, request, col_form=None, coord_form=None):
@@ -353,49 +381,15 @@ class Collection(LoginRequiredMixin, View):
         if err:
             return err
 
-        perms, err = api.get_perms(request, collection_name)
+        perms, err = utils.get_perms(request, collection_name)
         if err:
             return err
-
-        t = True; f = False;
-        read    = [t,f,f,f,f,f]
-        write   = [t,t,t,f,f,f]
-        admin   = [t,t,t,f,t,t]
-        admin_d = [t,t,t,t,t,t]
-
-        def make_selection(p):
-            chk = [
-                'read' in p,
-                'add' in p,
-                'update' in p,
-                'delete' in p,
-                'assign_group' in p,
-                'remove_group' in p,
-            ]
-
-            if chk == read:
-                return "read"
-            elif chk == write:
-                return "write"
-            elif chk == admin:
-                return "admin"
-            elif chk == admin_d:
-                return "admin+delete"
-            else:
-                return "Raw: " + ", ".join(p)
-
-        perm_rows = {}
-        for perm in perms:
-            perm_rows[perm['group']] = make_selection(perm['permissions'])
-        # Sort based on group name, so list is always in the same order
-        perm_rows = list(perm_rows.items())
-        perm_rows.sort(key = lambda x: x[0])
 
         args = {
             'collection_name': collection_name,
             'collection': collection,
             'metas': metas,
-            'perms': perm_rows,
+            'perms': perms,
             'col_form': col_form,
             'col_error': col_error,
             'exp_form': exp_form if exp_form else ExperimentForm(),
@@ -437,33 +431,7 @@ class Collection(LoginRequiredMixin, View):
         elif action == 'perms':
             form = ResourcePermissionsForm(request.POST)
             if form.is_valid():
-                data = form.cleaned_data.copy()
-                data['collection'] = collection_name
-
-                perms = data['permissions']
-                if perms == "read":
-                    perms = ['read']
-                elif perms == "write":
-                    perms = ['read', 'add', 'update']
-                elif perms == "admin":
-                    perms = ['read', 'add', 'update', 'assign_group', 'remove_group']
-                elif perms == "admin+delete":
-                    perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']
-                else:
-                    raise Exception("Unknown permissions: " + perms)
-                data['permissions'] = perms
-
-                groups = []
-                group = data['group']
-                perms, err = api.get_perms(request, collection_name)
-                if not err:
-                    groups = [p['group'] for p in perms]
-
-                if group in groups:
-                    err = api.up_perms(request, data)
-                else:
-                    err = api.add_perms(request, data)
-
+                err = utils.set_perms(request, form, collection_name)
                 if err:
                     return err
                 return redirect('mgmt:collection', collection_name)
@@ -484,7 +452,7 @@ class Collection(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Experiment(LoginRequiredMixin, View):
-    def get(self, request, collection_name, experiment_name, exp_form=None, chan_form=None, meta_form=None):
+    def get(self, request, collection_name, experiment_name, exp_form=None, chan_form=None, meta_form=None, perms_form=None):
         remove = request.GET.get('rem_chan')
         if remove is not None:
             err = api.del_channel(request, collection_name, experiment_name, remove)
@@ -495,6 +463,13 @@ class Experiment(LoginRequiredMixin, View):
         remove = request.GET.get('rem_meta')
         if remove is not None:
             err = api.del_meta(request, remove, collection_name, experiment_name)
+            if err:
+                return err
+            return redirect('mgmt:experiment', collection_name, experiment_name)
+
+        remove = request.GET.get('rem_perms')
+        if remove is not None:
+            err = api.del_perms(request, collection_name, experiment, group=remove)
             if err:
                 return err
             return redirect('mgmt:experiment', collection_name, experiment_name)
@@ -518,18 +493,25 @@ class Experiment(LoginRequiredMixin, View):
         if err:
             return err
 
+        perms, err = utils.get_perms(request, collection_name, experiment_name)
+        if err:
+            return err
+
         args = {
             'collection_name': collection_name,
             'experiment_name': experiment_name,
             'experiment': experiment,
             'channels': channels,
             'metas': metas,
+            'perms': perms,
             'exp_form': exp_form,
             'exp_error': exp_error,
             'chan_form': chan_form if chan_form else ChannelForm(),
             'chan_error': "error" if chan_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",
+            'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
+            'perms_error': "error" if perms_form else "",
         }
         return HttpResponse(render_to_string('experiment.html', args, RequestContext(request)))
 
@@ -560,6 +542,15 @@ class Experiment(LoginRequiredMixin, View):
                 return redirect('mgmt:experiment', collection_name, experiment_name)
             else:
                 return self.get(request, collection_name, experiment_name, meta_form=form)
+        elif action == 'perms':
+            form = ResourcePermissionsForm(request.POST)
+            if form.is_valid():
+                err = utils.set_perms(request, form, collection_name, experiment_name)
+                if err:
+                    return err
+                return redirect('mgmt:experiment', collection_name, experiment_name)
+            else:
+                return self.get(request, collection_name, experiment_name, perms_form=form)
         elif action == 'update':
             form = ExperimentForm(request.POST)
             if form.is_valid():
@@ -575,10 +566,17 @@ class Experiment(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Channel(LoginRequiredMixin, View):
-    def get(self, request, collection_name, experiment_name, channel_name, chan_form=None, meta_form=None):
+    def get(self, request, collection_name, experiment_name, channel_name, chan_form=None, meta_form=None, perms_form=None):
         remove = request.GET.get('rem_meta')
         if remove is not None:
             err = api.del_meta(request, remove, collection_name, experiment_name, channel_name)
+            if err:
+                return err
+            return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
+
+        remove = request.GET.get('rem_perms')
+        if remove is not None:
+            err = api.del_perms(request, collection_name, experiment, channel, group=remove)
             if err:
                 return err
             return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
@@ -598,16 +596,23 @@ class Channel(LoginRequiredMixin, View):
         if err:
             return err
 
+        perms, err = utils.get_perms(request, collection_name, experiment_name, channel_name)
+        if err:
+            return err
+
         args = {
             'collection_name': collection_name,
             'experiment_name': experiment_name,
             'channel_name': channel_name,
             'channel': channel,
             'metas': metas,
+            'perms': perms,
             'chan_form': chan_form,
             'chan_error': chan_error,
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",
+            'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
+            'perms_error': "error" if perms_form else "",
         }
         return HttpResponse(render_to_string('channel.html', args, RequestContext(request)))
 
@@ -626,6 +631,15 @@ class Channel(LoginRequiredMixin, View):
                 return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
             else:
                 return self.get(request, collection_name, experiment_name, channel_name, meta_form=form)
+        elif action == 'perms':
+            form = ResourcePermissionsForm(request.POST)
+            if form.is_valid():
+                err = utils.set_perms(request, form, collection_name, experiment_name, channel_name)
+                if err:
+                    return err
+                return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
+            else:
+                return self.get(request, collection_name, experiment_name, channel_name, perms_form=form)
         elif action == 'update':
             form = ChannelForm(request.POST)
             if form.is_valid():
