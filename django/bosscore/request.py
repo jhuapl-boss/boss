@@ -222,17 +222,32 @@ class BossRequest:
             Returns:
 
         """
+
+        self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
+                                self.bossrequest['channel_name'])
+
+        # Bounding box is only valid for annotation channels
+        if self.channel.type != 'annotation':
+            raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
+                            .format(self.channel.type), ErrorCodes.DATATYPE_NOT_SUPPORTED)
+
+        # TODO : validate the object id
         try:
-            self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
-                                    self.bossrequest['channel_name'])
-            if self.channel.type != 'annotation':
-                raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
-                                .format(self.channel.type), ErrorCodes.ErrorCodes.DATATYPE_NOT_SUPPORTED)
-            # TODO : validate the object id
             self.object_id = int(self.bossrequest['id'])
-        except TypeError:
+        except (TypeError, ValueError):
             raise BossError("The id of the object {} is not a valid int".format(self.bossrequest['id']),
                             ErrorCodes.TYPE_ERROR)
+
+        try:
+            # validate the resolution
+            if int(self.bossrequest['resolution']) in range(0, self.experiment.num_hierarchy_levels):
+                self.resolution = int(self.bossrequest['resolution'])
+            else:
+                raise BossError("Invalid resolution {}. The resolution has to be within 0 and {}".
+                                format(self.bossrequest['resolution'],self.experiment.num_hierarchy_levels),
+                                ErrorCodes.TYPE_ERROR)
+        except (TypeError, ValueError):
+            raise BossError("Type error in resolution {}".format(self.bossrequest['resolution']), ErrorCodes.TYPE_ERROR)
 
     def initialize_request(self, collection_name, experiment_name, channel_name):
         """

@@ -16,7 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from bosscore.request import BossRequest
-from bosscore.error import BossError, BossHTTPError
+from bosscore.error import BossError, BossHTTPError, ErrorCodes
 
 from spdb.spatialdb.spatialdb import SpatialDB
 from spdb import project
@@ -63,11 +63,13 @@ class Reserve(APIView):
 
         # create a resource
         resource = project.BossResourceDjango(req)
-
-        # Reserve ids
-        spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
-        data = spdb.reserve_ids(resource, num_ids)
-        return Response(data, status=200)
+        try:
+            # Reserve ids
+            spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
+            data = spdb.reserve_ids(resource, int(num_ids))
+            return Response(data, status=200)
+        except (TypeError, ValueError):
+            return BossHTTPError("Type error in the bounding box view", ErrorCodes.TYPE_ERROR)
 
 
 class Ids(APIView):
@@ -119,7 +121,7 @@ class BoundingBox(APIView):
         View to reserve annotation object ids
 
     """
-    def get(self, request, collection, experiment,channel, id):
+    def get(self, request, collection, experiment,channel,resolution, id):
         """
         Return the bounding box containing the object
 
@@ -146,6 +148,7 @@ class BoundingBox(APIView):
                 "collection_name": collection,
                 "experiment_name": experiment,
                 "channel_name": channel,
+                "resolution": resolution,
                 "id": id
             }
             req = BossRequest(request, request_args)
