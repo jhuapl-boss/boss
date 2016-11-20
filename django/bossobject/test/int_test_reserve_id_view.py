@@ -67,14 +67,10 @@ class TestReserveIDView(APITestCase):
         dbsetup.insert_spatialdb_test_data()
 
         try:
-            with patch('spdb.spatialdb.test.setup.get_region') as fake_get_region:
-                fake_get_region.return_value = 'us-east-1'
-                cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_count_table"], cls.setup_helper.ID_COUNT_SCHEMA)
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_count_table"], cls.setup_helper.ID_COUNT_SCHEMA)
         except ClientError:
-            with patch('spdb.spatialdb.test.setup.get_region') as fake_get_region:
-                fake_get_region.return_value = 'us-east-1'
-                cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_count_table"])
-                cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_count_table"], cls.setup_helper.ID_COUNT_SCHEMA)
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_count_table"])
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_count_table"], cls.setup_helper.ID_COUNT_SCHEMA)
 
     @classmethod
     def tearDownClass(cls):
