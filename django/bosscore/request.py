@@ -687,7 +687,7 @@ class BossRequest:
             self.bosskey(str) : String that represents the boss key for the current request
         """
         if self.service == 'cutout' or self.service == 'image' or self.service == 'tile' or self.service == 'ids'\
-                or self.service == 'boundingbox':
+                or self.service == 'boundingbox' or self.service == 'reserve':
             perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
 
         elif self.service == 'meta':

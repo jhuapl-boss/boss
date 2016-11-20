@@ -18,6 +18,10 @@ from rest_framework.response import Response
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError
 
+from spdb.spatialdb.spatialdb import SpatialDB
+from spdb import project
+
+from django.conf import settings
 
 class Reserve(APIView):
     """
@@ -56,6 +60,12 @@ class Reserve(APIView):
             req = BossRequest(request, request_args)
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
+
+        # create a resource
+        resource = project.BossResourceDjango(req)
+
+        # Reserve ids
+        spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
 
         data = {"start_id": 1000, "count": 1000}
         return Response(data, status=200)
@@ -142,5 +152,11 @@ class BoundingBox(APIView):
             req = BossRequest(request, request_args)
         except BossError as err:
             return BossHTTPError(err.args[0], err.args[1], err.args[2])
+
+        # create a resource
+        resource = project.BossResourceDjango(req)
+
+        # Get interface to SPDB cache
+        cache = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
         data = {"x_range": [0,1000], "y_range": [0,1000], "z_range": [0,1000], "t_range":[0,10]}
         return Response(data, status=200)
