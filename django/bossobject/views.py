@@ -66,8 +66,7 @@ class Reserve(APIView):
 
         # Reserve ids
         spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
-
-        data = {"start_id": 1000, "count": 1000}
+        data = spdb.reserve_ids(resource, num_ids)
         return Response(data, status=200)
 
 

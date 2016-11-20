@@ -209,6 +209,9 @@ class BossRequest:
         """
         self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
                                 self.bossrequest['channel_name'])
+        if self.channel.type != 'annotation':
+            raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
+                            .format(self.channel.type),ErrorCodes.ErrorCodes.DATATYPE_NOT_SUPPORTED)
 
     def validate_bounding_box(self):
         """
@@ -222,6 +225,9 @@ class BossRequest:
         try:
             self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
                                     self.bossrequest['channel_name'])
+            if self.channel.type != 'annotation':
+                raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
+                                .format(self.channel.type), ErrorCodes.ErrorCodes.DATATYPE_NOT_SUPPORTED)
             # TODO : validate the object id
             self.object_id = int(self.bossrequest['id'])
         except TypeError:
@@ -687,7 +693,7 @@ class BossRequest:
             self.bosskey(str) : String that represents the boss key for the current request
         """
         if self.service == 'cutout' or self.service == 'image' or self.service == 'tile' or self.service == 'ids'\
-                or self.service == 'boundingbox' or self.service == 'reserve':
+                or self.service == 'boundingbox':
             perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
 
         elif self.service == 'meta':
@@ -701,6 +707,9 @@ class BossRequest:
                 raise BossError("Error encountered while checking permissions for this request",
                                 ErrorCodes.UNABLE_TO_VALIDATE)
             perm = BossPermissionManager.check_resource_permissions(self.user, obj, self.method)
+        elif self.service == 'reserve':
+            perm = BossPermissionManager.check_object_permissions(self.user, self.channel, self.method)
+
         if not perm:
             raise BossError("This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
 

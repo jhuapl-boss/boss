@@ -245,3 +245,26 @@ class BossPermissionManager:
             return True
         else:
             return False
+
+    @staticmethod
+    def check_object_permissions(user, obj, method_type):
+        """
+        Check permissions for object services (currently only the reserve service uses this)
+        Args:
+            user: User name
+            obj: resource
+            method_type: Mothod type specified in the post
+
+        Returns:
+            bool. True if the user has the permission on the resource
+
+        """
+        if method_type == 'GET':
+            permission = 'add_volumetric_data'
+        else:
+            raise BossError("Invalid method type. This query only supports a GET", ErrorCodes.INVALID_POST_ARGUMENT)
+
+        if permission in get_perms(user, obj):
+            return True
+        else:
+            return False
