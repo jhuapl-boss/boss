@@ -66,7 +66,8 @@ class Reserve(APIView):
         try:
             # Reserve ids
             spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
-            data = spdb.reserve_ids(resource, int(num_ids))
+            start_id = spdb.reserve_ids(resource, int(num_ids))
+            data = {'start_id': start_id, 'count': num_ids}
             return Response(data, status=200)
         except (TypeError, ValueError):
             return BossHTTPError("Type error in the bounding box view", ErrorCodes.TYPE_ERROR)

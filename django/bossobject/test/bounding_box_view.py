@@ -88,6 +88,11 @@ class BoundingBoxMixin(object):
                                          resolution='0', id='1')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        bb = response.data
+        self.assertEqual(bb['t_range'], [0, 1])
+        self.assertEqual(bb['x_range'], [0, 512])
+        self.assertEqual(bb['y_range'], [0, 512])
+        self.assertEqual(bb['z_range'], [0, 16])
 
 
 
