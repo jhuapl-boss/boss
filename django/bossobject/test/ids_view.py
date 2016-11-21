@@ -86,9 +86,10 @@ class IdsMixin(object):
         # Make request
         response = Ids.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
                                          resolution='0', x_range='0:128', y_range='0:128', z_range='0:16',
-                                         t_range=None).render()
+                                         t_range=None)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['ids'], [1])
 
 
 @patch('redis.StrictRedis', mock_strict_redis_client)

@@ -69,8 +69,8 @@ class Reserve(APIView):
             start_id = spdb.reserve_ids(resource, int(num_ids))
             data = {'start_id': start_id, 'count': num_ids}
             return Response(data, status=200)
-        except (TypeError, ValueError):
-            return BossHTTPError("Type error in the bounding box view", ErrorCodes.TYPE_ERROR)
+        except (TypeError, ValueError)as e:
+            return BossHTTPError("Type error in the reserve id view. {}".format(e), ErrorCodes.TYPE_ERROR)
 
 
 class Ids(APIView):
@@ -125,14 +125,10 @@ class Ids(APIView):
             # Reserve ids
             spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
             ids = spdb.get_ids_in_region(resource, int(resolution), corner, extent)
-            data = {'ids': ids}
-            return Response(data, status=200)
-        except (TypeError, ValueError):
-            return BossHTTPError("Type error in the bounding box view", ErrorCodes.TYPE_ERROR)
+            return Response(ids, status=200)
+        except (TypeError, ValueError) as e:
+            return BossHTTPError("Type error in the ids view. {}".format(e), ErrorCodes.TYPE_ERROR)
 
-
-        data = {"ids": ["1", "2", "3", "4", "5"]}
-        return Response(data, status=200)
 
 class BoundingBox(APIView):
     """
@@ -176,7 +172,10 @@ class BoundingBox(APIView):
         # create a resource
         resource = project.BossResourceDjango(req)
 
-        # Get interface to SPDB cache
-        spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
-        data = spdb.get_bounding_box(resource, int(resolution),int(id))
-        return Response(data, status=200)
+        try:
+            # Get interface to SPDB cache
+            spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
+            data = spdb.get_bounding_box(resource, int(resolution),int(id))
+            return Response(data, status=200)
+        except (TypeError,ValueError) as e:
+            return BossHTTPError("Type error in the boundingbox view. {}".format(e), ErrorCodes.TYPE_ERROR)
