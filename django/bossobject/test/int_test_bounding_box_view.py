@@ -145,11 +145,10 @@ class TestBoundingBoxDView(APITestCase):
     def test_bounding_box_view(self):
         """A test to reserve ids"""
 
-        # post some data
-        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
+        test_mat = np.ones((128, 128, 16))
         test_mat = test_mat.astype(np.uint64)
-        h = test_mat.tobytes()
-        bb = blosc.compress(h, typesize=64)
+        test_mat = test_mat.reshape((16, 128, 128))
+        bb = blosc.compress(test_mat, typesize=64)
 
         # Create request
         factory = APIRequestFactory()
