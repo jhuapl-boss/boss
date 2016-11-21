@@ -16,8 +16,7 @@ from django.conf import settings
 from django.test.utils import override_settings
 from rest_framework.test import APITestCase
 
-from bossspatialdb.test import CutoutInterfaceViewUint64TestMixin
-from bossobject.test import BoundingBoxMixin
+from bossobject.test.bounding_box_view import BoundingBoxMixin
 
 from bosscore.test.setup_db import SetupTestDB
 import bossutils
@@ -133,6 +132,18 @@ class BoundingBoxViewIntegrationTests(BoundingBoxMixin, APITestCase):
             cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except Exception as e:
             print("Failed to cleanup S3 Index Table: {}".format(e))
+            pass
+
+        try:
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_index_table"])
+        except Exception as e:
+            print("Failed to cleanup ID Index Table: {}".format(e))
+            pass
+
+        try:
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_count_table"])
+        except Exception as e:
+            print("Failed to cleanup ID Index Table: {}".format(e))
             pass
 
         try:

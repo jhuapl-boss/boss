@@ -59,7 +59,7 @@ class Reserve(APIView):
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
         # create a resource
         resource = project.BossResourceDjango(req)
@@ -111,7 +111,7 @@ class Ids(APIView):
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
         data = {"ids": ["1", "2", "3", "4", "5"]}
         return Response(data, status=200)
@@ -153,12 +153,12 @@ class BoundingBox(APIView):
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
         # create a resource
         resource = project.BossResourceDjango(req)
 
         # Get interface to SPDB cache
-        cache = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
-        data = {"x_range": [0,1000], "y_range": [0,1000], "z_range": [0,1000], "t_range":[0,10]}
+        spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
+        data = spdb.get_bounding_box(resource, int(resolution),int(id))
         return Response(data, status=200)

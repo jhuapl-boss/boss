@@ -20,53 +20,17 @@ from rest_framework.test import force_authenticate
 from rest_framework import status
 
 from bossspatialdb.views import Cutout
+from bossobject.views import BoundingBox
 
 from bosscore.test.setup_db import SetupTestDB
-from bosscore.error import BossError
 
 import numpy as np
 
 from unittest.mock import patch
 from mockredis import mock_strict_redis_client
 
-import spdb
-import bossutils
-
-import os
-import unittest
 
 version = settings.BOSS_VERSION
-
-# _test_globals = {'kvio_engine': None}
-#
-#
-# class MockBossConfig(bossutils.configuration.BossConfig):
-#     """Basic mock for BossConfig so 'test databases' are used for redis (1) instead of the default where real data
-#     can live (0)"""
-#     def __init__(self):
-#         super().__init__()
-#         self.config["aws"]["cache-db"] = "1"
-#         self.config["aws"]["cache-state-db"] = "1"
-#
-#     def read(self, filename):
-#         pass
-#
-#     def __getitem__(self, key):
-#         return self.config[key]
-#
-#
-# class MockSpatialDB(spdb.spatialdb.SpatialDB):
-#     """mock for redis kvio so the actual server isn't used during unit testing, but a static mockredis-py instead"""
-#
-#     @patch('bossutils.configuration.BossConfig', MockBossConfig)
-#     @patch('redis.StrictRedis', mock_strict_redis_client)
-#     def __init__(self):
-#         super().__init__()
-#
-#         if not _test_globals['kvio_engine']:
-#             _test_globals['kvio_engine'] = spdb.spatialdb.KVIO.get_kv_engine('redis')
-#
-#         self.kvio = _test_globals['kvio_engine']
 
 
 class BoundingBoxMixin(object):
@@ -110,6 +74,20 @@ class BoundingBoxMixin(object):
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
+
+        # get the bounding box
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/1')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+                                         resolution='0', id='1')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 
