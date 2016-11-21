@@ -168,7 +168,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_aligned_no_offset_no_time_blosc(self):
         """ Test uint64 data, cuboid aligned, no offset, no time samples"""
 
-        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
+        test_mat = np.random.randint(1, 256, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         h = test_mat.tobytes()
         bb = blosc.compress(h, typesize=64)
@@ -208,7 +208,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_aligned_offset_no_time_blosc(self):
         """ Test uint64 data, cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
+        test_mat = np.random.randint(1, 256, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         h = test_mat.tobytes()
         bb = blosc.compress(h, typesize=64)
@@ -250,7 +250,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_unaligned_offset_no_time_blosc(self):
         """ Test uint64 data, not cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(1, 2**50, (17, 300, 500))
+        test_mat = np.random.randint(1, 256, (17, 300, 500))
         test_mat = test_mat.astype(np.uint64)
         h = test_mat.tobytes()
         bb = blosc.compress(h, typesize=64)
@@ -294,7 +294,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         Test Requires >=2.5GB of memory!
         """
 
-        test_mat = np.random.randint(1, 2**50, (2, 17, 300, 280))
+        test_mat = np.random.randint(1, 256, (2, 17, 300, 280))
         test_mat = test_mat.astype(np.uint64)
         h = test_mat.tobytes()
         bb = blosc.compress(h, typesize=64)
@@ -334,7 +334,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_aligned_no_offset_no_time_blosc_numpy(self):
         """ Test uint64 data, cuboid aligned, no offset, no time samples"""
 
-        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
+        test_mat = np.random.randint(1, 256, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
@@ -371,7 +371,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_aligned_offset_no_time_blosc_numpy(self):
         """ Test uint64 data, cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(1, 2**50, (4, 128, 128))
+        test_mat = np.random.randint(1, 256, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
@@ -408,7 +408,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_cuboid_unaligned_offset_no_time_blosc_numpy(self):
         """ Test uint64 data, not cuboid aligned, offset, no time samples, blosc interface"""
 
-        test_mat = np.random.randint(1, 2**50, (4, 300, 500))
+        test_mat = np.random.randint(1, 256, (4, 300, 500))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
@@ -449,7 +449,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         Test Requires >=2GB of memory!
         """
 
-        test_mat = np.random.randint(1, 2**50, (3, 17, 300, 500))
+        test_mat = np.random.randint(1, 256, (3, 17, 300, 500))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
@@ -490,7 +490,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         Test Requires >=2GB of memory!
         """
 
-        test_mat = np.random.randint(1, 2**50, (3, 17, 300, 500))
+        test_mat = np.random.randint(1, 256, (3, 17, 300, 500))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
