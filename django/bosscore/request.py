@@ -151,6 +151,36 @@ class BossRequest:
         self.set_cutoutargs(int(self.bossrequest['resolution']), self.bossrequest['x_args'],
                             self.bossrequest['y_args'], self.bossrequest['z_args'])
 
+    def validate_ids_service(self):
+        """
+
+        Args:
+            webargs:
+
+        Returns:
+
+        """
+        self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
+                                self.bossrequest['channel_name'])
+
+        # Bounding box is only valid for annotation channels
+        if self.channel.type != 'annotation':
+            raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
+                            .format(self.channel.type), ErrorCodes.DATATYPE_NOT_SUPPORTED)
+
+        time = self.bossrequest['time_args']
+        if not time:
+            # get default time
+            self.time_start = self.channel.default_time_sample
+            self.time_stop = self.channel.default_time_sample + 1
+            self.time_request = False
+        else:
+            self.set_time(time)
+            self.time_request = True
+
+        self.set_cutoutargs(int(self.bossrequest['resolution']), self.bossrequest['x_args'],
+                            self.bossrequest['y_args'], self.bossrequest['z_args'])
+
     def validate_image_service(self):
         """
 
