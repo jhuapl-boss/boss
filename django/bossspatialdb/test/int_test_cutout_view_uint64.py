@@ -97,6 +97,12 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
             cls.setup_helper.create_index_table(OBJECTIO_CONFIG["s3_index_table"], cls.setup_helper.DYNAMODB_SCHEMA)
 
         try:
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_index_table"], cls.setup_helper.ID_INDEX_SCHEMA)
+        except ClientError:
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_index_table"])
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_index_table"], cls.setup_helper.ID_INDEX_SCHEMA)
+
+        try:
             cls.setup_helper.create_cuboid_bucket(OBJECTIO_CONFIG["cuboid_bucket"])
         except ClientError:
             cls.setup_helper.delete_cuboid_bucket(OBJECTIO_CONFIG["cuboid_bucket"])
@@ -120,6 +126,12 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
             cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except Exception as e:
             print("Failed to cleanup S3 Index Table: {}".format(e))
+            pass
+
+        try:
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_index_table"])
+        except Exception as e:
+            print("Failed to cleanup ID Index Table: {}".format(e))
             pass
 
         try:
