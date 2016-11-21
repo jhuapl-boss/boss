@@ -89,7 +89,7 @@ class RoleForm(forms.Form):
     role = forms.ChoiceField(choices=[(c,c) for c in ['', 'user-manager', 'resource-manager']])
 
 class GroupForm(forms.Form):
-    group_name = forms.CharField()
+    group_name = forms.CharField(label="Group")
 
 class GroupMemberForm(forms.Form):
     user = forms.CharField()

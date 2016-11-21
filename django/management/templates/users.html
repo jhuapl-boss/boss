@@ -1,11 +1,14 @@
 {% extends "base.html" %}
+{% load bootstrap %}
+
+{% block subtitle %}
+SSO Users
+{% endblock %}
 
 {% block content %}
 {% url 'mgmt:users' as current_url %}
 
-Manage SSO User Accounts<br/>
-<br/>
-<table>
+<table class="table">
     <thead>
         <tr>
             <th>Username</th>
@@ -22,13 +25,25 @@ Manage SSO User Accounts<br/>
     </tbody>
 </table>
 <br/>
-<div>
-    <form action="{{ current_url }}" method="post" class="add {{ user_error }}" id="User">
-        {% csrf_token %}
-        <table>
-            {{ user_form.as_table }}
-        </table>
-        <input type="submit" value="Add User" />
-    </form>
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addUser">Add User</button>
+<div class="modal fade" tabindex="-1" role="dialog" id="addUser">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="{{ current_url }}" method="post" class="add {{ user_error }} form-horizontal" id="User">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Add User</h4>
+            </div>
+            <div class="modal-body">
+                {% csrf_token %}
+                {{ user_form|bootstrap_horizontal }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Add User</button>
+            </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}

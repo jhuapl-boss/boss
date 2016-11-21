@@ -1,11 +1,15 @@
 {% extends "base.html" %}
+{% load bootstrap %}
+
+{% block subtitle %}
+Groups
+{% endblock %}
+
 
 {% block content %}
 {% url 'mgmt:groups' as current_url %}
 
-Manage BOSS Groups<br/>
-<br/>
-<table>
+<table class="table">
     <thead>
         <tr>
             <th>Group</th>
@@ -22,14 +26,25 @@ Manage BOSS Groups<br/>
     </tbody>
 </table>
 <br/>
-<div>
-    <form action="{{ current_url }}" method="post" class="add {{ group_error }}" id="Group">
-        {% csrf_token %}
-        <table>
-            {{ group_form.as_table }}
-        </table>
-        <input type="submit" value="Add Group" />
-    </form>
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addGroup">Add Group</button>
+<div class="modal fade" tabindex="-1" role="dialog" id="addGroup">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="{{ current_url }}" method="post" class="add {{ group_error }} form-horizontal" id="Group">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Add Group</h4>
+            </div>
+            <div class="modal-body">
+                {% csrf_token %}
+                {{ group_form|bootstrap_horizontal }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Add Group</button>
+            </div>
+            </form>
+        </div>
+    </div>
 </div>
 {% endblock %}
-

@@ -1,103 +1,152 @@
 {% extends "base.html" %}
+{% load bootstrap %}
+
+{% block subtitle %}
+Experiment {{ experiment_name }}
+{% endblock %}
 
 {% block content %}
 {% url 'mgmt:meta' collection_name experiment_name as meta_url %}
 {% url 'mgmt:experiment' collection_name experiment_name as current_url %}
 
-Manage BOSS Experiment '{{ experiment_name }}'<br/>
-<br/>
-<form action="{{ current_url }}?action=update" method="post" class="update {{ exp_error }}" id="Experiment">
-    {% csrf_token %}
-    <table>
-        <tr>
-            <th><label>Creator:</label></th>
-            <td>{{ experiment.creator }}</td>
-        </tr>
-        {{ exp_form.as_table }}
+<div class="tab-pane" id="Experiment" role="tabpannel">
+    <form action="{{ current_url }}?action=update" method="post" class="update {{ exp_error }} form-horizontal" id="Experiment">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="control-label col-sm-2 col-lg-2">Creator</label>
+            <div class="col-sm-10 col-lg-10">
+                <input type="text" disabled value="{{ experiment.creator }}"/>
+            </div>
+        </div>
+        {{ exp_form|bootstrap_horizontal }}
+        <div class="form-group">
+            <div class="col-sm-2 col-lg-2"></div>
+            <div class="col-sm-10 col-lg-10">
+                <button type="submit" class="btn btn-primary">Update Experiment</button>
+            </div>
+        </div>
+    </form>
+</div>
+<div class="tab-pane" id="Channels" role="tabpannel">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Channel</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for channel in channels %}
+            <tr>
+                <td><a href="{% url 'mgmt:channel' collection_name experiment_name channel %}">{{ channel }}</a></td>
+                <td><a href="{{ current_url }}?rem_chan={{ channel }}">Remove Channel</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
-    <input type="submit" value="Update Experiment" />
-</form>
-<br/>
-<table>
-    <thead>
-        <tr>
-            <th>Permitted Groups</th>
-            <th>Permissions</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for group, perm in perms %}
-        <tr>
-            <td>{{ group }}</td>
-            <td>{{ perm }}</td>
-            <td><a href="{{ current_url }}?rem_perms={{ group }}">Remove All Permissions</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<br/>
-<table>
-    <thead>
-        <tr>
-            <th>Channel</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for channel in channels %}
-        <tr>
-            <td><a href="{% url 'mgmt:channel' collection_name experiment_name channel %}">{{ channel }}</a></td>
-            <td><a href="{{ current_url }}?rem_chan={{ channel }}">Remove Channel</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<br/>
-<table>
-    <thead>
-        <tr>
-            <th>Experiment Meta Key</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for meta in metas %}
-        <tr>
-            <td><a href="{{ meta_url }}?key={{ meta }}">{{ meta }}</a></td>
-            <td><a href="{{ current_url }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<br/>
-<div>
-    <form action="{{ current_url }}?action=chan" method="post" class="add {{ chan_error }}" id="Channel">
-        {% csrf_token %}
-        <table>
-            {{ chan_form.as_table }}
-        </table>
-        <input type="submit" value="Add Channel" />
-    </form>
+    <br/>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addChannel">Add Channel</button>
+    <div class="modal fade" tabindex="-1" role="dialog" id="addChannel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form action="{{ current_url }}?action=chan" method="post" class="add {{ chan_error }} form-horizontal" id="Channel">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Add Channel</h4>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ chan_form|bootstrap_horizontal }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add Channel</button>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
-<br/>
-<div>
-    <form action="{{ current_url }}?action=meta" method="post" class="add {{ meta_error }}" id="Metadata">
-        {% csrf_token %}
-        <table>
-            {{ meta_form.as_table }}
-        </table>
-        <input type="submit" value="Add Meta Value" />
-    </form>
+<div class="tab-pane" id="Permissions" role="tabpannel">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Permitted Groups</th>
+                <th>Permissions</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for group, perm in perms %}
+            <tr>
+                <td>{{ group }}</td>
+                <td>{{ perm }}</td>
+                <td><a href="{{ current_url }}?rem_perms={{ group }}">Remove All Permissions</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br/>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addPermissions">Edit Permissions</button>
+    <div class="modal fade" tabindex="-1" role="dialog" id="addPermissions">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form action="{{ current_url }}?action=perms" method="post" class="add {{ perms_error }} form-horizontal" id="Permissions">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Edit Permissions</h4>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ perms_form|bootstrap_horizontal }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Edit Permissions</button>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
-<br/>
-<div>
-    <form action="{{ current_url }}?action=perms" method="post" class="add {{ perms_error }}" id="Permissions">
-        {% csrf_token %}
-        <table>
-            {{ perms_form.as_table }}
-        </table>
-        <input type="submit" value="Edit Permissions" />
-    </form>
+<div class="tab-pane" id="Meta" role="tabpannel">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Experiment Meta Key</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for meta in metas %}
+            <tr>
+                <td><a href="{{ meta_url }}?key={{ meta }}">{{ meta }}</a></td>
+                <td><a href="{{ current_url }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br/>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addMeta">Add Meta Value</button>
+    <div class="modal fade" tabindex="-1" role="dialog" id="addMeta">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form action="{{ current_url }}?action=meta" method="post" class="add {{ meta_error }} form-horizontal" id="Metadata">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Add Meta Value</h4>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ meta_form|bootstrap_horizontal }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add Meta Value</button>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -1,43 +1,62 @@
 {% extends "base.html" %}
+{% load bootstrap %}
+
+{% block subtitle %}
+User {{ username  }}
+{% endblock %}
 
 {% block content %}
 {% url 'mgmt:user' username as current_url %}
 
-Manage SSO Roles for User '{{ username }}'<br/>
-<br/>
-<table>
-    {% for key,value in rows %}
-    <tr>
-        <th><label>{{ key }}:</label></th>
-        <td>{{ value }}</td>
-    </tr>
-    {% endfor %}
-</table>
-<br/>
-<table>
-    <thead>
-        <tr>
-            <th>Roles</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for role in roles %}
-        <tr>
-            <td>{{ role }}</td>
-            <td><a href="{{ current_url }}?remove={{ role }}">Remove Role</a></td>
-        </tr>
+<div class="tab-pane" id="User" role="tabpannel">
+    <form class="form-horizontal">
+        {% for key,value in rows %}
+        <div class="form-group">
+            <label class="control-label col-sm-2 col-lg-2">{{ key }}</label>
+            <div class="col-sm-10 col-lg-10">
+                <input type="text" disabled value="{{ value }}"/>
+            </div>
+        </div>
         {% endfor %}
-    </tbody>
-</table>
-<br/>
-<div>
-    <form action="{{ current_url }}" method="post" class="add {{ role_error }}" id="Role">
-        {% csrf_token %}
-        <table>
-            {{ role_form.as_table }}
-        </table>
-        <input type="submit" value="Add Role" />
     </form>
 </div>
+<div class="tab-pane" id="Roles" role="tabpannel">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Roles</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for role in roles %}
+            <tr>
+                <td>{{ role }}</td>
+                <td><a href="{{ current_url }}?remove={{ role }}">Remove Role</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br/>
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addRole">Add Role</button>
+    <div class="modal fade" tabindex="-1" role="dialog" id="addRole">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form action="{{ current_url }}" method="post" class="add {{ role_error }} form-horizontal" id="Role">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Add Role</h4>
+                </div>
+                <div class="modal-body">
+                    {% csrf_token %}
+                    {{ role_form|bootstrap_horizontal }}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add Role</button>
+                </div>
+                </form>
+            </div>
+        </div>
+    </div>
 {% endblock %}

@@ -1,13 +1,20 @@
 {% extends "base.html" %}
+{% load bootstrap %}
+
+{% block subtitle %}
+Metadata for {{ category }} {{ category_name }}
+{% endblock %}
+
 
 {% block content %}
-BOSS Metadata for {{ category }} '{{ category_name }}'<br/>
-<br/>
-<form action="{{ current_url }}" method="post" class="update {{ meta_error }}" id="Metadata">
+<form action="{{ current_url }}" method="post" class="update {{ meta_error }} form-horizontal" id="Metadata">
     {% csrf_token %}
-    <table>
-        {{ meta_form.as_table }}
-    </table>
-    <input type="submit" value="Update Metadata" />
+    {{ meta_form|bootstrap_horizontal }}
+    <div class="form-group">
+        <div class="col-sm-2 col-lg-2"></div>
+        <div class="col-sm-10 col-lg-10">
+            <button type="submit" class="btn btn-primary">Update Metadata</button>
+        </div>
+    </div>
 </form>
 {% endblock %}
