@@ -35,8 +35,8 @@ version = settings.BOSS_VERSION
 
 class BoundingBoxMixin(object):
 
-    def test_channel_uint64_cuboid_aligned_no_offset_no_time_blosc(self):
-        """ Test uint64 data, cuboid aligned, no offset, no time samples"""
+    def test_get_object_bounding_box(self):
+        """ Test getting the bounding box of a object"""
 
         test_mat = np.ones((128, 128, 16))
         test_mat = test_mat.astype(np.uint64)
@@ -95,9 +95,8 @@ class BoundingBoxMixin(object):
         self.assertEqual(bb['z_range'], [0, 16])
 
 
-
 @patch('redis.StrictRedis', mock_strict_redis_client)
-class TestCutoutInterfaceView(BoundingBoxMixin, APITestCase):
+class TestBoundingBoxView(BoundingBoxMixin, APITestCase):
 
     def setUp(self):
         """
@@ -110,4 +109,3 @@ class TestCutoutInterfaceView(BoundingBoxMixin, APITestCase):
 
         # Populate DB
         dbsetup.insert_spatialdb_test_data()
-

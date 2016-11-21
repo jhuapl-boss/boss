@@ -89,7 +89,7 @@ class IdsMixin(object):
                                          t_range=None)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['ids'], [1])
+        self.assertEqual(response.data['ids'], ['1'])
 
 
 @patch('redis.StrictRedis', mock_strict_redis_client)
