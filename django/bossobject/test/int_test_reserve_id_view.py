@@ -46,7 +46,8 @@ OBJECTIO_CONFIG = {"s3_flush_queue": None,
                    "s3_index_table": "intTest.{}".format(config['aws']['s3-index-table']),
                    "id_index_table": "intTest.{}".format(config['aws']['id-index-table']),
                    "id_count_table": "intTest.{}".format(config['aws']['id-count-table'])
-                  }
+                   }
+
 
 class TestReserveIDView(APITestCase):
 
@@ -74,10 +75,8 @@ class TestReserveIDView(APITestCase):
 
     @classmethod
     def tearDownClass(cls):
-        print('Deleting Temporary AWS Resources', end='', flush=True)
         try:
-            print()
-            # cls.setup_helper.delete_index_table(cls.object_store_config["id_count_table"])
+            cls.setup_helper.delete_index_table(cls.object_store_config["id_count_table"])
         except:
             pass
 
@@ -95,4 +94,4 @@ class TestReserveIDView(APITestCase):
 
         # Make request
         response = Reserve.as_view()(request, collection='col1', experiment='exp1', channel='layer1', num_ids='10')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
