@@ -114,6 +114,23 @@ class Ids(APIView):
         except BossError as err:
             return err.to_http()
 
+        # create a resource
+        resource = project.BossResourceDjango(req)
+
+        # Get the params to pull data out of the cache
+        corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
+        extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
+
+        try:
+            # Reserve ids
+            spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
+            ids = spdb.get_ids_in_region(resource, int(resolution), corner, extent)
+            data = {'ids': ids}
+            return Response(data, status=200)
+        except (TypeError, ValueError):
+            return BossHTTPError("Type error in the bounding box view", ErrorCodes.TYPE_ERROR)
+
+
         data = {"ids": ["1", "2", "3", "4", "5"]}
         return Response(data, status=200)
 
