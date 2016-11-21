@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from django.conf.urls import url
-from management import views
+from . import views
 
 urlpatterns = [
     url(r'users/?', views.Users.as_view(), name='users'),

@@ -65,7 +65,7 @@ INSTALLED_APPS = [
     'bossmeta',
     'bossspatialdb',
     'sso',
-    'management', # for templating to work
+    'mgmt', # for templating to work
     'bootstrapform', # style management console
     'bossingest',
     'bossobject',

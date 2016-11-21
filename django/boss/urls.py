@@ -66,7 +66,7 @@ urlpatterns = [
     url(r'^v0.7/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.7')),
 
     # Management Console Urls
-    url(r'^v0.7/mgmt/', include('management.urls', namespace='mgmt')),
+    url(r'^v0.7/mgmt/', include('mgmt.urls', namespace='mgmt')),
     url(r'^/?$', RedirectView.as_view(pattern_name='mgmt:home')),
 
     #Object urls
