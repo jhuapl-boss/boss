@@ -48,13 +48,11 @@ class ReserveIdRequestTests(APITestCase):
         Test initialization of cutout requests for the datamodel
         :return:
         """
-        url = '/' + version + '/ids/col1/exp1/layer1/0/0:6/0:10/0:2/'
+        url = '/' + version + '/reserve/col1/exp1/layer1/10'
         col = 'col1'
         exp = 'exp1'
         channel = 'layer1'
         boss_key = 'col1&exp1&layer1'
-        resolution = 0
-
 
         # Create the request
         request = self.rf.get(url)
@@ -64,18 +62,14 @@ class ReserveIdRequestTests(APITestCase):
 
         # Create the request dict
         request_args = {
-            "service": "ids",
+            "service": "reserve",
             "version": version,
             "collection_name": col,
             "experiment_name": exp,
             "channel_name": channel,
-            "resolution": resolution,
-            "x_args": "0:6",
-            "y_args": "0:10",
-            "z_args": "0:2",
-            "time_args": None
 
         }
+
         ret = BossRequest(drfrequest, request_args)
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
@@ -87,16 +81,10 @@ class ReserveIdRequestTests(APITestCase):
         Test initialization of cutout requests for the datamodel
         :return:
         """
-        """
-        Test initialization of cutout requests for the datamodel
-        :return:
-        """
-        url = '/' + version + '/ids/col1/exp1/channel1/0/0:6/0:10/0:2/'
+        url = '/' + version + '/reserve/col1/exp1/channel1/10'
         col = 'col1'
         exp = 'exp1'
-        channel = 'channel1'
-        boss_key = 'col1&exp1&channel1'
-        resolution = 0
+        channel = 'channel'
 
         # Create the request
         request = self.rf.get(url)
@@ -106,16 +94,11 @@ class ReserveIdRequestTests(APITestCase):
 
         # Create the request dict
         request_args = {
-            "service": "ids",
+            "service": "reserve",
             "version": version,
             "collection_name": col,
             "experiment_name": exp,
             "channel_name": channel,
-            "resolution": resolution,
-            "x_args": "0:6",
-            "y_args": "0:10",
-            "z_args": "0:2",
-            "time_args": None
 
         }
 

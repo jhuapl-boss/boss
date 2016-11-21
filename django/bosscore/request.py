@@ -151,6 +151,36 @@ class BossRequest:
         self.set_cutoutargs(int(self.bossrequest['resolution']), self.bossrequest['x_args'],
                             self.bossrequest['y_args'], self.bossrequest['z_args'])
 
+    def validate_ids_service(self):
+        """
+
+        Args:
+            webargs:
+
+        Returns:
+
+        """
+        self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
+                                self.bossrequest['channel_name'])
+
+        # Bounding box is only valid for annotation channels
+        if self.channel.type != 'annotation':
+            raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
+                            .format(self.channel.type), ErrorCodes.DATATYPE_NOT_SUPPORTED)
+
+        time = self.bossrequest['time_args']
+        if not time:
+            # get default time
+            self.time_start = self.channel.default_time_sample
+            self.time_stop = self.channel.default_time_sample + 1
+            self.time_request = False
+        else:
+            self.set_time(time)
+            self.time_request = True
+
+        self.set_cutoutargs(int(self.bossrequest['resolution']), self.bossrequest['x_args'],
+                            self.bossrequest['y_args'], self.bossrequest['z_args'])
+
     def validate_image_service(self):
         """
 
@@ -209,6 +239,9 @@ class BossRequest:
         """
         self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
                                 self.bossrequest['channel_name'])
+        if self.channel.type != 'annotation':
+            raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
+                            .format(self.channel.type),ErrorCodes.ErrorCodes.DATATYPE_NOT_SUPPORTED)
 
     def validate_bounding_box(self):
         """
@@ -219,14 +252,32 @@ class BossRequest:
             Returns:
 
         """
+
+        self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
+                                self.bossrequest['channel_name'])
+
+        # Bounding box is only valid for annotation channels
+        if self.channel.type != 'annotation':
+            raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
+                            .format(self.channel.type), ErrorCodes.DATATYPE_NOT_SUPPORTED)
+
+        # TODO : validate the object id
         try:
-            self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
-                                    self.bossrequest['channel_name'])
-            # TODO : validate the object id
             self.object_id = int(self.bossrequest['id'])
-        except TypeError:
+        except (TypeError, ValueError):
             raise BossError("The id of the object {} is not a valid int".format(self.bossrequest['id']),
                             ErrorCodes.TYPE_ERROR)
+
+        try:
+            # validate the resolution
+            if int(self.bossrequest['resolution']) in range(0, self.experiment.num_hierarchy_levels):
+                self.resolution = int(self.bossrequest['resolution'])
+            else:
+                raise BossError("Invalid resolution {}. The resolution has to be within 0 and {}".
+                                format(self.bossrequest['resolution'],self.experiment.num_hierarchy_levels),
+                                ErrorCodes.TYPE_ERROR)
+        except (TypeError, ValueError):
+            raise BossError("Type error in resolution {}".format(self.bossrequest['resolution']), ErrorCodes.TYPE_ERROR)
 
     def initialize_request(self, collection_name, experiment_name, channel_name):
         """
@@ -701,6 +752,9 @@ class BossRequest:
                 raise BossError("Error encountered while checking permissions for this request",
                                 ErrorCodes.UNABLE_TO_VALIDATE)
             perm = BossPermissionManager.check_resource_permissions(self.user, obj, self.method)
+        elif self.service == 'reserve':
+            perm = BossPermissionManager.check_object_permissions(self.user, self.channel, self.method)
+
         if not perm:
             raise BossError("This user does not have the required permissions", ErrorCodes.MISSING_PERMISSION)
 

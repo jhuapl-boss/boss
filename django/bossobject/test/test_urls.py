@@ -58,5 +58,5 @@ class BoundingBoxRoutingTests(APITestCase):
         Returns: None
 
         """
-        match = resolve('/' + version + '/boundingbox/col1/exp1/channel1/10')
+        match = resolve('/' + version + '/boundingbox/col1/exp1/channel1/0/10')
         self.assertEqual(match.func.__name__, BoundingBox.as_view().__name__)

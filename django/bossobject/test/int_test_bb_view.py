@@ -16,7 +16,7 @@ from django.conf import settings
 from django.test.utils import override_settings
 from rest_framework.test import APITestCase
 
-from bossspatialdb.test import CutoutInterfaceViewUint64TestMixin
+from bossobject.test.bounding_box_view import BoundingBoxMixin
 
 from bosscore.test.setup_db import SetupTestDB
 import bossutils
@@ -55,7 +55,7 @@ FLUSH_QUEUE_NAME = "intTest.S3FlushQueue.{}".format(domain).replace('.', '-')
 @override_settings(KVIO_SETTINGS=KVIO_SETTINGS)
 @override_settings(STATEIO_CONFIG=STATEIO_CONFIG)
 @override_settings(OBJECTIO_CONFIG=OBJECTIO_CONFIG)
-class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITestCase):
+class BoundingBoxViewIntegrationTests(BoundingBoxMixin, APITestCase):
 
     def setUp(self):
         """Setup to run before every test"""
@@ -75,7 +75,7 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
         """ get_some_resource() is slow, to avoid calling it for each test use setUpClass()
             and store the result as class variable
         """
-        super(CutoutViewIntegration64BitTests, cls).setUpClass()
+        super(BoundingBoxMixin, cls).setUpClass()
 
         # Setup the helper to create temporary AWS resources
         cls.setup_helper = SetupTests()
@@ -95,6 +95,12 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
         except ClientError:
             cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
             cls.setup_helper.create_index_table(OBJECTIO_CONFIG["s3_index_table"], cls.setup_helper.DYNAMODB_SCHEMA)
+
+        try:
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_count_table"], cls.setup_helper.ID_COUNT_SCHEMA)
+        except ClientError:
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_count_table"])
+            cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_count_table"], cls.setup_helper.ID_COUNT_SCHEMA)
 
         try:
             cls.setup_helper.create_index_table(OBJECTIO_CONFIG["id_index_table"], cls.setup_helper.ID_INDEX_SCHEMA)
@@ -121,7 +127,7 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
 
     @classmethod
     def tearDownClass(cls):
-        super(CutoutViewIntegration64BitTests, cls).tearDownClass()
+        super(BoundingBoxMixin, cls).tearDownClass()
         try:
             cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except Exception as e:
@@ -130,6 +136,12 @@ class CutoutViewIntegration64BitTests(CutoutInterfaceViewUint64TestMixin, APITes
 
         try:
             cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_index_table"])
+        except Exception as e:
+            print("Failed to cleanup ID Index Table: {}".format(e))
+            pass
+
+        try:
+            cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["id_count_table"])
         except Exception as e:
             print("Failed to cleanup ID Index Table: {}".format(e))
             pass

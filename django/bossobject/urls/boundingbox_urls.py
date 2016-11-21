@@ -18,6 +18,6 @@ from bossobject import views
 urlpatterns = [
 
     # Url to get the bouding box for an object
-    url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<id>\d+)/?$',
+    url(r'(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<resolution>\d)/(?P<id>\d+)/?$',
         views.BoundingBox.as_view()),
 ]

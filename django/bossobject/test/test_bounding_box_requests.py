@@ -25,7 +25,7 @@ from bossobject.views import Reserve
 version = settings.BOSS_VERSION
 
 
-class ReserveIdRequestTests(APITestCase):
+class BoundingBoxRequestTests(APITestCase):
     """
     Class to test boss requests for the reserve id service
     """
@@ -43,18 +43,18 @@ class ReserveIdRequestTests(APITestCase):
         self.client.force_login(self.user)
         dbsetup.insert_spatialdb_test_data()
 
-    def test_request_ids_service(self):
+    def test_bounding_box_service(self):
         """
         Test initialization of cutout requests for the datamodel
         :return:
         """
-        url = '/' + version + '/ids/col1/exp1/layer1/0/0:6/0:10/0:2/'
+        url = '/' + version + '/boundingbox/col1/exp1/layer1/0/10'
         col = 'col1'
         exp = 'exp1'
         channel = 'layer1'
         boss_key = 'col1&exp1&layer1'
         resolution = 0
-
+        id = 10
 
         # Create the request
         request = self.rf.get(url)
@@ -64,39 +64,31 @@ class ReserveIdRequestTests(APITestCase):
 
         # Create the request dict
         request_args = {
-            "service": "ids",
+            "service": "boundingbox",
             "version": version,
             "collection_name": col,
             "experiment_name": exp,
             "channel_name": channel,
             "resolution": resolution,
-            "x_args": "0:6",
-            "y_args": "0:10",
-            "z_args": "0:2",
-            "time_args": None
-
+            "id": id
         }
+
         ret = BossRequest(drfrequest, request_args)
         self.assertEqual(ret.get_collection(), col)
         self.assertEqual(ret.get_experiment(), exp)
         self.assertEqual(ret.get_channel(), channel)
+        self.assertEqual(ret.get_resolution(), resolution)
         self.assertEqual(ret.get_boss_key(), boss_key)
 
-    def test_request_ids_service_invalid_channel_type(self):
+    def test_bounding_box_service_invalid_channel_type(self):
         """
         Test initialization of cutout requests for the datamodel
         :return:
         """
-        """
-        Test initialization of cutout requests for the datamodel
-        :return:
-        """
-        url = '/' + version + '/ids/col1/exp1/channel1/0/0:6/0:10/0:2/'
+        url = '/' + version + '/boundingbox/col1/exp1/channel1/0/10'
         col = 'col1'
         exp = 'exp1'
         channel = 'channel1'
-        boss_key = 'col1&exp1&channel1'
-        resolution = 0
 
         # Create the request
         request = self.rf.get(url)
@@ -106,16 +98,44 @@ class ReserveIdRequestTests(APITestCase):
 
         # Create the request dict
         request_args = {
-            "service": "ids",
+            "service": "boundingbox",
             "version": version,
             "collection_name": col,
             "experiment_name": exp,
             "channel_name": channel,
-            "resolution": resolution,
-            "x_args": "0:6",
-            "y_args": "0:10",
-            "z_args": "0:2",
-            "time_args": None
+            "resolution": 0,
+            "id": 10
+
+        }
+
+        with self.assertRaises(BossError):
+            ret = BossRequest(drfrequest, request_args)
+
+    def test_bounding_box_service_invalid_resolution(self):
+        """
+        Test initialization of cutout requests for the datamodel
+        :return:
+        """
+        url = '/' + version + '/boundingbox/col1/exp1/layer1/25/10'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'layer1'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Reserve().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "boundingbox",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "resolution": 25,
+            "id": 10
 
         }
 

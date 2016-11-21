@@ -16,8 +16,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from bosscore.request import BossRequest
-from bosscore.error import BossError, BossHTTPError
+from bosscore.error import BossError, BossHTTPError, ErrorCodes
 
+from spdb.spatialdb.spatialdb import SpatialDB
+from spdb import project
+
+from django.conf import settings
 
 class Reserve(APIView):
     """
@@ -55,10 +59,18 @@ class Reserve(APIView):
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
-        data = {"start_id": 1000, "count": 1000}
-        return Response(data, status=200)
+        # create a resource
+        resource = project.BossResourceDjango(req)
+        try:
+            # Reserve ids
+            spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
+            start_id = spdb.reserve_ids(resource, int(num_ids))
+            data = {'start_id': start_id, 'count': num_ids}
+            return Response(data, status=200)
+        except (TypeError, ValueError)as e:
+            return BossHTTPError("Type error in the reserve id view. {}".format(e), ErrorCodes.TYPE_ERROR)
 
 
 class Ids(APIView):
@@ -100,17 +112,30 @@ class Ids(APIView):
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
+            return err.to_http()
 
-        data = {"ids": ["1", "2", "3", "4", "5"]}
-        return Response(data, status=200)
+        # create a resource
+        resource = project.BossResourceDjango(req)
+
+        # Get the params to pull data out of the cache
+        corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
+        extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
+
+        try:
+            # Reserve ids
+            spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
+            ids = spdb.get_ids_in_region(resource, int(resolution), corner, extent)
+            return Response(ids, status=200)
+        except (TypeError, ValueError) as e:
+            return BossHTTPError("Type error in the ids view. {}".format(e), ErrorCodes.TYPE_ERROR)
+
 
 class BoundingBox(APIView):
     """
         View to reserve annotation object ids
 
     """
-    def get(self, request, collection, experiment,channel, id):
+    def get(self, request, collection, experiment,channel,resolution, id):
         """
         Return the bounding box containing the object
 
@@ -137,10 +162,20 @@ class BoundingBox(APIView):
                 "collection_name": collection,
                 "experiment_name": experiment,
                 "channel_name": channel,
+                "resolution": resolution,
                 "id": id
             }
             req = BossRequest(request, request_args)
         except BossError as err:
-            return BossHTTPError(err.args[0], err.args[1], err.args[2])
-        data = {"x_range": [0,1000], "y_range": [0,1000], "z_range": [0,1000], "t_range":[0,10]}
-        return Response(data, status=200)
+            return err.to_http()
+
+        # create a resource
+        resource = project.BossResourceDjango(req)
+
+        try:
+            # Get interface to SPDB cache
+            spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
+            data = spdb.get_bounding_box(resource, int(resolution),int(id))
+            return Response(data, status=200)
+        except (TypeError,ValueError) as e:
+            return BossHTTPError("Type error in the boundingbox view. {}".format(e), ErrorCodes.TYPE_ERROR)
