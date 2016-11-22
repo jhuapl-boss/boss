@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load bootstrap %}
+{% load mgmt %}
 
 {% block subtitle %}
 Collection {{ collection_name }}
@@ -10,22 +10,8 @@ Collection {{ collection_name }}
 {% url 'mgmt:collection' collection_name as current_url %}
 
 <div class="tab-pane" id="Collection" role="tabpannel">
-    <form action="{{ current_url }}?action=update" method="post" class="update {{ col_error }} form-horizontal" id="Collection">
-        {% csrf_token %}
-        <div class="form-group">
-            <label class="control-label col-sm-2 col-lg-2">Creator</label>
-            <div class="col-sm-10 col-lg-10">
-                <input type="text" disabled value="{{ collection.creator }}"/>
-            </div>
-        </div>
-        {{ col_form|bootstrap_horizontal }}
-        <div class="form-group">
-            <div class="col-sm-2 col-lg-2"></div>
-            <div class="col-sm-10 col-lg-10">
-                <button type="submit" class="btn btn-primary">Update Collection</button>
-            </div>
-        </div>
-    </form>
+    {% mgmt_url current_url action="update" as update_url %}
+    {% update_form col_form col_error "Update Collection" update_url Creator=collection.creator %}
 </div>
 <div class="tab-pane" id="Experiments" role="tabpannel">
     <table class="table">
@@ -45,27 +31,8 @@ Collection {{ collection_name }}
         </tbody>
     </table>
     <br/>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addExperiment">Add Experiment</button>
-    <div class="modal fade" tabindex="-1" role="dialog" id="addExperiment">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <form action="{{ current_url }}?action=exp" method="post" class="add {{ exp_error }} form-horizontal" id="Experiment">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4 class="modal-title">Add Experiment</h4>
-                </div>
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {{ exp_form|bootstrap_horizontal }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Experiment</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% mgmt_url current_url action="exp" as add_exp_url %}
+    {% add_modal exp_form exp_error "Add Experiment" add_exp_url %}
 </div>
 <div class="tab-pane" id="Permissions" role="tabpannel">
     <table class="table">
@@ -87,27 +54,8 @@ Collection {{ collection_name }}
         </tbody>
     </table>
     <br/>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addPermissions">Edit Permissions</button>
-    <div class="modal fade" tabindex="-1" role="dialog" id="addPermissions">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <form action="{{ current_url }}?action=perms" method="post" class="add {{ perms_error }} form-horizontal" id="Permissions">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4 class="modal-title">Edit Permissions</h4>
-                </div>
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {{ perms_form|bootstrap_horizontal }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Edit Permissions</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% mgmt_url current_url action="perms" as add_perms_url %}
+    {% add_modal perms_form perms_error "Edit Permissions" add_perms_url %}
 </div>
 <div class="tab-pane" id="Meta" role="tabpannel">
     <table class="table">
@@ -127,26 +75,7 @@ Collection {{ collection_name }}
         </tbody>
     </table>
     <br/>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addMeta">Add Meta Value</button>
-    <div class="modal fade" tabindex="-1" role="dialog" id="addMeta">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <form action="{{ current_url }}?action=meta" method="post" class="add {{ meta_error }} form-horizontal" id="Metadata">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4 class="modal-title">Add Meta Value</h4>
-                </div>
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {{ meta_form|bootstrap_horizontal }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Meta Value</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% mgmt_url current_url action="meta" as add_meta_url %}
+    {% add_modal meta_form meta_error "Add Meta Value" add_meta_url %}
 </div>
 {% endblock %}

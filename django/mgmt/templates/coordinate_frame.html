@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load bootstrap %}
+{% load mgmt %}
 
 {% block subtitle %}
 Coordinate Frame {{ coord_name }}
@@ -7,15 +7,5 @@ Coordinate Frame {{ coord_name }}
 
 {% block content %}
 {% url 'mgmt:coord' coord_name as current_url %}
-
-<form action="{{ current_url }}" method="post" class="update {{ coord_error }} form-horizontal" id="Coordinate Frame">
-    {% csrf_token %}
-    {{ coord_form|bootstrap_horizontal }}
-    <div class="form-group">
-        <div class="col-sm-2 col-lg-2"></div>
-        <div class="col-sm-10 col-lg-10">
-            <button type="submit" class="btn btn-primary">Update Coordinate Frame</button>
-        </div>
-    </div>
-</form>
+{% update_form coord_form coord_error "Update Coordinate Frame" current_url %}
 {% endblock %}

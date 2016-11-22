@@ -12,9 +12,9 @@ API Token
         <label class="control-label col-sm-2 col-lg-2">Token</label>
         <div class="col-sm-10 col-lg-10">
             {% if token %}
-                <input type="text" size="40" value="{{ token }}" readonly />
+                <input class="form-control" type="text" value="{{ token }}" readonly />
             {% else %}
-                <input type="text" size="40" value="" readonly />
+                <input class="form-control" type="text" value="" readonly />
             {% endif %}
         </div>
     </div>

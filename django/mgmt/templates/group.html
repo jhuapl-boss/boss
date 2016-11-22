@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load bootstrap %}
+{% load mgmt %}
 
 {% block subtitle %}
 Group {{ group_name }}
@@ -38,27 +38,8 @@ Group {{ group_name }}
         </tbody>
     </table>
     <br/>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addUser">Add User Permission</button>
-    <div class="modal fade" tabindex="-1" role="dialog" id="addUser">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <form action="{{ current_url }}?action=memb" method="post" class="add {{ memb_error }} form-horizontal" id="Permission">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4 class="modal-title">Add User Permission</h4>
-                </div>
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {{ memb_form|bootstrap_horizontal }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add User Permission</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% mgmt_url current_url action="memb" as add_memb_url %}
+    {% add_modal memb_form memb_error "Add User Permission" add_memb_url %}
 </div>
 <div class="tab-pane" id="Permissions" role="tabpannel">
     <table class="table">
@@ -80,25 +61,7 @@ Group {{ group_name }}
         </tbody>
     </table>
     <br/>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addPermissions">Edit Resource Permissions</button>
-    <div class="modal fade" tabindex="-1" role="dialog" id="addPermissions">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <form action="{{ current_url }}?action=perms" method="post" class="add {{ perms_error }} form-horizontal" id="Permissions">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4 class="modal-title">Edit Resource Permissions</h4>
-                </div>
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {{ perms_form|bootstrap_horizontal }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Edit Resource Permissions</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% mgmt_url current_url action="perms" as add_perms_url %}
+    {% add_modal perms_form perms_error "Edit Resource Permissions" add_perms_url %}
+</div>
 {% endblock %}
