@@ -78,12 +78,10 @@ class ImageViewIntegrationTests(ImageInterfaceViewTestMixin, APITestCase):
         client.flushdb()
 
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         """ get_some_resource() is slow, to avoid calling it for each test use setUpClass()
             and store the result as class variable
         """
-        super(ImageViewIntegrationTests, cls).setUpClass()
-
         # Setup the helper to create temporary AWS resources
         cls.setup_helper = SetupTests()
         cls.setup_helper.mock = False
@@ -121,10 +119,8 @@ class ImageViewIntegrationTests(ImageInterfaceViewTestMixin, APITestCase):
             OBJECTIO_CONFIG["s3_flush_queue"] = cls.setup_helper.create_flush_queue(FLUSH_QUEUE_NAME)
 
         # load some data for reading
-        test_mat = np.random.randint(1, 254, (16, 1024, 1024))
-        cls.test_data_8 = test_mat.astype(np.uint8)
-        h = cls.test_data_8.tobytes()
-        bb = blosc.compress(h, typesize=8)
+        cls.test_data_8 = np.random.randint(1, 254, (16, 1024, 1024), dtype=np.uint8)
+        bb = blosc.compress(cls.test_data_8, typesize=8)
 
         # Post data to the database
         factory = APIRequestFactory()
@@ -174,12 +170,10 @@ class TileViewIntegrationTests(TileInterfaceViewTestMixin, APITestCase):
         client.flushdb()
 
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         """ get_some_resource() is slow, to avoid calling it for each test use setUpClass()
             and store the result as class variable
         """
-        super(TileViewIntegrationTests, cls).setUpClass()
-
         # Setup the helper to create temporary AWS resources
         cls.setup_helper = SetupTests()
         cls.setup_helper.mock = False
@@ -217,10 +211,8 @@ class TileViewIntegrationTests(TileInterfaceViewTestMixin, APITestCase):
             OBJECTIO_CONFIG["s3_flush_queue"] = cls.setup_helper.create_flush_queue(FLUSH_QUEUE_NAME)
 
         # load some data for reading
-        test_mat = np.random.randint(1, 254, (16, 1024, 1024))
-        cls.test_data_8 = test_mat.astype(np.uint8)
-        h = cls.test_data_8.tobytes()
-        bb = blosc.compress(h, typesize=8)
+        cls.test_data_8 = np.random.randint(1, 254, (16, 1024, 1024), dtype=np.uint8)
+        bb = blosc.compress(cls.test_data_8, typesize=8)
 
         # Post data to the database
         factory = APIRequestFactory()
@@ -230,10 +222,10 @@ class TileViewIntegrationTests(TileInterfaceViewTestMixin, APITestCase):
         _ = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                              resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16', t_range=None)
 
-
     @classmethod
     def tearDownClass(cls):
         super(TileViewIntegrationTests, cls).tearDownClass()
+
         try:
             cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except Exception as e:

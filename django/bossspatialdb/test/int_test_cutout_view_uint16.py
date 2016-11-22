@@ -45,8 +45,8 @@ OBJECTIO_CONFIG = {"s3_flush_queue": None,
                    "page_in_lambda_function": config['lambda']['page_in_function'],
                    "page_out_lambda_function": config['lambda']['flush_function'],
                    "s3_index_table": "intTest.{}".format(config['aws']['s3-index-table']),
-                   "id_index_table": config['aws']['id-index-table'],
-                   "id_count_table": config['aws']['id-count-table']
+                   "id_index_table": "intTest.{}".format(config['aws']['id-index-table']),
+                   "id_count_table": "intTest.{}".format(config['aws']['id-count-table'])
                    }
 
 config = bossutils.configuration.BossConfig()
@@ -73,12 +73,10 @@ class CutoutViewIntegration16BitTests(CutoutInterfaceViewUint16TestMixin, APITes
         client.flushdb()
 
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         """ get_some_resource() is slow, to avoid calling it for each test use setUpClass()
             and store the result as class variable
         """
-        super(CutoutViewIntegration16BitTests, cls).setUpClass()
-
         # Setup the helper to create temporary AWS resources
         cls.setup_helper = SetupTests()
         cls.setup_helper.mock = False

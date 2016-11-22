@@ -52,7 +52,7 @@ OBJECTIO_CONFIG = {"s3_flush_queue": None,
 class TestReserveIDView(APITestCase):
 
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
 
         # Setup the helper to create temporary AWS resources
         cls.setup_helper = SetupTests()
@@ -75,6 +75,8 @@ class TestReserveIDView(APITestCase):
 
     @classmethod
     def tearDownClass(cls):
+        super(TestReserveIDView, cls).tearDownClass()
+
         try:
             cls.setup_helper.delete_index_table(cls.object_store_config["id_count_table"])
         except:

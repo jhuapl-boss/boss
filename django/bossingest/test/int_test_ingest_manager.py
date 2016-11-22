@@ -17,6 +17,7 @@ import os
 import unittest
 import json
 from django.contrib.auth.models import User
+from rest_framework.test import APITestCase
 
 from bossingest.ingest_manager import IngestManager
 from bossingest.test.setup import SetupTests
@@ -91,8 +92,6 @@ class BossIntegrationIngestManagerTestMixin(object):
             ingest_mgmr.delete_upload_queue()
             ingest_mgmr.delete_ingest_queue()
 
-
-
     def test_generate_upload_tasks(self):
         """"""
         try:
@@ -141,24 +140,15 @@ class BossIntegrationIngestManagerTestMixin(object):
         assert (msg['job_id'] == 595)
 
 
-class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, unittest.TestCase):
+class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, APITestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        # Create the resources required for the ingest tests
-        cls.user = User.objects.create_superuser(username='testuser1', email='test@test.com', password='testuser')
+    def setUp(self):
+        # Get the config_data
+        self.user = User.objects.create_superuser(username='testuser1', email='test@test.com', password='testuser')
+        config_data = SetupTests().get_ingest_config_data_dict()
+        self.example_config_data = config_data
         dbsetup = SetupTestDB()
-        dbsetup.set_user(cls.user)
+        dbsetup.set_user(self.user)
         dbsetup.insert_ingest_test_data()
 
-        # Get the config_data
-        config_data = SetupTests().get_ingest_config_data_dict()
-        cls.example_config_data = config_data
 
-        # Set the environment variable for the tests
-        os.environ["NDINGEST_TEST"] = '1'
-
-    @classmethod
-    def tearDownClass(cls):
-        # Set the environment variable for the tests
-        os.environ["NDINGEST_TEST"] = '0'

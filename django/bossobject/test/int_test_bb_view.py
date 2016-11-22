@@ -71,12 +71,10 @@ class BoundingBoxViewIntegrationTests(BoundingBoxMixin, APITestCase):
         client.flushdb()
 
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         """ get_some_resource() is slow, to avoid calling it for each test use setUpClass()
             and store the result as class variable
         """
-        super(BoundingBoxMixin, cls).setUpClass()
-
         # Setup the helper to create temporary AWS resources
         cls.setup_helper = SetupTests()
         cls.setup_helper.mock = False
@@ -127,7 +125,7 @@ class BoundingBoxViewIntegrationTests(BoundingBoxMixin, APITestCase):
 
     @classmethod
     def tearDownClass(cls):
-        super(BoundingBoxMixin, cls).tearDownClass()
+        super(BoundingBoxViewIntegrationTests, cls).tearDownClass()
         try:
             cls.setup_helper.delete_index_table(OBJECTIO_CONFIG["s3_index_table"])
         except Exception as e:

@@ -36,7 +36,7 @@ class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITest
     Uses Vault and AWS's DynamoDB (as opposed to a local DynamoDB).
     """
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         # Load table info
         cfgfile = open('bosscore/dynamo_schema.json', 'r')
         tblcfg = json.load(cfgfile)
@@ -56,6 +56,7 @@ class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITest
 
     @classmethod
     def tearDownClass(cls):
+        super(BossCoreMetaServiceViewIntegrationTests, cls).tearDownClass()
         client = boto3.client('dynamodb', region_name=get_region())
         client.delete_table(TableName=testtablename)
         waiter = client.get_waiter('table_not_exists')

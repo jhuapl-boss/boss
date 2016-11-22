@@ -142,12 +142,10 @@ class CutoutViewIntegration8BitTests(CutoutInterfaceViewUint8TestMixin, APITestC
         client.flushdb()
 
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         """ get_some_resource() is slow, to avoid calling it for each test use setUpClass()
             and store the result as class variable
         """
-        super(CutoutViewIntegration8BitTests, cls).setUpClass()
-
         # Setup the helper to create temporary AWS resources
         cls.setup_helper = SetupTests()
         cls.setup_helper.mock = False

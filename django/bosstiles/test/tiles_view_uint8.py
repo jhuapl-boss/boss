@@ -297,9 +297,8 @@ class TestTileInterfaceView(TileInterfaceViewTestMixin, APITestCase):
         self.mock_spdb = self.spdb_patcher.stop()
 
     @classmethod
-    def setUpClass(cls):
+    def setUpTestData(cls):
         """ Setup data to read
         """
         # TODO: once cache arch allows for easily loading data in unit tests. for now just running as int test
         cls.test_data_8 = None
-        pass
