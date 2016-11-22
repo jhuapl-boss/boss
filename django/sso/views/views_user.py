@@ -150,7 +150,7 @@ class BossUser(APIView):
             msg = "Error addng user '{}' to Keycloak".format(user_name)
             return BossKeycloakError(msg)
 
-    @check_role("user-manager")
+    @check_role("admin")
     def delete(self, request, user_name):
         """
         Delete a user
