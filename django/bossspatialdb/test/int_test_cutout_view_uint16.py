@@ -24,6 +24,7 @@ from bosscore.test.setup_db import SetupTestDB
 import bossutils
 import redis
 import time
+import random
 
 from spdb.spatialdb.test.setup import SetupTests
 from botocore.exceptions import ClientError
@@ -41,7 +42,7 @@ STATEIO_CONFIG = {"cache_state_host": config['aws']['cache-state'],
 
 # object store settings
 OBJECTIO_CONFIG = {"s3_flush_queue": None,
-                   "cuboid_bucket": "intTest.{}".format(config['aws']['cuboid_bucket']),
+                   "cuboid_bucket": "intTest{}.{}".format(random.randint(0, 9999), config['aws']['cuboid_bucket']),
                    "page_in_lambda_function": config['lambda']['page_in_function'],
                    "page_out_lambda_function": config['lambda']['flush_function'],
                    "s3_index_table": "intTest.{}".format(config['aws']['s3-index-table']),
