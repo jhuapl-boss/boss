@@ -1,0 +1,33 @@
+<table class="table">
+    <thead>
+        <tr>
+            {% for header in headers %}
+            <th>{{ header }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            {% for col in row %}
+            <td>{{ col|safe }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% if show_pagination %}
+<ul class="pagination">
+    <li class="page-item {{ previous_class }}">
+        <a class="page-link" href="{{ previous_url }}">&laquo;</a>
+    </li>
+    {% for cls,name,url in pages %}
+    <li class="page-item {{ cls }}">
+        <a class="page-link" href="{{ url }}">{{ name }}</a>
+    </li>
+    {% endfor %}
+    <li class="page-item {{ next_class }}">
+        <a class="page-link" href="{{ next_url }}">&raquo;</a>
+    </li>
+</ul>
+{% endif %}

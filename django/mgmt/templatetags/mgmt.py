@@ -54,3 +54,38 @@ def update_form(form, error, name, url, **kwargs):
         'headers': kwargs.items()
     }
 
+@register.inclusion_tag("table.html")
+def paginated_table(kwargs):
+    """
+    Args:
+        kwargs (dict): Dictionary with the following arguments defined
+            headers (list): List of header columns for the table
+            rows (list): List of rows, which are lists of columns matching headers
+            pages (list): List of (name, url) for each pagination link to display
+            idx (int): Index of the current page in pages list
+    """
+    headers = kwargs['headers']
+    rows = kwargs['rows']
+    pages = kwargs['pages']
+    idx = kwargs['idx']
+
+    is_first = idx == 0
+    is_last = idx == len(pages) - 1
+
+    prev_class = "disabled" if is_first else ""
+    prev_url = "" if is_first else pages[idx - 1][1]
+    next_class = "disabled" if is_last else ""
+    next_url = "" if is_last else pages[idx + 1][1]
+
+    pages = [("active" if i == idx else "", pages[i][0], pages[i][1]) for i in range(len(pages))]
+
+    return {
+        'headers': headers,
+        'rows': rows,
+        'show_pagination': len(pages) != 1, # Only show the bar if multiple pages
+        'pages': pages,
+        'previous_class': prev_class,
+        'previous_url': prev_url,
+        'next_class': next_class,
+        'next_url': next_url,
+    }
