@@ -8,22 +8,7 @@ SSO Users
 {% block content %}
 {% url 'mgmt:users' as current_url %}
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Username</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for user in users %}
-        <tr>
-            <td><a href="{% url 'mgmt:user' user.username %}">{{ user.username }}</a></td>
-            <td><a href="{{ current_url }}?delete={{ user.username }}">Remove User</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% paginated_table users %}
 <br/>
 {% add_modal user_form user_error "Add User" current_url %}
 {% endblock %}

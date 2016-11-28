@@ -14,66 +14,19 @@ Collection {{ collection_name }}
     {% update_form col_form col_error "Update Collection" update_url Creator=collection.creator %}
 </div>
 <div class="tab-pane" id="Experiments" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Experiment</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for experiment in collection.experiments %}
-            <tr>
-                <td><a href="{% url 'mgmt:experiment' collection_name experiment %}">{{ experiment }}</a></td>
-                <td><a href="{{ current_url }}?rem_exp={{ experiment }}">Remove Experiment</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table experiments %}
     <br/>
     {% mgmt_url current_url action="exp" as add_exp_url %}
     {% add_modal exp_form exp_error "Add Experiment" add_exp_url %}
 </div>
 <div class="tab-pane" id="Permissions" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Permitted Groups</th>
-                <th>Permissions</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for group, perm in perms %}
-            <tr>
-                <td>{{ group }}</td>
-                <td>{{ perm }}</td>
-                <td><a href="{{ current_url }}?rem_perms={{ group }}">Remove All Permissions</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table perms %}
     <br/>
     {% mgmt_url current_url action="perms" as add_perms_url %}
     {% add_modal perms_form perms_error "Edit Permissions" add_perms_url %}
 </div>
 <div class="tab-pane" id="Meta" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Collection Meta Key</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for meta in metas %}
-            <tr>
-                <td><a href="{{ meta_url }}?key={{ meta }}">{{ meta }}</a></td>
-                <td><a href="{{ current_url }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table metas %}
     <br/>
     {% mgmt_url current_url action="meta" as add_meta_url %}
     {% add_modal meta_form meta_error "Add Meta Value" add_meta_url %}

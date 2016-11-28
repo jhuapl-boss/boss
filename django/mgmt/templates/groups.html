@@ -9,22 +9,7 @@ Groups
 {% block content %}
 {% url 'mgmt:groups' as current_url %}
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Group</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for group in groups %}
-        <tr>
-            <td><a href="{% url 'mgmt:group' group %}">{{ group }}</a></td>
-            <td><a href="{{ current_url }}?delete={{ group }}">Remove Group</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% paginated_table groups %}
 <br/>
 {% add_modal group_form group_error "Add Group" current_url %}
 {% endblock %}

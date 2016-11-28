@@ -21,22 +21,7 @@ User {{ username  }}
     </form>
 </div>
 <div class="tab-pane" id="Roles" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Roles</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for role in roles %}
-            <tr>
-                <td>{{ role }}</td>
-                <td><a href="{{ current_url }}?remove={{ role }}">Remove Role</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table roles %}
     <br/>
     {% add_modal role_form role_error "Add Role" current_url %}
 </div>

@@ -4,6 +4,7 @@ from django.template.loader import render_to_string
 from django.template import RequestContext
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
+from django.core.urlresolvers import reverse
 
 from .forms import UserForm, RoleForm, GroupForm, GroupMemberForm
 from .forms import CollectionForm, ExperimentForm, ChannelForm
@@ -38,8 +39,14 @@ class Users(LoginRequiredMixin, View):
         if err:
             return err
 
+        headers = ["Username", "Actions"]
+        fmt_usr = '<a href="{}">{}</a>'
+        fmt_act = '<a href="?delete={}">Remove User</a>'
+        fmt = lambda u: (fmt_usr.format(reverse('mgmt:user',args=[u['username']]), u['username']), fmt_act.format(u['username']))
+        users_args = utils.make_pagination(request, headers, users, fmt)
+
         args = {
-            'users': users,
+            'users': users_args,
             'user_form': user_form if user_form else UserForm(),
             'user_error': "error" if user_form else "",
         }
@@ -79,10 +86,15 @@ class User(LoginRequiredMixin, View):
         rows.append(('Last Name', user.get('lastName', '')))
         rows.append(('Email', user.get('email', '')))
 
+        roles = user['realmRoles']
+        headers = ["Roles", "Actions"]
+        fmt = lambda r: (r, '<a href="?remove={}#Role">Remove Role</a>'.format(r))
+        roles_args = utils.make_pagination(request, headers, roles, fmt, frag='#Roles')
+
         args = {
             'username': username,
             'rows': rows,
-            'roles': user['realmRoles'],
+            'roles': roles_args,
             'role_form': role_form if role_form else RoleForm(),
             'role_error': "error" if role_form else "",
         }
@@ -139,8 +151,14 @@ class Groups(LoginRequiredMixin, View):
         if err:
             return err
 
+        headers = ["Group", "Actions"]
+        fmt_grp = '<a href="{}">{}</a>'
+        fmt_act = '<a href="?delete={}">Remove Group</a>'
+        fmt = lambda g: (fmt_grp.format(reverse('mgmt:group',args=[g]), g), fmt_act.format(g))
+        groups_args = utils.make_pagination(request, headers, groups, fmt)
+
         args = {
-            'groups': groups,
+            'groups': groups_args,
             'group_form': group_form if group_form else GroupForm(),
             'group_error': "error" if group_form else ""
         }
@@ -189,25 +207,39 @@ class Group(LoginRequiredMixin, View):
         if err:
             return err
 
-        data = {}
-        for member in members:
-            data[member] = 'member'
-            if member in maintainers:
-                data[member] += '+maintainer'
-        for maintainer in maintainers:
-            if maintainer not in members:
-                data[maintainer] = 'maintainer'
-
         perms, err = utils.get_perms(request, group=group_name)
         if err:
             return err
 
+        users = list(members)
+        for user in maintainers:
+            if user not in users:
+                users.append(user)
+
+        def fmt(m):
+            perms = []
+            actions = []
+            if m in members:
+                perms.append('member')
+                actions.append('<a href="?rem_memb={}">Remove Member</a>'.format(m))
+            if m in maintainers:
+                perms.append('maintainer')
+                actions.append('<a href="?rem_maint={}">Remove Mmaintainer</a>'.format(m))
+            perms = '+'.join(perms)
+            actions = '<br/>'.join(actions)
+            return (m, perms, actions)
+
+        headers = ["User", "Permissions", "Actions"]
+        users_args = utils.make_pagination(request, headers, users, fmt)
+
+        perms_args = utils.make_perms_pagination(request, perms, 'Resources')
+
         args = {
             'group_name': group_name,
-            'rows': data.items(),
+            'users': users_args,
             'members': members,
             'maintainers': maintainers,
-            'perms': perms,
+            'perms': perms_args,
             'memb_form': memb_form if memb_form else GroupMemberForm(),
             'memb_error': "error" if memb_form else "",
             'perms_form': perms_form if perms_form else GroupPermissionsForm(),
@@ -273,9 +305,21 @@ class Resources(LoginRequiredMixin, View):
         if err:
             return err
 
+        headers = ["Collection", "Actions"]
+        fmt_lnk = '<a href="{}">{}</a>'
+        fmt_act = '<a href="?del_col={}">Remove Collection</a>'
+        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:collection',args=[r]), r), fmt_act.format(r))
+        collections_args = utils.make_pagination(request, headers, collections, fmt)
+
+        headers = ["Coordinate Frame", "Actions"]
+        fmt_lnk = '<a href="{}">{}</a>'
+        fmt_act = '<a href="?del_coord={}">Remove Coordinate Frame</a>'
+        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:coord',args=[r]), r), fmt_act.format(r))
+        coords_args = utils.make_pagination(request, headers, coords, fmt)
+
         args = {
-            'collections': collections,
-            'coords': coords,
+            'collections': collections_args,
+            'coords': coords_args,
             'col_form': col_form if col_form else CollectionForm(),
             'col_error': "error" if col_form else "",
             'coord_form': coord_form if coord_form else CoordinateFrameForm(),
@@ -385,11 +429,22 @@ class Collection(LoginRequiredMixin, View):
         if err:
             return err
 
+        headers = ["Experiment", "Actions"]
+        fmt_lnk = '<a href="{}">{}</a>'
+        fmt_act = '<a href="?rem_exp={}">Remove Experiment</a>'
+        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:experiment',args=[collection_name, r]), r), fmt_act.format(r))
+        experiments_args = utils.make_pagination(request, headers, collection['experiments'], fmt)
+
+        meta_url = reverse('mgmt:meta', args=[collection_name])
+        metas_args = utils.make_metas_pagination(request, metas, 'Collection', meta_url)
+        perms_args = utils.make_perms_pagination(request, perms)
+
         args = {
             'collection_name': collection_name,
             'collection': collection,
-            'metas': metas,
-            'perms': perms,
+            'experiments': experiments_args,
+            'metas': metas_args,
+            'perms': perms_args,
             'col_form': col_form,
             'col_error': col_error,
             'exp_form': exp_form if exp_form else ExperimentForm(),
@@ -497,13 +552,23 @@ class Experiment(LoginRequiredMixin, View):
         if err:
             return err
 
+        headers = ["Channel", "Actions"]
+        fmt_lnk = '<a href="{}">{}</a>'
+        fmt_act = '<a href="?rem_chan={}">Remove Channel</a>'
+        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:channel',args=[collection_name, experiment_name, r]), r), fmt_act.format(r))
+        channels_args = utils.make_pagination(request, headers, channels, fmt)
+
+        meta_url = reverse('mgmt:meta', args=[collection_name, experiment_name])
+        metas_args = utils.make_metas_pagination(request, metas, 'Experiment', meta_url)
+        perms_args = utils.make_perms_pagination(request, perms)
+
         args = {
             'collection_name': collection_name,
             'experiment_name': experiment_name,
             'experiment': experiment,
-            'channels': channels,
-            'metas': metas,
-            'perms': perms,
+            'channels': channels_args,
+            'metas': metas_args,
+            'perms': perms_args,
             'exp_form': exp_form,
             'exp_error': exp_error,
             'chan_form': chan_form if chan_form else ChannelForm(),
@@ -600,13 +665,17 @@ class Channel(LoginRequiredMixin, View):
         if err:
             return err
 
+        meta_url = reverse('mgmt:meta', args=[collection_name, experiment_name, channel_name])
+        metas_args = utils.make_metas_pagination(request, metas, 'Channel', meta_url)
+        perms_args = utils.make_perms_pagination(request, perms)
+
         args = {
             'collection_name': collection_name,
             'experiment_name': experiment_name,
             'channel_name': channel_name,
             'channel': channel,
-            'metas': metas,
-            'perms': perms,
+            'metas': metas_args,
+            'perms': perms_args,
             'chan_form': chan_form,
             'chan_error': chan_error,
             'meta_form': meta_form if meta_form else MetaForm(),

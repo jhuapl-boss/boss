@@ -9,43 +9,13 @@ Resources
 {% url 'mgmt:resources' as current_url %}
 
 <div class="tab-pane" id="Collections" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Collection</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for collection in collections %}
-            <tr>
-                <td><a href="{% url 'mgmt:collection' collection %}">{{ collection }}</a></td>
-                <td><a href="{{ current_url }}?del_col={{ collection }}">Remove Collection</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table collections %}
     <br/>
     {% mgmt_url current_url action="col" as add_col_url %}
     {% add_modal col_form col_error "Add Collection" add_col_url %}
 </div>
 <div class="tab-pane" id="CoordinateFrames" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Coordinate Frame</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for coord in coords %}
-            <tr>
-                <td><a href="{% url 'mgmt:coord' coord %}">{{ coord }}</a></td>
-                <td><a href="{{ current_url }}?del_coord={{ coord }}">Remove Coordinate Frame</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table coords %}
     <br/>
     {% mgmt_url current_url action="coord" as add_coord_url %}
     {% add_modal coord_form coord_error "Add Coordinate Frame" add_coord_url %}

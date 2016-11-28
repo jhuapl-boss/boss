@@ -15,45 +15,13 @@ Channel {{ channel_name }}
     {% update_form chan_form chan_error "Update Channel" update_url Creator=channel.creator %}
 </div>
 <div class="tab-pane" id="Permissions" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Permitted Groups</th>
-                <th>Permissions</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for group, perm in perms %}
-            <tr>
-                <td>{{ group }}</td>
-                <td>{{ perm }}</td>
-                <td><a href="{{ current_url }}?rem_perms={{ group }}">Remove All Permissions</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table perms %}
     <br/>
     {% mgmt_url current_url action="perms" as add_perms_url %}
     {% add_modal perms_form perms_error "Edit Permissions" add_perms_url %}
 </div>
 <div class="tab-pane" id="Meta" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Experiment Meta Key</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for meta in metas %}
-            <tr>
-                <td><a href="{{ meta_url }}?key={{ meta }}">{{ meta }}</a></td>
-                <td><a href="{{ current_url }}?rem_meta={{ meta }}">Remove Meta Key</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table metas %}
     <br/>
     {% mgmt_url current_url action="meta" as add_meta_url %}
     {% add_modal meta_form meta_error "Add Meta Value" add_meta_url %}

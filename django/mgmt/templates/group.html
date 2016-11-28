@@ -9,57 +9,13 @@ Group {{ group_name }}
 {% url 'mgmt:group' group_name as current_url %}
 
 <div class="tab-pane" id="Users" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>User</th>
-                <th>Permissions</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user, perms in rows %}
-            <tr>
-                <td>{{ user }}</td>
-                <td>{{ perms }}</td>
-                <td>
-                    {% if user in members %}
-                        <a href="{{ current_url }}?rem_memb={{ user }}">Remove Member</a>
-                    {% endif %}
-                    {% if user in members and user in maintainers %}
-                        <br/>
-                    {% endif %}
-                    {% if user in maintainers %}
-                        <a href="{{ current_url }}?rem_maint={{ user }}">Remove Maintainer</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table users %}
     <br/>
     {% mgmt_url current_url action="memb" as add_memb_url %}
     {% add_modal memb_form memb_error "Add User Permission" add_memb_url %}
 </div>
 <div class="tab-pane" id="Permissions" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Permitted Resources</th>
-                <th>Permissions</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for resource, perm in perms %}
-            <tr>
-                <td>{{ resource }}</td>
-                <td>{{ perm }}</td>
-                <td><a href="{{ current_url }}?rem_perms={{ resource }}">Remove All Permissions</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table perms %}
     <br/>
     {% mgmt_url current_url action="perms" as add_perms_url %}
     {% add_modal perms_form perms_error "Edit Resource Permissions" add_perms_url %}
