@@ -6,9 +6,8 @@ Experiment {{ experiment_name }}
 {% endblock %}
 
 {% block breadcrumb %}
-<a class="navbar-link" href="{% url 'mgmt:collection' collection_name %}">{{ collection_name }}</a> /
-{{ experiment_name }}
-<br/>
+{% url 'mgmt:collection' collection_name as collection_url %}
+{% breadcrumb collection_url collection_name experiment_name %}
 {% endblock %}
 
 {% block content %}

@@ -56,7 +56,8 @@ def update_form(form, error, name, url, **kwargs):
 
 @register.inclusion_tag("table.html")
 def paginated_table(kwargs):
-    """
+    """Display a paginated table
+
     Args:
         kwargs (dict): Dictionary with the following arguments defined
             headers (list): List of header columns for the table
@@ -89,3 +90,21 @@ def paginated_table(kwargs):
         'next_class': next_class,
         'next_url': next_url,
     }
+
+@register.inclusion_tag("breadcrumb.html")
+def breadcrumb(*args):
+    """"Render a breadcrumb trail
+
+    Args:
+        args (list) : list of urls and url name followed by the final name
+                      Example: url1, name1, url2, name2, name3
+    """
+    def pairs(l):
+        a = iter(l)
+        return list(zip(a,a))
+
+    return {
+        'urls': pairs(args[:-1]),
+        'page': args[-1]
+    }
+

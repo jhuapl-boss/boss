@@ -6,10 +6,9 @@ Channel {{ channel_name }}
 {% endblock %}
 
 {% block breadcrumb %}
-<a class="navbar-link" href="{% url 'mgmt:collection' collection_name %}">{{ collection_name }}</a> /
-<a class="navbar-link" href="{% url 'mgmt:experiment' collection_name experiment_name %}">{{ experiment_name }}</a> /
-{{ channel_name }}
-<br/>
+{% url 'mgmt:collection' collection_name as collection_url %}
+{% url 'mgmt:experiment' collection_name experiment_name as experiment_url %}
+{% breadcrumb collection_url collection_name experiment_url experiment_name channel_name %}
 {% endblock %}
 
 {% block content %}
