@@ -22,6 +22,12 @@ from rest_framework.authtoken.models import Token as TokenModel
 #          generate the same submission page, but with a form
 #          that displays the validation errors
 
+def redirect_frag(page, *args, frag=None):
+    url = reverse(page, args=[*args])
+    if frag:
+        url += '#' + frag
+    return redirect(url)
+
 class Home(LoginRequiredMixin, View):
     def get(self, request):
         return HttpResponse(render_to_string('base.html'))
@@ -74,7 +80,7 @@ class User(LoginRequiredMixin, View):
             err = api.del_role(request, username, remove)
             if err:
                 return err
-            return redirect('mgmt:user', username)
+            return redirect_frag('mgmt:user', username, frag='Roles')
 
         user, err = api.get_user(request, username)
         if err:
@@ -108,7 +114,7 @@ class User(LoginRequiredMixin, View):
             err = api.add_role(request, username, role)
             if err:
                 return err
-            return redirect('mgmt:user', username)
+            return redirect_frag('mgmt:user', username, frag='Roles')
         else:
             return self.get(request, username, role_form=form)
 
@@ -197,7 +203,7 @@ class Group(LoginRequiredMixin, View):
             err = api.del_perms(request, *remove.split('/'), group=group_name)
             if err:
                 return err
-            return redirect('mgmt:group', group_name)
+            return redirect_frag('mgmt:group', group_name, frag='Permissions')
 
         members, err = api.get_members(request, group_name)
         if err:
@@ -275,7 +281,7 @@ class Group(LoginRequiredMixin, View):
                 err = utils.set_perms(request, form, group=group_name)
                 if err:
                     return err
-                return redirect('mgmt:group', group_name)
+                return redirect_frag('mgmt:group', group_name, frag='Permissions')
             else:
                 return self.get(request, group_name, perms_form=form)
         else:
@@ -295,7 +301,7 @@ class Resources(LoginRequiredMixin, View):
             err = api.del_coord(request, delete)
             if err:
                 return err
-            return redirect('mgmt:resources')
+            return redirect_frag('mgmt:resources', frag='CoordinateFrames')
 
         collections, err = api.get_collections(request)
         if err:
@@ -351,7 +357,7 @@ class Resources(LoginRequiredMixin, View):
                 err = api.add_coord(request, coord_name, data)
                 if err:
                     return err
-                return redirect('mgmt:resources')
+                return redirect_frag('mgmt:resources', frag='CoordinateFrames')
             else:
                 return self.get(request, coord_form=form)
         else:
@@ -395,21 +401,21 @@ class Collection(LoginRequiredMixin, View):
             err = api.del_experiment(request, collection_name, remove)
             if err:
                 return err
-            return redirect('mgmt:collection', collection_name)
+            return redirect_frag('mgmt:collection', collection_name, frag='Experiments')
 
         remove = request.GET.get('rem_meta')
         if remove is not None:
             err = api.del_meta(request, remove, collection_name)
             if err:
                 return err
-            return redirect('mgmt:collection', collection_name)
+            return redirect_frag('mgmt:collection', collection_name, frag='Meta')
 
         remove = request.GET.get('rem_perms')
         if remove is not None:
             err = api.del_perms(request, collection_name, group=remove)
             if err:
                 return err
-            return redirect('mgmt:collection', collection_name)
+            return redirect_frag('mgmt:collection', collection_name, frag='Permissions')
 
         collection, err = api.get_collection(request, collection_name)
         if err:
@@ -468,7 +474,7 @@ class Collection(LoginRequiredMixin, View):
                 err = api.add_experiment(request, collection_name, experiment_name, data)
                 if err:
                     return err
-                return redirect('mgmt:collection', collection_name)
+                return redirect_frag('mgmt:collection', collection_name, frag='Experiments')
             else:
                 return self.get(request, collection_name, exp_form=form)
         elif action == 'meta':
@@ -480,7 +486,7 @@ class Collection(LoginRequiredMixin, View):
                 err = api.add_meta(request, key, value, collection_name)
                 if err:
                     return err
-                return redirect('mgmt:collection', collection_name)
+                return redirect_frag('mgmt:collection', collection_name, frag='Meta')
             else:
                 return self.get(request, collection_name, meta_form=form)
         elif action == 'perms':
@@ -489,7 +495,7 @@ class Collection(LoginRequiredMixin, View):
                 err = utils.set_perms(request, form, collection_name)
                 if err:
                     return err
-                return redirect('mgmt:collection', collection_name)
+                return redirect_frag('mgmt:collection', collection_name, frag='Permissions')
             else:
                 return self.get(request, collection_name, perms_form=form)
         elif action == 'update':
@@ -513,21 +519,21 @@ class Experiment(LoginRequiredMixin, View):
             err = api.del_channel(request, collection_name, experiment_name, remove)
             if err:
                 return err
-            return redirect('mgmt:experiment', collection_name, experiment_name)
+            return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Channels')
 
         remove = request.GET.get('rem_meta')
         if remove is not None:
             err = api.del_meta(request, remove, collection_name, experiment_name)
             if err:
                 return err
-            return redirect('mgmt:experiment', collection_name, experiment_name)
+            return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Meta')
 
         remove = request.GET.get('rem_perms')
         if remove is not None:
             err = api.del_perms(request, collection_name, experiment, group=remove)
             if err:
                 return err
-            return redirect('mgmt:experiment', collection_name, experiment_name)
+            return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Permissions')
 
         experiment, err = api.get_experiment(request, collection_name, experiment_name)
         if err:
@@ -592,7 +598,7 @@ class Experiment(LoginRequiredMixin, View):
                 err = api.add_channel(request, collection_name, experiment_name, channel_name, data)
                 if err:
                     return err
-                return redirect('mgmt:experiment', collection_name, experiment_name)
+                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Channels')
             else:
                 return self.get(request, collection_name, experiment_name, exp_form=form)
         elif action == 'meta':
@@ -604,7 +610,7 @@ class Experiment(LoginRequiredMixin, View):
                 err = api.add_meta(request, key, value, collection_name, experiment_name)
                 if err:
                     return err
-                return redirect('mgmt:experiment', collection_name, experiment_name)
+                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Meta')
             else:
                 return self.get(request, collection_name, experiment_name, meta_form=form)
         elif action == 'perms':
@@ -613,7 +619,7 @@ class Experiment(LoginRequiredMixin, View):
                 err = utils.set_perms(request, form, collection_name, experiment_name)
                 if err:
                     return err
-                return redirect('mgmt:experiment', collection_name, experiment_name)
+                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Permissions')
             else:
                 return self.get(request, collection_name, experiment_name, perms_form=form)
         elif action == 'update':
@@ -637,14 +643,14 @@ class Channel(LoginRequiredMixin, View):
             err = api.del_meta(request, remove, collection_name, experiment_name, channel_name)
             if err:
                 return err
-            return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
+            return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Meta')
 
         remove = request.GET.get('rem_perms')
         if remove is not None:
             err = api.del_perms(request, collection_name, experiment, channel, group=remove)
             if err:
                 return err
-            return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
+            return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Permissions')
 
         channel, err = api.get_channel(request, collection_name, experiment_name, channel_name)
         if err:
@@ -697,7 +703,7 @@ class Channel(LoginRequiredMixin, View):
                 err = api.add_meta(request, key, value, collection_name, experiment_name, channel_name)
                 if err:
                     return err
-                return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
+                return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Meta')
             else:
                 return self.get(request, collection_name, experiment_name, channel_name, meta_form=form)
         elif action == 'perms':
@@ -706,7 +712,7 @@ class Channel(LoginRequiredMixin, View):
                 err = utils.set_perms(request, form, collection_name, experiment_name, channel_name)
                 if err:
                     return err
-                return redirect('mgmt:channel', collection_name, experiment_name, channel_name)
+                return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Permissions')
             else:
                 return self.get(request, collection_name, experiment_name, channel_name, perms_form=form)
         elif action == 'update':

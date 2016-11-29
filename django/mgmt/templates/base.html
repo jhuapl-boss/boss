@@ -22,8 +22,9 @@
             .attr("role", "tab")
             .attr("href", "#" + $(pane).attr("id"))
             .click(function (e) {
-                e.preventDefault()
-                $(this).tab("show")
+                e.preventDefault();
+                $(this).tab("show");
+                location.hash = $(this).attr("href");
             })
             .text($(pane).attr("id"));
 
@@ -36,11 +37,15 @@
 
         // DP NOTE: If there was a form error then show that
         //          forms tab and pop the form up. Else automatically
-        //          show the first tab
+        //          show the tab selected by the URL fragment or the first tab
         var err = $("form.add.error");
         if(err.length == 0) {
-            // DP TODO: Figure out how to show the last tab that we were on
-            $("#contentTab a:first").tab("show");
+            var hash = window.location.hash.substr(1);
+            if (hash.length == 0) {
+                $("#contentTab a:first").tab("show");
+            } else {
+                $("#contentTab a[href='#" + hash + "']").tab("show");
+            }
         } else {
             var pane = err.parents(".tab-pane").attr("id");
             $("#contentTab a[href='#" + pane + "']").tab("show");
