@@ -146,6 +146,8 @@ def make_pagination(request, headers, rows, row_fmt=None, param='page', page_siz
     current_page = int(request.GET.get(param, 1)) - 1 # zero index the page
     # Div Ceiling - from http://stackoverflow.com/a/17511341
     total_pages = -(-len(rows) // page_size)
+    if total_pages == 0:
+        total_pages = 1
     if current_page >= total_pages:
         raise Exception("No page {} found".format(current_page + 1))
 
