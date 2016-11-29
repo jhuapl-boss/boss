@@ -5,6 +5,12 @@
 Experiment {{ experiment_name }}
 {% endblock %}
 
+{% block breadcrumb %}
+<a class="navbar-link" href="{% url 'mgmt:collection' collection_name %}">{{ collection_name }}</a> /
+{{ experiment_name }}
+<br/>
+{% endblock %}
+
 {% block content %}
 {% url 'mgmt:meta' collection_name experiment_name as meta_url %}
 {% url 'mgmt:experiment' collection_name experiment_name as current_url %}

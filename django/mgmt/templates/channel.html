@@ -5,6 +5,12 @@
 Channel {{ channel_name }}
 {% endblock %}
 
+{% block breadcrumb %}
+<a class="navbar-link" href="{% url 'mgmt:collection' collection_name %}">{{ collection_name }}</a> /
+<a class="navbar-link" href="{% url 'mgmt:experiment' collection_name experiment_name %}">{{ experiment_name }}</a> /
+{{ channel_name }}
+<br/>
+{% endblock %}
 
 {% block content %}
 {% url 'mgmt:meta' collection_name experiment_name channel_name as meta_url %}
