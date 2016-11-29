@@ -30,7 +30,7 @@ def redirect_frag(page, *args, frag=None):
 
 class Home(LoginRequiredMixin, View):
     def get(self, request):
-        return HttpResponse(render_to_string('base.html'))
+        return HttpResponse(render_to_string('base.html', RequestContext(request)))
 
 class Users(LoginRequiredMixin, View):
     def get(self, request, user_form=None):
