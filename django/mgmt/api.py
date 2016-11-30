@@ -65,8 +65,7 @@ def _post(category, cls, request, data, *args):
         boss.request.data = data # simulate the DRF request object
     resp = boss.post(request, *args)
     if not status.is_success(resp.status_code):
-        category_name = args[-1] if len(args) > 0 else None
-        return error_response(request, resp, category, category_name)
+        return error_message(resp)
     return None
 
 def _put(category, cls, request, data, *args):
@@ -76,8 +75,7 @@ def _put(category, cls, request, data, *args):
         boss.request.data = data # simulate the DRF request object
     resp = boss.put(request, *args)
     if not status.is_success(resp.status_code):
-        category_name = args[-1] if len(args) > 0 else None
-        return error_response(request, resp, category, category_name)
+        return error_message(resp)
     return None
 
 def _patch(category, cls, request, data, *args):
@@ -87,8 +85,7 @@ def _patch(category, cls, request, data, *args):
         boss.request.data = data # simulate the DRF request object
     resp = boss.patch(request, *args)
     if not status.is_success(resp.status_code):
-        category_name = args[-1] if len(args) > 0 else None
-        return error_response(request, resp, category, category_name)
+        return error_message(resp)
     return None
 
 """SSO API for Users and Roles"""

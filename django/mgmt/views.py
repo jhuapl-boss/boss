@@ -68,10 +68,10 @@ class Users(LoginRequiredMixin, View):
 
             err = api.add_user(request, username, data)
             if err:
-                return err
-            return redirect('mgmt:users')
-        else:
-            return self.get(request, user_form=form)
+                form.add_error(None, err)
+            else:
+                return redirect('mgmt:users')
+        return self.get(request, user_form=form)
 
 class User(LoginRequiredMixin, View):
     def get(self, request, username, role_form=None):
@@ -113,10 +113,10 @@ class User(LoginRequiredMixin, View):
 
             err = api.add_role(request, username, role)
             if err:
-                return err
-            return redirect_frag('mgmt:user', username, frag='Roles')
-        else:
-            return self.get(request, username, role_form=form)
+                form.add_error(None, err)
+            else:
+                return redirect_frag('mgmt:user', username, frag='Roles')
+        return self.get(request, username, role_form=form)
 
 class Token(LoginRequiredMixin, View):
     def get(self, request):
@@ -177,10 +177,10 @@ class Groups(LoginRequiredMixin, View):
 
             err = api.add_group(request, group_name)
             if err:
-                return err
-            return redirect('mgmt:groups')
-        else:
-            return self.get(request, group_form=form)
+                form.add_error(None, err)
+            else:
+                return redirect('mgmt:groups')
+        return self.get(request, group_form=form)
 
 class Group(LoginRequiredMixin, View):
     def get(self, request, group_name, memb_form=None, perms_form=None):
@@ -263,27 +263,27 @@ class Group(LoginRequiredMixin, View):
                 role = form.cleaned_data['role']
 
                 if 'member' in role:
-                    err = api.add_member(request, group_name, user)
-                    if err:
-                        return err
+                    memb_err = api.add_member(request, group_name, user)
+                    if memb_err:
+                        form.add_error(None, memb_err)
 
                 if 'maintainer' in role:
-                    err = api.add_maintainer(request, group_name, user)
-                    if err:
-                        return err
+                    maint_err = api.add_maintainer(request, group_name, user)
+                    if maint_err:
+                        form.add_error(None, maint_err)
 
-                return redirect('mgmt:group', group_name)
-            else:
-                return self.get(request, group_name, memb_form=form)
+                if not memb_error and not maint_err:
+                    return redirect('mgmt:group', group_name)
+            return self.get(request, group_name, memb_form=form)
         elif action == 'perms':
             form = GroupPermissionsForm(request.POST)
             if form.is_valid():
                 err = utils.set_perms(request, form, group=group_name)
                 if err:
-                    return err
-                return redirect_frag('mgmt:group', group_name, frag='Permissions')
-            else:
-                return self.get(request, group_name, perms_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:group', group_name, frag='Permissions')
+            return self.get(request, group_name, perms_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
@@ -344,10 +344,10 @@ class Resources(LoginRequiredMixin, View):
 
                 err = api.add_collection(request, collection, data)
                 if err:
-                    return err
-                return redirect('mgmt:resources')
-            else:
-                return self.get(request, col_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect('mgmt:resources')
+            return self.get(request, col_form=form)
         elif action == 'coord':
             form = CoordinateFrameForm(request.POST)
             if form.is_valid():
@@ -356,10 +356,10 @@ class Resources(LoginRequiredMixin, View):
 
                 err = api.add_coord(request, coord_name, data)
                 if err:
-                    return err
-                return redirect_frag('mgmt:resources', frag='CoordinateFrames')
-            else:
-                return self.get(request, coord_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:resources', frag='CoordinateFrames')
+            return self.get(request, coord_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
@@ -389,10 +389,10 @@ class CoordinateFrame(LoginRequiredMixin, View):
 
                 err = api.up_coord(request, coord_name, data)
                 if err:
-                    return err
-                return redirect('mgmt:coord', data['name'])
-            else:
-                return self.get(request, coord_name, coord_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect('mgmt:coord', data['name'])
+            return self.get(request, coord_name, coord_form=form)
 
 class Collection(LoginRequiredMixin, View):
     def get(self, request, collection_name, col_form=None, exp_form=None, meta_form=None, perms_form=None):
@@ -473,10 +473,10 @@ class Collection(LoginRequiredMixin, View):
 
                 err = api.add_experiment(request, collection_name, experiment_name, data)
                 if err:
-                    return err
-                return redirect_frag('mgmt:collection', collection_name, frag='Experiments')
-            else:
-                return self.get(request, collection_name, exp_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:collection', collection_name, frag='Experiments')
+            return self.get(request, collection_name, exp_form=form)
         elif action == 'meta':
             form = MetaForm(request.POST)
             if form.is_valid():
@@ -485,19 +485,19 @@ class Collection(LoginRequiredMixin, View):
 
                 err = api.add_meta(request, key, value, collection_name)
                 if err:
-                    return err
-                return redirect_frag('mgmt:collection', collection_name, frag='Meta')
-            else:
-                return self.get(request, collection_name, meta_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:collection', collection_name, frag='Meta')
+            return self.get(request, collection_name, meta_form=form)
         elif action == 'perms':
             form = ResourcePermissionsForm(request.POST)
             if form.is_valid():
                 err = utils.set_perms(request, form, collection_name)
                 if err:
-                    return err
-                return redirect_frag('mgmt:collection', collection_name, frag='Permissions')
-            else:
-                return self.get(request, collection_name, perms_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:collection', collection_name, frag='Permissions')
+            return self.get(request, collection_name, perms_form=form)
         elif action == 'update':
             form = CollectionForm(request.POST)
             if form.is_valid():
@@ -505,10 +505,10 @@ class Collection(LoginRequiredMixin, View):
 
                 err = api.up_collection(request, collection_name, data)
                 if err:
-                    return err
-                return redirect('mgmt:collection', data['name'])
-            else:
-                return self.get(request, collection_name, col_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect('mgmt:collection', data['name'])
+            return self.get(request, collection_name, col_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
@@ -597,10 +597,10 @@ class Experiment(LoginRequiredMixin, View):
 
                 err = api.add_channel(request, collection_name, experiment_name, channel_name, data)
                 if err:
-                    return err
-                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Channels')
-            else:
-                return self.get(request, collection_name, experiment_name, exp_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Channels')
+            return self.get(request, collection_name, experiment_name, exp_form=form)
         elif action == 'meta':
             form = MetaForm(request.POST)
             if form.is_valid():
@@ -609,19 +609,19 @@ class Experiment(LoginRequiredMixin, View):
 
                 err = api.add_meta(request, key, value, collection_name, experiment_name)
                 if err:
-                    return err
-                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Meta')
-            else:
-                return self.get(request, collection_name, experiment_name, meta_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Meta')
+            return self.get(request, collection_name, experiment_name, meta_form=form)
         elif action == 'perms':
             form = ResourcePermissionsForm(request.POST)
             if form.is_valid():
                 err = utils.set_perms(request, form, collection_name, experiment_name)
                 if err:
-                    return err
-                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Permissions')
-            else:
-                return self.get(request, collection_name, experiment_name, perms_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Permissions')
+            return self.get(request, collection_name, experiment_name, perms_form=form)
         elif action == 'update':
             form = ExperimentForm(request.POST)
             if form.is_valid():
@@ -629,10 +629,10 @@ class Experiment(LoginRequiredMixin, View):
 
                 err = api.up_experiment(request, collection_name, experiment_name, data)
                 if err:
-                    return err
-                return redirect('mgmt:experiment', collection_name, data['name'])
-            else:
-                return self.get(request, collection_name, experiment_name, exp_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect('mgmt:experiment', collection_name, data['name'])
+            return self.get(request, collection_name, experiment_name, exp_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
@@ -702,19 +702,19 @@ class Channel(LoginRequiredMixin, View):
 
                 err = api.add_meta(request, key, value, collection_name, experiment_name, channel_name)
                 if err:
-                    return err
-                return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Meta')
-            else:
-                return self.get(request, collection_name, experiment_name, channel_name, meta_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Meta')
+            return self.get(request, collection_name, experiment_name, channel_name, meta_form=form)
         elif action == 'perms':
             form = ResourcePermissionsForm(request.POST)
             if form.is_valid():
                 err = utils.set_perms(request, form, collection_name, experiment_name, channel_name)
                 if err:
-                    return err
-                return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Permissions')
-            else:
-                return self.get(request, collection_name, experiment_name, channel_name, perms_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Permissions')
+            return self.get(request, collection_name, experiment_name, channel_name, perms_form=form)
         elif action == 'update':
             form = ChannelForm(request.POST)
             if form.is_valid():
@@ -722,10 +722,10 @@ class Channel(LoginRequiredMixin, View):
 
                 err = api.up_channel(request, collection_name, experiment_name, channel_name, data)
                 if err:
-                    return err
-                return redirect('mgmt:channel', collection_name, experiment_name, data['name'])
-            else:
-                return self.get(request, collection_name, experiment_name, channel_name, chan_form=form)
+                    form.add_error(None, err)
+                else:
+                    return redirect('mgmt:channel', collection_name, experiment_name, data['name'])
+            return self.get(request, collection_name, experiment_name, channel_name, chan_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
@@ -768,7 +768,8 @@ class Meta(LoginRequiredMixin, View):
 
                 err = api.up_meta(request, key, value, collection, experiment, channel)
                 if err:
-                    return err
-                return HttpResponseRedirect('?key=' + key)
-            else:
-                return self.get(request, collection, experiment, channel, meta_form=form)
+                    form.add_error(None, err)
+                else:
+                    return HttpResponseRedirect('?key=' + key)
+            return self.get(request, collection, experiment, channel, meta_form=form)
+
