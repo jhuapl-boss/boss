@@ -28,8 +28,10 @@ export PYTHONPATH=$WORKSPACE/../../spdb/workspace:$WORKSPACE/../../boss-tools/wo
 
 python3 manage.py makemigrations --noinput
 
-# Force create migrations for the bosscore app.
+# Force create migrations "problem" apps.
+python3 manage.py makemigrations auth --noinput
 python3 manage.py makemigrations bosscore --noinput
+python3 manage.py makemigrations bossingest --noinput
 
 python3 manage.py migrate
 
