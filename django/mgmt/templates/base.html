@@ -108,6 +108,16 @@
             </nav>
         </div>
     </div>
+    {% if page_error %}
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="alert alert-danger">
+                <a class="close" data-dismiss="alert">×</a>
+                {{ page_error }}
+             </div>
+        </div>
+    </div>
+    {% endif %}
     <div class="row">
         <div id="content" class="col-xs-12">
             <ul id="contentTab" role="tabllist">

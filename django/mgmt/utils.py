@@ -182,7 +182,7 @@ def make_pagination(request, headers, rows, row_fmt=None, param='page', page_siz
 
 def make_perms_pagination(request, perms, name="Groups"):
     headers = ["Permitted " + name, "Permissions", "Actions"]
-    link = '<a href="?rem_perms={}">Remove All Permissions</a>'
+    link = '<a href="?rem_perms={}#Permissions">Remove All Permissions</a>'
     rows = [(r, p, link.format(r)) for r,p in perms]
 
     return make_pagination(request, headers, rows, param='page_perms', frag='#Permissions')
@@ -190,7 +190,7 @@ def make_perms_pagination(request, perms, name="Groups"):
 def make_metas_pagination(request, metas, name, meta_url):
     headers = [name + ' Meta Key', 'Actions']
     view_link = '<a href="{}?key={}">{}</a>'
-    rem_link = '<a href="?rem_meta{}">Remove Meta Key</a>'
+    rem_link = '<a href="?rem_meta={}#Meta">Remove Meta Key</a>'
     fmt = lambda m: (view_link.format(meta_url, m, m), rem_link.format(m))
 
     return make_pagination(request, headers, metas, fmt, param='page_metas', frag='#Meta')

@@ -34,12 +34,14 @@ class Home(LoginRequiredMixin, View):
 
 class Users(LoginRequiredMixin, View):
     def get(self, request, user_form=None):
+        page_error = None
         delete = request.GET.get('delete')
         if delete:
             err = api.del_user(request, delete)
             if err:
-                return err
-            return redirect('mgmt:users')
+                page_error = err
+            else:
+                return redirect('mgmt:users')
 
         users, err = api.get_users(request) # search query parameter will be automatically passed
         if err:
@@ -52,6 +54,7 @@ class Users(LoginRequiredMixin, View):
         users_args = utils.make_pagination(request, headers, users, fmt)
 
         args = {
+            'page_error': page_error,
             'users': users_args,
             'user_form': user_form if user_form else UserForm(),
             'user_error': "error" if user_form else "",
@@ -75,12 +78,14 @@ class Users(LoginRequiredMixin, View):
 
 class User(LoginRequiredMixin, View):
     def get(self, request, username, role_form=None):
+        page_error = None
         remove = request.GET.get('remove')
         if remove is not None:
             err = api.del_role(request, username, remove)
             if err:
-                return err
-            return redirect_frag('mgmt:user', username, frag='Roles')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:user', username, frag='Roles')
 
         user, err = api.get_user(request, username)
         if err:
@@ -98,6 +103,7 @@ class User(LoginRequiredMixin, View):
         roles_args = utils.make_pagination(request, headers, roles, fmt, frag='#Roles')
 
         args = {
+            'page_error': page_error,
             'username': username,
             'rows': rows,
             'roles': roles_args,
@@ -145,12 +151,14 @@ class Token(LoginRequiredMixin, View):
 
 class Groups(LoginRequiredMixin, View):
     def get(self, request, group_form=None):
+        page_error = None
         delete = request.GET.get('delete')
         if delete:
             err = api.del_group(request, delete)
             if err:
-                return err
-            return redirect('mgmt:groups')
+                page_error = err
+            else:
+                return redirect('mgmt:groups')
 
         # can only modify groups the user is a maintainer of
         groups, err = api.get_groups(request, maintainer_only=True)
@@ -164,6 +172,7 @@ class Groups(LoginRequiredMixin, View):
         groups_args = utils.make_pagination(request, headers, groups, fmt)
 
         args = {
+            'page_error': page_error,
             'groups': groups_args,
             'group_form': group_form if group_form else GroupForm(),
             'group_error': "error" if group_form else ""
@@ -184,26 +193,30 @@ class Groups(LoginRequiredMixin, View):
 
 class Group(LoginRequiredMixin, View):
     def get(self, request, group_name, memb_form=None, perms_form=None):
+        page_error = None
         remove = request.GET.get('rem_memb')
         if remove is not None:
             err = api.del_member(request, group_name, remove)
             if err:
-                return err
-            return redirect('mgmt:group', group_name)
+                page_error = err
+            else:
+                return redirect('mgmt:group', group_name)
 
         remove = request.GET.get('rem_maint')
         if remove is not None:
             err = api.del_maintainer(request, group_name, remove)
             if err:
-                return err
-            return redirect('mgmt:group', group_name)
+                page_error = err
+            else:
+                return redirect('mgmt:group', group_name)
 
         remove = request.GET.get('rem_perms')
         if remove is not None:
             err = api.del_perms(request, *remove.split('/'), group=group_name)
             if err:
-                return err
-            return redirect_frag('mgmt:group', group_name, frag='Permissions')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:group', group_name, frag='Permissions')
 
         members, err = api.get_members(request, group_name)
         if err:
@@ -241,6 +254,7 @@ class Group(LoginRequiredMixin, View):
         perms_args = utils.make_perms_pagination(request, perms, 'Resources')
 
         args = {
+            'page_error': page_error,
             'group_name': group_name,
             'users': users_args,
             'members': members,
@@ -289,19 +303,22 @@ class Group(LoginRequiredMixin, View):
 
 class Resources(LoginRequiredMixin, View):
     def get(self, request, col_form=None, coord_form=None):
+        page_error = None
         delete = request.GET.get('del_col')
         if delete:
             err = api.del_collection(request, delete)
             if err:
-                return err
-            return redirect('mgmt:resources')
+                page_error = err
+            else:
+                return redirect('mgmt:resources')
 
         delete = request.GET.get('del_coord')
         if delete:
             err = api.del_coord(request, delete)
             if err:
-                return err
-            return redirect_frag('mgmt:resources', frag='CoordinateFrames')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:resources', frag='CoordinateFrames')
 
         collections, err = api.get_collections(request)
         if err:
@@ -319,11 +336,12 @@ class Resources(LoginRequiredMixin, View):
 
         headers = ["Coordinate Frame", "Actions"]
         fmt_lnk = '<a href="{}">{}</a>'
-        fmt_act = '<a href="?del_coord={}">Remove Coordinate Frame</a>'
+        fmt_act = '<a href="?del_coord={}#CoordinateFrames">Remove Coordinate Frame</a>'
         fmt = lambda r: (fmt_lnk.format(reverse('mgmt:coord',args=[r]), r), fmt_act.format(r))
         coords_args = utils.make_pagination(request, headers, coords, fmt)
 
         args = {
+            'page_error': page_error,
             'collections': collections_args,
             'coords': coords_args,
             'col_form': col_form if col_form else CollectionForm(),
@@ -396,26 +414,30 @@ class CoordinateFrame(LoginRequiredMixin, View):
 
 class Collection(LoginRequiredMixin, View):
     def get(self, request, collection_name, col_form=None, exp_form=None, meta_form=None, perms_form=None):
+        page_error = None
         remove = request.GET.get('rem_exp')
         if remove is not None:
             err = api.del_experiment(request, collection_name, remove)
             if err:
-                return err
-            return redirect_frag('mgmt:collection', collection_name, frag='Experiments')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:collection', collection_name, frag='Experiments')
 
         remove = request.GET.get('rem_meta')
         if remove is not None:
             err = api.del_meta(request, remove, collection_name)
             if err:
-                return err
-            return redirect_frag('mgmt:collection', collection_name, frag='Meta')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:collection', collection_name, frag='Meta')
 
         remove = request.GET.get('rem_perms')
         if remove is not None:
             err = api.del_perms(request, collection_name, group=remove)
             if err:
-                return err
-            return redirect_frag('mgmt:collection', collection_name, frag='Permissions')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:collection', collection_name, frag='Permissions')
 
         collection, err = api.get_collection(request, collection_name)
         if err:
@@ -437,7 +459,7 @@ class Collection(LoginRequiredMixin, View):
 
         headers = ["Experiment", "Actions"]
         fmt_lnk = '<a href="{}">{}</a>'
-        fmt_act = '<a href="?rem_exp={}">Remove Experiment</a>'
+        fmt_act = '<a href="?rem_exp={}#Experiments">Remove Experiment</a>'
         fmt = lambda r: (fmt_lnk.format(reverse('mgmt:experiment',args=[collection_name, r]), r), fmt_act.format(r))
         experiments_args = utils.make_pagination(request, headers, collection['experiments'], fmt)
 
@@ -446,6 +468,7 @@ class Collection(LoginRequiredMixin, View):
         perms_args = utils.make_perms_pagination(request, perms)
 
         args = {
+            'page_error': page_error,
             'collection_name': collection_name,
             'collection': collection,
             'experiments': experiments_args,
@@ -514,26 +537,30 @@ class Collection(LoginRequiredMixin, View):
 
 class Experiment(LoginRequiredMixin, View):
     def get(self, request, collection_name, experiment_name, exp_form=None, chan_form=None, meta_form=None, perms_form=None):
+        page_error = None
         remove = request.GET.get('rem_chan')
         if remove is not None:
             err = api.del_channel(request, collection_name, experiment_name, remove)
             if err:
-                return err
-            return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Channels')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Channels')
 
         remove = request.GET.get('rem_meta')
         if remove is not None:
             err = api.del_meta(request, remove, collection_name, experiment_name)
             if err:
-                return err
-            return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Meta')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Meta')
 
         remove = request.GET.get('rem_perms')
         if remove is not None:
             err = api.del_perms(request, collection_name, experiment, group=remove)
             if err:
-                return err
-            return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Permissions')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:experiment', collection_name, experiment_name, frag='Permissions')
 
         experiment, err = api.get_experiment(request, collection_name, experiment_name)
         if err:
@@ -560,7 +587,7 @@ class Experiment(LoginRequiredMixin, View):
 
         headers = ["Channel", "Actions"]
         fmt_lnk = '<a href="{}">{}</a>'
-        fmt_act = '<a href="?rem_chan={}">Remove Channel</a>'
+        fmt_act = '<a href="?rem_chan={}#Channels">Remove Channel</a>'
         fmt = lambda r: (fmt_lnk.format(reverse('mgmt:channel',args=[collection_name, experiment_name, r]), r), fmt_act.format(r))
         channels_args = utils.make_pagination(request, headers, channels, fmt)
 
@@ -569,6 +596,7 @@ class Experiment(LoginRequiredMixin, View):
         perms_args = utils.make_perms_pagination(request, perms)
 
         args = {
+            'page_error': page_error,
             'collection_name': collection_name,
             'experiment_name': experiment_name,
             'experiment': experiment,
@@ -638,19 +666,22 @@ class Experiment(LoginRequiredMixin, View):
 
 class Channel(LoginRequiredMixin, View):
     def get(self, request, collection_name, experiment_name, channel_name, chan_form=None, meta_form=None, perms_form=None):
+        page_error = None
         remove = request.GET.get('rem_meta')
         if remove is not None:
             err = api.del_meta(request, remove, collection_name, experiment_name, channel_name)
             if err:
-                return err
-            return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Meta')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Meta')
 
         remove = request.GET.get('rem_perms')
         if remove is not None:
             err = api.del_perms(request, collection_name, experiment, channel, group=remove)
             if err:
-                return err
-            return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Permissions')
+                page_error = err
+            else:
+                return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Permissions')
 
         channel, err = api.get_channel(request, collection_name, experiment_name, channel_name)
         if err:
@@ -676,6 +707,7 @@ class Channel(LoginRequiredMixin, View):
         perms_args = utils.make_perms_pagination(request, perms)
 
         args = {
+            'page_error': page_error,
             'collection_name': collection_name,
             'experiment_name': experiment_name,
             'channel_name': channel_name,
