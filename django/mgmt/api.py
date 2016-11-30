@@ -120,6 +120,9 @@ def get_groups(request, maintainer_only=True):
         data = data['groups']
     return (data, err)
 
+def get_group(request, group):
+    return _get('Group', BossUserGroup, request, group)
+
 def del_group(request, group):
     return _del('Group', BossUserGroup, request, group)
 

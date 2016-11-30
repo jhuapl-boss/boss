@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BOSS Management Console</title>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/hopscotch/0.2.6/css/hopscotch.min.css" integrity="sha256-nm80jD5Y3J3RtpevmFmhLygzONpOrmzESGEAVu8+m6M=" crossorigin="anonymous" />
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hopscotch/0.2.6/js/hopscotch.min.js" integrity="sha256-2LpD9zGKqCGmyhV77UjhhGAJFFjAokWgElLRwMW6qkU=" crossorigin="anonymous"></script>
   <script type="text/javascript">
     $(document).ready(function() {
         var head = $("#contentTab");
@@ -71,35 +73,39 @@
                     </div>
                     <div class="collapse navbar-collapse" id="main-navbar">
                         <ul class="nav navbar-nav">
+                            {% if 'user-manager' in user_roles or 'admin' in user_roles %}
                             <li class="dropdown">
-                                <a class="dropdown-toggle" data-toggle="dropdown">
+                                <a class="dropdown-toggle" data-toggle="dropdown" id="sso-dropdown">
                                     SSO <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li><a href="{% url 'mgmt:users' %}">Manage Users</a></li>
                                 </ul>
                             </li>
+                            {% endif %}
+                            {% if 'resource-manager' in user_roles or 'admin' in user_roles %}
                             <li class="dropdown">
-                                <a class="dropdown-toggle" data-toggle="dropdown">
+                                <a class="dropdown-toggle" data-toggle="dropdown" id="boss-dropdown">
                                     BOSS <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{% url 'mgmt:token' %}">Token</a></li>
                                     <li><a href="{% url 'mgmt:groups' %}">Manage Groups</a></li>
                                     <li><a href="{% url 'mgmt:resources' %}">Manage Resources</a></li>
                                 </ul>
                             </li>
+                            {% endif %}
                         </ul>
                         <span class="navbar-text">
                             {% block breadcrumb %}{% endblock %}
                         </span>
                         <ul class="nav navbar-nav navbar-right">
                             <li class="dropdown">
-                                <a class="dropdown-toggle" data-toggle="dropdown">
+                                <a class="dropdown-toggle" data-toggle="dropdown" id="user-dropdown">
                                     {{ request.user.username }} <span class="caret"></span>
                                 </a>
                                 <ul class="dropdown-menu">
-                                    <li><a href="{% url 'logout' %}">Logout</a></li>
+                                    <li><a id="token" href="{% url 'mgmt:token' %}">API Token</a></li>
+                                    <li><a id="logout" href="{% url 'logout' %}">Logout</a></li>
                                 </ul>
                             </li>
                         </ul>
