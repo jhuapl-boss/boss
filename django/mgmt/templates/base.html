@@ -10,6 +10,7 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/hopscotch/0.2.6/js/hopscotch.min.js" integrity="sha256-2LpD9zGKqCGmyhV77UjhhGAJFFjAokWgElLRwMW6qkU=" crossorigin="anonymous"></script>
   <script type="text/javascript">
+
     $(document).ready(function() {
         var head = $("#contentTab");
         // DP NOTE: Create the tab menu links for each pannel that exists
@@ -22,6 +23,7 @@
             $(tab).addClass("nav-link")
             .attr("data-toggle", "tab")
             .attr("role", "tab")
+            .attr("id", "tab" + $(pane).attr("id"))
             .attr("href", "#" + $(pane).attr("id"))
             .click(function (e) {
                 e.preventDefault();
@@ -53,7 +55,76 @@
             $("#contentTab a[href='#" + pane + "']").tab("show");
             err.parents(".modal").modal("show");
         }
+
+        // Create the help button
+        var button = document.createElement("a");
+        $(button)//.attr("type", "button")
+        .click(function(e) {
+            var steps = [];
+
+            {% if 'user-manager' in user_roles or 'admin' in user_roles %}
+            steps.push({
+                title: "SSO Management",
+                content: "BOSS System wide user management actions",
+                target: "sso-dropdown",
+                placement: "right",
+                delay: 500,
+                onShow: function() {
+                    $("#sso-dropdown").dropdown("toggle");
+                },
+            });
+            {% endif %}
+
+            {% if 'resource-manager' in user_roles or 'admin' in user_roles %}
+            steps.push({
+                title: "BOSS Management",
+                content: "BOSS API resource management actions",
+                target: "boss-dropdown",
+                placement: "right",
+                delay: 500,
+                onShow: function() {
+                    $("#boss-dropdown").dropdown("toggle");
+                },
+            });
+            {% endif %}
+
+            steps.push({
+                title: "API Token",
+                content: "Generate or Revoke your BOSS API token",
+                target: "user-dropdown",
+                placement: "left",
+                delay: 500,
+                onShow: function() {
+                    $("#user-dropdown").dropdown("toggle");
+                },
+            });
+            steps.push({
+                title: "Logout",
+                content: "Logout from Django / SSO. Used to refresh your roles.",
+                target: "user-dropdown",
+                placement: "left",
+                delay: 500,
+                onShow: function() {
+                    $("#user-dropdown").dropdown("toggle");
+                },
+            });
+            {% block help_steps %}{% endblock %}
+
+            var tour = {
+                id: "{% block help_id %}boss-hotscotch{% endblock %}",
+                steps: steps
+            };
+            hopscotch.startTour(tour);
+        })
+        .text("Help");
+
+        var li = document.createElement("li");
+        $(li).append(button);
+
+        $("ul.navbar-right").prepend(li);
     });
+
+
   </script>
 </head>
 <body class="container">

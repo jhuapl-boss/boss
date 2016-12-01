@@ -5,6 +5,58 @@
 Resources
 {% endblock %}
 
+{% block help_id %}resources-hopscotch{% endblock %}
+{% block help_steps %}
+    steps.push({
+        title: "Collections",
+        content: "Collections tab, with a table of visable collections and the ability to create or delete Collections",
+        target: "tabCollections",
+        placement: "bottom",
+    });
+    steps.push({
+        title: "Coordinate Frames",
+        content: "Coordinate Frames tab, with a table of visable collections and the ability to create or delete Coordinate Frames",
+        target: "tabCoordinateFrames",
+        placement: "bottom",
+    });
+
+    if($("#Collections:visible").length) {
+        steps.push({
+            title: "Visable Collections",
+            target: document.querySelectorAll("#Collections th")[0],
+            placement: "top",
+        });
+        steps.push({
+            title: "Delete Collections",
+            target: document.querySelectorAll("#Collections th")[1],
+            placement: "top",
+        });
+        steps.push({
+            title: "Add Collection",
+            target: document.querySelector("#Collections > button"),
+            placement: "top",
+        });
+    }
+
+    if($("#CoordinateFrames:visible").length) {
+        steps.push({
+            title: "Visable Coordinate Frames",
+            target: document.querySelectorAll("#CoordinateFrames th")[0],
+            placement: "top",
+        });
+        steps.push({
+            title: "Delete Coordinate Frames",
+            target: document.querySelectorAll("#CoordinateFrames th")[1],
+            placement: "top",
+        });
+        steps.push({
+            title: "Add Coordinate Frame",
+            target: document.querySelector("#CoordinateFrames > button"),
+            placement: "top",
+        });
+    }
+{% endblock %}
+
 {% block content %}
 {% url 'mgmt:resources' as current_url %}
 
