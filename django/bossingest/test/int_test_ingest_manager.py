@@ -140,15 +140,15 @@ class BossIntegrationIngestManagerTestMixin(object):
         assert (msg['job_id'] == 595)
 
 
-class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, APITestCase):
-
-    def setUp(self):
-        # Get the config_data
-        self.user = User.objects.create_superuser(username='testuser1', email='test@test.com', password='testuser')
-        config_data = SetupTests().get_ingest_config_data_dict()
-        self.example_config_data = config_data
-        dbsetup = SetupTestDB()
-        dbsetup.set_user(self.user)
-        dbsetup.insert_ingest_test_data()
+# class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, APITestCase):
+    # TODO: Add test back after fixing ndingest
+    # def setUp(self):
+    #     # Get the config_data
+    #     self.user = User.objects.create_superuser(username='testuser1', email='test@test.com', password='testuser')
+    #     config_data = SetupTests().get_ingest_config_data_dict()
+    #     self.example_config_data = config_data
+    #     dbsetup = SetupTestDB()
+    #     dbsetup.set_user(self.user)
+    #     dbsetup.insert_ingest_test_data()
 
 
