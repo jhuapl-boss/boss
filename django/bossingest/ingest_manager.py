@@ -467,7 +467,6 @@ class IngestManager:
         """
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         status = queue.sendBatchMessages(list_msg)
-        print(status)
         return status
 
     def delete_tiles(self, ingest_job):
