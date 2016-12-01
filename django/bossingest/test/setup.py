@@ -105,7 +105,7 @@ class SetupTests(object):
         data['ingest_job']['extent'] = {}
         data['ingest_job']['extent']['x'] = [0, 512]
         data['ingest_job']['extent']['y'] = [0, 1024]
-        data['ingest_job']['extent']['z'] = [0, 2]
+        data['ingest_job']['extent']['z'] = [0, 16]
         data['ingest_job']['extent']['t'] = [0, 1]
 
         data['ingest_job']['tile_size'] = {}

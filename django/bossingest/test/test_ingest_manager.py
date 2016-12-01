@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import absolute_import
 import json
+from unittest.mock import patch
 
 from bossingest.ingest_manager import IngestManager
 from bossingest.test.setup import SetupTests
@@ -105,3 +106,20 @@ class BossIngestManagerTest(APITestCase):
         job = ingest_mgmr.create_ingest_job()
         ingest_mgmr.job = job
 #        ingest_mgmr.create_ingest_credentials()
+
+
+    def test_generate_upload_tasks(self):
+        """
+        Test that the correct number of messages are being uploaded
+        """
+        ingest_mgmr = IngestManager()
+        ingest_mgmr.validate_config_file(self.example_config_data)
+        ingest_mgmr.validate_properties()
+        ingest_mgmr.owner = self.user.pk
+        job = ingest_mgmr.create_ingest_job()
+        ingest_mgmr.job = job
+        with patch.object(IngestManager, 'send_upload_message_batch') as mock_method:
+            ingest_mgmr.generate_upload_tasks(job.id)
+            self.assertEquals(ingest_mgmr.num_of_batches, 4)
+            self.assertEquals(ingest_mgmr.num_of_chunks, 2)
+            self.assertEquals(ingest_mgmr.num_of_tiles, 32)

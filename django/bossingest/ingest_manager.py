@@ -57,15 +57,24 @@ class IngestManager:
         self.resolution = 0
         self.nd_proj = None
 
+        # Some stats for testing
+        self.num_of_batches = 0
+        self.num_of_chunks = 0
+        self.num_of_tiles = 0
+
+
     def validate_config_file(self, config_data):
         """
-        Method to validate an ingest config file
+        Method to validate an ingest config file. This uses the Ingest client for validation.
 
         Args:
             config_data:
 
         Returns:
             (bool) : Status of the validation
+
+        Raises:
+            BossError : For exceptions that happen during validation
 
         """
 
@@ -84,8 +93,14 @@ class IngestManager:
 
     def validate_properties(self):
         """
+        Validate the  Collection, experiment and  channel being used for the ingest job
 
         Returns:
+            (bool) : Status of the validation
+
+        Raises:
+            BossError : If the collection, experiment or channel are not valid
+
 
         """
         # Verify Collection, Experiment and channel
@@ -94,7 +109,7 @@ class IngestManager:
             self.experiment = Experiment.objects.get(name=self.config.config_data["database"]["experiment"],
                                                      collection=self.collection)
             self.channel = Channel.objects.get(name=self.config.config_data["database"]["channel"],
-                                                          experiment=self.experiment)
+                                               experiment=self.experiment)
             self.resolution = self.channel.base_resolution
 
         except Collection.DoesNotExist:
@@ -110,11 +125,18 @@ class IngestManager:
 
     def setup_ingest(self, creator, config_data):
         """
+        Setup the ingest job. This is the primary method for the ingest manager.
+        It creates the ingest job and queues required for the ingest. It also uploads the messages for the ingest
 
         Args:
-
+            creator: The validated user from the request to create the ingest jon
+            config_data : Config data to create the ingest job
 
         Returns:
+            IngestJob : data model containing the ingest job
+
+        Raises:
+            BossError : For all exceptions that happen
 
         """
         # Validate config data and schema
@@ -161,9 +183,13 @@ class IngestManager:
 
     def create_ingest_job(self):
         """
+        Create a new ingest job using the parameters in the ingest config data file
 
         Returns:
+            IngestJob : Data model with the current ingest job
 
+        Raises:
+            BossError : For serialization errors that occur while creating a ingest job
         """
 
         ingest_job_serializer_data = {
@@ -196,11 +222,15 @@ class IngestManager:
 
     def get_ingest_job(self, ingest_job_id):
         """
-
+        Get the ingest job with the specific id
         Args:
-            ingest_job_id:
+            ingest_job_id: Id of the ingest job
 
         Returns:
+            IngestJob : Data model with the ingest job if the id is valid
+
+        Raises:
+            BossError : If the ingets job id does not exist
 
         """
         try:
@@ -212,11 +242,16 @@ class IngestManager:
 
     def delete_ingest_job(self, ingest_job_id):
         """
-
+        Delete an ingest job with a specific id. Note this deletes the queues, credentials and all the remaining tiles
+        in the tile bucket for this job id. It does not delete the ingest job datamodel but marks it as deleted.
         Args:
-            ingest_job_id:
+            ingest_job_id: Ingest job id to delete
 
         Returns:
+            Int : ingest job id for the job that was successfully deleted
+
+        Raises:
+            BossError : If the the job id is not valid or any exception happens in deletion process
 
         """
         try:
@@ -250,8 +285,9 @@ class IngestManager:
 
     def create_upload_queue(self):
         """
-
+        Create an upload queue for an ingest job using the ndingest library
         Returns:
+            UploadQueue : Returns a upload queue object
 
         """
         UploadQueue.createQueue(self.nd_proj, endpoint_url=None)
@@ -260,8 +296,9 @@ class IngestManager:
 
     def create_ingest_queue(self):
         """
-
+        Create an ingest queue for an ingest job using the ndingest library
         Returns:
+            IngestQueue : Returns a ingest queue object
 
         """
         IngestQueue.createQueue(self.nd_proj, endpoint_url=None)
@@ -270,35 +307,44 @@ class IngestManager:
 
     def delete_upload_queue(self):
         """
-
+        Delete the current upload queue
         Returns:
+            None
 
         """
         UploadQueue.deleteQueue(self.nd_proj, endpoint_url=None)
 
     def delete_ingest_queue(self):
         """
-
+        Delete the current ingest queue
         Returns:
+            None
 
         """
         IngestQueue.deleteQueue(self.nd_proj, endpoint_url=None)
 
     def get_tile_bucket(self):
         """
+        Get the name of the ingest tile bucket
 
         Returns:
+            Str: Name of the Tile bucket
 
         """
         return TileBucket.getBucketName()
 
     def generate_upload_tasks(self, job_id=None):
         """
+        Generate upload tasks for the ingest job. This creates once task for each tile that has to be uploaded in the
+        ingest queue
 
         Args:
-            job_id:
+            job_id: Job id of the ingest queue. If not included this takes the current ingest job
 
         Returns:
+            None
+        Raises:
+            BossError : if there is no valid ingest job
 
         """
 
@@ -320,6 +366,9 @@ class IngestManager:
         lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
         [col_id, exp_id, ch_id] = lookup_key.split('&')
         project_info = [col_id, exp_id, ch_id]
+
+        # upload queue messages are batched in sizes of 10
+        batch_msg = []
 
         for time_step in range(ingest_job.t_start, ingest_job.t_stop, 1):
             # For each time step, compute the chunks and tile keys
@@ -343,32 +392,46 @@ class IngestManager:
                         chunk_key = (BossBackend(self.config)).encode_chunk_key(num_of_tiles, project_info,
                                                                                 ingest_job.resolution,
                                                                                 chunk_x, chunk_y, chunk_z, time_step)
+
+                        self.num_of_chunks += 1
+
                         # get the tiles keys for this chunk
                         for tile in range(z, z + num_of_tiles):
                             # get the tile key
                             tile_key = (BossBackend(self.config)).encode_tile_key(project_info, ingest_job.resolution,
                                                                                   chunk_x, chunk_y, tile, time_step)
+                            self.num_of_tiles += 1
 
                             # Generate the upload task msg
                             msg = self.create_upload_task_message(ingest_job.id, chunk_key, tile_key,
                                                                   ingest_job.upload_queue, ingest_job.ingest_queue)
 
-                            # Upload the message
-                            self.send_upload_task_message(msg)
+                            batch_msg.append(msg)
+                            # if there are 10 messages in the batch send it to the upload queue.
+                            if len(batch_msg) == 10:
+                                self.num_of_batches += 1
+                                status = self.send_upload_message_batch(batch_msg)
+                                batch_msg = []
+
+            # Edge case: the last batch size maybe smaller than 10
+            if len(batch_msg)!= 0:
+                self.num_of_batches += 1
+                status = self.send_upload_message_batch(batch_msg)
+                batch_msg = []
 
     @staticmethod
     def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):
         """
-
+        Create a dictionary with the upload task message for the tilekey
         Args:
-            job_id:
-            chunk_key:
-            tile_key:
-            upload_queue_arn:
-            ingest_queue_arn:
+            job_id: Job id of the ingest job
+            chunk_key: Chunk key of the chunk in which the tile is
+            tile_key: Unique tile key for the tile
+            upload_queue_arn: Upload queue url
+            ingest_queue_arn: Ingest queue url
 
         Returns:
-
+            Dict : A single upload task message that corresponds to a tile
         """
         msg = {}
         msg['job_id'] = job_id
@@ -380,15 +443,32 @@ class IngestManager:
 
     def send_upload_task_message(self, msg):
         """
-
+        Upload one message to the upload queue
+        (Note : Currently not used. Replaced with the send_upload_message_batch)
         Args:
-            msg:
+            msg: Message to send to the upload queue
 
         Returns:
+            None
 
         """
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         queue.sendMessage(msg)
+
+    def send_upload_message_batch(self, list_msg):
+        """
+        Upload a batch of 10 messages to the upload queue. An error is raised if more than 10 messages are in the batch
+        Args:
+            list_msg: The list containing the messages to upload
+
+        Returns:
+            None
+
+        """
+        queue = UploadQueue(self.nd_proj, endpoint_url=None)
+        status = queue.sendBatchMessages(list_msg)
+        print(status)
+        return status
 
     def delete_tiles(self, ingest_job):
         """
@@ -397,6 +477,9 @@ class IngestManager:
             ingest_job: Ingest job model
 
         Returns:
+            None
+        Raises:
+            BossError : For exceptions that happen while deleting the tiles and index
 
         """
         try:
@@ -418,8 +501,12 @@ class IngestManager:
 
     def create_ingest_credentials(self, upload_queue, tile_bucket):
         """
-
+        Create new ingest credentials for a job
+        Args:
+            upload_queue : Upload queue for the job
+            tile_bucket : Name of the tile bucket for the job
         Returns:
+            None
 
         """
         # Generate credentials for the ingest_job
