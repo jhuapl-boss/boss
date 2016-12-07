@@ -38,7 +38,7 @@ class Home(LoginRequiredMixin, View):
         args = {
             'user_roles': get_roles(request),
         }
-        return HttpResponse(render_to_string('tour.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('base.html', args, RequestContext(request)))
 
 class Users(LoginRequiredMixin, View):
     @check_role("user-manager")
@@ -165,7 +165,6 @@ class Token(LoginRequiredMixin, View):
         return redirect('mgmt:token')
 
 class Groups(LoginRequiredMixin, View):
-    @check_role("resource-manager")
     def get(self, request, group_form=None):
         page_error = None
         delete = request.GET.get('delete')
@@ -210,7 +209,6 @@ class Groups(LoginRequiredMixin, View):
         return self.get(request, group_form=form)
 
 class Group(LoginRequiredMixin, View):
-    @check_role("resource-manager")
     def get(self, request, group_name, memb_form=None, perms_form=None):
         page_error = None
         remove = request.GET.get('rem_memb')
@@ -330,7 +328,6 @@ class Group(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Resources(LoginRequiredMixin, View):
-    @check_role("resource-manager")
     def get(self, request, col_form=None, coord_form=None):
         page_error = None
         delete = request.GET.get('del_col')
@@ -413,7 +410,6 @@ class Resources(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class CoordinateFrame(LoginRequiredMixin, View):
-    @check_role("resource-manager")
     def get(self, request, coord_name, coord_form=None):
         if not coord_form:
             coord, err = api.get_coord(request, coord_name)
@@ -447,7 +443,6 @@ class CoordinateFrame(LoginRequiredMixin, View):
             return self.get(request, coord_name, coord_form=form)
 
 class Collection(LoginRequiredMixin, View):
-    @check_role("resource-manager")
     def get(self, request, collection_name, col_form=None, exp_form=None, meta_form=None, perms_form=None):
         page_error = None
         remove = request.GET.get('rem_exp')
@@ -573,7 +568,6 @@ class Collection(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Experiment(LoginRequiredMixin, View):
-    @check_role("resource-manager")
     def get(self, request, collection_name, experiment_name, exp_form=None, chan_form=None, meta_form=None, perms_form=None):
         page_error = None
         remove = request.GET.get('rem_chan')
@@ -705,7 +699,6 @@ class Experiment(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Channel(LoginRequiredMixin, View):
-    @check_role("resource-manager")
     def get(self, request, collection_name, experiment_name, channel_name, chan_form=None, meta_form=None, perms_form=None):
         page_error = None
         remove = request.GET.get('rem_meta')
@@ -805,7 +798,6 @@ class Channel(LoginRequiredMixin, View):
             return HttpResponse(status=400, reason="Unknown post action")
 
 class Meta(LoginRequiredMixin, View):
-    @check_role("resource-manager")
     def get(self, request, collection, experiment=None, channel=None, meta_form=None):
         if not meta_form:
             key = request.GET['key']

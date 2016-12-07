@@ -75,7 +75,6 @@
             });
             {% endif %}
 
-            {% if 'resource-manager' in user_roles or 'admin' in user_roles %}
             steps.push({
                 title: "BOSS Management",
                 content: "BOSS API resource management actions",
@@ -86,7 +85,6 @@
                     $("#boss-dropdown").dropdown("toggle");
                 },
             });
-            {% endif %}
 
             steps.push({
                 title: "API Token",
@@ -154,7 +152,6 @@
                                 </ul>
                             </li>
                             {% endif %}
-                            {% if 'resource-manager' in user_roles or 'admin' in user_roles %}
                             <li class="dropdown">
                                 <a class="dropdown-toggle" data-toggle="dropdown" id="boss-dropdown">
                                     BOSS <span class="caret"></span>
@@ -164,7 +161,6 @@
                                     <li><a href="{% url 'mgmt:resources' %}">Manage Resources</a></li>
                                 </ul>
                             </li>
-                            {% endif %}
                         </ul>
                         <span class="navbar-text">
                             {% block breadcrumb %}{% endblock %}
