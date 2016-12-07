@@ -54,8 +54,7 @@ def _del(category, cls, request, *args):
     boss.request = request # needed for check_role() to work
     resp = boss.delete(request, *args)
     if not status.is_success(resp.status_code):
-        category_name = args[-1] if len(args) > 0 else None
-        return error_response(request, resp, category, category_name)
+        return error_message(resp)
     return None
 
 def _post(category, cls, request, data, *args):
@@ -65,8 +64,7 @@ def _post(category, cls, request, data, *args):
         boss.request.data = data # simulate the DRF request object
     resp = boss.post(request, *args)
     if not status.is_success(resp.status_code):
-        category_name = args[-1] if len(args) > 0 else None
-        return error_response(request, resp, category, category_name)
+        return error_message(resp)
     return None
 
 def _put(category, cls, request, data, *args):
@@ -76,8 +74,7 @@ def _put(category, cls, request, data, *args):
         boss.request.data = data # simulate the DRF request object
     resp = boss.put(request, *args)
     if not status.is_success(resp.status_code):
-        category_name = args[-1] if len(args) > 0 else None
-        return error_response(request, resp, category, category_name)
+        return error_message(resp)
     return None
 
 def _patch(category, cls, request, data, *args):
@@ -87,8 +84,7 @@ def _patch(category, cls, request, data, *args):
         boss.request.data = data # simulate the DRF request object
     resp = boss.patch(request, *args)
     if not status.is_success(resp.status_code):
-        category_name = args[-1] if len(args) > 0 else None
-        return error_response(request, resp, category, category_name)
+        return error_message(resp)
     return None
 
 """SSO API for Users and Roles"""
@@ -123,6 +119,9 @@ def get_groups(request, maintainer_only=True):
     if data:
         data = data['groups']
     return (data, err)
+
+def get_group(request, group):
+    return _get('Group', BossUserGroup, request, group)
 
 def del_group(request, group):
     return _del('Group', BossUserGroup, request, group)

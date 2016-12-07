@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load bootstrap %}
+{% load mgmt %}
 
 {% block subtitle %}
 Metadata for {{ category }} {{ category_name }}
@@ -7,14 +7,5 @@ Metadata for {{ category }} {{ category_name }}
 
 
 {% block content %}
-<form action="{{ current_url }}" method="post" class="update {{ meta_error }} form-horizontal" id="Metadata">
-    {% csrf_token %}
-    {{ meta_form|bootstrap_horizontal }}
-    <div class="form-group">
-        <div class="col-sm-2 col-lg-2"></div>
-        <div class="col-sm-10 col-lg-10">
-            <button type="submit" class="btn btn-primary">Update Metadata</button>
-        </div>
-    </div>
-</form>
+{% update_form meta_form meta_error "Update Metadata" "" %}
 {% endblock %}

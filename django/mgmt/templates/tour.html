@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<script type="text/javascript">
+
+    // DP NOTE: There seems to be an issue with targetting a hidden
+    //          element. Hidden elements are off screen when hidden
+    //          and when the step start they are still off screen.
+    //          Having the previous step open the dropdown may work,
+    //          but requires more complex logic.
+    var tour = {
+        id: "boss-hopscotch",
+        steps: [
+            {% if 'user-manager' in user_roles or 'admin' in user_roles %}
+            {
+                title: "SSO Management",
+                content: "BOSS System wide user management actions",
+                target: "sso-dropdown",
+                placement: "right",
+                delay: 500,
+                onShow: function() {
+                    $("#sso-dropdown").dropdown("toggle");
+                },
+            },
+            {% endif %}
+            {% if 'resource-manager' in user_roles or 'admin' in user_roles %}
+            {
+                title: "BOSS Management",
+                content: "BOSS API resource management actions",
+                target: "boss-dropdown",
+                placement: "right",
+                delay: 500,
+                onShow: function() {
+                    $("#boss-dropdown").dropdown("toggle");
+                },
+            },
+            {% endif %}
+            {
+                title: "API Token",
+                content: "Generate or Revoke your BOSS API token",
+                target: "user-dropdown",
+                placement: "left",
+                delay: 500,
+                onShow: function() {
+                    $("#user-dropdown").dropdown("toggle");
+                },
+            },
+            {
+                title: "Logout",
+                content: "Logout from Django / SSO. Used to refresh your roles.",
+                target: "user-dropdown",
+                placement: "left",
+                delay: 500,
+                onShow: function() {
+                    $("#user-dropdown").dropdown("toggle");
+                },
+            },
+        ]
+    };
+
+    hopscotch.startTour(tour);
+</script>
+{% endblock %}

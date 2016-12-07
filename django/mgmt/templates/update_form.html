@@ -1,0 +1,24 @@
+{% load bootstrap %}
+
+<form action="{{ url }}" method="post" class="update {{ error }} form-horizontal" id="{{ id }}">
+    {% csrf_token %}
+
+    {% for label, value in headers %}
+    <div class="form-group">
+        <label class="control-label col-sm-2 col-lg-2">{{ label }}</label>
+        <div class="col-sm-10 col-lg-10">
+            <input class="form-control" type="text" disabled value="{{ value }}"/>
+        </div>
+    </div>
+    {% endfor %}
+    {{ form|bootstrap_horizontal }}
+
+    {% if 'resource-manager' in user_roles or 'admin' in user_roles %}
+    <div class="form-group">
+        <div class="col-sm-2 col-lg-2"></div>
+        <div class="col-sm-10 col-lg-10">
+            <button type="submit" class="btn btn-primary">{{ name }}</button>
+        </div>
+    </div>
+    {% endif %}
+</form>

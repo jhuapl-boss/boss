@@ -124,3 +124,73 @@ def set_perms(request, form, collection=None, experiment=None, channel=None, gro
 
     if err:
         return err
+
+def make_pagination(request, headers, rows, row_fmt=None, param='page', page_size=10, window_size=5, frag=''):
+    """Handle all of the logic needed to feed data to the mgmt paginated_table tag
+
+    Args:
+        request (Request) : Django request object
+        headers (list) : List of table headers
+        rows (list) : List of table row data that will be paginated
+        row_fmt (func|None) : Transform function for each row in rows that will be displayed
+                              Should transform the row to contain headers number of columns
+        param (String) : the GET parameter to use to paginate the table
+        page_size (int) : Number of elements to display on each page
+        window_size (int) : Number of pagination links to display on the pagination bar
+                            This should be an odd number to make sure the current page is center
+        frag (String) : URL fragment to attach to each pagination URL
+    """
+    if row_fmt is None:
+        row_fmt = lambda x: x
+
+    current_page = int(request.GET.get(param, 1)) - 1 # zero index the page
+    # Div Ceiling - from http://stackoverflow.com/a/17511341
+    total_pages = -(-len(rows) // page_size)
+    if total_pages == 0:
+        total_pages = 1
+    if current_page >= total_pages:
+        raise Exception("No page {} found".format(current_page + 1))
+
+    # Div Ceiling - from http://stackoverflow.com/a/17511341
+    window_mid = -(-window_size // 2)
+
+    # Calculations to keep the current page the center page
+    # on the pagination bar, until within window_mid elements
+    # of either end of the pagination bar
+    if total_pages <= window_size:
+        start, stop = 1, total_pages + 1
+        idx = current_page
+    elif current_page <= window_mid - 1:
+        start, stop = 1, window_size + 1
+        idx = current_page
+    elif current_page >= total_pages - window_mid:
+        start, stop = total_pages - (window_size - 1), total_pages + 1
+        idx = current_page - (total_pages - window_size)
+    else:
+        start, stop = current_page + 2 - window_mid, current_page + window_mid + 1
+        idx = window_mid -1
+
+    pages = [(i, '?{}={}{}'.format(param, i, frag)) for i in range(start, stop)]
+    rows_ = [row_fmt(r) for r in rows[current_page*page_size : (current_page+1)*page_size]]
+
+    return {
+        'headers': headers,
+        'rows': rows_,
+        'pages': pages,
+        'idx': idx,
+    }
+
+def make_perms_pagination(request, perms, name="Groups"):
+    headers = ["Permitted " + name, "Permissions", "Actions"]
+    link = '<a href="?rem_perms={}#Permissions">Remove All Permissions</a>'
+    rows = [(r, p, link.format(r)) for r,p in perms]
+
+    return make_pagination(request, headers, rows, param='page_perms', frag='#Permissions')
+
+def make_metas_pagination(request, metas, name, meta_url):
+    headers = [name + ' Meta Key', 'Actions']
+    view_link = '<a href="{}?key={}">{}</a>'
+    rem_link = '<a href="?rem_meta={}#Meta">Remove Meta Key</a>'
+    fmt = lambda m: (view_link.format(meta_url, m, m), rem_link.format(m))
+
+    return make_pagination(request, headers, metas, fmt, param='page_metas', frag='#Meta')
