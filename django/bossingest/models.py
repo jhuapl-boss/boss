@@ -53,6 +53,9 @@ class IngestJob(models.Model):
     tile_size_z = models.IntegerField()
     tile_size_t = models.IntegerField()
 
+    # Total number of tiles for this ingest job
+    tile_count = models.IntegerField(default=0)
+
     class Meta:
         db_table = u"ingest_job"
 

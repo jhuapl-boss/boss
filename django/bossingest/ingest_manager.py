@@ -375,11 +375,10 @@ class IngestManager:
         project_info = [col_id, exp_id, ch_id]
 
         # Batch messages and write to file
-
         base_file_name = 'tasks_' + lookup_key + '_' + str(ingest_job.id)
         self.file_index = 0
 
-        fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
+
         # open file
         f = io.StringIO()
         header = {'job_id': ingest_job.id, 'upload_queue_url': ingest_job.upload_queue,
@@ -427,6 +426,7 @@ class IngestManager:
 
                             # if there are 10 messages in the batch send it to the upload queue.
                             if num_msg_per_file == MAX_NUM_MSG_PER_FILE:
+                                fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
                                 self.upload_task_file(fname,f.getvalue())
                                 self.file_index += 1
                                 f.close()
@@ -443,6 +443,7 @@ class IngestManager:
 
             # Edge case: the last batch size maybe smaller than 10
             if num_msg_per_file != 0:
+                fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
                 self.upload_task_file(fname, f.getvalue())
                 f.close()
                 self.file_index += 1
@@ -460,6 +461,24 @@ class IngestManager:
         """
         s3 = boto3.resource('s3')
         s3.Bucket(ingest_bucket).put_object(Key=file_name_key, Body=data)
+
+    def invoke_lambda(self,file_name):
+        """
+        Invoke the lamda per file
+        Returns:
+
+        """
+        msg_data = {"lambda-name": "upload_enqueue",
+                    "bucket_name": ingest_bucket,
+                    "filename" : file_name }
+        # Trigger lambda to handle it
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+
+        response = client.invoke(
+            FunctionName=self.config["ingest_function"],
+            InvocationType='Event',
+            Payload=json.dumps(msg_data).encode())
+
 
     @staticmethod
     def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):
