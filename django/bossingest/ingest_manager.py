@@ -35,6 +35,7 @@ from ndingest.util.bossutil import BossUtil
 from bossutils.ingestcreds import IngestCredentials
 
 CONNECTER = '&'
+MAX_NUM_MSG_PER_FILE = 1000
 
 
 class IngestManager:
@@ -58,10 +59,9 @@ class IngestManager:
         self.nd_proj = None
 
         # Some stats for testing
-        self.num_of_batches = 0
+        self.file_index = 0
         self.num_of_chunks = 0
-        self.num_of_tiles = 0
-
+        self.count_of_tiles = 0
 
     def validate_config_file(self, config_data):
         """
@@ -367,8 +367,18 @@ class IngestManager:
         [col_id, exp_id, ch_id] = lookup_key.split('&')
         project_info = [col_id, exp_id, ch_id]
 
-        # upload queue messages are batched in sizes of 10
-        batch_msg = []
+        # Batch messages and write to file
+
+        base_file_name = '/tmp/' + 'tasks_' + lookup_key + '_' + str(ingest_job.id)
+        self.file_index = 0
+        # open file
+        fname = base_file_name + '_' + str(self.file_index + 1)
+        f = open(fname, 'w')
+        header = {'job_id': ingest_job.id, 'upload_queue_url': ingest_job.upload_queue,
+                  'ingest_queue_url': ingest_job.ingest_queue}
+        f.write(json.dumps(header))
+        f.write('\n')
+        num_msg_per_file = 0
 
         for time_step in range(ingest_job.t_start, ingest_job.t_stop, 1):
             # For each time step, compute the chunks and tile keys
@@ -400,24 +410,32 @@ class IngestManager:
                             # get the tile key
                             tile_key = (BossBackend(self.config)).encode_tile_key(project_info, ingest_job.resolution,
                                                                                   chunk_x, chunk_y, tile, time_step)
-                            self.num_of_tiles += 1
+                            self.count_of_tiles += 1
 
                             # Generate the upload task msg
-                            msg = self.create_upload_task_message(ingest_job.id, chunk_key, tile_key,
-                                                                  ingest_job.upload_queue, ingest_job.ingest_queue)
+                            msg = chunk_key + ',' + tile_key + '\n'
+                            f.write(msg)
+                            num_msg_per_file += 1
 
-                            batch_msg.append(msg)
                             # if there are 10 messages in the batch send it to the upload queue.
-                            if len(batch_msg) == 10:
-                                self.num_of_batches += 1
-                                status = self.send_upload_message_batch(batch_msg)
-                                batch_msg = []
+                            if num_msg_per_file == MAX_NUM_MSG_PER_FILE:
+                                f.close()
+                                # status = self.send_upload_message_batch(batch_msg)
+                                self.file_index += 1
+                                fname = base_file_name + '_' + str(self.file_index+1)
+                                f = open(fname, 'w')
+                                header = {'job_id': ingest_job.id, 'upload_queue_url': ingest_job.upload_queue,
+                                          'ingest_queue_url':
+                                              ingest_job.ingest_queue}
+                                f.write(json.dumps(header))
+                                f.write('\n')
+                                num_msg_per_file = 0
 
             # Edge case: the last batch size maybe smaller than 10
-            if len(batch_msg)!= 0:
-                self.num_of_batches += 1
-                status = self.send_upload_message_batch(batch_msg)
-                batch_msg = []
+            if num_msg_per_file < MAX_NUM_MSG_PER_FILE:
+                f.close()
+                self.file_index += 1
+                num_msg_per_file = 0
 
     @staticmethod
     def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):
@@ -495,8 +513,8 @@ class IngestManager:
                 tiledb.deleteCuboid(chunk['chunk_key'])
 
         except Exception as e:
-            raise BossError ("Exception while deleteing tiles for the ingest job {}. {}".format(ingest_job.id,e),
-                             ErrorCodes.BOSS_SYSTEM_ERROR)
+            raise BossError("Exception while deleteing tiles for the ingest job {}. {}".format(ingest_job.id, e),
+                            ErrorCodes.BOSS_SYSTEM_ERROR)
 
     def create_ingest_credentials(self, upload_queue, tile_bucket):
         """

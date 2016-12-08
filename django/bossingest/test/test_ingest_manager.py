@@ -118,8 +118,8 @@ class BossIngestManagerTest(APITestCase):
         ingest_mgmr.owner = self.user.pk
         job = ingest_mgmr.create_ingest_job()
         ingest_mgmr.job = job
-        with patch.object(IngestManager, 'send_upload_message_batch') as mock_method:
-            ingest_mgmr.generate_upload_tasks(job.id)
-            self.assertEquals(ingest_mgmr.num_of_batches, 4)
-            self.assertEquals(ingest_mgmr.num_of_chunks, 2)
-            self.assertEquals(ingest_mgmr.num_of_tiles, 32)
+        #with patch.object(IngestManager, 'send_upload_message_batch') as mock_method:
+        ingest_mgmr.generate_upload_tasks(job.id)
+        self.assertEquals(ingest_mgmr.file_index, 1)
+        self.assertEquals(ingest_mgmr.num_of_chunks, 2)
+        self.assertEquals(ingest_mgmr.count_of_tiles, 32)
