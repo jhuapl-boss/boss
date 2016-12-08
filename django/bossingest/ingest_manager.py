@@ -14,6 +14,8 @@
 
 import json
 import jsonschema
+import boto3
+import io
 
 from ingest.core.config import Configuration
 from ingest.core.backend import BossBackend
@@ -32,10 +34,15 @@ from ndingest.nddynamo.boss_tileindexdb import BossTileIndexDB
 from ndingest.ndbucket.tilebucket import TileBucket
 from ndingest.util.bossutil import BossUtil
 
+import bossutils
 from bossutils.ingestcreds import IngestCredentials
 
+# Get the ingest bucket name from boss.config
+config = bossutils.configuration.BossConfig()
+ingest_bucket = config["aws"]["ingest_bucket"]
+
 CONNECTER = '&'
-MAX_NUM_MSG_PER_FILE = 1000
+MAX_NUM_MSG_PER_FILE = 10000
 
 
 class IngestManager:
@@ -369,11 +376,12 @@ class IngestManager:
 
         # Batch messages and write to file
 
-        base_file_name = '/tmp/' + 'tasks_' + lookup_key + '_' + str(ingest_job.id)
+        base_file_name = 'tasks_' + lookup_key + '_' + str(ingest_job.id)
         self.file_index = 0
+
+        fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
         # open file
-        fname = base_file_name + '_' + str(self.file_index + 1)
-        f = open(fname, 'w')
+        f = io.StringIO()
         header = {'job_id': ingest_job.id, 'upload_queue_url': ingest_job.upload_queue,
                   'ingest_queue_url': ingest_job.ingest_queue}
         f.write(json.dumps(header))
@@ -419,11 +427,13 @@ class IngestManager:
 
                             # if there are 10 messages in the batch send it to the upload queue.
                             if num_msg_per_file == MAX_NUM_MSG_PER_FILE:
+                                self.upload_task_file(fname,f.getvalue())
+                                self.file_index += 1
                                 f.close()
                                 # status = self.send_upload_message_batch(batch_msg)
-                                self.file_index += 1
-                                fname = base_file_name + '_' + str(self.file_index+1)
-                                f = open(fname, 'w')
+
+                                fname = base_file_name + '_' + str(self.file_index+1) + '.txt'
+                                f = io.StringIO()
                                 header = {'job_id': ingest_job.id, 'upload_queue_url': ingest_job.upload_queue,
                                           'ingest_queue_url':
                                               ingest_job.ingest_queue}
@@ -432,10 +442,24 @@ class IngestManager:
                                 num_msg_per_file = 0
 
             # Edge case: the last batch size maybe smaller than 10
-            if num_msg_per_file < MAX_NUM_MSG_PER_FILE:
+            if num_msg_per_file != 0:
+                self.upload_task_file(fname, f.getvalue())
                 f.close()
                 self.file_index += 1
                 num_msg_per_file = 0
+
+    def upload_task_file(self, file_name_key, data):
+        """
+        Upload a file with ingest tasks to the ingest s3 bucket
+        Args:
+            file_name: Filename of the file to upload
+
+        Returns:
+            status
+
+        """
+        s3 = boto3.resource('s3')
+        s3.Bucket(ingest_bucket).put_object(Key=file_name_key, Body=data)
 
     @staticmethod
     def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):
