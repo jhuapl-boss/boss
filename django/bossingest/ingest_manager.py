@@ -40,6 +40,7 @@ from bossutils.ingestcreds import IngestCredentials
 # Get the ingest bucket name from boss.config
 config = bossutils.configuration.BossConfig()
 ingest_bucket = config["aws"]["ingest_bucket"]
+ingest_lambda = config["lambda"]["ingest_function"]
 
 CONNECTER = '&'
 MAX_NUM_MSG_PER_FILE = 10000
@@ -477,6 +478,7 @@ class IngestManager:
         """
         s3 = boto3.resource('s3')
         s3.Bucket(ingest_bucket).put_object(Key=file_name_key, Body=data)
+        self.invoke_lambda(file_name_key)
 
     def invoke_lambda(self,file_name):
         """
@@ -485,13 +487,13 @@ class IngestManager:
 
         """
         msg_data = {"lambda-name": "upload_enqueue",
-                    "bucket_name": ingest_bucket,
+                    "upload_bucket_name": ingest_bucket,
                     "filename" : file_name }
         # Trigger lambda to handle it
         client = boto3.client('lambda', region_name=bossutils.aws.get_region())
 
         response = client.invoke(
-            FunctionName=self.config["ingest_function"],
+            FunctionName=ingest_lambda,
             InvocationType='Event',
             Payload=json.dumps(msg_data).encode())
 
