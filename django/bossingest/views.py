@@ -51,21 +51,29 @@ class IngestJobView(APIView):
             # Start setting up output
             data = {}
             data['ingest_job'] = serializer.data
-            if ingest_job.status == 3:
-                # Return the information for the deleted job
+            if ingest_job.status == 3 or ingest_job.status == 2:
+                # Return the information for the deleted job/completed job
                 return Response(data, status=status.HTTP_200_OK)
             elif ingest_job.status == 0:
                 # check if all message are in the upload queue
                 upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
-                print(upload_queue.queue)
+                if upload_queue.queue.attributes.get('ApproximateNumberOfMessages') == ingest_job.tile_count:
+                    #generate credentials
+                    ingest_job.status = 1
+                    ingest_job.save()
+
+            if ingest_job.status == 1:
+                ingest_creds = IngestCredentials()
+                data['credentials'] = ingest_creds.get_credentials(ingest_job.id)
+            else:
+                data['credentials'] = None
+
 
             data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
             data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
-            # add the credentials
-            ingest_creds = IngestCredentials()
-            data['credentials'] = ingest_creds.get_credentials(ingest_job.id)
+
 
             # add the lambda - Possibly remove this later
             config = bossutils.configuration.BossConfig()

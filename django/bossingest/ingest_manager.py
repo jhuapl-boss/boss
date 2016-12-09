@@ -175,10 +175,6 @@ class IngestManager:
 
                 self.create_ingest_credentials(upload_queue, tile_bucket)
 
-                # Update status
-                self.job.status = 1
-                self.job.save()
-
             # TODO create channel if needed
 
         except BossError as err:
@@ -457,13 +453,17 @@ class IngestManager:
                                 f.write('\n')
                                 num_msg_per_file = 0
 
-            # Edge case: the last batch size maybe smaller than 10
-            if num_msg_per_file != 0:
-                fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
-                self.upload_task_file(fname, f.getvalue())
-                f.close()
-                self.file_index += 1
-                num_msg_per_file = 0
+        # Edge case: the last batch size maybe smaller than 10
+        if num_msg_per_file != 0:
+            fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
+            self.upload_task_file(fname, f.getvalue())
+            f.close()
+            self.file_index += 1
+            num_msg_per_file = 0
+
+        # Update status
+        self.job.tile_count = self.count_of_tiles
+        self.job.save()
 
     def upload_task_file(self, file_name_key, data):
         """
