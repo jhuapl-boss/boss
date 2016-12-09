@@ -46,6 +46,7 @@ class IngestJobView(APIView):
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
             serializer = IngestJobListSerializer(ingest_job)
+            print (serializer.data)
 
             # Start setting up output
             data = {}
@@ -53,6 +54,10 @@ class IngestJobView(APIView):
             if ingest_job.status == 3:
                 # Return the information for the deleted job
                 return Response(data, status=status.HTTP_200_OK)
+            elif ingest_job.status == 0:
+                # check if all message are in the upload queue
+                upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
+                print(upload_queue.queue)
 
             data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS

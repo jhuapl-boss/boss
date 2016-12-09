@@ -247,6 +247,22 @@ class IngestManager:
             raise BossError("The ingest job with id {} does not exist".format(str(ingest_job_id)),
                             ErrorCodes.OBJECT_NOT_FOUND)
 
+    def get_ingest_job_upload_queue(self, ingest_job):
+        """
+        Return the upload queue for an ingest job
+        Args:
+            ingest_job: Ingest job model
+
+        Returns:
+            Ndingest.uploadqueue
+        """
+        proj_class = BossIngestProj.load()
+        self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
+                                  ingest_job.resolution, ingest_job.id)
+        queue = UploadQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
+
     def delete_ingest_job(self, ingest_job_id):
         """
         Delete an ingest job with a specific id. Note this deletes the queues, credentials and all the remaining tiles
