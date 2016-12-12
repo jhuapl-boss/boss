@@ -61,6 +61,11 @@ class IngestJobView(APIView):
                     #generate credentials
                     ingest_job.status = 1
                     ingest_job.save()
+                elif int(upload_queue.queue.attributes['ApproximateNumberOfMessages']) > int[ingest_job.tile_count]:
+                    # This indicates an error in the lambda
+                    raise BossError("Error generating ingest job messages due to resources timing out ."
+                                    " Delete the ingest job with id {} and try again.".format(ingest_job_id),
+                                    ErrorCodes.BOSS_SYSTEM_ERROR)
 
             if ingest_job.status == 1:
                 data['ingest_job']['status'] = 1
