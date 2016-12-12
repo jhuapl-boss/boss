@@ -57,12 +57,13 @@ class IngestJobView(APIView):
             elif ingest_job.status == 0:
                 # check if all message are in the upload queue
                 upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
-                if upload_queue.queue.attributes.get('ApproximateNumberOfMessages') == ingest_job.tile_count:
+                if int(upload_queue.queue.attributes['ApproximateNumberOfMessages']) == int[ingest_job.tile_count]:
                     #generate credentials
                     ingest_job.status = 1
                     ingest_job.save()
 
             if ingest_job.status == 1:
+                data['ingest_job']['status'] = 1
                 ingest_creds = IngestCredentials()
                 data['credentials'] = ingest_creds.get_credentials(ingest_job.id)
             else:
