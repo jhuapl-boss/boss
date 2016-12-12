@@ -1,92 +1,76 @@
 {% extends "base.html" %}
-{% load bootstrap %}
+{% load mgmt %}
 
 {% block subtitle %}
 Resources
+{% endblock %}
+
+{% block help_id %}resources-hopscotch{% endblock %}
+{% block help_steps %}
+    steps.push({
+        title: "Collections",
+        content: "Collections tab, with a table of visable collections and the ability to create or delete Collections",
+        target: "tabCollections",
+        placement: "bottom",
+    });
+    steps.push({
+        title: "Coordinate Frames",
+        content: "Coordinate Frames tab, with a table of visable collections and the ability to create or delete Coordinate Frames",
+        target: "tabCoordinateFrames",
+        placement: "bottom",
+    });
+
+    if($("#Collections:visible").length) {
+        steps.push({
+            title: "Visable Collections",
+            target: document.querySelectorAll("#Collections th")[0],
+            placement: "top",
+        });
+        steps.push({
+            title: "Delete Collections",
+            target: document.querySelectorAll("#Collections th")[1],
+            placement: "top",
+        });
+        steps.push({
+            title: "Add Collection",
+            target: document.querySelector("#Collections > button"),
+            placement: "top",
+        });
+    }
+
+    if($("#CoordinateFrames:visible").length) {
+        steps.push({
+            title: "Visable Coordinate Frames",
+            target: document.querySelectorAll("#CoordinateFrames th")[0],
+            placement: "top",
+        });
+        steps.push({
+            title: "Delete Coordinate Frames",
+            target: document.querySelectorAll("#CoordinateFrames th")[1],
+            placement: "top",
+        });
+        steps.push({
+            title: "Add Coordinate Frame",
+            target: document.querySelector("#CoordinateFrames > button"),
+            placement: "top",
+        });
+    }
 {% endblock %}
 
 {% block content %}
 {% url 'mgmt:resources' as current_url %}
 
 <div class="tab-pane" id="Collections" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Collection</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for collection in collections %}
-            <tr>
-                <td><a href="{% url 'mgmt:collection' collection %}">{{ collection }}</a></td>
-                <td><a href="{{ current_url }}?del_col={{ collection }}">Remove Collection</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table collections %}
     <br/>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addCollection">Add Collection</button>
-    <div class="modal fade" tabindex="-1" role="dialog" id="addCollection">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <form action="{{ current_url }}?action=col" method="post" class="add {{ col_error }} form-horizontal" id="Collection">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4 class="modal-title">Add Collection</h4>
-                </div>
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {{ col_form|bootstrap_horizontal }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Collection</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% mgmt_url current_url action="col" as add_col_url %}
+    {% add_modal col_form col_error "Add Collection" add_col_url %}
 </div>
 <div class="tab-pane" id="CoordinateFrames" role="tabpannel">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Coordinate Frame</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for coord in coords %}
-            <tr>
-                <td><a href="{% url 'mgmt:coord' coord %}">{{ coord }}</a></td>
-                <td><a href="{{ current_url }}?del_coord={{ coord }}">Remove Coordinate Frame</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% paginated_table coords %}
     <br/>
-    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addCoordinateFrame">Add Coordinate Frame</button>
-    <div class="modal fade" tabindex="-1" role="dialog" id="addCoordinateFrame">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <form action="{{ current_url }}?action=coord" method="post" class="add {{ coord_error }} form-horizontal" id="Coordinate Frame">
-                <div class="modal-header">
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                    <h4 class="modal-title">Add Coordinate Frame</h4>
-                </div>
-                <div class="modal-body">
-                    {% csrf_token %}
-                    {{ coord_form|bootstrap_horizontal }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Add Coordinate Frame</button>
-                </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% mgmt_url current_url action="coord" as add_coord_url %}
+    {% add_modal coord_form coord_error "Add Coordinate Frame" add_coord_url %}
 </div>
 {% endblock %}
 

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load bootstrap %}
+{% load mgmt %}
 
 {% block subtitle %}
 Groups
@@ -9,42 +9,7 @@ Groups
 {% block content %}
 {% url 'mgmt:groups' as current_url %}
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Group</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for group in groups %}
-        <tr>
-            <td><a href="{% url 'mgmt:group' group %}">{{ group }}</a></td>
-            <td><a href="{{ current_url }}?delete={{ group }}">Remove Group</a></td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% paginated_table groups %}
 <br/>
-<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addGroup">Add Group</button>
-<div class="modal fade" tabindex="-1" role="dialog" id="addGroup">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <form action="{{ current_url }}" method="post" class="add {{ group_error }} form-horizontal" id="Group">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                <h4 class="modal-title">Add Group</h4>
-            </div>
-            <div class="modal-body">
-                {% csrf_token %}
-                {{ group_form|bootstrap_horizontal }}
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">Add Group</button>
-            </div>
-            </form>
-        </div>
-    </div>
-</div>
+{% add_modal group_form group_error "Add Group" current_url %}
 {% endblock %}
