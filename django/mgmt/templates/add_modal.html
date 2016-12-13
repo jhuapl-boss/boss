@@ -1,6 +1,5 @@
 {% load bootstrap %}
 
-{% if 'resource-manager' in user_roles or 'admin' in user_roles %}
 <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#modal{{ id }}">{{ name }}</button>
 <div class="modal fade" tabindex="-1" role="dialog" id="modal{{ id }}">
     <div class="modal-dialog" role="document">
@@ -22,4 +21,3 @@
         </div>
     </div>
 </div>
-{% endif %}
