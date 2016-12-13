@@ -57,11 +57,11 @@ class IngestJobView(APIView):
             elif ingest_job.status == 0:
                 # check if all message are in the upload queue
                 upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
-                if int(upload_queue.queue.attributes['ApproximateNumberOfMessages']) == int[ingest_job.tile_count]:
+                if int(upload_queue.queue.attributes['ApproximateNumberOfMessages']) == int(ingest_job.tile_count):
                     #generate credentials
                     ingest_job.status = 1
                     ingest_job.save()
-                elif int(upload_queue.queue.attributes['ApproximateNumberOfMessages']) > int[ingest_job.tile_count]:
+                elif int(upload_queue.queue.attributes['ApproximateNumberOfMessages']) > int(ingest_job.tile_count):
                     # This indicates an error in the lambda
                     raise BossError("Error generating ingest job messages due to resources timing out ."
                                     " Delete the ingest job with id {} and try again.".format(ingest_job_id),
