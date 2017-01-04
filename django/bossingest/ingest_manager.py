@@ -571,7 +571,7 @@ class IngestManager:
                 # delete each tile in the chunk
                 for key in chunk['tile_uploaded_map']:
                     response = tilebucket.deleteObject(key)
-                tiledb.deleteCuboid(chunk['chunk_key'])
+                tiledb.deleteCuboid(chunk['chunk_key'], ingest_job.id)
 
         except Exception as e:
             raise BossError("Exception while deleteing tiles for the ingest job {}. {}".format(ingest_job.id, e),
