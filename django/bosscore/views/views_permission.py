@@ -74,7 +74,7 @@ class ResourceUserPermission(APIView):
         except Channel.DoesNotExist:
             raise BossError("{} does not exist".format(channel), ErrorCodes.RESOURCE_NOT_FOUND)
 
-    @check_role("resource-manager")
+#    @check_role("resource-manager")
     def get(self, request):
         """Return a list of permissions
 
