@@ -66,7 +66,7 @@ configure_oidc(auth_uri, client_id, public_uri)
 # kvio settings
 KVIO_SETTINGS = {"cache_host": config['aws']['cache'],
                  "cache_db": int(config['aws']['cache-db']),
-                 "read_timeout": 86400}
+                 "read_timeout": 1209600}  # two weeks.
 
 # state settings
 STATEIO_CONFIG = {"cache_state_host": config['aws']['cache-state'],
