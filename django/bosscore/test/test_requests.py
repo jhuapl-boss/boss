@@ -226,6 +226,165 @@ class CutoutRequestTests(APITestCase):
         base_lookup = str(col_id) + '&' + str(exp_id) + '&' + str(channel_id)
         self.assertEqual(base_lookup, ret.get_lookup_key())
 
+    def test_request_cutout_filter_time(self):
+        """
+        Test initialization of boss_key for a time sample range
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel3/2/0:5/0:6/0:2/1:5/?filter=1,2,3,4'
+        expected_ids = [1, 2, 3, 4]
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel3',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": "1:5",
+            "ids": '1,2,3,4'
+        }
+
+        ret = BossRequest(drfrequest, request_args)
+        self.assertEqual(ret.get_filter_ids(), expected_ids)
+
+    def test_request_cutout_filter_single_id(self):
+        """
+        Test initialization of boss_key for a time sample range
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel3/2/0:5/0:6/0:2/1:5/?filter=1'
+        expected_ids = [1]
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel3',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": "1:5",
+            "ids": '1'
+        }
+
+        ret = BossRequest(drfrequest, request_args)
+        self.assertEqual(ret.get_filter_ids(), expected_ids)
+
+    def test_request_cutout_filter_no_time(self):
+        """
+        Test initialization of boss_key for a time sample range
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel3/2/0:5/0:6/0:2/?filter=1,2,3,4'
+        expected_ids = [1, 2, 3, 4]
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel3',
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None,
+            "ids": '1,2,3,4'
+        }
+
+        ret = BossRequest(drfrequest, request_args)
+        self.assertEqual(ret.get_filter_ids(), expected_ids)
+
+    def test_request_cutout_filter_invalid_channel_type(self):
+        """
+        Test initialization of cutout arguments for a invalid cutout request. The x-args are outside the coordinate
+        frame
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/0/0:10/0:6/0:2/?filter=1'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:10",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None,
+            "ids": "1"
+        }
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_filter_invalid_ids(self):
+        """
+        Test initialization of cutout arguments for a invalid cutout request. The x-args are outside the coordinate
+        frame
+        :return:
+        """
+        url = '/' + version + '/cutout/col1/exp1/channel1/0/0:10/0:6/0:2/?filter=1,foo'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": 'col1',
+            "experiment_name": 'exp1',
+            "channel_name": 'channel1',
+            "resolution": 2,
+            "x_args": "0:10",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None,
+            "ids": "1, foo"
+        }
+        #with self.assertRaises(BossError):
+        BossRequest(drfrequest, request_args)
+
+
     def test_request_cutout_invalid_xargs(self):
         """
         Test initialization of cutout arguments for a invalid cutout request. The x-args are outside the coordinate

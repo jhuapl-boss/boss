@@ -62,6 +62,11 @@ class Cutout(APIView):
         :return:
         """
         # Check if parsing completed without error. If an error did occur, return to user.
+        if "filter" in request.query_params:
+            ids = request.query_params[filter]
+        else:
+            ids = None
+
         if isinstance(request.data, BossParserError):
             return request.data.to_http()
 
@@ -76,7 +81,8 @@ class Cutout(APIView):
                 "x_args": x_range,
                 "y_args": y_range,
                 "z_args": z_range,
-                "time_args": t_range
+                "time_args": t_range,
+                "ids": ids
             }
             req = BossRequest(request, request_args)
         except BossError as err:
@@ -89,7 +95,7 @@ class Cutout(APIView):
         try:
             self.bit_depth = resource.get_bit_depth()
         except ValueError:
-            return BossHTTPError("Unsupported data type: {}".format(resource.get_data_type()),ErrorCodes.TYPE_ERROR)
+            return BossHTTPError("Unsupported data type: {}".format(resource.get_data_type()), ErrorCodes.TYPE_ERROR)
 
         # Make sure cutout request is under 1GB UNCOMPRESSED
         total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth / 8)
@@ -107,7 +113,8 @@ class Cutout(APIView):
         extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
 
         # Get a Cube instance with all time samples
-        data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop])
+        data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop],
+                            filter_ids = req.get_filter_ids())
         to_renderer = {"time_request": req.time_request,
                        "data": data}
 

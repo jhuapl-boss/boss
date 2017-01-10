@@ -79,6 +79,7 @@ class BossRequest:
 
         # object service
         self.object_id = 0
+        self.filter_ids = None
 
         # Validate the request based on the service
         self.service = self.bossrequest['service']
@@ -137,6 +138,20 @@ class BossRequest:
         """
         self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
                                 self.bossrequest['channel_name'])
+
+        # Validate filter arguments if any
+        if 'ids' in self.bossrequest and self.bossrequest['ids'] != None:
+
+            if self.channel.type != 'annotation':
+                raise BossError("The channel in request has type {}. Filter is only valid for annotation channels"
+                      .format(self.channel.type), ErrorCodes.DATATYPE_NOT_SUPPORTED)
+            else:
+                # convert ids to ints
+                try:
+                    self.filter_ids = [int(id) for id in self.bossrequest['ids'].split(',')]
+                except TypeError as e:
+                    raise BossError("Invalid id in list of filter ids {}. {}".format(self.bossrequest['ids'], str(e)),
+                                    ErrorCodes.INVALID_CUTOUT_ARGS)
 
         time = self.bossrequest['time_args']
         if not time:
@@ -712,6 +727,14 @@ class BossRequest:
             z_span (int): Z span
         """
         return self.z_stop - self.z_start
+
+    def get_filter_ids(self):
+        """
+        Return the liust of ids to filter the cutout on
+        Returns:
+            List (ints)
+        """
+        return self.filter_ids
 
     def set_boss_key(self):
         """ Set the base boss key for the request
