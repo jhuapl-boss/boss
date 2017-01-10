@@ -381,8 +381,8 @@ class CutoutRequestTests(APITestCase):
             "time_args": None,
             "ids": "1, foo"
         }
-        #with self.assertRaises(BossError):
-        BossRequest(drfrequest, request_args)
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
 
 
     def test_request_cutout_invalid_xargs(self):
