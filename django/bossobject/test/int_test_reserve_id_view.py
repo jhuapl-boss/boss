@@ -97,5 +97,5 @@ class TestReserveIDView(APITestCase):
         # Make request
         response = Reserve.as_view()(request, collection='col1', experiment='exp1', channel='layer1', num_ids='10')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['start_id'][0], 1)
+        self.assertEqual(response.data['start_id'], 1)
         self.assertEqual(response.data['count'], '10')

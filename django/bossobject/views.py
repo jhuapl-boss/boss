@@ -23,12 +23,13 @@ from spdb import project
 
 from django.conf import settings
 
+
 class Reserve(APIView):
     """
         View to reserve annotation object ids
 
     """
-    def get(self, request, collection, experiment,channel, num_ids):
+    def get(self, request, collection, experiment, channel, num_ids):
         """
         Reserve a unique, sequential list of annotation ids for the provided channel to use as
         object ids for annotations.
@@ -67,7 +68,7 @@ class Reserve(APIView):
             # Reserve ids
             spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
             start_id = spdb.reserve_ids(resource, int(num_ids))
-            data = {'start_id': start_id, 'count': num_ids}
+            data = {'start_id': start_id[0], 'count': num_ids}
             return Response(data, status=200)
         except (TypeError, ValueError)as e:
             return BossHTTPError("Type error in the reserve id view. {}".format(e), ErrorCodes.TYPE_ERROR)
@@ -135,7 +136,7 @@ class BoundingBox(APIView):
         View to reserve annotation object ids
 
     """
-    def get(self, request, collection, experiment,channel,resolution, id):
+    def get(self, request, collection, experiment, channel, resolution, id):
         """
         Return the bounding box containing the object
 
@@ -144,6 +145,7 @@ class BoundingBox(APIView):
             collection: Collection name specifying the collection you want
             experiment: Experiment name specifying the experiment
             channel: Channel_name
+            resolution: Data resolution
             id: The id of the object
         Returns:
             JSON dict with the bounding box of the object
@@ -175,7 +177,9 @@ class BoundingBox(APIView):
         try:
             # Get interface to SPDB cache
             spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
-            data = spdb.get_bounding_box(resource, int(resolution),int(id))
+            data = spdb.get_bounding_box(resource, int(resolution), int(id))
+            if data is None:
+                return BossHTTPError("The id does not exist. {}".format(id), ErrorCodes.OBJECT_NOT_FOUND)
             return Response(data, status=200)
-        except (TypeError,ValueError) as e:
+        except (TypeError, ValueError) as e:
             return BossHTTPError("Type error in the boundingbox view. {}".format(e), ErrorCodes.TYPE_ERROR)
