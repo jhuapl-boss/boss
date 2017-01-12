@@ -246,11 +246,11 @@ class CutoutInterfaceViewUint64TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-
     def test_channel_uint64_filter_by_id(self):
-        """ Test uint64 data, cuboid aligned, offset, no time samples, blosc interface"""
+        """ Test filter_cutout by ids not in the region - one id"""
 
-        test_mat = np.ones(1, 256, (4, 128, 128))
+        test_mat = np.ones((128, 128, 4))
+        test_mat = test_mat.reshape(4, 128, 128)
         test_mat = test_mat.astype(np.uint64)
         h = test_mat.tobytes()
         bb = blosc.compress(h, typesize=64)
@@ -287,6 +287,142 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
+        np.testing.assert_array_equal(np.unique(data_mat), np.arange(1, 2, dtype=np.uint64))
+
+    def test_channel_uint64_filter_multiple_ids(self):
+        """ Test filter_cutout by ids - multiple ids in the filter list"""
+
+        test_mat = np.ones((128, 128, 4))
+        test_mat[0][0][0] = 2
+        test_mat[0][0][1] = 3
+        test_mat[0][0][2] = 4
+        test_mat = test_mat.reshape(4, 128, 128)
+        test_mat = test_mat.astype(np.uint64)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=64)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20', t_range=None)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/?filter=1,2,3',
+                              accepts='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint64)
+        data_mat = np.reshape(data_mat, (4, 128, 128), order='C')
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(np.unique(data_mat), np.arange(0, 4, dtype=np.uint64))
+
+    def test_channel_uint64_filter_include_ids_not_in_region(self):
+        """ Test filter_cutout by ids - only one id found in the cutout"""
+
+        test_mat = np.ones((128, 128, 4))
+        test_mat[0][0][0] = 2
+        test_mat[0][0][1] = 3
+        test_mat[0][0][2] = 4
+        test_mat = test_mat.reshape(4, 128, 128)
+        test_mat = test_mat.astype(np.uint64)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=64)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20', t_range=None)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/?filter=1,6,7',
+                              accepts='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint64)
+        data_mat = np.reshape(data_mat, (4, 128, 128), order='C')
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(np.unique(data_mat), np.arange(0, 2, dtype=np.uint64))
+
+    def test_channel_uint64_filter_ids_not_found(self):
+        """ Test filter_cutout by ids not in the region"""
+
+        test_mat = np.ones((128, 128, 4))
+        test_mat[0][0][0] = 2
+        test_mat[0][0][1] = 3
+        test_mat[0][0][2] = 4
+        test_mat = test_mat.reshape(4, 128, 128)
+        test_mat = test_mat.astype(np.uint64)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=64)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20', t_range=None)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/128:256/256:384/16:20/?filter=5,6,7',
+                              accepts='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+                                    resolution='0', x_range='128:256', y_range='256:384', z_range='16:20', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint64)
+        data_mat = np.reshape(data_mat, (4, 128, 128), order='C')
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(np.unique(data_mat), np.arange(0, 1, dtype=np.uint64))
 
     @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
     def test_channel_uint64_cuboid_unaligned_offset_no_time_blosc(self):

@@ -63,7 +63,7 @@ class Cutout(APIView):
         """
         # Check if parsing completed without error. If an error did occur, return to user.
         if "filter" in request.query_params:
-            ids = request.query_params[filter]
+            ids = request.query_params["filter"]
         else:
             ids = None
 
