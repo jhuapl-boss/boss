@@ -13,10 +13,11 @@
 # limitations under the License.
 
 from django.conf.urls import url
+from django.contrib.auth.decorators import login_required
 from bosstiles import views
 
 urlpatterns = [
     # Url to handle cutout with a collection, experiment, channel/annotation project
     url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<orientation>(xy|xz|yz))/(?P<tile_size>\d+)/(?P<resolution>\d)/(?P<x_idx>\d+)/(?P<y_idx>\d+)/(?P<z_idx>\d+)/?(?P<t_idx>\d+)?/?.*$',
-        views.Tile.as_view()),
+        login_required(views.Tile.as_view())),
 ]
