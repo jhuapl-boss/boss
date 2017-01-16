@@ -21,10 +21,10 @@ cd django
 # Ensure migrations generated for a clean slate.
 rm -rf */migrations
 
-# Set PYTHONPATH to the most current spdb and bossutils.  spdb is built by 
+# Set PYTHONPATH to the most current spdb and bossutils.  spdb is built by
 # another Jenkins project.  Likewise, bossutils is downloaded via the
-# boss-tools Jenkins project.
-export PYTHONPATH=$WORKSPACE/../../spdb/workspace:$WORKSPACE/../../boss-tools/workspace
+# boss-tools Jenkins project.  ndingest is also downloaded by a Jenkins project.
+export PYTHONPATH=$WORKSPACE/../../spdb/workspace:$WORKSPACE/../../boss-tools/workspace:$WORKSPACE/../../ndingest/workspace
 
 python3 manage.py makemigrations --noinput
 
