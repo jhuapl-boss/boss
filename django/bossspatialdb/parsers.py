@@ -17,6 +17,8 @@ from django.conf import settings
 
 import blosc
 import numpy as np
+import zlib
+import io
 
 from bosscore.request import BossRequest
 from bosscore.error import BossParserError, BossError, ErrorCodes
@@ -166,6 +168,73 @@ class BloscPythonParser(BaseParser):
         # Decompress and return
         try:
             parsed_data = blosc.unpack_array(stream.read())
+        except EOFError:
+            return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
+                                   "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
+
+        return req, resource, parsed_data
+
+
+class NpygzParser(BaseParser):
+    """
+    Parser that handles npygz compressed binary data
+    """
+    media_type = 'application/npygz'
+
+    def parse(self, stream, media_type=None, parser_context=None):
+        """Method to decompress bytes from a POST that contains a gzipped npy saved numpy ndarray
+
+        :param stream: Request stream
+        stream type: django.core.handlers.wsgi.WSGIRequest
+        :param media_type:
+        :param parser_context:
+        :return:
+        """
+        try:
+            request_args = {
+                "service": "cutout",
+                "collection_name": parser_context['kwargs']['collection'],
+                "experiment_name": parser_context['kwargs']['experiment'],
+                "channel_name": parser_context['kwargs']['channel'],
+                "resolution": parser_context['kwargs']['resolution'],
+                "x_args": parser_context['kwargs']['x_range'],
+                "y_args": parser_context['kwargs']['y_range'],
+                "z_args": parser_context['kwargs']['z_range'],
+            }
+            if 't_range' in parser_context['kwargs']:
+                request_args["time_args"] = parser_context['kwargs']['t_range']
+            else:
+                request_args["time_args"] = None
+
+            req = BossRequest(parser_context['request'], request_args)
+        except BossError as err:
+            return BossParserError(err.message, err.status_code)
+        except Exception as err:
+            return BossParserError(str(err), ErrorCodes.UNHANDLED_EXCEPTION)
+
+        # Convert to Resource
+        resource = spdb.project.BossResourceDjango(req)
+
+        # Get bit depth
+        try:
+            bit_depth = resource.get_bit_depth()
+        except ValueError:
+            return BossParserError("Unsupported data type provided to parser: {}".format(resource.get_data_type()),
+                                   ErrorCodes.TYPE_ERROR)
+
+        # Make sure cutout request is under 1GB UNCOMPRESSED
+        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth / 8
+        if total_bytes > settings.CUTOUT_MAX_SIZE:
+            return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+                                   ErrorCodes.REQUEST_TOO_LARGE)
+
+        # Decompress and return
+        try:
+            data_bytes = zlib.decompress(stream.read())
+
+            # Open
+            data_obj = io.BytesIO(data_bytes)
+            parsed_data = np.load(data_obj)
         except EOFError:
             return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
                                    "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)

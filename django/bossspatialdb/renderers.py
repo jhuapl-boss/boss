@@ -63,7 +63,7 @@ class BloscRenderer(renderers.BaseRenderer):
                                   typesize=renderer_context['view'].bit_depth)
 
 
-class NpzRenderer(renderers.BaseRenderer):
+class NpygzRenderer(renderers.BaseRenderer):
     """ A DRF renderer for a gzip compressed npy encoded cube of data, following a similar method as ndstore for
     compatibility with existing tools
 
@@ -89,6 +89,7 @@ class NpzRenderer(renderers.BaseRenderer):
         # Compress npy
         npy_gz = zlib.compress(npy_file.getvalue())
 
-        # Package the object as a Web readable file handle
+        # Send file
         npy_gz_file = io.BytesIO(npy_gz)
-        return npy_gz_file.seek(0)
+        npy_gz_file.seek(0)
+        return npy_gz_file.read()
