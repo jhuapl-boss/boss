@@ -15,6 +15,8 @@
 from rest_framework import renderers
 import blosc
 import numpy as np
+import zlib
+import io
 
 
 class BloscPythonRenderer(renderers.BaseRenderer):
@@ -61,4 +63,32 @@ class BloscRenderer(renderers.BaseRenderer):
                                   typesize=renderer_context['view'].bit_depth)
 
 
+class NpzRenderer(renderers.BaseRenderer):
+    """ A DRF renderer for a gzip compressed npy encoded cube of data, following a similar method as ndstore for
+    compatibility with existing tools
 
+    """
+    media_type = 'application/npygz'
+    format = 'bin'
+    charset = None
+    render_style = 'binary'
+
+    def render(self, data, media_type=None, renderer_context=None):
+
+        if not data["data"].data.flags['C_CONTIGUOUS']:
+            data["data"].data = np.ascontiguousarray(data["data"].data, dtype=data["data"].data.dtype)
+
+        # Return data, squeezing time dimension if only a single point
+        if not data["time_request"]:
+            data["data"].data = np.squeeze(data["data"].data, axis=(0,))
+
+        # Save Data to npy
+        npy_file = io.BytesIO()
+        np.save(npy_file, data["data"].data, allow_pickle=False)
+
+        # Compress npy
+        npy_gz = zlib.compress(npy_file.getvalue())
+
+        # Package the object as a Web readable file handle
+        npy_gz_file = io.BytesIO(npy_gz)
+        return npy_gz_file.seek(0)
