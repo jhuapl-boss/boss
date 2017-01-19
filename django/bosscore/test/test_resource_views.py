@@ -162,6 +162,26 @@ class ResourceViewsCollectionTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
+    def test_flag_delete_collection(self):
+        """
+        Delete a collection (valid- Check that the flag is set correctly)
+
+        """
+        url = '/' + version + '/collection/col55/'
+        data = {'description': 'A new collection for unit tests'}
+
+        # Get an existing collection
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        # Get an existing collection
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+
+        # Get on a deleted collection
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
     def test_delete_collection_invalid(self):
         """
         Delete a collection (invalid - Violates integrity constraint)
@@ -412,6 +432,10 @@ class ResourceViewsExperimentTests(APITestCase):
 
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
+        self.assertEquals((response.json())['code'], 4005)
 
     def test_delete_experiment_invalid(self):
         """
@@ -1022,6 +1046,10 @@ class ResourceViewsChannelTests(APITestCase):
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
+
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 404)
+        self.assertEquals((response.json())['code'], 4005)
 
     def test_delete_channel_invalid(self):
         """

@@ -32,6 +32,13 @@ class Collection(models.Model):
                             validators=[NameValidator()], unique=True)
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='collections')
+    to_be_deleted = models.DateTimeField(null=True)
+    DELETED_STATUS_CHOICES = (
+        ('started', 'STARTED'),
+        ('finished', 'FINISHED'),
+        ('error', 'ERROR')
+    )
+    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True)
 
     class Meta:
         db_table = u"collection"
@@ -128,6 +135,13 @@ class Experiment(models.Model):
     )
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
     num_time_samples = models.IntegerField(default=1)
+    to_be_deleted = models.DateTimeField(null=True)
+    DELETED_STATUS_CHOICES = (
+        ('started', 'STARTED'),
+        ('finished', 'FINISHED'),
+        ('error', 'ERROR')
+    )
+    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True)
 
     class Meta:
         db_table = u"experiment"
@@ -174,6 +188,13 @@ class Channel(models.Model):
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
     sources = models.ManyToManyField('self', through='Source', symmetrical=False, related_name='derived', blank=True)
     related = models.ManyToManyField('self', related_name='related', blank=True)
+    to_be_deleted = models.DateTimeField(null=True)
+    DELETED_STATUS_CHOICES = (
+        ('started', 'STARTED'),
+        ('finished', 'FINISHED'),
+        ('error', 'ERROR')
+    )
+    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True)
 
     class Meta:
         db_table = u"channel"
@@ -204,6 +225,10 @@ class Channel(models.Model):
             derived_channel=self,
             source_channel=source).delete()
         return
+
+    def get_derived(self):
+        derived = Source.objects.filter(source_channel=self)
+        return derived
 
     def __str__(self):
         return self.name
@@ -275,4 +300,4 @@ class BossGroup(models.Model):
     #         BossGroup.objects.create(group=instance)
 
     def create_boss_group(sender, **kwargs):
-        BossGroup.objects.create(group=sender, creator = kwargs['creator'])
+        BossGroup.objects.create(group=sender, creator=kwargs['creator'])

@@ -20,6 +20,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
+from datetime import datetime
 from functools import wraps
 
 from bosscore.error import BossError, BossHTTPError, BossPermissionError, BossResourceNotFoundError, ErrorCodes
@@ -55,6 +56,10 @@ class CollectionDetail(APIView):
 
             # Check for permissions
             if request.user.has_perm("read", collection_obj):
+                if collection_obj.to_be_deleted is not None:
+                    return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
+                                         ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
+
                 serializer = CollectionSerializer(collection_obj)
                 return Response(serializer.data, status=200)
             else:
@@ -143,15 +148,19 @@ class CollectionDetail(APIView):
         """
         try:
             collection_obj = Collection.objects.get(name=collection)
-            if request.user.has_perm("delete", collection_obj):
-                collection_obj.delete()
-                # # get the lookup key and delete all the meta data for this object
-                # lkey = LookUpKey.get_lookup_key(collection)
-                # mdb = MetaDB()
-                # mdb.delete_meta_keys(lkey.lookup_key)
 
-                # delete the lookup key for this object
-                LookUpKey.delete_lookup_key(collection, None, None)
+            if request.user.has_perm("delete", collection_obj):
+
+                # Are there experiments that reference it
+                serializer = CollectionSerializer(collection_obj)
+                if len(serializer.get_valid_experiments(collection_obj)) > 0:
+                    # This collection has experiments that reference it and cannot be deleted
+                    return BossHTTPError(" Collection {} has experiments that reference it and cannot be deleted."
+                                         "Please delete the experiments first.".format(collection),
+                                         ErrorCodes.INTEGRITY_ERROR)
+
+                collection_obj.to_be_deleted = datetime.now()
+                collection_obj.save()
 
                 return HttpResponse(status=204)
             else:
@@ -292,6 +301,9 @@ class ExperimentDetail(APIView):
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for permissions
             if request.user.has_perm("read", experiment_obj):
+                if experiment_obj.to_be_deleted is not None:
+                    return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
+                                         ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
                 serializer = ExperimentReadSerializer(experiment_obj)
                 return Response(serializer.data)
             else:
@@ -418,15 +430,17 @@ class ExperimentDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             if request.user.has_perm("delete", experiment_obj):
-                experiment_obj.delete()
-                # # get the lookup key and delete all the meta data for this object
-                # bosskey = collection + '&' + experiment
-                # lkey = LookUpKey.get_lookup_key(bosskey)
-                # mdb = MetaDB()
-                # mdb.delete_meta_keys(lkey)
+                # Are there channels that reference it
+                serializer = ExperimentReadSerializer(experiment_obj)
+                if len(serializer.get_valid_channels(experiment_obj)) > 0:
+                    # This experiment has channels that reference it and cannot be deleted
+                    return BossHTTPError(" Experiment {} has channels that reference it and cannot be deleted."
+                                         "Please delete the channels first.".format(experiment),
+                                         ErrorCodes.INTEGRITY_ERROR)
 
-                # delete the lookup key for this object
-                LookUpKey.delete_lookup_key(collection, experiment, None)
+                experiment_obj.to_be_deleted = datetime.now()
+                experiment_obj.save()
+
                 return HttpResponse(status=204)
             else:
                 return BossPermissionError('delete', experiment)
@@ -567,6 +581,9 @@ class ChannelDetail(APIView):
 
             # Check for permissions
             if request.user.has_perm("read", channel_obj):
+                if channel_obj.to_be_deleted is not None:
+                    return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
+                                         ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
                 serializer = ChannelReadSerializer(channel_obj)
                 return Response(serializer.data)
             else:
@@ -700,7 +717,7 @@ class ChannelDetail(APIView):
                     channel_obj = Channel.objects.get(name=channel_name, experiment=experiment_obj)
                     # Save source and related channels if they are valid
                     channel_obj = self.update_source_related_channels(channel_obj, experiment_obj, source_channels_objs,
-                                                                   related_channels_objs)
+                                                                      related_channels_objs)
 
                     # update the lookup key if you update the name
                     if 'name' in request.data and request.data['name'] != channel:
@@ -747,10 +764,14 @@ class ChannelDetail(APIView):
             channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
 
             if request.user.has_perm("delete", channel_obj):
-                channel_obj.delete()
 
-                # delete the lookup key for this object
-                LookUpKey.delete_lookup_key(collection, experiment, channel)
+                # The channel cannot be deleted if this is the source of any other channels
+                derived_channels = channel_obj.get_derived()
+                if len(derived_channels) > 0:
+                    return BossHTTPError("Channel {} is the source channel of other channels and cannot be deleted"
+                                         .format(channel), ErrorCodes.INTEGRITY_ERROR)
+                channel_obj.to_be_deleted = datetime.now()
+                channel_obj.save()
                 return HttpResponse(status=204)
             else:
                 return BossPermissionError('delete', channel)

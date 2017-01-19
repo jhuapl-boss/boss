@@ -232,6 +232,10 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
     def get_channels(self, experiment):
         return experiment.channels.values_list('name', flat=True)
 
+    def get_valid_channels(self, experiment):
+        "return all channels that are not marked to be deleted"
+        return experiment.channels.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
+
 
 class CollectionSerializer(serializers.ModelSerializer):
     """
@@ -246,6 +250,10 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     def get_experiments(self, collection):
         return collection.experiments.values_list('name', flat=True)
+
+    def get_valid_experiments(self, collection):
+        "return all experiments that are not marked to be deleted"
+        return collection.experiments.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
 
 
 class BossLookupSerializer(serializers.ModelSerializer):
