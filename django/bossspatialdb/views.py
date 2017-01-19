@@ -18,8 +18,8 @@ from rest_framework.response import Response
 from rest_framework import authentication, permissions
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 
-from .parsers import BloscParser, BloscPythonParser
-from .renderers import BloscRenderer, BloscPythonRenderer
+from .parsers import BloscParser, BloscPythonParser, NpygzParser
+from .renderers import BloscRenderer, BloscPythonRenderer, NpygzRenderer
 
 from django.http import HttpResponse
 from django.conf import settings
@@ -38,8 +38,8 @@ class Cutout(APIView):
     * Requires authentication.
     """
     # Set Parser and Renderer
-    parser_classes = (BloscParser, BloscPythonParser)
-    renderer_classes = (BloscRenderer, BloscPythonRenderer, JSONRenderer, BrowsableAPIRenderer)
+    parser_classes = (BloscParser, BloscPythonParser, NpygzParser)
+    renderer_classes = (BloscRenderer, BloscPythonRenderer, NpygzRenderer, JSONRenderer, BrowsableAPIRenderer)
 
     def __init__(self):
         super().__init__()
@@ -114,7 +114,7 @@ class Cutout(APIView):
 
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop],
-                            filter_ids = req.get_filter_ids())
+                            filter_ids=req.get_filter_ids())
         to_renderer = {"time_request": req.time_request,
                        "data": data}
 

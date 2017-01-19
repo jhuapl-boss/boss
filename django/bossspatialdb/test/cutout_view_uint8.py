@@ -25,6 +25,8 @@ from bosscore.test.setup_db import SetupTestDB
 from bosscore.error import BossError
 
 import numpy as np
+import zlib
+import io
 
 from unittest.mock import patch
 from mockredis import mock_strict_redis_client
@@ -547,11 +549,207 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='200:203').render()
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    t_range='200:203').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
         data_mat = blosc.unpack_array(response.content)
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(data_mat, test_mat)
+
+    def test_channel_uint8_notime_npygz_download(self):
+        """ Test uint8 data, using the npygz interface
+        """
+        test_mat = np.random.randint(1, 254, (17, 300, 500))
+        test_mat = test_mat.astype(np.uint8)
+        bb = blosc.pack_array(test_mat)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/', bb,
+                               content_type='application/blosc-python')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make POST data
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37',
+                              HTTP_ACCEPT='application/npygz')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request to GET data
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        data_bytes = zlib.decompress(response.content)
+
+        # Open
+        data_obj = io.BytesIO(data_bytes)
+        data_mat = np.load(data_obj)
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(data_mat, test_mat)
+
+    def test_channel_uint8_time_npygz_download(self):
+        """ Test uint8 data, using the npygz interface with time series support
+
+        """
+
+        test_mat = np.random.randint(1, 254, (3, 17, 300, 500))
+        test_mat = test_mat.astype(np.uint8)
+        bb = blosc.pack_array(test_mat)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/200:203', bb,
+                               content_type='application/blosc-python')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    t_range='200:203')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/200:203',
+                              HTTP_ACCEPT='application/npygz')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    t_range='200:203').render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        data_bytes = zlib.decompress(response.content)
+
+        # Open
+        data_obj = io.BytesIO(data_bytes)
+        data_mat = np.load(data_obj)
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(data_mat, test_mat)
+
+    def test_channel_uint8_notime_npygz_upload(self):
+        """ Test uint8 data, using the npygz interface while uploading in that format as well
+        """
+        test_mat = np.random.randint(1, 254, (17, 300, 500))
+        test_mat = test_mat.astype(np.uint8)
+
+        # Save Data to npy
+        npy_file = io.BytesIO()
+        np.save(npy_file, test_mat, allow_pickle=False)
+
+        # Compress npy
+        npy_gz = zlib.compress(npy_file.getvalue())
+
+        # Send file
+        npy_gz_file = io.BytesIO(npy_gz)
+        npy_gz_file.seek(0)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/',
+                               npy_gz_file.read(),
+                               content_type='application/npygz')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make POST data
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37',
+                              HTTP_ACCEPT='application/npygz')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request to GET data
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        data_bytes = zlib.decompress(response.content)
+
+        # Open
+        data_obj = io.BytesIO(data_bytes)
+        data_mat = np.load(data_obj)
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(data_mat, test_mat)
+
+    def test_channel_uint8_time_npygz_upload(self):
+        """ Test uint8 data, using the npygz interface with time series support while uploading in that format as well
+
+        """
+        test_mat = np.random.randint(1, 254, (3, 17, 300, 500))
+        test_mat = test_mat.astype(np.uint8)
+
+        # Save Data to npy
+        npy_file = io.BytesIO()
+        np.save(npy_file, test_mat, allow_pickle=False)
+
+        # Compress npy
+        npy_gz = zlib.compress(npy_file.getvalue())
+
+        # Send file
+        npy_gz_file = io.BytesIO(npy_gz)
+        npy_gz_file.seek(0)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/200:203',
+                               npy_gz_file.read(),
+                               content_type='application/npygz')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    t_range='200:203')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/200:203',
+                              HTTP_ACCEPT='application/npygz')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    t_range='200:203').render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        data_bytes = zlib.decompress(response.content)
+
+        # Open
+        data_obj = io.BytesIO(data_bytes)
+        data_mat = np.load(data_obj)
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
