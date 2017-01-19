@@ -91,8 +91,8 @@ class BoundingBoxMixin(object):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         bb = response.data
         self.assertEqual(bb['t_range'], [0, 1])
-        self.assertEqual(bb['x_range'], [1536, 1664])
-        self.assertEqual(bb['y_range'], [1536, 1664])
+        self.assertEqual(bb['x_range'], [1536, 2048])
+        self.assertEqual(bb['y_range'], [1536, 2048])
         self.assertEqual(bb['z_range'], [0, 16])
 
     def test_get_object_bounding_box_span_cuboid_boundary(self):
