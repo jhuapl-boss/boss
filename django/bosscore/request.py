@@ -522,6 +522,10 @@ class BossRequest:
         """
         if Collection.objects.filter(name=str(collection_name)).exists():
             self.collection = Collection.objects.get(name=collection_name)
+            if self.collection.to_be_deleted is not None:
+                raise BossError("Invalid Request. This resource {} has been marked for deletion"
+                                .format(collection_name),ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
+
             return True
         else:
             raise BossError("Collection {} not found".format(collection_name), ErrorCodes.RESOURCE_NOT_FOUND)
@@ -548,6 +552,9 @@ class BossRequest:
         """
         if Experiment.objects.filter(name=experiment_name, collection=self.collection).exists():
             self.experiment = Experiment.objects.get(name=experiment_name, collection=self.collection)
+            if self.experiment.to_be_deleted is not None:
+                raise BossError("Invalid Request. This resource {} has been marked for deletion"
+                                .format(experiment_name),ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
             self.coord_frame = self.experiment.coord_frame
         else:
             raise BossError("Collection {} not found".format(experiment_name), ErrorCodes.RESOURCE_NOT_FOUND)
@@ -576,6 +583,9 @@ class BossRequest:
         """
         if Channel.objects.filter(name=channel_name, experiment=self.experiment).exists():
             self.channel = Channel.objects.get(name=channel_name, experiment=self.experiment)
+            if self.channel.to_be_deleted is not None:
+                raise BossError("Invalid Request. This resource {} has been marked for deletion"
+                                .format(channel_name),ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
             return True
         else:
             raise BossError("Channel {} not found".format(channel_name), ErrorCodes.RESOURCE_NOT_FOUND)
