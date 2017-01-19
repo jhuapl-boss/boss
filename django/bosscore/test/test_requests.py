@@ -489,6 +489,7 @@ class CutoutInvalidRequestTests(APITestCase):
         user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
         dbsetup.set_user(user)
+        dbsetup.add_role('resource-manager')
         self.user = user
         self.client.force_login(user)
         dbsetup.insert_test_data()
@@ -657,3 +658,48 @@ class CutoutInvalidRequestTests(APITestCase):
 
         with self.assertRaises(BossError):
             BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_invalid_deleted_channel(self):
+        """
+        Test initialization of cutout requests for channel that was just deleted
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint64',
+                'sources': ['channel1'], 'related': ['channel2']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+
+        url = '/' + version + '/cutout/col2/exp1/channel33/0/0:5/0:6/0:2/'
+        col = 'col1'
+        exp = 'exp1'
+        channel = 'channel33'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": exp,
+            "channel_name": channel,
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+
