@@ -160,7 +160,7 @@ class BoundingBox(APIView):
 
         if 'type' in request.query_params:
             bb_type = request.query_params['type']
-            if bb_type != 'loose' or bb_type != 'tight':
+            if bb_type != 'loose' and bb_type != 'tight':
                 return BossHTTPError("Invalid option for bounding box type {}. The valid options are : loose or tight"
                                      .format(bb_type), ErrorCodes.INVALID_ARGUMENT)
         else:

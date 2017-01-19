@@ -222,7 +222,7 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:516/0:526/0:18/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:516/0:516/0:18/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
@@ -256,7 +256,7 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/1')
+        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/1/?type=tight')
         # log in user
         force_authenticate(request, user=self.user)
 
