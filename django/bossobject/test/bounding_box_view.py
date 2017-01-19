@@ -157,24 +157,25 @@ class BoundingBoxMixin(object):
         """ Test getting the bounding box of a object"""
 
         test_mat = np.ones((128, 128, 16))
+        test_mat[0:516, 0:516, 0:18] = 3
         test_mat = test_mat.astype(np.uint64)
         test_mat = test_mat.reshape((16, 128, 128))
         bb = blosc.compress(test_mat, typesize=64)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:16/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/1024:1152/1024:1152/0:16/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None)
+                                    resolution='0', x_range='1024:1152', y_range='1024:1152', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:16/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/1024:1152/1024:1152/0:16/',
                               accepts='application/blosc')
 
         # log in user
@@ -182,7 +183,7 @@ class BoundingBoxMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None).render()
+                                    resolution='0', x_range='1024:1152', y_range='1024:1152', z_range='0:16', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -197,25 +198,26 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/1?type=tight')
+        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/3?type=tight')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                         resolution='0', id='1')
+                                         resolution='0', id='3')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         bb = response.data
         self.assertEqual(bb['t_range'], [0, 1])
-        self.assertEqual(bb['x_range'], [0, 128])
-        self.assertEqual(bb['y_range'], [0, 128])
+        self.assertEqual(bb['x_range'], [1024, 1152])
+        self.assertEqual(bb['y_range'], [1024, 1152])
         self.assertEqual(bb['z_range'], [0, 16])
 
     def test_get_object_bounding_box_tight_span_cuboid_boundary(self):
         """ Test getting the bounding box of a object that spans the z boundary of a cuboid"""
 
         test_mat = np.ones((516, 516, 18))
+        test_mat[0:516, 0:516, 0:18] = 2
         test_mat = test_mat.astype(np.uint64)
         test_mat = test_mat.reshape((18, 516, 516))
         bb = blosc.compress(test_mat, typesize=64)
@@ -256,13 +258,13 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/1/?type=tight')
+        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/2/?type=tight')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                         resolution='0', id='1')
+                                         resolution='0', id='2')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         bb = response.data
