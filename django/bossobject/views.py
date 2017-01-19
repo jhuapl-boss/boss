@@ -158,6 +158,12 @@ class BoundingBox(APIView):
         # validate that id is an int
         # Check if this is annotation channel
 
+        if 'type' in request.query_params:
+            bb_type = request.query_params['type']
+            if bb_type != 'loose' or bb_type != 'tight':
+                return BossHTTPError("Invalid option for bounding box type {}. The valid options are : loose or tight"
+                                     .format(bb_type), ErrorCodes.INVALID_ARGUMENT)
+
         try:
             request_args = {
                 "service": "boundingbox",
@@ -177,7 +183,7 @@ class BoundingBox(APIView):
         try:
             # Get interface to SPDB cache
             spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
-            data = spdb.get_bounding_box(resource, int(resolution), int(id))
+            data = spdb.get_bounding_box(resource, int(resolution), int(id), bb_type=bb_type)
             if data is None:
                 return BossHTTPError("The id does not exist. {}".format(id), ErrorCodes.OBJECT_NOT_FOUND)
             return Response(data, status=200)
