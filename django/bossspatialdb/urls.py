@@ -21,9 +21,9 @@ urlpatterns = [
 
     # Url to handle cutout with a collection, experiment, channel/annotation project and  range time
     url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+:\d+)/(?P<t_range>\d+:\d+?)/?$',
-        login_required(views.Cutout.as_view())),
+        views.Cutout.as_view()),
 
     # Url to handle cutout with a collection, experiment, channel/annotation projec
     url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<resolution>\d)/(?P<x_range>\d+:\d+)/(?P<y_range>\d+:\d+)/(?P<z_range>\d+:\d+)/?$',
-        login_required(views.Cutout.as_view())),
+        views.Cutout.as_view()),
 ]

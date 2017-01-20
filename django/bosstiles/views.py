@@ -31,7 +31,6 @@ class CutoutTile(APIView):
     * Requires authentication.
     """
     renderer_classes = (PNGRenderer, JPEGRenderer)
-    permission_classes = (IsAuthenticated,)
 
     def __init__(self):
         super().__init__()
@@ -121,7 +120,6 @@ class Tile(APIView):
     * Requires authentication.
     """
     renderer_classes = (PNGRenderer, JPEGRenderer)
-    permission_classes = (IsAuthenticated,)
 
     def __init__(self):
         super().__init__()
