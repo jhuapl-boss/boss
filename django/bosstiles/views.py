@@ -13,6 +13,7 @@
 # limitations under the License.
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 
 from bosscore.request import BossRequest
@@ -30,6 +31,7 @@ class CutoutTile(APIView):
     * Requires authentication.
     """
     renderer_classes = (PNGRenderer, JPEGRenderer)
+    permission_classes = (IsAuthenticated,)
 
     def __init__(self):
         super().__init__()
@@ -119,6 +121,7 @@ class Tile(APIView):
     * Requires authentication.
     """
     renderer_classes = (PNGRenderer, JPEGRenderer)
+    permission_classes = (IsAuthenticated,)
 
     def __init__(self):
         super().__init__()
