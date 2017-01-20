@@ -707,32 +707,32 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_notime_npygz_download(self):
         """ Test uint8 data, using the npygz interface
         """
-        test_mat = np.random.randint(1, 254, (17, 300, 500))
+        test_mat = np.random.randint(1, 256, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
-        # Make POST data
+        # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None)
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/',
                               HTTP_ACCEPT='application/npygz')
 
         # log in user
         force_authenticate(request, user=self.user)
 
-        # Make request to GET data
+        # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4',
                                     t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -750,26 +750,25 @@ class CutoutInterfaceViewUint64TestMixin(object):
         """ Test uint8 data, using the npygz interface with time series support
 
         """
-
-        test_mat = np.random.randint(1, 254, (3, 17, 300, 500))
+        test_mat = np.random.randint(1, 256, (3, 4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
         bb = blosc.pack_array(test_mat)
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/200:203', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/10:13', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
-                                    t_range='200:203')
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4',
+                                    t_range='10:13')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/200:203',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/10:13',
                               HTTP_ACCEPT='application/npygz')
 
         # log in user
@@ -777,8 +776,8 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
-                                    t_range='200:203').render()
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4',
+                                    t_range='10:13').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -794,7 +793,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
     def test_channel_uint64_notime_npygz_upload(self):
         """ Test uint8 data, using the npygz interface while uploading in that format as well
         """
-        test_mat = np.random.randint(1, 254, (17, 300, 500))
+        test_mat = np.random.randint(1, 256, (4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
 
         # Save Data to npy
@@ -810,27 +809,26 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/',
-                               npy_gz_file.read(),
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/', npy_gz_file.read(),
                                content_type='application/npygz')
         # log in user
         force_authenticate(request, user=self.user)
 
-        # Make POST data
+        # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None)
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/',
                               HTTP_ACCEPT='application/npygz')
 
         # log in user
         force_authenticate(request, user=self.user)
 
-        # Make request to GET data
+        # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4',
                                     t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -848,7 +846,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         """ Test uint8 data, using the npygz interface with time series support while uploading in that format as well
 
         """
-        test_mat = np.random.randint(1, 254, (3, 17, 300, 500))
+        test_mat = np.random.randint(1, 256, (3, 4, 128, 128))
         test_mat = test_mat.astype(np.uint64)
 
         # Save Data to npy
@@ -864,20 +862,19 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/200:203',
-                               npy_gz_file.read(),
+        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/10:13', npy_gz_file.read(),
                                content_type='application/npygz')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
-                                    t_range='200:203')
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4',
+                                    t_range='10:13')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/100:600/450:750/20:37/200:203',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:128/0:128/0:4/10:13',
                               HTTP_ACCEPT='application/npygz')
 
         # log in user
@@ -885,8 +882,8 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
-                                    t_range='200:203').render()
+                                    resolution='0', x_range='0:128', y_range='0:128', z_range='0:4',
+                                    t_range='10:13').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -898,6 +895,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
+
 
 @patch('redis.StrictRedis', mock_strict_redis_client)
 @patch('bossutils.configuration.BossConfig', MockBossConfig)
