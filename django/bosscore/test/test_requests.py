@@ -19,6 +19,7 @@ from rest_framework.test import APIRequestFactory
 from django.http import HttpRequest
 from django.conf import settings
 from django.contrib.auth.models import User
+import numpy as np
 
 from ..request import BossRequest
 from bosscore.error import BossError
@@ -232,7 +233,8 @@ class CutoutRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel3/2/0:5/0:6/0:2/1:5/?filter=1,2,3,4'
-        expected_ids = [1, 2, 3, 4]
+        expected_ids = np.array([1, 2, 3, 4])
+        expected_ids = expected_ids.astype(np.uint64)
 
         # Create the request
         request = self.rf.get(url)
@@ -256,7 +258,7 @@ class CutoutRequestTests(APITestCase):
         }
 
         ret = BossRequest(drfrequest, request_args)
-        self.assertEqual(ret.get_filter_ids(), expected_ids)
+        self.assertEqual(np.array_equal(ret.get_filter_ids(), expected_ids), True)
 
     def test_request_cutout_filter_single_id(self):
         """
@@ -264,7 +266,7 @@ class CutoutRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel3/2/0:5/0:6/0:2/1:5/?filter=1'
-        expected_ids = [1]
+        expected_ids = np.array([1]).astype(np.uint64)
 
         # Create the request
         request = self.rf.get(url)
@@ -288,7 +290,7 @@ class CutoutRequestTests(APITestCase):
         }
 
         ret = BossRequest(drfrequest, request_args)
-        self.assertEqual(ret.get_filter_ids(), expected_ids)
+        self.assertEqual(np.array_equal(ret.get_filter_ids(), expected_ids), True)
 
     def test_request_cutout_filter_no_time(self):
         """
@@ -296,7 +298,8 @@ class CutoutRequestTests(APITestCase):
         :return:
         """
         url = '/' + version + '/cutout/col1/exp1/channel3/2/0:5/0:6/0:2/?filter=1,2,3,4'
-        expected_ids = [1, 2, 3, 4]
+        expected_ids = np.array([1, 2, 3, 4])
+        expected_ids = expected_ids.astype(np.uint64)
 
         # Create the request
         request = self.rf.get(url)
@@ -320,7 +323,8 @@ class CutoutRequestTests(APITestCase):
         }
 
         ret = BossRequest(drfrequest, request_args)
-        self.assertEqual(ret.get_filter_ids(), expected_ids)
+        self.assertEqual(np.array_equal(ret.get_filter_ids(),expected_ids),True)
+
 
     def test_request_cutout_filter_invalid_channel_type(self):
         """

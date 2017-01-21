@@ -30,7 +30,7 @@ from bosscore.privileges import check_role
 
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, \
     CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer, ChannelReadSerializer, \
-    ExperimentUpdateSerializer, ChannelUpdateSerializer
+    ExperimentUpdateSerializer, ChannelUpdateSerializer, CoordinateFrameDeleteSerializer
 
 from bosscore.models import Collection, Experiment, Channel, CoordinateFrame, Source
 
@@ -189,6 +189,9 @@ class CoordinateFrameDetail(APIView):
         """
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
+            if coordframe_obj.to_be_deleted is not None:
+                return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
+                                     ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
             serializer = CoordinateFrameSerializer(coordframe_obj)
             return Response(serializer.data)
         except CoordinateFrame.DoesNotExist:
@@ -268,8 +271,18 @@ class CoordinateFrameDetail(APIView):
         """
         try:
             coordframe_obj = CoordinateFrame.objects.get(name=coordframe)
+
             if request.user.has_perm("delete", coordframe_obj):
-                coordframe_obj.delete()
+                # Are there experiments that reference it
+                serializer = CoordinateFrameDeleteSerializer(coordframe_obj)
+                if len(serializer.get_valid_exps(coordframe_obj)) > 0:
+                    # This collection has experiments that reference it and cannot be deleted
+                    return BossHTTPError(" Coordinate frame {} has experiments that reference it and cannot be deleted."
+                                         "Please delete the experiments first.".format(coordframe),
+                                         ErrorCodes.INTEGRITY_ERROR)
+
+                coordframe_obj.to_be_deleted = datetime.now()
+                coordframe_obj.save()
                 return HttpResponse(status=204)
             else:
                 return BossPermissionError('delete', coordframe)

@@ -95,6 +95,13 @@ class CoordinateFrame(models.Model):
         ('seconds', 'SECONDS'),
     )
     time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100, blank=True, null=True)
+    to_be_deleted = models.DateTimeField(null=True)
+    DELETED_STATUS_CHOICES = (
+        ('started', 'STARTED'),
+        ('finished', 'FINISHED'),
+        ('error', 'ERROR')
+    )
+    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True)
 
     class Meta:
         db_table = u"coordinate_frame"
@@ -125,7 +132,7 @@ class Experiment(models.Model):
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='experiment')
 
-    coord_frame = models.ForeignKey(CoordinateFrame, related_name='coord', on_delete=models.PROTECT)
+    coord_frame = models.ForeignKey(CoordinateFrame, related_name='exps', on_delete=models.PROTECT)
     num_hierarchy_levels = models.IntegerField(default=1)
 
     HIERARCHY_METHOD_CHOICES = (

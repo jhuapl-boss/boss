@@ -29,6 +29,24 @@ class CoordinateFrameSerializer(serializers.ModelSerializer):
                   'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit')
 
 
+class CoordinateFrameDeleteSerializer(serializers.ModelSerializer):
+    """
+    Coordinate frame serializer
+    """
+    exps = serializers.SerializerMethodField()
+    class Meta:
+        model = CoordinateFrame
+        fields = ('name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
+                  'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit', 'exps')
+
+    def get_exps(self, coord):
+        return coord.exps.values_list('name', flat=True)
+
+    def get_valid_exps(self,coord):
+        "return all experiments that reference this coordframe that are not marked to be deleted"
+        return coord.exps.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
+
+
 class CoordinateFrameUpdateSerializer(serializers.ModelSerializer):
     """
     Coordinate frame update serializer

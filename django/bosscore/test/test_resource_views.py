@@ -647,6 +647,16 @@ class ResourceViewsCoordinateTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
+        # Get on the resource should return an error since it is marked for deleton
+        response = self.client.get(url)
+        resp = response.json()
+        self.assertEquals(resp['code'], 4005)
+
+        url = '/' + version + '/coord/cf1/'
+        response = self.client.delete(url)
+        resp= response.json()
+        self.assertEqual(resp['code'], 4003)
+
     def test_delete_coordinateframe_invalid(self):
         """
         Delete a collection (invalid - Violates integrity constraint)

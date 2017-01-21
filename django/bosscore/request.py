@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import re
+import numpy as np
 
 from .models import Collection, Experiment, Channel
 from .lookup import LookUpKey
@@ -140,7 +141,7 @@ class BossRequest:
                                 self.bossrequest['channel_name'])
 
         # Validate filter arguments if any
-        if 'ids' in self.bossrequest and self.bossrequest['ids'] != None:
+        if 'ids' in self.bossrequest and self.bossrequest['ids']!= None:
 
             if self.channel.type != 'annotation':
                 raise BossError("The channel in request has type {}. Filter is only valid for annotation channels"
@@ -148,8 +149,8 @@ class BossRequest:
             else:
                 # convert ids to ints
                 try:
-                    self.filter_ids = [int(id) for id in self.bossrequest['ids'].split(',')]
-                except TypeError as e:
+                    self.filter_ids = np.fromstring(self.bossrequest['ids'], sep= ',', dtype=np.uint64)
+                except (TypeError, ValueError)as e:
                     raise BossError("Invalid id in list of filter ids {}. {}".format(self.bossrequest['ids'], str(e)),
                                     ErrorCodes.INVALID_CUTOUT_ARGS)
 
