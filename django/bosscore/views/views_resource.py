@@ -820,7 +820,7 @@ class CollectionList(generics.ListAPIView):
 
         """
         # queryset = self.get_queryset()
-        collections = get_objects_for_user(request.user, 'read', klass=Collection)
+        collections = get_objects_for_user(request.user, 'read', klass=Collection).exclude(to_be_deleted__isnull=False)
         data = {"collections": [collection.name for collection in collections]}
         return Response(data)
 
@@ -846,7 +846,8 @@ class ExperimentList(generics.ListAPIView):
 
         """
         collection_obj = Collection.objects.get(name=collection)
-        all_experiments = get_objects_for_user(request.user, 'read', klass=Experiment)
+        all_experiments = get_objects_for_user(request.user, 'read', klass=Experiment)\
+            .exclude(to_be_deleted__isnull=False)
         experiments = all_experiments.filter(collection=collection_obj)
         data = {"experiments": [experiment.name for experiment in experiments]}
         return Response(data)
@@ -876,6 +877,7 @@ class ChannelList(generics.ListAPIView):
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
         channels = get_objects_for_user(request.user, 'read', klass=Channel).filter(experiment=experiment_obj)
+        channels= channels.exclude(to_be_deleted__isnull=False)
         data = {"channels": [channel.name for channel in channels]}
         return Response(data)
 
