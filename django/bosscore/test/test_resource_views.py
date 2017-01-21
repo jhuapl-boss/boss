@@ -654,7 +654,7 @@ class ResourceViewsCoordinateTests(APITestCase):
 
         url = '/' + version + '/coord/cf1/'
         response = self.client.delete(url)
-        resp= response.json()
+        resp = response.json()
         self.assertEqual(resp['code'], 4003)
 
     def test_delete_coordinateframe_invalid(self):
@@ -970,7 +970,7 @@ class ResourceViewsChannelTests(APITestCase):
         self.assertEqual(set(response.data['sources']), {'channel1', 'channel2'})
 
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33'
-        data = {'description': 'A new channel for unit tests. Updated','sources': ['channel2']}
+        data = {'description': 'A new channel for unit tests. Updated', 'sources': ['channel2']}
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
 
@@ -1010,7 +1010,7 @@ class ResourceViewsChannelTests(APITestCase):
         self.assertEqual(set(response.data['related']), {'channel1', 'channel2'})
 
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33'
-        data = {'description': 'A new channel for unit tests. Updated','related': ['channel2']}
+        data = {'description': 'A new channel for unit tests. Updated', 'related': ['channel2']}
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
 
