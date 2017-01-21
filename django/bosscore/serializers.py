@@ -40,7 +40,7 @@ class CoordinateFrameDeleteSerializer(serializers.ModelSerializer):
                   'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit', 'exps')
 
     def get_exps(self, coord):
-        return coord.exps.values_list('name', flat=True)
+        return coord.exps.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
 
     def get_valid_exps(self,coord):
         "return all experiments that reference this coordframe that are not marked to be deleted"
@@ -170,7 +170,7 @@ class ChannelReadSerializer(serializers.ModelSerializer):
         Returns:
             List of source channel names
         """
-        source_names = channel.sources.values_list('name', flat=True)
+        source_names = channel.sources.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
         list_sources = [name for name in source_names]
         return list_sources
 
@@ -183,7 +183,7 @@ class ChannelReadSerializer(serializers.ModelSerializer):
             Returns:
                 List of source related names
         """
-        related_names = channel.related.values_list('name', flat=True)
+        related_names = channel.related.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
         list_related = [name for name in related_names]
         return list_related
 
@@ -248,7 +248,7 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
                   'hierarchy_method', 'num_time_samples', 'creator')
 
     def get_channels(self, experiment):
-        return experiment.channels.values_list('name', flat=True)
+        return experiment.channels.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
 
     def get_valid_channels(self, experiment):
         "return all channels that are not marked to be deleted"
@@ -267,7 +267,7 @@ class CollectionSerializer(serializers.ModelSerializer):
         fields = ('name', 'description', 'experiments', 'creator')
 
     def get_experiments(self, collection):
-        return collection.experiments.values_list('name', flat=True)
+        return collection.experiments.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
 
     def get_valid_experiments(self, collection):
         "return all experiments that are not marked to be deleted"
