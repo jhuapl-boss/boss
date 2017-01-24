@@ -14,3 +14,4 @@ uWSGI==2.0.12
 django-guardian
 django-cors-headers
 django-bootstrap-form
+django-redis-sessions

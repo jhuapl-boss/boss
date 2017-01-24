@@ -41,6 +41,10 @@ DATABASES = {
     }
 }
 
+SESSION_ENGINE = 'redis_sessions.session'
+SESSION_REDIS_HOST = config['aws']['cache']
+SESSION_REDIS_DB = 3 # DP ???: should this be in the config file?
+
 INSTALLED_APPS.append("bossoidc")
 INSTALLED_APPS.append("djangooidc")
 INSTALLED_APPS.append("rest_framework.authtoken")
