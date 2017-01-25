@@ -41,9 +41,19 @@ DATABASES = {
     }
 }
 
-SESSION_ENGINE = 'redis_sessions.session'
-SESSION_REDIS_HOST = config['aws']['cache']
-SESSION_REDIS_DB = 3 # DP ???: should this be in the config file?
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://{}:6379/3".format(config['aws']['cache']),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+# DP ???: Are these needed, it looks like they just ensure that the default cache is used
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'default'
 
 INSTALLED_APPS.append("bossoidc")
 INSTALLED_APPS.append("djangooidc")
