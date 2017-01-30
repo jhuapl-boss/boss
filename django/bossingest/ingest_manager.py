@@ -353,6 +353,54 @@ class IngestManager:
         """
         return TileBucket.getBucketName()
 
+    def populate_upload_queue(self):
+        if self.job is None:
+            raise BossError("Unable to generate upload tasks for the ingest service. Please specify a ingest job",
+                            ErrorCodes.UNABLE_TO_VALIDATE)
+
+        ingest_job = self.job
+
+        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
+        lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
+        [col_id, exp_id, ch_id] = lookup_key.split('&')
+        project_info = [col_id, exp_id, ch_id]
+
+        # DP ???: create IngestJob method that creates the StepFunction arguments?
+        args = {
+            'job_id': ingest_job.id,
+            'upload_queue': ingest_job.upload_queue,
+            'ingest_queue': ingest_job.ingest_queue,
+
+            'collection_name': ingest_job.collection,
+            'experiment_name': ingest_job.experiment,
+            'channel_name': ingest_job.channel,
+
+            'resolution': ingest_job.resolution,
+            'project_info': lookup_key.split(CONNECTER),
+
+            't_start': ingest_job.t_start,
+            't_stop': ingest_job.t_stop,
+            't_tile_size': 1,
+
+            'x_start': ingest_job.x_start,
+            'x_stop': ingest_job.x_stop,
+            'x_tile_size': ingest_job.tile_size_x,
+
+            'y_start': ingest_job.y_start,
+            'y_stop': ingest_job.y_stop,
+            'y_tile_size': ingest_job.tile_size_y,
+
+            'z_start': ingest_job.z_start,
+            'z_stop': ingest_job.z_stop,
+            'z_tile_size': 16,
+        }
+
+        session = bossutils.aws.get_session()
+        populate_sfn = config['sfn']['populate_upload_queue']
+        arn = bossutils.aws.sfn_execute(session, populate_sfn, args)
+
+        return arn
+
     def generate_upload_tasks(self, job_id=None):
         """
         Generate upload tasks for the ingest job. This creates once task for each tile that has to be uploaded in the
