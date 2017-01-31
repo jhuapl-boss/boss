@@ -357,6 +357,15 @@ class IngestManager:
         return TileBucket.getBucketName()
 
     def populate_upload_queue(self):
+        """Execute the populate_upload_queue Step Function
+
+        Returns:
+            string: ARN of the StepFunction Execution started
+
+        Raises:
+            BossError : if there is no valid ingest job
+        """
+
         if self.job is None:
             raise BossError("Unable to generate upload tasks for the ingest service. Please specify a ingest job",
                             ErrorCodes.UNABLE_TO_VALIDATE)
