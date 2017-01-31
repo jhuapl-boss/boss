@@ -171,10 +171,13 @@ class IngestManager:
                 ingest_queue = self.create_ingest_queue()
                 self.job.ingest_queue = ingest_queue.url
 
-                self.generate_upload_tasks()
-                tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
 
-                self.create_ingest_credentials(upload_queue, tile_bucket)
+                # Call the step function to populate the queue.
+                self.job.step_function_arn = self.populate_upload_queue()
+                self.job.save()
+
+                #tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
+                #self.create_ingest_credentials(upload_queue, tile_bucket)
 
             # TODO create channel if needed
 

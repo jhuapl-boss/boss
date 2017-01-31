@@ -32,6 +32,7 @@ class IngestJob(models.Model):
     status = models.IntegerField(choices=INGEST_STATUS_OPTIONS, default=0)
     upload_queue = models.URLField(max_length=512, null=True)
     ingest_queue = models.URLField(max_length=512, null=True)
+    step_function_arn = models.URLField(max_length=512, null=True)
     config_data = models.TextField()
 
     collection = models.CharField(max_length=128)
