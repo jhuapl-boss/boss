@@ -32,13 +32,13 @@ class Collection(models.Model):
                             validators=[NameValidator()], unique=True)
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', related_name='collections')
-    to_be_deleted = models.DateTimeField(null=True)
+    to_be_deleted = models.DateTimeField(null=True, blank=True)
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
         ('finished', 'FINISHED'),
         ('error', 'ERROR')
     )
-    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True)
+    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True, blank=True)
 
     class Meta:
         db_table = u"collection"
@@ -95,13 +95,13 @@ class CoordinateFrame(models.Model):
         ('seconds', 'SECONDS'),
     )
     time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100, blank=True, null=True)
-    to_be_deleted = models.DateTimeField(null=True)
+    to_be_deleted = models.DateTimeField(null=True, blank=True)
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
         ('finished', 'FINISHED'),
         ('error', 'ERROR')
     )
-    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True)
+    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True, blank=True)
 
     class Meta:
         db_table = u"coordinate_frame"
@@ -142,13 +142,13 @@ class Experiment(models.Model):
     )
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
     num_time_samples = models.IntegerField(default=1)
-    to_be_deleted = models.DateTimeField(null=True)
+    to_be_deleted = models.DateTimeField(null=True, blank=True)
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
         ('finished', 'FINISHED'),
         ('error', 'ERROR')
     )
-    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True)
+    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True, blank=True)
 
     class Meta:
         db_table = u"experiment"
@@ -195,13 +195,13 @@ class Channel(models.Model):
     datatype = models.CharField(choices=DATATYPE_CHOICES, max_length=100)
     sources = models.ManyToManyField('self', through='Source', symmetrical=False, related_name='derived', blank=True)
     related = models.ManyToManyField('self', related_name='related', blank=True)
-    to_be_deleted = models.DateTimeField(null=True)
+    to_be_deleted = models.DateTimeField(null=True, blank=True)
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
         ('finished', 'FINISHED'),
         ('error', 'ERROR')
     )
-    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True)
+    deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True, blank=True)
 
     class Meta:
         db_table = u"channel"
