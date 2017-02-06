@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from bosscore.error import BossError, ErrorCodes
+from bosscore.error import BossError, ErrorCodes, BossHTTPError
 from bossingest.ingest_manager import IngestManager
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
@@ -45,14 +45,20 @@ class IngestJobView(APIView):
         try:
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
+            if ingest_job.creator != request.user:
+                return BossHTTPError("Forbidden. Cannot join the ingest job ", ErrorCodes.INVALID_REQUEST)
+
             serializer = IngestJobListSerializer(ingest_job)
             print (serializer.data)
 
             # Start setting up output
             data = {}
             data['ingest_job'] = serializer.data
-            if ingest_job.status == 3 or ingest_job.status == 2:
-                # Return the information for the deleted job/completed job
+            if ingest_job.status == 3 :
+                return BossHTTPError ("The job with id {} has been deleted".format(ingest_job_id),
+                                      ErrorCodes.INVALID_REQUEST)
+            elif ingest_job.status == 2 or ingest_job.status == 4:
+                # Return the information for the failed job/completed job
                 return Response(data, status=status.HTTP_200_OK)
             elif ingest_job.status == 0:
                 # check if all message are in the upload queue
