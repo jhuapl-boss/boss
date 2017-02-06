@@ -28,6 +28,7 @@ class IngestJob(models.Model):
             (1, 'Uploading'),
             (2, 'Complete'),
             (3, 'Deleted'),
+            (4, 'Failed'),
         )
     status = models.IntegerField(choices=INGEST_STATUS_OPTIONS, default=0)
     upload_queue = models.URLField(max_length=512, null=True)
