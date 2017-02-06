@@ -16,6 +16,7 @@ import json
 import jsonschema
 import boto3
 import io
+import math
 
 from ingest.core.config import Configuration
 from ingest.core.backend import BossBackend
@@ -171,11 +172,20 @@ class IngestManager:
                 ingest_queue = self.create_ingest_queue()
                 self.job.ingest_queue = ingest_queue.url
 
-
                 # Call the step function to populate the queue.
                 self.job.step_function_arn = self.populate_upload_queue()
-                self.job.save()
 
+                # Compute # of tiles in the job
+                x_extent = self.job.x_stop - self.job.x_start
+                y_extent = self.job.y_stop - self.job.y_start
+                z_extent = self.job.z_stop - self.job.z_start
+                t_extent = self.job.t_stop - self.job.t_start
+                num_tiles_in_x = math.ceil(x_extent/self.job.tile_size_x)
+                num_tiles_in_y = math.ceil(y_extent/self.job.tile_size_y)
+                num_tiles_in_z = math.ceil(z_extent/self.job.tile_size_z)
+                num_tiles_in_t = math.ceil(t_extent / self.job.tile_size_t)
+                self.job.tile_count = num_tiles_in_x * num_tiles_in_y * num_tiles_in_z * num_tiles_in_t
+                self.job.save()
                 #tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
                 #self.create_ingest_credentials(upload_queue, tile_bucket)
 
