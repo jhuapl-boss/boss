@@ -1,16 +1,15 @@
 {% extends "base.html" %}
 {% load bootstrap %}
 
-{% block subtitle %}
-API Token
-{% endblock %}
+{% block title %}API Token{% endblock %}
+{% block subtitle %}Long-lived token for programmatic API access{% endblock %}
 
 {% block content %}
 <form action="{% url 'mgmt:token' %}" method="post" class="form-horizontal">
     {% csrf_token %}
     <div class="form-group">
         <label class="control-label col-sm-2 col-lg-2">Token</label>
-        <div class="col-sm-10 col-lg-10">
+        <div class="col-sm-10 col-md-6">
             {% if token %}
                 <input class="form-control" type="text" value="{{ token }}" readonly />
             {% else %}

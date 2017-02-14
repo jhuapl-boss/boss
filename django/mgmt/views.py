@@ -19,6 +19,7 @@ from . import utils
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
 
+
 # DP NOTE: If a form fails validation in the post() method, then
 #          the populated form is passed to the get() method to
 #          generate the same submission page, but with a form
@@ -30,8 +31,10 @@ def redirect_frag(page, *args, frag=None):
         url += '#' + frag
     return redirect(url)
 
+
 def get_roles(request):
     return BossPrivilegeManager(request.user).roles
+
 
 class Home(LoginRequiredMixin, View):
     def get(self, request):
@@ -39,6 +42,7 @@ class Home(LoginRequiredMixin, View):
             'user_roles': get_roles(request),
         }
         return HttpResponse(render_to_string('base.html', args, RequestContext(request)))
+
 
 class Users(LoginRequiredMixin, View):
     @check_role("user-manager")
@@ -52,14 +56,15 @@ class Users(LoginRequiredMixin, View):
             else:
                 return redirect('mgmt:users')
 
-        users, err = api.get_users(request) # search query parameter will be automatically passed
+        users, err = api.get_users(request)  # search query parameter will be automatically passed
         if err:
             return err
 
         headers = ["Username", "Actions"]
         fmt_usr = '<a href="{}">{}</a>'
         fmt_act = '<a href="?delete={}">Remove User</a>'
-        fmt = lambda u: (fmt_usr.format(reverse('mgmt:user',args=[u['username']]), u['username']), fmt_act.format(u['username']))
+        fmt = lambda u: (
+        fmt_usr.format(reverse('mgmt:user', args=[u['username']]), u['username']), fmt_act.format(u['username']))
         users_args = utils.make_pagination(request, headers, users, fmt)
 
         args = {
@@ -86,6 +91,7 @@ class Users(LoginRequiredMixin, View):
             else:
                 return redirect('mgmt:users')
         return self.get(request, user_form=form)
+
 
 class User(LoginRequiredMixin, View):
     @check_role("user-manager")
@@ -138,10 +144,11 @@ class User(LoginRequiredMixin, View):
                 return redirect_frag('mgmt:user', username, frag='Roles')
         return self.get(request, username, role_form=form)
 
+
 class Token(LoginRequiredMixin, View):
     def get(self, request):
         try:
-            token = TokenModel.objects.get(user = request.user)
+            token = TokenModel.objects.get(user=request.user)
             button = "Revoke Token"
         except:
             token = None
@@ -157,12 +164,13 @@ class Token(LoginRequiredMixin, View):
 
     def post(self, request):
         try:
-            token = TokenModel.objects.get(user = request.user)
+            token = TokenModel.objects.get(user=request.user)
             token.delete()
         except:
-            token = TokenModel.objects.create(user = request.user)
+            token = TokenModel.objects.create(user=request.user)
 
         return redirect('mgmt:token')
+
 
 class Groups(LoginRequiredMixin, View):
     def get(self, request, group_form=None):
@@ -183,7 +191,7 @@ class Groups(LoginRequiredMixin, View):
         headers = ["Group", "Actions"]
         fmt_grp = '<a href="{}">{}</a>'
         fmt_act = '<a href="?delete={}">Remove Group</a>'
-        fmt = lambda g: (fmt_grp.format(reverse('mgmt:group',args=[g]), g), fmt_act.format(g))
+        fmt = lambda g: (fmt_grp.format(reverse('mgmt:group', args=[g]), g), fmt_act.format(g))
         groups_args = utils.make_pagination(request, headers, groups, fmt)
 
         args = {
@@ -207,6 +215,7 @@ class Groups(LoginRequiredMixin, View):
             else:
                 return redirect('mgmt:groups')
         return self.get(request, group_form=form)
+
 
 class Group(LoginRequiredMixin, View):
     def get(self, request, group_name, memb_form=None, perms_form=None):
@@ -292,7 +301,7 @@ class Group(LoginRequiredMixin, View):
 
     @check_role("resource-manager")
     def post(self, request, group_name):
-        action = request.GET.get('action') # URL parameter
+        action = request.GET.get('action')  # URL parameter
 
         if action == 'memb':
             form = GroupMemberForm(request.POST)
@@ -327,50 +336,16 @@ class Group(LoginRequiredMixin, View):
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
+
 class Resources(LoginRequiredMixin, View):
     def get(self, request, col_form=None, coord_form=None):
         page_error = None
-        delete = request.GET.get('del_col')
-        if delete:
-            err = api.del_collection(request, delete)
-            if err:
-                page_error = err
-            else:
-                return redirect('mgmt:resources')
+        print("inget")
 
-        delete = request.GET.get('del_coord')
-        if delete:
-            err = api.del_coord(request, delete)
-            if err:
-                page_error = err
-            else:
-                return redirect_frag('mgmt:resources', frag='CoordinateFrames')
-
-        collections, err = api.get_collections(request)
-        if err:
-            return err
-
-        coords, err = api.get_coords(request)
-        if err:
-            return err
-
-        headers = ["Collection", "Actions"]
-        fmt_lnk = '<a href="{}">{}</a>'
-        fmt_act = '<a href="?del_col={}">Remove Collection</a>'
-        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:collection',args=[r]), r), fmt_act.format(r))
-        collections_args = utils.make_pagination(request, headers, collections, fmt)
-
-        headers = ["Coordinate Frame", "Actions"]
-        fmt_lnk = '<a href="{}">{}</a>'
-        fmt_act = '<a href="?del_coord={}#CoordinateFrames">Remove Coordinate Frame</a>'
-        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:coord',args=[r]), r), fmt_act.format(r))
-        coords_args = utils.make_pagination(request, headers, coords, fmt)
 
         args = {
             'user_roles': get_roles(request),
             'page_error': page_error,
-            'collections': collections_args,
-            'coords': coords_args,
             'col_form': col_form if col_form else CollectionForm(),
             'col_error': "error" if col_form else "",
             'coord_form': coord_form if coord_form else CoordinateFrameForm(),
@@ -380,7 +355,7 @@ class Resources(LoginRequiredMixin, View):
 
     @check_role("resource-manager")
     def post(self, request):
-        action = request.GET.get('action') # URL parameter
+        action = request.GET.get('action')  # URL parameter
 
         if action == 'col':
             form = CollectionForm(request.POST)
@@ -391,6 +366,7 @@ class Resources(LoginRequiredMixin, View):
                 err = api.add_collection(request, collection, data)
                 if err:
                     form.add_error(None, err)
+                    print(err)
                 else:
                     return redirect('mgmt:resources')
             return self.get(request, col_form=form)
@@ -408,6 +384,7 @@ class Resources(LoginRequiredMixin, View):
             return self.get(request, coord_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
+
 
 class CoordinateFrame(LoginRequiredMixin, View):
     def get(self, request, coord_name, coord_form=None):
@@ -431,16 +408,17 @@ class CoordinateFrame(LoginRequiredMixin, View):
 
     @check_role("resource-manager")
     def post(self, request, coord_name):
-            form = CoordinateFrameForm(request.POST)
-            if form.is_valid():
-                data = form.cleaned_update_data
+        form = CoordinateFrameForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_update_data
 
-                err = api.up_coord(request, coord_name, data)
-                if err:
-                    form.add_error(None, err)
-                else:
-                    return redirect('mgmt:coord', data['name'])
-            return self.get(request, coord_name, coord_form=form)
+            err = api.up_coord(request, coord_name, data)
+            if err:
+                form.add_error(None, err)
+            else:
+                return redirect('mgmt:coord', data['name'])
+        return self.get(request, coord_name, coord_form=form)
+
 
 class Collection(LoginRequiredMixin, View):
     def get(self, request, collection_name, col_form=None, exp_form=None, meta_form=None, perms_form=None):
@@ -490,7 +468,7 @@ class Collection(LoginRequiredMixin, View):
         headers = ["Experiment", "Actions"]
         fmt_lnk = '<a href="{}">{}</a>'
         fmt_act = '<a href="?rem_exp={}#Experiments">Remove Experiment</a>'
-        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:experiment',args=[collection_name, r]), r), fmt_act.format(r))
+        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:experiment', args=[collection_name, r]), r), fmt_act.format(r))
         experiments_args = utils.make_pagination(request, headers, collection['experiments'], fmt)
 
         meta_url = reverse('mgmt:meta', args=[collection_name])
@@ -518,7 +496,7 @@ class Collection(LoginRequiredMixin, View):
 
     @check_role("resource-manager")
     def post(self, request, collection_name):
-        action = request.GET.get('action') # URL parameter
+        action = request.GET.get('action')  # URL parameter
 
         if action == 'exp':
             form = ExperimentForm(request.POST)
@@ -567,8 +545,10 @@ class Collection(LoginRequiredMixin, View):
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
+
 class Experiment(LoginRequiredMixin, View):
-    def get(self, request, collection_name, experiment_name, exp_form=None, chan_form=None, meta_form=None, perms_form=None):
+    def get(self, request, collection_name, experiment_name, exp_form=None, chan_form=None, meta_form=None,
+            perms_form=None):
         page_error = None
         remove = request.GET.get('rem_chan')
         if remove is not None:
@@ -620,7 +600,8 @@ class Experiment(LoginRequiredMixin, View):
         headers = ["Channel", "Actions"]
         fmt_lnk = '<a href="{}">{}</a>'
         fmt_act = '<a href="?rem_chan={}#Channels">Remove Channel</a>'
-        fmt = lambda r: (fmt_lnk.format(reverse('mgmt:channel',args=[collection_name, experiment_name, r]), r), fmt_act.format(r))
+        fmt = lambda r: (
+        fmt_lnk.format(reverse('mgmt:channel', args=[collection_name, experiment_name, r]), r), fmt_act.format(r))
         channels_args = utils.make_pagination(request, headers, channels, fmt)
 
         meta_url = reverse('mgmt:meta', args=[collection_name, experiment_name])
@@ -649,7 +630,7 @@ class Experiment(LoginRequiredMixin, View):
 
     @check_role("resource-manager")
     def post(self, request, collection_name, experiment_name):
-        action = request.GET.get('action') # URL parameter
+        action = request.GET.get('action')  # URL parameter
 
         if action == 'chan':
             form = ChannelForm(request.POST)
@@ -698,8 +679,10 @@ class Experiment(LoginRequiredMixin, View):
         else:
             return HttpResponse(status=400, reason="Unknown post action")
 
+
 class Channel(LoginRequiredMixin, View):
-    def get(self, request, collection_name, experiment_name, channel_name, chan_form=None, meta_form=None, perms_form=None):
+    def get(self, request, collection_name, experiment_name, channel_name, chan_form=None, meta_form=None,
+            perms_form=None):
         page_error = None
         remove = request.GET.get('rem_meta')
         if remove is not None:
@@ -760,7 +743,7 @@ class Channel(LoginRequiredMixin, View):
 
     @check_role("resource-manager")
     def post(self, request, collection_name, experiment_name, channel_name):
-        action = request.GET.get('action') # URL parameter
+        action = request.GET.get('action')  # URL parameter
 
         if action == 'meta':
             form = MetaForm(request.POST)
@@ -781,7 +764,8 @@ class Channel(LoginRequiredMixin, View):
                 if err:
                     form.add_error(None, err)
                 else:
-                    return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name, frag='Permissions')
+                    return redirect_frag('mgmt:channel', collection_name, experiment_name, channel_name,
+                                         frag='Permissions')
             return self.get(request, collection_name, experiment_name, channel_name, perms_form=form)
         elif action == 'update':
             form = ChannelForm(request.POST)
@@ -796,6 +780,7 @@ class Channel(LoginRequiredMixin, View):
             return self.get(request, collection_name, experiment_name, channel_name, chan_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
+
 
 class Meta(LoginRequiredMixin, View):
     def get(self, request, collection, experiment=None, channel=None, meta_form=None):
@@ -831,15 +816,14 @@ class Meta(LoginRequiredMixin, View):
 
     @check_role("resource-manager")
     def post(self, request, collection, experiment=None, channel=None):
-            form = MetaForm(request.POST)
-            if form.is_valid():
-                key = form.cleaned_data['key']
-                value = form.cleaned_data['value']
+        form = MetaForm(request.POST)
+        if form.is_valid():
+            key = form.cleaned_data['key']
+            value = form.cleaned_data['value']
 
-                err = api.up_meta(request, key, value, collection, experiment, channel)
-                if err:
-                    form.add_error(None, err)
-                else:
-                    return HttpResponseRedirect('?key=' + key)
-            return self.get(request, collection, experiment, channel, meta_form=form)
-
+            err = api.up_meta(request, key, value, collection, experiment, channel)
+            if err:
+                form.add_error(None, err)
+            else:
+                return HttpResponseRedirect('?key=' + key)
+        return self.get(request, collection, experiment, channel, meta_form=form)
