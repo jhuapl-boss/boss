@@ -29,7 +29,7 @@ class BossIngestServiceRoutingTests(APITestCase):
         Returns: None
         """
         match = resolve('/' + version + '/ingest/')
-        self.assertEqual(match.func.__name__, IngestJobListView.as_view().__name__)
+        self.assertEqual(match.func.__name__, IngestJobView.as_view().__name__)
 
     def test_ingest_urls_with_id_resolves_to_BossIngest_views(self):
         """

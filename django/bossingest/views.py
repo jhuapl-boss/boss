@@ -35,7 +35,7 @@ class IngestJobView(APIView):
 
     """
 
-    def get(self, request, ingest_job_id):
+    def get(self, request, ingest_job_id=None):
         """
         Join a job with the specified job id
         Args:
@@ -46,6 +46,12 @@ class IngestJobView(APIView):
             Ingest job
         """
         try:
+            # list all ingest jobs if no id is specified
+            if ingest_job_id is None:
+                jobs = IngestJob.objects.filter(creator=request.user)
+                data = {"IDS": [job.id for job in jobs]}
+                return Response(data, status=status.HTTP_200_OK)
+
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
 
