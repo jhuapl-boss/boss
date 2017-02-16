@@ -16,9 +16,8 @@ from django.conf.urls import url
 from bossingest import views
 
 urlpatterns = [
-
+    url(r'(?P<ingest_job_id>[\d]+)/status/?$', views.IngestJobStatusView.as_view()),
     url(r'(?P<ingest_job_id>[\d]+)/?$', views.IngestJobView.as_view()),
-
-    url(r'^$', views.IngestJobView.as_view()),
+    url(r'^$', views.IngestJobListView.as_view()),
 
   ]

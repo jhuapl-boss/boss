@@ -77,17 +77,6 @@ class BossIngestManagerTest(APITestCase):
         job = ingest_mgmr.create_ingest_job()
         assert (job.id is not None)
 
-
-    def test_create_upload_task_message(self):
-        """Test method that creates an upload task message"""
-
-        ingest_mgmr = IngestManager()
-        msg = ingest_mgmr.create_upload_task_message(595, '3534561bd72dcfce1af7c041fc783379&16&1&1&1&0&1&1&3&0',
-                                                     '3534561bd72dcfpppaf7c041fc783379&1&1&1&0&1&1&3&0',
-                                                     'test_upload_queue_url', 'test_ingest_queue_url')
-        msg = json.loads(msg)
-        assert (msg['job_id'] == 595)
-
     def test_tile_bucket_name(self):
         """ Test get tile bucket name"""
 
@@ -96,30 +85,14 @@ class BossIngestManagerTest(APITestCase):
         assert(tile_bucket_name is not None)
 
 
-    def test_create_ingest_credentials(self):
-        """"""
-        ingest_mgmr = IngestManager()
-        ingest_mgmr = IngestManager()
-        ingest_mgmr.validate_config_file(self.example_config_data)
-        ingest_mgmr.validate_properties()
-        ingest_mgmr.owner = self.user.pk
-        job = ingest_mgmr.create_ingest_job()
-        ingest_mgmr.job = job
-#        ingest_mgmr.create_ingest_credentials()
+#     def test_create_ingest_credentials(self):
+#         """"""
+#         ingest_mgmr = IngestManager()
+#         ingest_mgmr = IngestManager()
+#         ingest_mgmr.validate_config_file(self.example_config_data)
+#         ingest_mgmr.validate_properties()
+#         ingest_mgmr.owner = self.user.pk
+#         job = ingest_mgmr.create_ingest_job()
+#         ingest_mgmr.job = job
+# #        ingest_mgmr.create_ingest_credentials()
 
-
-    def test_generate_upload_tasks(self):
-        """
-        Test that the correct number of messages are being uploaded
-        """
-        ingest_mgmr = IngestManager()
-        ingest_mgmr.validate_config_file(self.example_config_data)
-        ingest_mgmr.validate_properties()
-        ingest_mgmr.owner = self.user.pk
-        job = ingest_mgmr.create_ingest_job()
-        ingest_mgmr.job = job
-        with patch.object(IngestManager, 'upload_task_file') as mock_method:
-            ingest_mgmr.generate_upload_tasks(job.id)
-            self.assertEquals(ingest_mgmr.file_index, 1)
-            self.assertEquals(ingest_mgmr.num_of_chunks, 48)
-            self.assertEquals(ingest_mgmr.count_of_tiles, 640)
