@@ -1,34 +1,100 @@
 {% extends "base.html" %}
 {% load mgmt %}
+{% load static %}
 
-{% block subtitle %}
-Collection {{ collection_name }}
-{% endblock %}
+{% block title %}Resources{% endblock %}
+{% block subtitle %}Collection: {{ collection_name }}{% endblock %}
 
 {% block content %}
-{% url 'mgmt:meta' collection_name as meta_url %}
-{% url 'mgmt:collection' collection_name as current_url %}
+  {% url 'mgmt:meta' collection_name as meta_url %}
+  {% url 'mgmt:collection' collection_name as current_url %}
 
-<div class="tab-pane" id="Collection" role="tabpannel">
-    {% mgmt_url current_url action="update" as update_url %}
-    {% update_form col_form col_error "Update Collection" update_url Creator=collection.creator %}
-</div>
-<div class="tab-pane" id="Experiments" role="tabpannel">
-    {% paginated_table experiments %}
-    <br/>
-    {% mgmt_url current_url action="exp" as add_exp_url %}
-    {% add_modal exp_form exp_error "Add Experiment" add_exp_url %}
-</div>
-<div class="tab-pane" id="Permissions" role="tabpannel">
-    {% paginated_table perms %}
-    <br/>
-    {% mgmt_url current_url action="perms" as add_perms_url %}
-    {% add_modal perms_form perms_error "Edit Permissions" add_perms_url %}
-</div>
-<div class="tab-pane" id="Meta" role="tabpannel">
-    {% paginated_table metas %}
-    <br/>
-    {% mgmt_url current_url action="meta" as add_meta_url %}
-    {% add_modal meta_form meta_error "Add Meta Value" add_meta_url %}
-</div>
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Experiments</h3>
+        </div>
+        <div id="experiments_toolbar">
+          {% mgmt_url current_url action="exp" as add_exp_url %}
+          {% add_modal exp_form exp_error "Add Experiment" add_exp_url %}
+        </div>
+
+        <div class="panel-body">
+          <table id="experiment_table"
+                         data-toggle="table"
+                         data-response-handler="experiment_handler"
+                         data-ajax="get_experiments"
+                         data-side-pagination="client"
+                         data-sort-name="name"
+                         data-pagination="true"
+                         data-search="true"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-cache="false"
+                         data-toolbar="#experiments_toolbar"
+                         data-show-refresh="true">
+                      <thead>
+                      <tr>
+                          <th data-field="name">Experiment Name</th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Collection Properties</h3>
+        </div>
+        <div class="panel-body">
+          {% mgmt_url current_url action="update" as update_url %}
+          {% update_form col_form col_error "Update Collection" update_url Creator=collection.creator %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Collection Permissions</h3>
+        </div>
+        <div class="panel-body">
+          {% paginated_table perms %}
+          <br/>
+          {% mgmt_url current_url action="perms" as add_perms_url %}
+          {% add_modal perms_form perms_error "Edit Permissions" add_perms_url %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Collection Metadata</h3>
+        </div>
+        <div class="panel-body">
+          {% paginated_table metas %}
+          <br/>
+          {% mgmt_url current_url action="meta" as add_meta_url %}
+          {% add_modal meta_form meta_error "Add Meta Value" add_meta_url %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+
+{% block js_includes %}
+<script type="text/javascript" src="{% static "js/collections.js" %}"></script>
 {% endblock %}

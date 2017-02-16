@@ -102,34 +102,37 @@ class CollectionForm(forms.Form):
 class CoordinateFrameForm(UpdateForm):
     UPDATE_FIELDS = ['name', 'description'] 
 
-    name = forms.CharField(label="Coordinate Frame")
-    description = forms.CharField(required=False)
+    name = forms.CharField(label="Coordinate Frame", help_text="Globally unique string identifier")
+    description = forms.CharField(required=False, help_text="Optional")
 
-    x_start = forms.IntegerField()
-    x_stop = forms.IntegerField()
+    x_start = forms.IntegerField(help_text="Start point in X, inclusive. Typically 0")
+    x_stop = forms.IntegerField(help_text="End point in X, exclusive")
 
-    y_start = forms.IntegerField()
-    y_stop = forms.IntegerField()
+    y_start = forms.IntegerField(help_text="Start point in Y, inclusive. Typically 0")
+    y_stop = forms.IntegerField(help_text="End point in Y, exclusive")
 
-    z_start = forms.IntegerField()
-    z_stop = forms.IntegerField()
+    z_start = forms.IntegerField(help_text="Start point in Z, inclusive. Typically 0")
+    z_stop = forms.IntegerField(help_text="End point in Z, exclusive")
 
-    x_voxel_size = forms.IntegerField()
-    y_voxel_size = forms.IntegerField()
-    z_voxel_size = forms.IntegerField()
+    x_voxel_size = forms.IntegerField(help_text="Voxel dimension in X")
+    y_voxel_size = forms.IntegerField(help_text="Voxel dimension in y")
+    z_voxel_size = forms.IntegerField(help_text="Voxel dimension in z")
     voxel_unit = forms.ChoiceField(choices=[(c,c) for c in ['',
                                                             'nanometers',
                                                             'micrometers',
                                                             'millimeters',
-                                                            'centimeters']])
+                                                            'centimeters']],
+                                   help_text="Unit of measure for voxel size")
 
-    time_step = forms.IntegerField(required=False)
+    time_step = forms.IntegerField(required=False, help_text="(Optional) If time-series data, duration between samples.")
     time_step_unit = forms.ChoiceField(required=False,
                                        choices=[(c,c) for c in ['',
                                                                 'nanoseconds',
                                                                 'microseconds',
                                                                 'milliseconds',
-                                                                'seconds']])
+                                                                'seconds']],
+                                   help_text="(Optional) Unit of measure for time step")
+
 
 class ExperimentForm(UpdateForm):
     UPDATE_FIELDS = ['name', 'description',

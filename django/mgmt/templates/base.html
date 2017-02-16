@@ -1,4 +1,5 @@
 {% load static %}
+{% load staticfiles %}
 
 <html>
 <head>
@@ -132,7 +133,7 @@
   </script>
 </head>
 <body class="boss">
-  <nav class="navbar navbar-inverse">
+  <nav class="navbar navbar-default">
     <div class="container">
       <div class="navbar-header">
         <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#main-navbar">
@@ -175,9 +176,9 @@
 
 <div class="boss container">
   <div class="page-header-custom h2">
-    {% block title %}{% endblock %}
+    {% block title %}The Boss{% endblock %}
     <br>
-    <small>{% block subtitle %}{% endblock %}</small>
+    <small>{% block subtitle %}Management Console{% endblock %}</small>
     <hr>
   </div>
 
@@ -202,6 +203,7 @@
 <script type="text/javascript">
   var API_ROOT= window.location.protocol + "//" + window.location.hostname + "/" + window.location.pathname.split("/")[1] + "/"
 </script>
+
 {% block js_includes %}{% endblock %}
 </body>
 </html>

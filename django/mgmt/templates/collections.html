@@ -107,9 +107,31 @@ Resources
               <div class="panel-heading">
                 <h3 class="panel-title">Coordinate Frames</h3>
               </div>
-              <div class="panel-body">
-                  CF TABLE
+              <div id="coord_toolbar">
                 {% add_modal coord_form coord_error "Add Coordinate Frame" add_coord_url %}
+              </div>
+              <div class="panel-body">
+                  <table id="coord_table"
+                         data-toggle="table"
+                         data-response-handler="coord_handler"
+                         data-ajax="get_coords"
+                         data-side-pagination="client"
+                         data-sort-name="name"
+                         data-pagination="true"
+                         data-search="true"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-cache="false"
+                         data-toolbar="#coord_toolbar"
+                         data-show-refresh="true">
+                      <thead>
+                      <tr>
+                          <th data-field="name">Coordinate Frame Name</th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
+
               </div>
             </div>
         </div>

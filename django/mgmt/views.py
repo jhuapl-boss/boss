@@ -340,38 +340,37 @@ class Group(LoginRequiredMixin, View):
 class Resources(LoginRequiredMixin, View):
     def get(self, request, col_form=None, coord_form=None):
         page_error = None
-        print("inget")
-
 
         args = {
             'user_roles': get_roles(request),
             'page_error': page_error,
-            'col_form': col_form if col_form else CollectionForm(),
+            'col_form': col_form if col_form else CollectionForm(prefix="col"),
             'col_error': "error" if col_form else "",
-            'coord_form': coord_form if coord_form else CoordinateFrameForm(),
+            'coord_form': coord_form if coord_form else CoordinateFrameForm(prefix="coord", initial={"x_start": 0,
+                                                                                                     "y_start": 0,
+                                                                                                     "z_start": 0}),
             'coord_error': "error" if coord_form else "",
         }
         return HttpResponse(render_to_string('collections.html', args, RequestContext(request)))
 
-    @check_role("resource-manager")
     def post(self, request):
-        action = request.GET.get('action')  # URL parameter
-
-        if action == 'col':
-            form = CollectionForm(request.POST)
+        print(request.POST)
+        if 'col-name' in request.POST:
+            form = CollectionForm(request.POST, prefix="col")
             if form.is_valid():
                 data = form.cleaned_data.copy()
                 collection = data['name']
+                print(collection)
 
                 err = api.add_collection(request, collection, data)
                 if err:
-                    form.add_error(None, err)
                     print(err)
+                    form.add_error(None, err)
                 else:
                     return redirect('mgmt:resources')
             return self.get(request, col_form=form)
-        elif action == 'coord':
-            form = CoordinateFrameForm(request.POST)
+        elif 'coord-name' in request.POST:
+            form = CoordinateFrameForm(request.POST, prefix="coord")
             if form.is_valid():
                 data = form.cleaned_data.copy()
                 coord_name = data['name']
@@ -380,7 +379,7 @@ class Resources(LoginRequiredMixin, View):
                 if err:
                     form.add_error(None, err)
                 else:
-                    return redirect_frag('mgmt:resources', frag='CoordinateFrames')
+                    return redirect('mgmt:resources')
             return self.get(request, coord_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")
@@ -485,7 +484,9 @@ class Collection(LoginRequiredMixin, View):
             'perms': perms_args,
             'col_form': col_form,
             'col_error': col_error,
-            'exp_form': exp_form if exp_form else ExperimentForm(),
+            'exp_form': exp_form if exp_form else ExperimentForm(initial={"num_time_samples": 1,
+                                                                          "hierarchy_method": "near_iso",
+                                                                          "num_hierarchy_levels": 7}),
             'exp_error': "error" if exp_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",

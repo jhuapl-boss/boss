@@ -15,6 +15,15 @@
 .boss .fixed-table-container {
     height: auto;
 }
+
 .boss .fixed-table-body {
     height: auto;
+}
+
+.boss .fixed-table-body {
+    height: auto;
+}
+
+.boss .action-button{
+    margin-left: 20px;
 }
