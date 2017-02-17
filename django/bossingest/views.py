@@ -76,12 +76,12 @@ class IngestJobView(APIView):
                 # Job is still in progress
                 # check status of the step function
                 session = bossutils.aws.get_session()
-                if bossutils.aws.sfn_status(session, ingest_job.step_function_arn) == 'Succeeded':
+                if bossutils.aws.sfn_status(session, ingest_job.step_function_arn) == 'SUCCEEDED':
                     # generate credentials
                     ingest_job.status = 1
                     ingest_job.save()
                     ingest_mgmr.generate_ingest_credentials(ingest_job)
-                elif bossutils.aws.sfn_status(session, ingest_job.step_function_arn) == 'Failed':
+                elif bossutils.aws.sfn_status(session, ingest_job.step_function_arn) == 'FAILED':
                     # This indicates an error in step function
                     raise BossError("Error generating ingest job messages"
                                     " Delete the ingest job with id {} and try again.".format(ingest_job_id),

@@ -677,8 +677,8 @@ class IngestManager:
         tile_bucket = TileBucket(ingest_job.collection + '&' + ingest_job.experiment)
         upload_queue = self.get_ingest_job_upload_queue(ingest_job)
         ingest_creds = IngestCredentials()
-        policy = BossUtil.generate_ingest_policy(self.job.id, upload_queue, tile_bucket)
-        ingest_creds.generate_credentials(self.job.id, policy.arn)
+        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, tile_bucket)
+        ingest_creds.generate_credentials(ingest_job.id, policy.arn)
 
     def remove_ingest_credentials(self, job_id):
         """
