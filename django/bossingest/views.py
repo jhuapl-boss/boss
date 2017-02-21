@@ -223,12 +223,12 @@ class IngestJobStatusView(APIView):
                 # Failed job
                 raise BossError("The job with id {} has failed".format(ingest_job_id),
                                 ErrorCodes.INVALID_REQUEST)
-            elif ingest_job.status == 0 or ingest_job.status == 0:
+            elif ingest_job.status == 0 or ingest_job.status == 1:
                 # Complete or preparing
                 upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
                 num_messages_in_queue = int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
                 if num_messages_in_queue < ingest_job.tile_count:
-                    for n in range(1, 10):
+                    for n in range(9):
                         num_messages_in_queue += int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
                     num_messages_in_queue /= 10
 
