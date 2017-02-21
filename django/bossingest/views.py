@@ -228,13 +228,13 @@ class IngestJobStatusView(APIView):
                 upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
                 num_messages_in_queue = 0
                 for n in range(1, 10):
-                    num_messages_in_queue += upload_queue.queue.attributes['ApproximateNumberOfMessages']
+                    num_messages_in_queue += int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
 
                 num_messages_in_queue /= 10
                 data = {"id": ingest_job.id,
                         "status": ingest_job.status,
                         "Total message count": ingest_job.tile_count,
-                        "Current message count": num_messages_in_queue}
+                        "Current message count": int(num_messages_in_queue)}
 
             return Response(data, status=status.HTTP_200_OK)
         except BossError as err:
@@ -261,6 +261,6 @@ class IngestJobListView(generics.ListCreateAPIView):
         Returns: A list of job ids for the user
 
         """
-        jobs = IngestJob.objects.filter(creator=request.user)
+        jobs = IngestJob.objects.filter(creator=request.user, status=0)
         data = {"IDS": [job.id for job in jobs]}
         return Response(data)
