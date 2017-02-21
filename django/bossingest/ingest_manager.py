@@ -306,13 +306,13 @@ class IngestManager:
             ingest_job.save()
 
             # Remove ingest credentials for a job
-            self.remove_ingest_credentials(ingest_job_id)
+            self.remove_ingest_credentials(ingest_job.id)
 
         except Exception as e:
             raise BossError("Unable to delete the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
         except IngestJob.DoesNotExist:
-            raise BossError("Ingest job with id {} does not exist".format(ingest_job_id), ErrorCodes.OBJECT_NOT_FOUND)
-        return ingest_job_id
+            raise BossError("Ingest job with id {} does not exist".format(ingest_job.id), ErrorCodes.OBJECT_NOT_FOUND)
+        return ingest_job.id
 
     def create_upload_queue(self):
         """

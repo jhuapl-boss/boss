@@ -48,8 +48,13 @@ class IngestJobView(APIView):
         try:
             # list all ingest jobs if no id is specified
             if ingest_job_id is None:
-                jobs = IngestJob.objects.filter(creator=request.user)
-                data = {"IDS": [job.id for job in jobs]}
+                # List all jobs in progress for the user
+                jobs = IngestJob.objects.filter(creator=request.user, status=0)
+                list_jobs = []
+                for item in jobs:
+                    job = {'id': item.id, 'config_data': item.config_data}
+                    list_jobs.append(job)
+                data = {"Ingest jobs": list_jobs}
                 return Response(data, status=status.HTTP_200_OK)
 
             ingest_mgmr = IngestManager()
