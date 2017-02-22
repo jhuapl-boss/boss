@@ -58,8 +58,11 @@ def load_user_roles(user, roles):
         to_assign.append('admin')
     for name in to_assign:
         group, created = Group.objects.get_or_create(name=name)
+        if created:
+            bgroup = BossGroup.objects.create(group=group, creator=user)
         if group not in groups:
             user.groups.add(group)
+
 
 # Decorators to check that the user has the right role
 def check_role(role_name):

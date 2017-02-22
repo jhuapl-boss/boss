@@ -32,7 +32,7 @@ def check_is_member_or_maintainer(user, group_name):
     try:
         group = Group.objects.get(name = group_name)
         bgroup = BossGroup.objects.get(group=group)
-        if user.has_perm("maintain_group", bgroup) and group.user_set.filter(id=user.id).exists():
+        if user.has_perm("maintain_group", bgroup) or group.user_set.filter(id=user.id).exists():
             return True
         else:
             return False
