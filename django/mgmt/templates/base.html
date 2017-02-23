@@ -154,9 +154,7 @@
           <li><a href="{% url 'mgmt:resources' %}">Manage Resources</a></li>
 
         </ul>
-        <span class="navbar-text">
-                          {% block breadcrumb %}{% endblock %}
-                      </span>
+
         <ul class="nav navbar-nav navbar-right">
           <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown" id="user-dropdown">
@@ -176,9 +174,12 @@
 
 <div class="boss container">
   <div class="page-header-custom h2">
-    {% block title %}The Boss{% endblock %}
-    <br>
-    <small>{% block subtitle %}Management Console{% endblock %}</small>
+    <div class="row">
+      {% block title %}The Boss{% endblock %}
+    </div>
+    <div class="row">
+      <small>{% block subtitle %}Management Console{% endblock %}</small>
+    </div>
     <hr>
   </div>
 

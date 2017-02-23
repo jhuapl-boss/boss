@@ -16,6 +16,7 @@ from django.http import JsonResponse
 from bossutils.logger import BossLogger
 from enum import IntEnum
 import sys
+import json
 
 
 class ErrorCodes(IntEnum):
@@ -233,7 +234,7 @@ class BossKeycloakError(JsonResponse):
         }
 
         if ex:
-            data.update(ex.data)
+            data.update(json.loads(ex.data))
 
         msg = "BossKeycloakError"
         for k in data:

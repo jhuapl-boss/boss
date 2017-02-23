@@ -2,8 +2,8 @@
 {% load mgmt %}
 {% load static %}
 
-{% block title %}Resources{% endblock %}
-{% block subtitle %}Collection: {{ collection_name }}{% endblock %}
+{% block title %}{{ collection_name }}{% endblock %}
+{% block subtitle %}Collection Details{% endblock %}
 
 {% block content %}
   {% url 'mgmt:meta' collection_name as meta_url %}
@@ -53,8 +53,12 @@
           <h3 class="panel-title">Collection Properties</h3>
         </div>
         <div class="panel-body">
-          {% mgmt_url current_url action="update" as update_url %}
-          {% update_form col_form col_error "Update Collection" update_url Creator=collection.creator %}
+          <div class="row">
+            <div class="col-xs-10 col-xs-offset-1">
+              {% mgmt_url current_url action="update" as update_url %}
+              {% update_form col_form col_error "Update Collection" update_url Creator=collection.creator %}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -64,13 +68,37 @@
     <div class="col-xs-12">
       <div class="panel panel-default">
         <div class="panel-heading">
-          <h3 class="panel-title">Collection Permissions</h3>
+          <h3 class="panel-title">Collection Permissions
+            <span type="button" class="glyphicon glyphicon-question-sign" data-container="body" data-toggle="popover" data-placement="top" data-content="Granting a group permissions only provides access to this collection. Resources contained within the collection require additional permissions to be added.">
+            </span>
+          </h3>
         </div>
-        <div class="panel-body">
-          {% paginated_table perms %}
-          <br/>
+
+        <div id="permission_toolbar">
           {% mgmt_url current_url action="perms" as add_perms_url %}
-          {% add_modal perms_form perms_error "Edit Permissions" add_perms_url %}
+          {% add_modal perms_form perms_error "Add Permissions" add_perms_url %}
+        </div>
+
+        <div class="panel-body">
+          <table id="permission_table"
+                         data-side-pagination="client"
+                         data-sort-name="group"
+                         data-pagination="true"
+                         data-search="true"
+                         data-strict-search=="false"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-toolbar="#permission_toolbar"
+                         data-show-refresh="false">
+                      <thead>
+                      <tr>
+                          <th data-field="group">Attached Group Name</th>
+                          <th data-field="permissions">Permission
+                          </th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
         </div>
       </div>
     </div>
@@ -82,19 +110,54 @@
         <div class="panel-heading">
           <h3 class="panel-title">Collection Metadata</h3>
         </div>
-        <div class="panel-body">
-          {% paginated_table metas %}
-          <br/>
+        <div id="meta_toolbar">
           {% mgmt_url current_url action="meta" as add_meta_url %}
-          {% add_modal meta_form meta_error "Add Meta Value" add_meta_url %}
+          {% add_modal meta_form meta_error "Add Metadata" add_meta_url %}
+        </div>
+
+        <div class="panel-body">
+          <table id="metadata_table"
+                         data-toggle="table"
+                         data-response-handler="metadata_handler"
+                         data-ajax="get_metadata"
+                         data-side-pagination="client"
+                         data-sort-name="name"
+                         data-pagination="true"
+                         data-search="true"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-cache="false"
+                         data-toolbar="#meta_toolbar"
+                         data-show-refresh="true">
+                      <thead>
+                      <tr>
+                          <th data-field="key">Key</th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
         </div>
       </div>
     </div>
   </div>
+
+{% add_meta_modal %}
 
 {% endblock %}
 
 
 {% block js_includes %}
 <script type="text/javascript" src="{% static "js/collections.js" %}"></script>
-{% endblock %}
+  <script type="text/javascript">
+    $(function () {
+      $('[data-toggle="popover"]').popover();
+      $('#perm-pop').popover();
+
+      var perm_data = permission_formatter({% autoescape off %}{{ perms }}{% endautoescape %});
+
+      $('#permission_table').bootstrapTable({
+        data: perm_data
+      });
+    });
+  </script>
+{% endblock %}`

@@ -1,14 +1,70 @@
 {% extends "base.html" %}
 {% load mgmt %}
+{% load static %}
 
-{% block subtitle %}
-SSO Users
+
+{% block title %}
+Users
 {% endblock %}
+{% block subtitle %}
+Manage users stored in the Single Sign-on Service
+{% endblock %}
+
 
 {% block content %}
 {% url 'mgmt:users' as current_url %}
 
-{% paginated_table users %}
+
+  <div class="row">
+        <div class="col-xs-12">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Users</h3>
+              </div>
+              <div id="users_toolbar">
+                {% add_modal user_form user_error "Add User" current_url %}
+              </div>
+              <div class="panel-body">
+                  <table id="users_table"
+                         data-side-pagination="client"
+                         data-sort-name="username"
+                         data-pagination="true"
+                         data-search="true"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-cache="false"
+                         data-toolbar="#users_toolbar"
+                         data-show-refresh="false">
+                      <thead>
+                      <tr>
+                          <th data-field="username">Username</th>
+                          <th data-field="name">Name</th>
+                          <th data-field="email">Email</th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
+              </div>
+            </div>
+        </div>
+    </div>
+
 <br/>
-{% add_modal user_form user_error "Add User" current_url %}
+{% endblock %}
+
+
+
+{% block js_includes %}
+
+  <script type="text/javascript">
+    $(function () {
+      $('[data-toggle="popover"]').popover();
+
+
+      $('#users_table').bootstrapTable({
+        data: {% autoescape off %}{{ user_data }}{% endautoescape %}
+      });
+    });
+  </script>
+
 {% endblock %}

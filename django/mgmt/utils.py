@@ -74,8 +74,13 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
         perm_rows[gen_key(perm)] = make_selection(perm['permissions'], perm.get('channel'))
     # Sort based on group name, so list is always in the same order
     perm_rows = list(perm_rows.items())
-    perm_rows.sort(key = lambda x: x[0])
-    return (perm_rows, None)
+
+    # convert to format frontend wants
+    perm_arr = []
+    for r in perm_rows:
+        perm_arr.append({"group": r[0], "permissions": r[1]})
+
+    return (perm_arr, None)
 
 def set_perms(request, form, collection=None, experiment=None, channel=None, group=None):
     data = form.cleaned_data.copy()
@@ -117,10 +122,13 @@ def set_perms(request, form, collection=None, experiment=None, channel=None, gro
     channel = data.get('channel')
     group = data.get('group')
     perms, err = api.get_perms(request, collection, experiment, channel, group)
-    if len(perms) > 0: # If perms for the group / resources already exists
-        err = api.up_perms(request, data)
-    else:
-        err = api.add_perms(request, data)
+    try:
+        if len(perms) > 0: # If perms for the group / resources already exists
+            err = api.up_perms(request, data)
+        else:
+            err = api.add_perms(request, data)
+    except Exception as e:
+        err = "Invalid group name."
 
     if err:
         return err

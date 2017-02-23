@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 {% load mgmt %}
 
-{% block subtitle %}
-Metadata for {{ category }} {{ category_name }}
-{% endblock %}
+{% block title %}Metadata{% endblock %}
+{% block subtitle %}<strong>{{ category }}:</strong> {{ category_name }}{% endblock %}
 
 
 {% block content %}

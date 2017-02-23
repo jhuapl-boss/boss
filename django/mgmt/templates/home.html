@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load mgmt %}
+{% load static %}
+
+
+{% block content %}
+  <div class="row">
+    <div class="col-xs-12 col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">System Alerts</h3>
+        </div>
+        <div class="panel-body">
+            {% if alerts %}
+              {% for a in alerts %}
+                <div class="alert {{ a.class }}" role="alert"><strong>{{ a.title }}</strong> {{ a.msg }}</div>
+              {% endfor %}
+            {% else %}
+              <h4 class="text-center">All good! <span class="glyphicon glyphicon-ok" aria-hidden="true"></span></h4>
+            {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xs-12 col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Updates and Notes</h3>
+        </div>
+        <div class="panel-body">
+            {% if alerts %}
+              {% for a in alerts %}
+                <div class="alert {{ a.class }}" role="alert"><strong>{{ a.title }}</strong> {{ a.msg }}</div>
+              {% endfor %}
+            {% else %}
+              <h4 class="text-center">No System Messages. All good!<span class="glyphicon glyphicon-ok" aria-hidden="true"></span></h4>
+            {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-4">
+      <a href="https://github.com/jhuapl-boss/intern" target="_blank" class="thumbnail">
+        <img src="{% static "img/Sdk.png" %}" alt="sdk">
+      </a>
+    </div>
+    <div class="col-xs-4">
+      <a href="https://github.com/jhuapl-boss/ingest-client" target="_blank" class="thumbnail">
+        <img src="{% static "img/ingest.png" %}" alt="ingest">
+      </a>
+    </div>
+    <div class="col-xs-4">
+      <a href="https://docs.theboss.io/" target="_blank" class="thumbnail">
+        <img src="{% static "img/docs.png" %}" alt="...">
+      </a>
+    </div>
+  </div>
+
+
+{% endblock %}
+
+{% block js_includes %}
+
+{% endblock %}
+
