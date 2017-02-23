@@ -319,6 +319,9 @@ class BossUserGroup(APIView):
                 return Response(data, status=200)
             except Group.DoesNotExist:
                 return BossGroupNotFoundError(group_name)
+            except BossGroup.DoesNotExist:
+                return BossHTTPError("The group {} is not configured correctly and does not have a creator. "
+                                     "Contact an admin to update it".format(group_name), ErrorCodes.UNABLE_TO_VALIDATE)
         else:
             # Get all the groups that the logged in user is a member of
             list_member_groups = request.user.groups.values_list('name', flat=True)
