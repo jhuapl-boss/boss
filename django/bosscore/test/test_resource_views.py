@@ -523,6 +523,19 @@ class ResourceViewsCoordinateTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['coords'][0], 'cf1')
 
+    def test_get_coordinateframes_owner(self):
+
+        """
+        Get list of coordinateframes
+
+        """
+        url = '/' + version + '/coord/?owner=True'
+
+        # Get an existing collection
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['coords'][0], 'cf1')
+
     def test_get_coordinateframe_doesnotexist(self):
         """
         Get a coordinate frame that does not exist

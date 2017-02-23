@@ -902,6 +902,14 @@ class CoordinateFrameList(generics.ListCreateAPIView):
         """
         # Note: the line below returns all coordinate frames that the user has read permissions on
         #coords = get_objects_for_user(request.user, 'read', klass=CoordinateFrame).exclude(to_be_deleted__isnull=False)
-        coords = CoordinateFrame.objects.all().exclude(to_be_deleted__isnull=False)
+        if 'owner' in request.query_params:
+            owner_flag = request.query_params.get('owner', "False")
+        else:
+            owner_flag = "False"
+
+        if str.capitalize(owner_flag) == "True":
+            coords = CoordinateFrame.objects.filter(creator=request.user).exclude(to_be_deleted__isnull=False)
+        else:
+            coords = CoordinateFrame.objects.all().exclude(to_be_deleted__isnull=False)
         data = {"coords": [coord.name for coord in coords]}
         return Response(data)
