@@ -83,9 +83,9 @@ class SetupTestDB:
         self.add_collection('col1', 'Description for collection1')
         self.add_collection('col1-22', 'Description for collection1')
         self.add_collection('col2', 'Description for collection2')
-        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4, 1)
-        self.add_experiment('col1', 'exp1', 'cf1', 10, 10)
-        self.add_experiment('col1', 'exp22', 'cf1', 10, 500)
+        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
+        self.add_experiment('col1', 'exp1', 'cf1', 10, 10, 1)
+        self.add_experiment('col1', 'exp22', 'cf1', 10, 500, 1)
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8', 'image')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint8', 'image')
         self.add_channel('col1', 'exp1', 'channel3', 0, 0, 'uint64', 'annotation')
@@ -94,8 +94,8 @@ class SetupTestDB:
     def insert_spatialdb_test_data(self):
 
         self.add_collection('col1', 'Description for collection1')
-        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4, 1)
-        self.add_experiment('col1', 'exp1', 'cf1', 10, 500)
+        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4)
+        self.add_experiment('col1', 'exp1', 'cf1', 10, 500, 1)
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8', 'image')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint16', 'image')
         self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint64', 'annotation')
@@ -103,8 +103,8 @@ class SetupTestDB:
     def insert_ingest_test_data(self):
 
         self.add_collection('my_col_1', 'Description for collection1')
-        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4, 1)
-        self.add_experiment('my_col_1', 'my_exp_1', 'cf1', 10, 500)
+        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4)
+        self.add_experiment('my_col_1', 'my_exp_1', 'cf1', 10, 500, 1)
         self.add_channel('my_col_1', 'my_exp_1', 'my_ch_1', 0, 0, 'uint8', 'image')
 
     @staticmethod
@@ -149,7 +149,7 @@ class SetupTestDB:
         return col
 
     def add_coordinate_frame(self, coordinate_frame, description, x_start, x_stop, y_start, y_stop, z_start, z_stop,
-                             x_voxel_size, y_voxel_size, z_voxel_size, time_step):
+                             x_voxel_size, y_voxel_size, z_voxel_size):
         """
          Add a new coordinate frame
         Args:
@@ -164,7 +164,6 @@ class SetupTestDB:
             x_voxel_size:
             y_voxel_size:
             z_voxel_size:
-            time_step:
 
         Returns:
             Coordinate Frame
@@ -174,14 +173,15 @@ class SetupTestDB:
                                             x_start=x_start, x_stop=x_stop, y_start=y_start, y_stop=y_stop,
                                             z_start=z_start, z_stop=z_stop,
                                             x_voxel_size=x_voxel_size, y_voxel_size=y_voxel_size,
-                                            z_voxel_size=z_voxel_size, time_step=time_step, creator=self.user)
+                                            z_voxel_size=z_voxel_size, creator=self.user)
         # Give permissions to the users primary group
         primary_group = self.user.username + '-primary'
         self.add_permissions(primary_group, cf)
 
         return cf
 
-    def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels, num_time_samples):
+    def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels,
+                       num_time_samples,time_step):
         """
 
         Args:
@@ -199,7 +199,7 @@ class SetupTestDB:
         cf = CoordinateFrame.objects.get(name=coordinate_name)
         exp = Experiment.objects.create(name=experiment_name, collection=col, coord_frame=cf,
                                         num_hierarchy_levels=num_hierarchy_levels,
-                                        num_time_samples=num_time_samples, creator=self.user)
+                                        num_time_samples=num_time_samples, time_step=time_step, creator=self.user)
 
         lkup_key = str(col.pk) + '&' + str(exp.pk)
         bs_key = col.name + '&' + str(exp.name)

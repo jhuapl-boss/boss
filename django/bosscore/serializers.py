@@ -26,7 +26,7 @@ class CoordinateFrameSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoordinateFrame
         fields = ('name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
-                  'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit')
+                  'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit')
 
 
 class CoordinateFrameDeleteSerializer(serializers.ModelSerializer):
@@ -37,7 +37,7 @@ class CoordinateFrameDeleteSerializer(serializers.ModelSerializer):
     class Meta:
         model = CoordinateFrame
         fields = ('name', 'description', 'x_start', 'x_stop', 'y_start', 'y_stop', 'z_start', 'z_stop',
-                  'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'time_step', 'time_step_unit', 'exps')
+                  'x_voxel_size', 'y_voxel_size', 'z_voxel_size', 'voxel_unit', 'exps')
 
     def get_exps(self, coord):
         return coord.exps.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
@@ -204,7 +204,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Experiment
         fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
-                  'num_time_samples', 'creator')
+                  'num_time_samples', 'time_step', 'time_step_unit', 'creator')
 
 
 class ExperimentUpdateSerializer(serializers.ModelSerializer):
@@ -245,7 +245,7 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Experiment
         fields = ('channels', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels',
-                  'hierarchy_method', 'num_time_samples', 'creator')
+                  'hierarchy_method', 'num_time_samples', 'time_step', 'time_step_unit', 'creator')
 
     def get_channels(self, experiment):
         return experiment.channels.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)

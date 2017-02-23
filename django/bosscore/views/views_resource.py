@@ -900,6 +900,8 @@ class CoordinateFrameList(generics.ListCreateAPIView):
         Returns: Coordinate frames that user has view permissions on
 
         """
-        coords = get_objects_for_user(request.user, 'read', klass=CoordinateFrame).exclude(to_be_deleted__isnull=False)
+        # Note: the line below returns all coordinate frames that the user has read permissions on
+        #coords = get_objects_for_user(request.user, 'read', klass=CoordinateFrame).exclude(to_be_deleted__isnull=False)
+        coords = CoordinateFrame.objects.all().exclude(to_be_deleted__isnull=False)
         data = {"coords": [coord.name for coord in coords]}
         return Response(data)

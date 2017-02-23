@@ -365,6 +365,27 @@ class ResourceViewsExperimentTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
 
+    def test_post_experiment_with_time_step(self):
+        """
+        Post a new experiment (valid _ the post has all the required data and does not already exist and includes
+        timestep)
+
+        """
+        # Get the coordinate frame id
+        url = '/' + version + '/coord/cf1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        cf = response.data['name']
+
+        # Post a new experiment
+        url = '/' + version + '/collection/col1/experiment/exp2'
+        data = {'description': 'This is a new experiment', 'coord_frame': cf,
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10,
+                'time_step': 1, 'time_step_unit': 'nanoseconds'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+
     def test_post_experiment_no_data(self):
         """
         Post a new experiment (invalid _ the post has no body)
@@ -535,35 +556,11 @@ class ResourceViewsCoordinateTests(APITestCase):
         data = {'description': 'This is a test coordinateframe', 'x_start': 0, 'x_stop': 1000,
                 'y_start': 0, 'y_stop': 1000, 'z_start': 0, 'z_stop': 1000,
                 'x_voxel_size': 4, 'y_voxel_size': 4, 'z_voxel_size': 4, 'voxel_unit': 'nanometers',
-                'time_step_unit': 'nanoseconds', 'time_step': 1}
+                'time_step_unit': 'nanoseconds'}
 
         # Get an existing collection
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
-
-    def test_post_coordinateframe_no_time_step(self):
-        """
-        Post a new coordinate frame without a time_step. This is set ot None (valid)
-
-        """
-        url = '/' + version + '/coord/cf10'
-        data = {'description': 'This is a test coordinateframe', 'x_start': 0, 'x_stop': 1000,
-                'y_start': 0, 'y_stop': 1000, 'z_start': 0, 'z_stop': 1000,
-                'x_voxel_size': 4, 'y_voxel_size': 4, 'z_voxel_size': 4, 'voxel_unit': 'nanometers'}
-
-        # Get an existing collection
-        response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 201)
-
-        url = '/' + version + '/coord/cf10'
-
-        # Get an existing collection
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        self.assertEqual(response.data['name'], 'cf10')
-        self.assertEqual(response.data['time_step'], None)
-        self.assertEqual(response.data['time_step_unit'], None)
 
     def test_post_coordinateframe_already_exists(self):
         """
@@ -574,7 +571,7 @@ class ResourceViewsCoordinateTests(APITestCase):
         data = {'description': 'This is a test coordinateframe', 'x_start': 0, 'x_stop': 1000,
                 'y_start': 0, 'y_stop': 1000, 'z_start': 0, 'z_stop': 1000,
                 'x_voxel_size': 4, 'y_voxel_size': 4, 'z_voxel_size': 4, 'voxel_unit': 'nanometers',
-                'time_step_unit': 'nanoseconds', 'time_step': 1}
+                'time_step_unit': 'nanoseconds'}
 
         # Get an existing collection
         response = self.client.post(url, data=data)

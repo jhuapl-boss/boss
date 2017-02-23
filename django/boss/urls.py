@@ -49,30 +49,31 @@ urlpatterns = [
     url(r'^v0.4/', views.Unsupported.as_view()),
     url(r'^v0.5/', views.Unsupported.as_view()),
     url(r'^v0.6/', views.Unsupported.as_view()),
+    url(r'^v0.7/', views.Unsupported.as_view()),
 
     # API version 0.7
-    url(r'^v0.7/meta/', include('bossmeta.urls', namespace='v0.7')),
-    url(r'^v0.7/permissions/?', include('bosscore.urls.permission-urls', namespace='v0.7')),
-    url(r'^v0.7/groups/', include('bosscore.urls.group-urls', namespace='v0.7')),
-    url(r'^v0.7/cutout/', include('bossspatialdb.urls', namespace='v0.7')),
-    url(r'^v0.7/image/', include('bosstiles.image_urls', namespace='v0.7')),
-    url(r'^v0.7/tile/', include('bosstiles.tile_urls', namespace='v0.7')),
-    url(r'^v0.7/ingest/', include('bossingest.urls', namespace='v0.7')),
-    url(r'^v0.7/collection/', include('bosscore.urls.resource_urls', namespace='v0.7')),
-    url(r'^v0.7/coord/', include('bosscore.urls.coord_urls', namespace='v0.7')),
+    url(r'^v0.8/meta/', include('bossmeta.urls', namespace='v0.8')),
+    url(r'^v0.8/permissions/?', include('bosscore.urls.permission-urls', namespace='v0.8')),
+    url(r'^v0.8/groups/', include('bosscore.urls.group-urls', namespace='v0.8')),
+    url(r'^v0.8/cutout/', include('bossspatialdb.urls', namespace='v0.8')),
+    url(r'^v0.8/image/', include('bosstiles.image_urls', namespace='v0.8')),
+    url(r'^v0.8/tile/', include('bosstiles.tile_urls', namespace='v0.8')),
+    url(r'^v0.8/ingest/', include('bossingest.urls', namespace='v0.8')),
+    url(r'^v0.8/collection/', include('bosscore.urls.resource_urls', namespace='v0.8')),
+    url(r'^v0.8/coord/', include('bosscore.urls.coord_urls', namespace='v0.8')),
 
     # SSO Urls
-    url(r'^v0.7/sso/user/', include('sso.urls.user-urls', namespace='v0.7')),
-    url(r'^v0.7/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.7')),
+    url(r'^v0.8/sso/user/', include('sso.urls.user-urls', namespace='v0.8')),
+    url(r'^v0.8/sso/user-role/', include('sso.urls.user-role-urls', namespace='v0.8')),
 
     # Management Console Urls
-    url(r'^v0.7/mgmt/', include('mgmt.urls', namespace='mgmt')),
+    url(r'^v0.8/mgmt/', include('mgmt.urls', namespace='mgmt')),
     url(r'^/?$', RedirectView.as_view(pattern_name='mgmt:home')),
 
     #Object urls
-    url(r'^v0.7/reserve/', include('bossobject.urls.reserve_urls', namespace='v0.7')),
-    url(r'^v0.7/ids/', include('bossobject.urls.ids_urls', namespace='v0.7')),
-    url(r'^v0.7/boundingbox/', include('bossobject.urls.boundingbox_urls', namespace='v0.7')),
+    url(r'^v0.8/reserve/', include('bossobject.urls.reserve_urls', namespace='v0.8')),
+    url(r'^v0.8/ids/', include('bossobject.urls.ids_urls', namespace='v0.8')),
+    url(r'^v0.8/boundingbox/', include('bossobject.urls.boundingbox_urls', namespace='v0.8')),
 ]
 
 if 'djangooidc' in settings.INSTALLED_APPS:
