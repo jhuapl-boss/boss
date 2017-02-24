@@ -76,3 +76,4 @@ bossspatialdb/migrations
 django/bosscore/migrations
 django/bossmeta/migrations
 /django/bossingest/migrations
+/django/mgmt/migrations

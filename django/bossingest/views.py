@@ -54,7 +54,7 @@ class IngestJobView(APIView):
                 for item in jobs:
                     job = {'id': item.id, 'config_data': item.config_data}
                     list_jobs.append(job)
-                data = {"Ingest jobs": list_jobs}
+                data = {"ingest_jobs": list_jobs}
                 return Response(data, status=status.HTTP_200_OK)
 
             ingest_mgmr = IngestManager()
@@ -234,8 +234,8 @@ class IngestJobStatusView(APIView):
 
                 data = {"id": ingest_job.id,
                         "status": ingest_job.status,
-                        "Total message count": ingest_job.tile_count,
-                        "Current message count": int(num_messages_in_queue)}
+                        "total_message_count": ingest_job.tile_count,
+                        "current_message_count": int(num_messages_in_queue)}
 
             return Response(data, status=status.HTTP_200_OK)
         except BossError as err:
@@ -263,5 +263,5 @@ class IngestJobListView(generics.ListCreateAPIView):
 
         """
         jobs = IngestJob.objects.filter(creator=request.user, status=0)
-        data = {"IDS": [job.id for job in jobs]}
+        data = {"ids": [job.id for job in jobs]}
         return Response(data)
