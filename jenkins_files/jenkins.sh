@@ -32,6 +32,7 @@ python3 manage.py makemigrations --noinput
 python3 manage.py makemigrations auth --noinput
 python3 manage.py makemigrations bosscore --noinput
 python3 manage.py makemigrations bossingest --noinput
+python3 manage.py makemigrations mgmt --noinput
 
 python3 manage.py migrate
 
