@@ -713,14 +713,14 @@ class PermissionViewsChannelTests(APITestCase):
         response = self.client.delete(url, None)
         self.assertEqual(response.status_code, 403)
 
-    def test_post_permissions_bosspublic(self):
+    def test_post_permissions_public(self):
         """
         Post  invalid  permissions strings
         """
         url = '/' + version + '/permissions/'
 
         data = {
-            'group': 'bosspublic',
+            'group': 'public',
             'collection': 'col1',
             'experiment': 'exp1',
             'permissions': ['read']
@@ -728,14 +728,14 @@ class PermissionViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-    def test_post_permissions_bosspublic_invalid(self):
+    def test_post_permissions_public_invalid(self):
         """
-        Post invalid  permissions strings for bosspublic
+        Post invalid  permissions strings for the public group
         """
         url = '/' + version + '/permissions/'
 
         data = {
-            'group': 'bosspublic',
+            'group': 'public',
             'collection': 'col1',
             'experiment': 'exp1',
             'permissions': ['add']
@@ -744,7 +744,7 @@ class PermissionViewsChannelTests(APITestCase):
         self.assertEqual(response.status_code, 400)
 
         data = {
-            'group': 'bosspublic',
+            'group': 'public',
             'collection': 'col1',
             'experiment': 'exp1',
             'permissions': ['read', 'add']
@@ -752,16 +752,16 @@ class PermissionViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
 
-    def test_patch_permission_bosspublic_invalid(self):
+    def test_patch_permission_public_invalid(self):
         """
-        Test patch permission for group bosspublic using invalid permissions
+        Test patch permission for group public using invalid permissions
 
         """
         self.client.force_login(self.user1)
         # patch permission on a group that the user is not a member or maintainer of.
         url = '/' + version + '/permissions/'
         data = {
-            'group': 'bosspublic',
+            'group': 'public',
             'collection': 'col1',
             'experiment': 'exp1',
             'channel': 'channel1',

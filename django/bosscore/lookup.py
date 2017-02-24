@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from .serializers import BossLookupSerializer
 from .models import BossLookup
-from .error import BossError
+from .error import BossError, ErrorCodes
 
 
 class LookUpKey:
@@ -47,7 +48,6 @@ class LookUpKey:
         serializer = BossLookupSerializer(data=lookup_data)
         if serializer.is_valid():
             serializer.save()
-
 
     @staticmethod
     def get_lookup_key(bkey):
@@ -95,8 +95,7 @@ class LookUpKey:
             raise BossError(404, "Cannot find a lookup key for bosskey", 30000)
 
     @staticmethod
-    def update_lookup(lookup_key, boss_key, collection_name, experiment_name=None,
-                   channel_name=None):
+    def update_lookup(lookup_key, boss_key, collection_name, experiment_name=None, channel_name=None):
         """
         Update the fields that correspond to a lookupkey
         Args:
@@ -121,3 +120,101 @@ class LookUpKey:
 
         if serializer.is_valid():
             serializer.save()
+
+    @staticmethod
+    def update_lookup_collection(lookup_key, boss_key, collection_name):
+        """
+        Update the fields that correspond to a lookupkey
+        Args:
+            lookup_key: Lookup key for the object that was created
+            boss_key: Bosskey for the objec that we created
+            collection_name: Collection name . Matches the collection in the bosskey
+
+        Returns: None
+
+        """
+        try:
+            # Create the boss lookup key
+            lookup_data = {'lookup_key': lookup_key, 'boss_key': boss_key,
+                           'collection_name': collection_name,
+                           }
+            lookup_obj = BossLookup.objects.get(lookup_key=lookup_key)
+            old_collection_name = lookup_obj.collection_name
+            serializer = BossLookupSerializer(lookup_obj, data=lookup_data, partial=True)
+
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise BossError("{}. Error updating the collection name in the lookup key"
+                                .format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
+
+            # update all object that reference this collection
+            all_lookup_objs = BossLookup.objects.filter(collection_name=old_collection_name)\
+                .exclude(lookup_key=lookup_key)
+            for item in all_lookup_objs:
+                split_key = item.boss_key.split('&')
+                split_key[0] = collection_name
+                boss_key = '&'.join(split_key)
+
+                lookup_data = {'lookup_key': item.lookup_key, 'boss_key': boss_key,
+                               'collection_name': collection_name
+                               }
+                serializer = BossLookupSerializer(item, data=lookup_data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    raise BossError("{}. Error updating the collection name in the lookup key".
+                                    format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
+        except BossLookup.DoesNotExist:
+            raise BossError("Cannot update the lookup key", ErrorCodes.UNABLE_TO_VALIDATE)
+
+    @staticmethod
+    def update_lookup_experiment(lookup_key, boss_key, collection_name, experiment_name):
+        """
+        Update the fields that correspond to a lookupkey
+        Args:
+            lookup_key: Lookup key for the object that was created
+            boss_key: Bosskey for the objec that we created
+            collection_name: Collection name . Matches the collection in the bosskey
+            experiment_name: Collection name . Matches the collection in the bosskey
+
+        Returns: None
+
+        """
+        try:
+            # Create the boss lookup key
+            lookup_data = {'lookup_key': lookup_key, 'boss_key': boss_key, 'collection_name': collection_name,
+                           'experiment_name': experiment_name,
+                           }
+            lookup_obj = BossLookup.objects.get(lookup_key=lookup_key)
+            old_experiment_name = lookup_obj.experiment_name
+            serializer = BossLookupSerializer(lookup_obj, data=lookup_data, partial=True)
+
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                raise BossError("{}. Error updating the collection name in the lookup key".format(serializer.errors),
+                                ErrorCodes.INVALID_POST_ARGUMENT)
+
+
+            # update all channels that reference this experiment
+            all_lookup_objs = BossLookup.objects.filter(experiment_name=old_experiment_name).exclude(
+                lookup_key=lookup_key)
+            for item in all_lookup_objs:
+
+                split_key = item.boss_key.split('&')
+                split_key[1] = experiment_name
+                boss_key = '&'.join(split_key)
+
+                boss_key = re.sub(old_experiment_name, experiment_name, item.boss_key)
+                lookup_data = {'lookup_key': item.lookup_key, 'boss_key': boss_key,
+                               'experiment_name': experiment_name
+                               }
+                serializer = BossLookupSerializer(item, data=lookup_data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                else:
+                    raise BossError("{}. Error updating the collection name in the lookup key".
+                                    format(serializer.errors), ErrorCodes.INVALID_POST_ARGUMENT)
+        except BossLookup.DoesNotExist:
+            raise BossError("Cannot update the lookup key", ErrorCodes.UNABLE_TO_VALIDATE)

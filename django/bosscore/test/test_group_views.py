@@ -46,7 +46,7 @@ class GroupsTests(APITestCase):
         url = '/' + version + '/groups/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.data['groups']), set(['bosspublic', 'testuser-primary', 'unittest']))
+        self.assertEqual(set(response.data['groups']), set(['public', 'testuser-primary', 'unittest']))
 
     def test_get_groups_groupname(self):
         """ Get all groups for a user"""
@@ -107,7 +107,7 @@ class GroupsTests(APITestCase):
         url = '/' + version + '/groups/?filter=member'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.data['groups']), set(['bosspublic', 'testuser-primary', 'unittest']))
+        self.assertEqual(set(response.data['groups']), set(['public', 'testuser-primary', 'unittest']))
 
     def test_get_groups_filter_maintainers(self):
         """ Get all groups for a user is a member of """

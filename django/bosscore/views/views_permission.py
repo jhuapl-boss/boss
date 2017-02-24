@@ -240,9 +240,9 @@ class ResourceUserPermission(APIView):
         channel = request.data.get('channel', None)
 
         try:
-            # Bosspublic can only have read permission
-            if group_name == 'bosspublic' and not (set(perm_list).issubset({'read', 'read_volumetric_data'})):
-                return BossHTTPError("The bosspublic group can only have read permissions",
+            # public group can only have read permission
+            if group_name == 'public' and not (set(perm_list).issubset({'read', 'read_volumetric_data'})):
+                return BossHTTPError("The public group can only have read permissions",
                                      ErrorCodes.INVALID_POST_ARGUMENT)
 
             # If the user is not a member or maintainer of the group, they cannot assign permissions
@@ -297,9 +297,9 @@ class ResourceUserPermission(APIView):
         channel = request.data.get('channel', None)
 
         try:
-            # Bosspublic can only have read permission
-            if group_name == 'bosspublic' and (len(perm_list) != 1 or perm_list[0] != 'read'):
-                return BossHTTPError("The bosspublic group can only have read permissions",
+            # public group can only have read permission
+            if group_name == 'public' and (len(perm_list) != 1 or perm_list[0] != 'read'):
+                return BossHTTPError("The public group can only have read permissions",
                                      ErrorCodes.INVALID_POST_ARGUMENT)
             # If the user is not a member or maintainer of the group, they cannot patch permissions
             if not check_is_member_or_maintainer(request.user, group_name):

@@ -53,7 +53,7 @@ def load_user_roles(user, roles):
                 return BossHTTPError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
 
     groups = user.groups.all()
-    to_assign = [user.username + '-primary', 'bosspublic']
+    to_assign = [user.username + '-primary', 'public']
     if 'superuser' in roles:
         to_assign.append('admin')
     for name in to_assign:
