@@ -62,71 +62,6 @@
         $("#contentTab a[href='#" + pane + "']").tab("show");
         err.parents(".modal").modal("show");
       }
-
-      // Create the help button
-      var button = document.createElement("a");
-      $(button)//.attr("type", "button")
-              .click(function(e) {
-                var steps = [];
-
-                {% if 'user-manager' in user_roles or 'admin' in user_roles %}
-                  steps.push({
-                    title: "SSO Management",
-                    content: "BOSS System wide user management actions",
-                    target: "sso-dropdown",
-                    placement: "right",
-                    delay: 500,
-                    onShow: function() {
-                      $("#sso-dropdown").dropdown("toggle");
-                    },
-                  });
-                {% endif %}
-
-                steps.push({
-                  title: "BOSS Management",
-                  content: "BOSS API resource management actions",
-                  target: "boss-dropdown",
-                  placement: "right",
-                  delay: 500,
-                  onShow: function() {
-                    $("#boss-dropdown").dropdown("toggle");
-                  },
-                });
-
-                steps.push({
-                  title: "API Token",
-                  content: "Generate or Revoke your BOSS API token",
-                  target: "user-dropdown",
-                  placement: "left",
-                  delay: 500,
-                  onShow: function() {
-                    $("#user-dropdown").dropdown("toggle");
-                  },
-                });
-                steps.push({
-                  title: "Logout",
-                  content: "Logout from Django / SSO. Used to refresh your roles.",
-                  target: "user-dropdown",
-                  placement: "left",
-                  delay: 500,
-                  onShow: function() {
-                    $("#user-dropdown").dropdown("toggle");
-                  },
-                });
-                {% block help_steps %}{% endblock %}
-
-                var tour = {
-                  id: "{% block help_id %}boss-hotscotch{% endblock %}",
-                  steps: steps
-                };
-                hopscotch.startTour(tour);
-              })
-              .text("Help");
-
-      var li = document.createElement("li");
-      $(li).append(button);
-
-      $("ul.navbar-right").prepend(li);
     });
 
 
@@ -141,27 +76,29 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a href="{% url "mgmt:home" %}"><img class="navbar-brand brand-img" src="{% static "img/boss.png" %}"/></a>
+        <a href="{% url "mgmt:home" %}"><img id="boss_logo" class="navbar-brand brand-img" src="{% static "img/boss.png" %}"/></a>
       </div>
       <div class="collapse navbar-collapse" id="main-navbar">
         <ul class="nav navbar-nav">
           {% if 'user-manager' in user_roles or 'admin' in user_roles %}
-            <li><a href="{% url 'mgmt:users' %}">Manage Users</a></li>
+            <li><a id="mng_users_btn" href="{% url 'mgmt:users' %}">Manage Users</a></li>
             <li role="separator" class="divider"></li>
           {% endif %}
 
-          <li><a href="{% url 'mgmt:groups' %}">Manage Groups</a></li>
-          <li><a href="{% url 'mgmt:resources' %}">Manage Resources</a></li>
+          <li><a id="mng_groups_btn" href="{% url 'mgmt:groups' %}">Manage Groups</a></li>
+          <li><a id="mng_resources_btn" href="{% url 'mgmt:resources' %}">Manage Resources</a></li>
 
         </ul>
 
         <ul class="nav navbar-nav navbar-right">
+          <li><a id="tour_btn" href="#" onclick=start_tour(USER_ROLES)>
+            <span class="glyphicon glyphicon-question-sign" aria-hidden="true"></span> Tour</a></li>
           <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown" id="user-dropdown">
               {{ request.user.username }} <span class="caret"></span>
             </a>
             <ul class="dropdown-menu">
-              <li><a id="token" href="{% url 'mgmt:token' %}">API Token</a></li>
+              <li id="token_dropdown"><a id="token" href="{% url 'mgmt:token' %}">API Token</a></li>
               <li><a id="logout" href="{% url 'logout' %}">Logout</a></li>
             </ul>
           </li>
@@ -201,8 +138,12 @@
 <script type="text/javascript" src="{% static "js/bootstrap-table.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/sweetalert2.min.js" %}"></script>
 <script type="text/javascript" src="{% static "js/utils.js" %}"></script>
+<script type="text/javascript" src="{% static "js/tour.js" %}"></script>
 <script type="text/javascript">
-  var API_ROOT= window.location.protocol + "//" + window.location.hostname + "/" + window.location.pathname.split("/")[1] + "/"
+  //var API_ROOT= window.location.protocol + "//" + window.location.hostname + "/" + window.location.pathname.split("/")[1] + "/";
+  var API_ROOT = window.location.protocol + "//" + window.location.hostname + "/" + "{% url 'mgmt:home' %}".split("/")[1] + "/";
+  var MGMT_ROOT = window.location.protocol + "//" + window.location.hostname + "{% url 'mgmt:home' %}";
+  var USER_ROLES= {% autoescape off %}{{ user_roles }}{% endautoescape %};
 </script>
 
 {% block js_includes %}{% endblock %}

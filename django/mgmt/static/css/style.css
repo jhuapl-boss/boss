@@ -27,3 +27,8 @@
 .boss .action-button{
     margin-left: 20px;
 }
+
+.thumbnail img {
+    min-height:175px;
+    height:175px;
+}

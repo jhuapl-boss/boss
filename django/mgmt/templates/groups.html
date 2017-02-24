@@ -53,5 +53,21 @@ Groups are used to link users to permissions and resources
 
 {% block js_includes %}
 <script type="text/javascript" src="{% static "js/groups.js" %}"></script>
+
+   <script type="text/javascript">
+    $(function () {
+      if ($.inArray("user-manager", USER_ROLES) > -1 || $.inArray("admin", USER_ROLES) > -1) {
+        tour = add_user_manager(tour);
+        tour = add_end(tour)
+      } else{
+        tour = add_end(tour)
+      }
+
+      if (hopscotch.getState() === "boss-tour:15") {
+        hopscotch.startTour(tour);
+      }
+    });
+  </script>
+
 {% endblock %}
 

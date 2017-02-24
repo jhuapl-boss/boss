@@ -64,6 +64,12 @@ Manage users stored in the Single Sign-on Service
       $('#users_table').bootstrapTable({
         data: {% autoescape off %}{{ user_data }}{% endautoescape %}
       });
+
+      if (hopscotch.getState() === "boss-tour:19") {
+        tour = add_user_manager(tour);
+        tour = add_end(tour);
+        hopscotch.startTour(tour);
+      }
     });
   </script>
 

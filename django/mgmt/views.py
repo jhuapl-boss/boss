@@ -15,6 +15,8 @@ from .forms import ResourcePermissionsForm, GroupPermissionsForm
 
 from . import api
 from . import utils
+from .models import SystemNotice, BlogPost
+import datetime
 
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
@@ -33,18 +35,31 @@ def redirect_frag(page, *args, frag=None):
 
 
 def get_roles(request):
-    return BossPrivilegeManager(request.user).roles
+    return list(BossPrivilegeManager(request.user).roles)
 
 
 class Home(LoginRequiredMixin, View):
     def get(self, request):
+        # Get System Notices
+        now_datetime = datetime.datetime.now()
+        notices = SystemNotice.objects.filter(show_on__lte=now_datetime, hide_on__gte=now_datetime)
+        notice_data = []
+        for n in notices:
+            notice_data.append({"class": n.type,
+                                "title": n.heading,
+                                "msg": n.message})
+
+        blogs = BlogPost.objects.filter(post_on__lte=now_datetime).order_by('-post_on')[:3]
+        blog_data = []
+        for b in blogs:
+            blog_data.append({"title": b.title,
+                              "msg": b.message,
+                              "date": b.post_on})
 
         args = {
             'user_roles': get_roles(request),
-            #'alerts': [{"class": "alert-info", "title": "alert1", "msg": "adsfasdf dfgsa dfadfs"},
-            #           {"class": "alert-warning", "title": "alert2", "msg": "asdfasdfgdfsgdfgs adsf adsf"}],
-            'alerts': [],
-            'blog_posts': ["asdfasdfasdfas", 'asdfasdfasdf']
+            'alerts': notice_data,
+            'blog_posts': blog_data
         }
         return HttpResponse(render_to_string('home.html', args, RequestContext(request)))
 
