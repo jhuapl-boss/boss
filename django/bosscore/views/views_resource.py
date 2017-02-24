@@ -125,7 +125,7 @@ class CollectionDetail(APIView):
                     if 'name' in request.data and request.data['name'] != collection:
                         lookup_key = str(collection_obj.pk)
                         boss_key = request.data['name']
-                        LookUpKey.update_lookup(lookup_key, boss_key, request.data['name'])
+                        LookUpKey.update_lookup_collection(lookup_key, boss_key, request.data['name'])
 
                     return Response(serializer.data)
                 else:
@@ -134,6 +134,8 @@ class CollectionDetail(APIView):
                 return BossPermissionError('update', collection)
         except Collection.DoesNotExist:
             return BossResourceNotFoundError(collection)
+        except BossError as err:
+            return err.to_http()
 
     @transaction.atomic
     @check_role("resource-manager")
@@ -410,7 +412,7 @@ class ExperimentDetail(APIView):
                     if 'name' in request.data and request.data['name'] != experiment:
                         lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk)
                         boss_key = collection_obj.name + '&' + request.data['name']
-                        LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name, request.data['name'])
+                        LookUpKey.update_lookup_experiment(lookup_key, boss_key, collection_obj.name, request.data['name'])
 
                     # return the object back to the user
                     experiment = serializer.data['name']
