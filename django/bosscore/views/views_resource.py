@@ -61,7 +61,9 @@ class CollectionDetail(APIView):
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
 
                 serializer = CollectionSerializer(collection_obj)
-                return Response(serializer.data, status=200)
+                data = serializer.data
+                data['experiments'] = serializer.get_experiments_permissions(collection_obj,request.user)
+                return Response(data, status=200)
             else:
                 return BossPermissionError('read', collection)
         except Collection.DoesNotExist:

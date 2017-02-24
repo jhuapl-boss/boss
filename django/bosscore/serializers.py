@@ -273,6 +273,12 @@ class CollectionSerializer(serializers.ModelSerializer):
         "return all experiments that are not marked to be deleted"
         return collection.experiments.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
 
+    def get_experiments_permissions(self, collection, cur_user):
+        "return all experiments that are not marked to be deleted"
+        collection_obj = Collection.objects.get(name=collection)
+        all_experiments = get_objects_for_user(cur_user, 'read', klass=Experiment).exclude(to_be_deleted__isnull=False)
+        return all_experiments.filter(collection=collection_obj).values_list('name', flat=True)
+
 
 class BossLookupSerializer(serializers.ModelSerializer):
 
