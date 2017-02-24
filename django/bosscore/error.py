@@ -237,7 +237,11 @@ class BossKeycloakError(JsonResponse):
         }
 
         if ex:
-            data.update(json.loads(ex.data))
+            if isinstance(ex.data, str):
+                val = json.loads(ex.data)
+            else:
+                val = ex.data
+            data.update(val)
 
         msg = "BossKeycloakError"
         for k in data:
