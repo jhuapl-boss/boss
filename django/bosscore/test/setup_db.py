@@ -36,7 +36,7 @@ class SetupTestDB:
         user_primary_group, created = Group.objects.get_or_create(name=username + '-primary')
 
         # add the user to the public group and primary group
-        public_group, created = Group.objects.get_or_create(name='bosspublic')
+        public_group, created = Group.objects.get_or_create(name='public')
         self.user.groups.add(user_primary_group)
         public_group.user_set.add(self.user)
         return self.user
@@ -52,7 +52,7 @@ class SetupTestDB:
         user_primary_group, created = Group.objects.get_or_create(name='bossadmin' + '-primary')
 
         # add the user to the public group and primary group and admin group
-        public_group, created = Group.objects.get_or_create(name='bosspublic')
+        public_group, created = Group.objects.get_or_create(name='public')
         admin_group, created = Group.objects.get_or_create(name='admin')
         self.user.groups.add(user_primary_group)
         self.user.groups.add(public_group)
