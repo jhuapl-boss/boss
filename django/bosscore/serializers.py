@@ -250,9 +250,14 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
     def get_channels(self, experiment):
         return experiment.channels.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
 
-    def get_valid_channels(self, experiment):
-        "return all channels that are not marked to be deleted"
-        return experiment.channels.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
+    def get_channels_permissions(self, collection, experiment, cur_user):
+        "return all channels that are not marked to be deleted and the user has read permissions on"
+
+        collection_obj = Collection.objects.get(name=collection)
+        experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
+        channels = get_objects_for_user(cur_user, 'read', klass=Channel).filter(experiment=experiment_obj)
+        channels = channels.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
+        return channels
 
 
 class CollectionSerializer(serializers.ModelSerializer):
@@ -269,12 +274,8 @@ class CollectionSerializer(serializers.ModelSerializer):
     def get_experiments(self, collection):
         return collection.experiments.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
 
-    def get_valid_experiments(self, collection):
-        "return all experiments that are not marked to be deleted"
-        return collection.experiments.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
-
     def get_experiments_permissions(self, collection, cur_user):
-        "return all experiments that are not marked to be deleted"
+        "return all experiments that are not marked to be deleted and that the user has read permissions on"
         collection_obj = Collection.objects.get(name=collection)
         all_experiments = get_objects_for_user(cur_user, 'read', klass=Experiment).exclude(to_be_deleted__isnull=False)
         return all_experiments.filter(collection=collection_obj).values_list('name', flat=True)

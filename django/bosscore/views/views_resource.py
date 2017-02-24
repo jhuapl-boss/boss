@@ -157,7 +157,7 @@ class CollectionDetail(APIView):
 
                 # Are there experiments that reference it
                 serializer = CollectionSerializer(collection_obj)
-                if len(serializer.get_valid_experiments(collection_obj)) > 0:
+                if len(serializer.get_experiments(collection_obj)) > 0:
                     # This collection has experiments that reference it and cannot be deleted
                     return BossHTTPError(" Collection {} has experiments that reference it and cannot be deleted."
                                          "Please delete the experiments first.".format(collection),
@@ -322,7 +322,9 @@ class ExperimentDetail(APIView):
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
                 serializer = ExperimentReadSerializer(experiment_obj)
-                return Response(serializer.data)
+                data = serializer.data
+                data['channels'] = serializer.get_channels_permissions(collection_obj,experiment_obj,request.user)
+                return Response(data)
             else:
                 return BossPermissionError('read', experiment)
         except Collection.DoesNotExist:
@@ -449,7 +451,7 @@ class ExperimentDetail(APIView):
             if request.user.has_perm("delete", experiment_obj):
                 # Are there channels that reference it
                 serializer = ExperimentReadSerializer(experiment_obj)
-                if len(serializer.get_valid_channels(experiment_obj)) > 0:
+                if len(serializer.get_channels(experiment_obj)) > 0:
                     # This experiment has channels that reference it and cannot be deleted
                     return BossHTTPError(" Experiment {} has channels that reference it and cannot be deleted."
                                          "Please delete the channels first.".format(experiment),
@@ -846,7 +848,7 @@ class ExperimentList(generics.ListAPIView):
             *args:
             **kwargs:
 
-        Returns: Experiments that user has view permissions on
+        Returns: Experiments that user has view permissions on and are not marked for deletion
 
         """
         collection_obj = Collection.objects.get(name=collection)
