@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load mgmt %}
+{% load static %}
+
+
+{% block content %}
+  <div id="alerts_section" class="row">
+    <div class="col-xs-12 col-sm-10 col-sm-offset-1">
+            {% if alerts %}
+              {% for a in alerts %}
+                <div class="alert {{ a.class }} alert-dismissible" role="alert">
+                  <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                  <strong>{{ a.title }}:</strong> {{ a.msg }}
+                </div>
+              {% endfor %}
+            {% endif %}
+
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12 col-sm-10 col-sm-offset-1">
+    <h2 id="updates_section">Updates and Notes</h2>
+  <hr>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12 col-sm-10 col-sm-offset-1">
+
+      <div class="panel-body">
+          {% if blog_posts %}
+            {% for b in blog_posts %}
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h3 class="panel-title">{{ b.title }} <br> <small>{{ b.date }}</small></h3>
+                </div>
+                <div class="panel-body">
+                  {% autoescape off %}{{ b.msg }}{% endautoescape %}
+
+                </div>
+              </div>
+
+            {% endfor %}
+          {% else %}
+            <h4 class="text-center">No Posts To Display.</h4>
+          {% endif %}
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="row">
+    <div class="col-xs-12 col-sm-10 col-sm-offset-1">
+    <h2 id="tools_section">Tools</h2>
+  <hr>
+    </div>
+  </div>
+
+
+
+  <div class="row">
+    <div class="col-xs-10 col-xs-offset-1">
+            <div class="row">
+              <div class="col-xs-4">
+                <a href="https://github.com/jhuapl-boss/intern" target="_blank" class="thumbnail">
+                  <img src="{% static "img/logo-sdk.png" %}" alt="sdk">
+                </a>
+              </div>
+              <div class="col-xs-4">
+                <a href="https://github.com/jhuapl-boss/ingest-client" target="_blank" class="thumbnail">
+                  <img src="{% static "img/logo-ingest.png" %}" alt="ingest">
+                </a>
+              </div>
+              <div class="col-xs-4">
+                <a href="https://docs.theboss.io/" target="_blank" class="thumbnail">
+                  <img src="{% static "img/logo-docs.png" %}" alt="...">
+                </a>
+              </div>
+            </div>
+    </div>
+  </div>
+
+
+
+
+{% endblock %}
+
+{% block js_includes %}
+   <script type="text/javascript">
+    $(function () {
+      if (hopscotch.getState() === "boss-tour:2") {
+        hopscotch.startTour(tour);
+      }
+    });
+  </script>
+{% endblock %}
+

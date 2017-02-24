@@ -1,28 +1,81 @@
 {% extends "base.html" %}
 {% load mgmt %}
 
+
+{% block title %}
+Users
+{% endblock %}
 {% block subtitle %}
-User {{ username  }}
+Manage roles for {{ username  }}
 {% endblock %}
 
 {% block content %}
 {% url 'mgmt:user' username as current_url %}
 
-<div class="tab-pane" id="User" role="tabpannel">
-    <form class="form-horizontal">
-        {% for key,value in rows %}
-        <div class="form-group">
-            <label class="control-label col-sm-2 col-lg-2">{{ key }}</label>
-            <div class="col-sm-10 col-lg-10">
-                <input class="form-control" type="text" readonly value="{{ value }}"/>
-            </div>
+  <div class="row">
+    <div class="col-sm-8 col-sm-offset-2 col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-body">
+          <form class="form-horizontal">
+              {% for key,value in rows %}
+              <div class="form-group">
+                  <label class="control-label col-sm-2 col-lg-2">{{ key }}</label>
+                  <div class="col-sm-10 col-lg-10">
+                      <input class="form-control" type="text" readonly value="{{ value }}"/>
+                  </div>
+              </div>
+              {% endfor %}
+          </form>
         </div>
-        {% endfor %}
-    </form>
+      </div>
+    </div>
+  </div>
+
+<div class="row">
+  <div class="col-xs-12 col-sm-10 col-sm-offset-1">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Roles</h3>
+        </div>
+        <div id="roles_toolbar">
+          {% add_modal role_form role_error "Add Role" current_url %}
+        </div>
+        <div class="panel-body">
+            <table id="roles_table"
+                   data-side-pagination="client"
+                   data-sort-name="roles"
+                   data-pagination="true"
+                   data-search="false"
+                   data-page-size="10"
+                   data-striped="true"
+                   data-cache="false"
+                   data-toolbar="#roles_toolbar"
+                   data-show-refresh="false">
+                <thead>
+                <tr>
+                    <th data-field="role">Roles</th>
+                    <th data-field="actions">Actions</th>
+                </tr>
+                </thead>
+            </table>
+        </div>
+      </div>
+  </div>
 </div>
-<div class="tab-pane" id="Roles" role="tabpannel">
-    {% paginated_table roles %}
-    <br/>
-    {% add_modal role_form role_error "Add Role" current_url %}
-</div>
+
+{% endblock %}
+
+
+{% block js_includes %}
+
+  <script type="text/javascript">
+    $(function () {
+      $('[data-toggle="popover"]').popover();
+
+      $('#roles_table').bootstrapTable({
+        data: {% autoescape off %}{{ role_data }}{% endautoescape %}
+      });
+    });
+  </script>
+
 {% endblock %}

@@ -69,7 +69,7 @@ class DelimitedCharField(forms.CharField):
         return vals
 
 class UserForm(forms.Form):
-    username = forms.CharField()
+    username = forms.CharField(help_text="Globally unique username")
     first_name = forms.CharField()
     last_name = forms.CharField()
     email = forms.EmailField()
@@ -89,61 +89,67 @@ class RoleForm(forms.Form):
     role = forms.ChoiceField(choices=[(c,c) for c in ['', 'user-manager', 'resource-manager']])
 
 class GroupForm(forms.Form):
-    group_name = forms.CharField(label="Group")
+    group_name = forms.CharField(label="Group Name", help_text="Globally unique name for the user group.")
 
 class GroupMemberForm(forms.Form):
     user = forms.CharField()
     role = forms.ChoiceField(choices=[(c,c) for c in ['', 'member', 'maintainer', 'member+maintainer']])
 
 class CollectionForm(forms.Form):
-    name = forms.CharField(label="Collection")
-    description = forms.CharField(required=False)
+    name = forms.CharField(label="Collection", help_text="Globally unique string identifier")
+    description = forms.CharField(required=False, help_text="Optional")
 
 class CoordinateFrameForm(UpdateForm):
     UPDATE_FIELDS = ['name', 'description'] 
 
-    name = forms.CharField(label="Coordinate Frame")
-    description = forms.CharField(required=False)
+    name = forms.CharField(label="Coordinate Frame", help_text="Globally unique string identifier")
+    description = forms.CharField(required=False, help_text="Optional")
 
-    x_start = forms.IntegerField()
-    x_stop = forms.IntegerField()
+    x_start = forms.IntegerField(help_text="Start point in X, inclusive. Typically 0")
+    x_stop = forms.IntegerField(help_text="End point in X, exclusive")
 
-    y_start = forms.IntegerField()
-    y_stop = forms.IntegerField()
+    y_start = forms.IntegerField(help_text="Start point in Y, inclusive. Typically 0")
+    y_stop = forms.IntegerField(help_text="End point in Y, exclusive")
 
-    z_start = forms.IntegerField()
-    z_stop = forms.IntegerField()
+    z_start = forms.IntegerField(help_text="Start point in Z, inclusive. Typically 0")
+    z_stop = forms.IntegerField(help_text="End point in Z, exclusive")
 
-    x_voxel_size = forms.IntegerField()
-    y_voxel_size = forms.IntegerField()
-    z_voxel_size = forms.IntegerField()
+    x_voxel_size = forms.IntegerField(help_text="Voxel dimension in X")
+    y_voxel_size = forms.IntegerField(help_text="Voxel dimension in y")
+    z_voxel_size = forms.IntegerField(help_text="Voxel dimension in z")
     voxel_unit = forms.ChoiceField(choices=[(c,c) for c in ['',
                                                             'nanometers',
                                                             'micrometers',
                                                             'millimeters',
-                                                            'centimeters']])
+                                                            'centimeters']],
+                                   help_text="Unit of measure for voxel size")
 
-    time_step = forms.IntegerField(required=False)
-    time_step_unit = forms.ChoiceField(required=False,
-                                       choices=[(c,c) for c in ['',
-                                                                'nanoseconds',
-                                                                'microseconds',
-                                                                'milliseconds',
-                                                                'seconds']])
 
 class ExperimentForm(UpdateForm):
     UPDATE_FIELDS = ['name', 'description',
                      'num_hierarchy_levels',
                      'hierarch_method',
-                     'num_time_samples']
+                     'num_time_samples',
+                     'time_step',
+                     'time_step_unit']
 
-    name = forms.CharField(label="Experiment")
-    description = forms.CharField(required=False)
+    name = forms.CharField(label="Experiment", help_text="A string identifier, unique to this Collection")
+    description = forms.CharField(required=False, help_text="Optional")
 
-    coord_frame = forms.CharField() # DP TODO: make a drop down with valid coord frame names
-    num_hierarchy_levels = forms.IntegerField()
-    hierarchy_method = forms.ChoiceField(choices=[(c,c) for c in ['', 'near_iso', 'iso', 'slice']])
-    num_time_samples = forms.IntegerField()
+    coord_frame = forms.CharField(help_text="String identifier for this experiment's Coordinate Frame") # DP TODO: make a drop down with valid coord frame names
+    num_hierarchy_levels = forms.IntegerField(help_text="Number of levels to render in the resolution hierarchy")
+    hierarchy_method = forms.ChoiceField(choices=[(c,c) for c in ['', 'near_iso', 'iso', 'slice']],
+                                         help_text="Downsampling method")
+    num_time_samples = forms.IntegerField(help_text="Maximum number of time samples in the experiment (used for request validation). Non-time series data, set to 1")
+
+    time_step = forms.IntegerField(required=False, help_text="(Optional) If time-series data, duration between samples.")
+    time_step_unit = forms.ChoiceField(required=False,
+                                       choices=[(c, c) for c in ['',
+                                                                'nanoseconds',
+                                                                'microseconds',
+                                                                'milliseconds',
+                                                                'seconds']],
+                                       help_text="(Optional) Unit of measure for time step")
 
 class MetaForm(UpdateForm):
     UPDATE_FIELDS = ['value']
@@ -157,16 +163,22 @@ class ChannelForm(UpdateForm):
                      'base_resolution',
                      'sources', 'related']
 
-    name = forms.CharField(label="Channel")
-    description = forms.CharField(required=False)
+    name = forms.CharField(label="Channel", help_text="String identifier unique to the experiment")
+    description = forms.CharField(required=False, help_text="Optional description")
 
-    type = forms.ChoiceField(choices=[(c,c) for c in ['', 'image', 'annotation']])
-    datatype = forms.ChoiceField(choices=[(c,c) for c in ['', 'uint8', 'uint16', 'uint32', 'uint64']])
+    type = forms.ChoiceField(choices=[(c,c) for c in ['', 'image', 'annotation']],
+                             help_text="image = source image dataset<br>annotation = label dataset")
+    datatype = forms.ChoiceField(choices=[(c,c) for c in ['', 'uint8', 'uint16', 'uint64']],
+                                 help_text="uint8 & uint16 for image channels<br>uint64 for annotation channels")
 
-    base_resolution = forms.IntegerField(required=False)
-    default_time_sample = forms.IntegerField(required=False)
-    source = DelimitedCharField(required=False)
-    related = DelimitedCharField(required=False)
+    base_resolution = forms.IntegerField(required=False,
+                                         help_text="Resolution hierarchy level assumed to be 'native'. <br>Used primarily for dynamic resampling of annotation channels. Default to 0")
+    default_time_sample = forms.IntegerField(required=False,
+                                             help_text="Time sample used when omitted from a request. <br>For non-time series data always set to 0")
+    source = DelimitedCharField(label="Source Channel", required=False,
+                                help_text="Optional comma separated list of channels from which this channel is derived.<br>Useful for linking annotation to image channels")
+    related = DelimitedCharField(label="Related Channels", required=False,
+                                 help_text="Optional comma separated list of channels related to this channel.")
 
 def PermField():
     #perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']

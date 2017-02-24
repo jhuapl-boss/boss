@@ -1,0 +1,34 @@
+.brand-img {
+    padding: 6px 15px;
+}
+
+.boss .page-header-custom {
+    margin: 10px 0 10px; !important;
+    padding-bottom: 9.5px;
+    border-bottom: 1px solid transparent;
+}
+
+.boss .navbar {
+    border-radius: 0; !important;
+}
+
+.boss .fixed-table-container {
+    height: auto;
+}
+
+.boss .fixed-table-body {
+    height: auto;
+}
+
+.boss .fixed-table-body {
+    height: auto;
+}
+
+.boss .action-button{
+    margin-left: 20px;
+}
+
+.thumbnail img {
+    min-height:175px;
+    height:175px;
+}

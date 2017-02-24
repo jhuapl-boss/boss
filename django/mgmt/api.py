@@ -19,7 +19,10 @@ import json
 def error_message(resp):
     try:
         data = json.loads(resp.content.decode('ASCII'))
-        if 'message' in data:
+        print(data)
+        if 'errorMessage' in data and 'message' in data:
+            return "{} -- {}".format(data['message'], data['errorMessage'])
+        elif 'message' in data:
             return data['message']
         elif 'detail' in data:
             return data['detail']

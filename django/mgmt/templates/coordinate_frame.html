@@ -2,10 +2,25 @@
 {% load mgmt %}
 
 {% block subtitle %}
-Coordinate Frame {{ coord_name }}
+<strong>Coordinate Frame:</strong> {{ coord_name }}
 {% endblock %}
 
 {% block content %}
 {% url 'mgmt:coord' coord_name as current_url %}
-{% update_form coord_form coord_error "Update Coordinate Frame" current_url %}
+<div class="row">
+  <div class="col-md-8 col-md-offset-2 col-xs-12">
+    <div class="panel panel-default">
+      <div class="panel-body">
+        <p>While only the creator of a <strong>Coordinate Frame</strong> and edit and delete it, <strong>Coordinate Frames</strong> are globally accessible by all users for use in experiments.</p>
+        <p>Because of this, only the name and description are editable in the console and API. If you need to edit a <strong>Coordinate Frame</strong> contact support.</p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-8 col-md-offset-2 col-xs-12">
+    {% update_form coord_form coord_error "Update Coordinate Frame" current_url %}
+  </div>
+</div>
+
 {% endblock %}

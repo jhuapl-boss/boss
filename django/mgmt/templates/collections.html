@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 {% load mgmt %}
+{% load static %}
 
-{% block subtitle %}
+{% block title %}
 Resources
+{% endblock %}
+{% block subtitle %}
+Resources are used to organize data in the Boss
 {% endblock %}
 
 {% block help_id %}resources-hopscotch{% endblock %}
@@ -22,7 +26,7 @@ Resources
 
     if($("#Collections:visible").length) {
         steps.push({
-            title: "Visable Collections",
+            title: "Visible Collections",
             target: document.querySelectorAll("#Collections th")[0],
             placement: "top",
         });
@@ -60,17 +64,91 @@ Resources
 {% block content %}
 {% url 'mgmt:resources' as current_url %}
 
-<div class="tab-pane" id="Collections" role="tabpannel">
-    {% paginated_table collections %}
-    <br/>
-    {% mgmt_url current_url action="col" as add_col_url %}
-    {% add_modal col_form col_error "Add Collection" add_col_url %}
-</div>
-<div class="tab-pane" id="CoordinateFrames" role="tabpannel">
-    {% paginated_table coords %}
-    <br/>
-    {% mgmt_url current_url action="coord" as add_coord_url %}
-    {% add_modal coord_form coord_error "Add Coordinate Frame" add_coord_url %}
-</div>
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 id="collections_panel" class="panel-title">Collections</h3>
+              </div>
+              <div id="collections_toolbar">
+                {% add_modal col_form col_error "Add Collection" add_col_url %}
+              </div>
+              <div class="panel-body">
+                  <table id="collection_table"
+                         data-toggle="table"
+                         data-response-handler="collection_handler"
+                         data-ajax="get_collections"
+                         data-side-pagination="client"
+                         data-sort-name="name"
+                         data-pagination="true"
+                         data-search="true"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-cache="false"
+                         data-toolbar="#collections_toolbar"
+                         data-show-refresh="true">
+                      <thead>
+                      <tr>
+                          <th data-field="name">Collection Name</th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
+
+              </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 id="coord_panel" class="panel-title">Coordinate Frames</h3>
+              </div>
+              <div id="coord_toolbar">
+                {% add_modal coord_form coord_error "Add Coordinate Frame" add_coord_url %}
+              </div>
+              <div class="panel-body">
+                  <table id="coord_table"
+                         data-toggle="table"
+                         data-response-handler="coord_handler"
+                         data-ajax="get_coords"
+                         data-side-pagination="client"
+                         data-sort-name="name"
+                         data-pagination="true"
+                         data-search="true"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-cache="false"
+                         data-toolbar="#coord_toolbar"
+                         data-show-refresh="true">
+                      <thead>
+                      <tr>
+                          <th data-field="name">Coordinate Frame Name</th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
+
+              </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+
+{% block js_includes %}
+<script type="text/javascript" src="{% static "js/collections.js" %}"></script>
+   <script type="text/javascript">
+    $(function () {
+      if (hopscotch.getState() === "boss-tour:8") {
+        hopscotch.startTour(tour);
+      }
+    });
+  </script>
 {% endblock %}
 

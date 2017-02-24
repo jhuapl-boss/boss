@@ -11,7 +11,7 @@
             </div>
             <div class="modal-body">
                 {% csrf_token %}
-                {{ form|bootstrap_horizontal }}
+                {{ form|bootstrap_horizontal:'col-lg-4' }}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

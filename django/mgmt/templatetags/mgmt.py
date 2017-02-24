@@ -34,6 +34,13 @@ def add_modal(form, error, name, url):
         'url': url
     }
 
+@register.inclusion_tag("meta_modal.html")
+def add_meta_modal():
+    """Render the given template to provide a modal dialog
+    that provides a popup display of metadata
+    """
+    return {}
+
 @register.inclusion_tag("update_form.html")
 def update_form(form, error, name, url, **kwargs):
     """Render the given template to provide an update form

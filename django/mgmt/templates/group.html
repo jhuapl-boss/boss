@@ -1,39 +1,137 @@
 {% extends "base.html" %}
 {% load mgmt %}
+{% load static %}
 
+{% block title %}
+Group: {{ group_name }}
+{% endblock %}
 {% block subtitle %}
-Group {{ group_name }}
+  <strong>Owner:</strong> {{ group.owner }}
 {% endblock %}
 
 {% block content %}
-{% url 'mgmt:group' group_name as current_url %}
+  <div class="row">
+    <div class="col-xs-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Group Members
+            <span type="button" class="glyphicon glyphicon-question-sign" data-container="body" data-toggle="popover" data-placement="top" data-content="A member assumes permissions assigned to the group. A maintainer can add/remove users to the group.">
+            </span>
+          </h3>
+        </div>
 
-<div class="tab-pane" id="Group" role="tabpannel">
-    <div class="form-horizontal">
-        <div class="form-group">
-            <label class="control-label col-sm-2 col-lg-2">Creator</label>
-            <div class="col-sm-10 col-lg-10">
-                <input class="form-control" type="text" disabled value="{{ group.owner }}"/>
-            </div>
+        <div id="group_users_toolbar">
+          {% mgmt_url current_url action="memb" as add_memb_url %}
+          {% add_modal memb_form memb_error "Add User Permission" add_memb_url %}
         </div>
-        <div class="form-group">
-            <label class="control-label col-sm-2 col-lg-2">Group</label>
-            <div class="col-sm-10 col-lg-10">
-                <input class="form-control" type="text" disabled value="{{ group.name }}"/>
-            </div>
+
+        <div class="panel-body">
+          <table id="group_users_table"
+                         data-side-pagination="client"
+                         data-sort-name="group"
+                         data-pagination="true"
+                         data-search="true"
+                         data-strict-search=="false"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-toolbar="#group_users_toolbar"
+                         data-show-refresh="false">
+                      <thead>
+                      <tr>
+                          <th data-field="user">User</th>
+                          <th data-field="permissions">Permission
+                          </th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
         </div>
+      </div>
     </div>
+  </div>
+
+  <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+  <div class="panel panel-default">
+    <div class="panel-heading" role="tab" id="headingOne">
+      <h4 class="panel-title">
+        <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+          Advanced Settings
+        </a>
+      </h4>
+    </div>
+    <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+      <div class="panel-body">
+        <div class="row">
+          <div class="col-md-10 col-md-offset-1 col-xs-12">
+            <div class="panel panel-default">
+              <div class="panel-body">
+                <p>In the table below you can view and edit all permissions that have been assigned to any resource and this group.</p>
+                <p>Remember, at a minimum read permissions must be added for a collection and experiment when granting access to a channel.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <br>
+
+        <div class="row">
+          <div class="col-xs-12">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Group Permissions
+                  <span type="button" class="glyphicon glyphicon-question-sign" data-container="body" data-toggle="popover" data-placement="top" data-content="A member assumes permissions assigned to the group. A maintainer can add/remove users to the group.">
+                  </span>
+                </h3>
+              </div>
+
+              <div id="group_perm_toolbar">
+                {% mgmt_url current_url action="perms" as add_perms_url %}
+                {% add_modal perms_form perms_error "Add Resource Permission Set" add_perms_url %}
+              </div>
+
+              <div class="panel-body">
+                <table id="group_perm_table"
+                               data-side-pagination="client"
+                               data-sort-name="group"
+                               data-pagination="true"
+                               data-search="true"
+                               data-strict-search=="false"
+                               data-page-size="10"
+                               data-striped="true"
+                               data-toolbar="#group_perm_toolbar"
+                               data-show-refresh="false">
+                            <thead>
+                            <tr>
+                                <th data-field="resource">Resource (collection/experiment/channel)</th>
+                                <th data-field="permissions">Permission</th>
+                                <th data-field="actions">Actions</th>
+                            </tr>
+                            </thead>
+                        </table>
+              </div>
+            </div>
+          </div>
+  </div>
+
+      </div>
+    </div>
+  </div>
 </div>
-<div class="tab-pane" id="Users" role="tabpannel">
-    {% paginated_table users %}
-    <br/>
-    {% mgmt_url current_url action="memb" as add_memb_url %}
-    {% add_modal memb_form memb_error "Add User Permission" add_memb_url %}
-</div>
-<div class="tab-pane" id="Permissions" role="tabpannel">
-    {% paginated_table perms %}
-    <br/>
-    {% mgmt_url current_url action="perms" as add_perms_url %}
-    {% add_modal perms_form perms_error "Edit Resource Permissions" add_perms_url %}
-</div>
+
+{% endblock %}
+
+{% block js_includes %}
+<script type="text/javascript" src="{% static "js/groups.js" %}"></script>
+
+  <script type="text/javascript">
+    $(function () {
+      $('[data-toggle="popover"]').popover();
+
+      $('#group_users_table').bootstrapTable({
+        data: {% autoescape off %}{{ group_member_data }}{% endautoescape %}
+      });
+      $('#group_perm_table').bootstrapTable({
+        data: {% autoescape off %}{{ perms }}{% endautoescape %}
+      });
+    });
+  </script>
 {% endblock %}

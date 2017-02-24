@@ -1,15 +1,73 @@
 {% extends "base.html" %}
 {% load mgmt %}
+{% load static %}
 
-{% block subtitle %}
+{% block title %}
 Groups
+{% endblock %}
+{% block subtitle %}
+Groups are used to link users to permissions and resources
 {% endblock %}
 
 
 {% block content %}
 {% url 'mgmt:groups' as current_url %}
 
-{% paginated_table groups %}
-<br/>
-{% add_modal group_form group_error "Add Group" current_url %}
+<div class="row">
+        <div class="col-xs-12">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Groups</h3>
+              </div>
+              <div id="groups_toolbar">
+                {% add_modal group_form group_error "Add Group" current_url %}
+              </div>
+              <div class="panel-body">
+                  <table id="group_table"
+                         data-toggle="table"
+                         data-response-handler="groups_handler"
+                         data-ajax="get_groups"
+                         data-side-pagination="client"
+                         data-sort-name="name"
+                         data-pagination="true"
+                         data-search="true"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-cache="false"
+                         data-toolbar="#groups_toolbar"
+                         data-show-refresh="true">
+                      <thead>
+                      <tr>
+                          <th data-field="name">Group Name</th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
+
+              </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
+
+{% block js_includes %}
+<script type="text/javascript" src="{% static "js/groups.js" %}"></script>
+
+   <script type="text/javascript">
+    $(function () {
+      if ($.inArray("user-manager", USER_ROLES) > -1 || $.inArray("admin", USER_ROLES) > -1) {
+        tour = add_user_manager(tour);
+        tour = add_end(tour)
+      } else{
+        tour = add_end(tour)
+      }
+
+      if (hopscotch.getState() === "boss-tour:15") {
+        hopscotch.startTour(tour);
+      }
+    });
+  </script>
+
+{% endblock %}
+
