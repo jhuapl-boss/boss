@@ -124,21 +124,14 @@ class CoordinateFrameForm(UpdateForm):
                                                             'centimeters']],
                                    help_text="Unit of measure for voxel size")
 
-    time_step = forms.IntegerField(required=False, help_text="(Optional) If time-series data, duration between samples.")
-    time_step_unit = forms.ChoiceField(required=False,
-                                       choices=[(c,c) for c in ['',
-                                                                'nanoseconds',
-                                                                'microseconds',
-                                                                'milliseconds',
-                                                                'seconds']],
-                                       help_text="(Optional) Unit of measure for time step")
-
 
 class ExperimentForm(UpdateForm):
     UPDATE_FIELDS = ['name', 'description',
                      'num_hierarchy_levels',
                      'hierarch_method',
-                     'num_time_samples']
+                     'num_time_samples',
+                     'time_step',
+                     'time_step_unit']
 
     name = forms.CharField(label="Experiment", help_text="A string identifier, unique to this Collection")
     description = forms.CharField(required=False, help_text="Optional")
@@ -148,6 +141,15 @@ class ExperimentForm(UpdateForm):
     hierarchy_method = forms.ChoiceField(choices=[(c,c) for c in ['', 'near_iso', 'iso', 'slice']],
                                          help_text="Downsampling method")
     num_time_samples = forms.IntegerField(help_text="Maximum number of time samples in the experiment (used for request validation). Non-time series data, set to 1")
+
+    time_step = forms.IntegerField(required=False, help_text="(Optional) If time-series data, duration between samples.")
+    time_step_unit = forms.ChoiceField(required=False,
+                                       choices=[(c, c) for c in ['',
+                                                                'nanoseconds',
+                                                                'microseconds',
+                                                                'milliseconds',
+                                                                'seconds']],
+                                       help_text="(Optional) Unit of measure for time step")
 
 class MetaForm(UpdateForm):
     UPDATE_FIELDS = ['value']
