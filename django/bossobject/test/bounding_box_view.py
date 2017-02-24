@@ -14,6 +14,8 @@
 
 from django.conf import settings
 import blosc
+import unittest
+import os
 
 from rest_framework.test import APITestCase, APIRequestFactory
 from rest_framework.test import force_authenticate
@@ -95,6 +97,7 @@ class BoundingBoxMixin(object):
         self.assertEqual(bb['y_range'], [1536, 2048])
         self.assertEqual(bb['z_range'], [0, 16])
 
+    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
     def test_get_object_bounding_box_span_cuboid_boundary(self):
         """ Test getting the bounding box of a object that spans the z boundary of a cuboid"""
 
@@ -214,6 +217,7 @@ class BoundingBoxMixin(object):
         self.assertEqual(bb['y_range'], [1024, 1152])
         self.assertEqual(bb['z_range'], [0, 16])
 
+    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
     def test_get_object_bounding_box_tight_span_cuboid_boundary(self):
         """ Test getting the bounding box of a object that spans the z boundary of a cuboid"""
 

@@ -16,6 +16,7 @@ import json
 import jsonschema
 import boto3
 import io
+import math
 
 from ingest.core.config import Configuration
 from ingest.core.backend import BossBackend
@@ -171,15 +172,23 @@ class IngestManager:
                 ingest_queue = self.create_ingest_queue()
                 self.job.ingest_queue = ingest_queue.url
 
-
                 # Call the step function to populate the queue.
                 self.job.step_function_arn = self.populate_upload_queue()
+
+                # Compute # of tiles in the job
+                x_extent = self.job.x_stop - self.job.x_start
+                y_extent = self.job.y_stop - self.job.y_start
+                z_extent = self.job.z_stop - self.job.z_start
+                t_extent = self.job.t_stop - self.job.t_start
+                num_tiles_in_x = math.ceil(x_extent/self.job.tile_size_x)
+                num_tiles_in_y = math.ceil(y_extent/self.job.tile_size_y)
+                num_tiles_in_z = math.ceil(z_extent/self.job.tile_size_z)
+                num_tiles_in_t = math.ceil(t_extent / self.job.tile_size_t)
+                self.job.tile_count = num_tiles_in_x * num_tiles_in_y * num_tiles_in_z * num_tiles_in_t
                 self.job.save()
 
-                #tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
-                #self.create_ingest_credentials(upload_queue, tile_bucket)
-
-            # TODO create channel if needed
+                # tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
+                # self.create_ingest_credentials(upload_queue, tile_bucket)
 
         except BossError as err:
             raise BossError(err.message, err.error_code)
@@ -263,12 +272,12 @@ class IngestManager:
         return queue
 
 
-    def delete_ingest_job(self, ingest_job_id):
+    def delete_ingest_job(self, ingest_job):
         """
         Delete an ingest job with a specific id. Note this deletes the queues, credentials and all the remaining tiles
         in the tile bucket for this job id. It does not delete the ingest job datamodel but marks it as deleted.
         Args:
-            ingest_job_id: Ingest job id to delete
+            ingest_job_id: Ingest job  to delete
 
         Returns:
             Int : ingest job id for the job that was successfully deleted
@@ -280,7 +289,6 @@ class IngestManager:
         try:
 
             # delete ingest job
-            ingest_job = IngestJob.objects.get(id=ingest_job_id)
             proj_class = BossIngestProj.load()
             self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
                                       ingest_job.resolution, ingest_job.id)
@@ -298,13 +306,13 @@ class IngestManager:
             ingest_job.save()
 
             # Remove ingest credentials for a job
-            self.remove_ingest_credentials(ingest_job_id)
+            self.remove_ingest_credentials(ingest_job.id)
 
         except Exception as e:
             raise BossError("Unable to delete the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
         except IngestJob.DoesNotExist:
-            raise BossError("Ingest job with id {} does not exist".format(ingest_job_id), ErrorCodes.OBJECT_NOT_FOUND)
-        return ingest_job_id
+            raise BossError("Ingest job with id {} does not exist".format(ingest_job.id), ErrorCodes.OBJECT_NOT_FOUND)
+        return ingest_job.id
 
     def create_upload_queue(self):
         """
@@ -451,7 +459,6 @@ class IngestManager:
         base_file_name = 'tasks_' + lookup_key + '_' + str(ingest_job.id)
         self.file_index = 0
 
-
         # open file
         f = io.StringIO()
         header = {'job_id': ingest_job.id, 'upload_queue_url': ingest_job.upload_queue,
@@ -500,7 +507,7 @@ class IngestManager:
                             # if there are 10 messages in the batch send it to the upload queue.
                             if num_msg_per_file == MAX_NUM_MSG_PER_FILE:
                                 fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
-                                self.upload_task_file(fname,f.getvalue())
+                                self.upload_task_file(fname, f.getvalue())
                                 self.file_index += 1
                                 f.close()
                                 # status = self.send_upload_message_batch(batch_msg)
@@ -540,7 +547,7 @@ class IngestManager:
         s3.Bucket(ingest_bucket).put_object(Key=file_name_key, Body=data)
         self.invoke_lambda(file_name_key)
 
-    def invoke_lambda(self,file_name):
+    def invoke_lambda(self, file_name):
         """
         Invoke the lamda per file
         Returns:
@@ -649,9 +656,29 @@ class IngestManager:
         """
         # Generate credentials for the ingest_job
         # Create the credentials for the job
+        # tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
+        # self.create_ingest_credentials(upload_queue, tile_bucket)
         ingest_creds = IngestCredentials()
         policy = BossUtil.generate_ingest_policy(self.job.id, upload_queue, tile_bucket)
         ingest_creds.generate_credentials(self.job.id, policy.arn)
+
+    def generate_ingest_credentials(self, ingest_job):
+        """
+        Create new ingest credentials for a job
+        Args:
+            upload_queue : Upload queue for the job
+            tile_bucket : Name of the tile bucket for the job
+        Returns:
+            None
+
+        """
+        # Generate credentials for the ingest_job
+        # Create the credentials for the job
+        tile_bucket = TileBucket(ingest_job.collection + '&' + ingest_job.experiment)
+        upload_queue = self.get_ingest_job_upload_queue(ingest_job)
+        ingest_creds = IngestCredentials()
+        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, tile_bucket)
+        ingest_creds.generate_credentials(ingest_job.id, policy.arn)
 
     def remove_ingest_credentials(self, job_id):
         """

@@ -22,7 +22,7 @@ from bosscore.views.views_resource import CollectionList, CollectionDetail, Expe
 from bosscore.views.views_permission import ResourceUserPermission
 from bosscore.views.views_group import BossGroupMember, BossUserGroup, BossGroupMaintainer
 
-version = 'v0.7'
+version = settings.BOSS_VERSION
 
 
 class BossCoreResourceRoutingTests(APITestCase):

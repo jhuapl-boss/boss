@@ -274,7 +274,6 @@ class BossUserGroup(APIView):
     View to manage group memberships
     """
 
-    @check_role("resource-manager")
     def get(self, request, group_name=None):
         """
         Get all groups
@@ -287,6 +286,12 @@ class BossUserGroup(APIView):
         """
         if group_name is not None:
             try:
+                # Check for permissions. The logged in user has to be a member or group maintainer
+                if not check_is_member_or_maintainer(request.user, group_name):
+                    return BossHTTPError('Unauthorized. The user {} is not a member or maintainer of the group {}'
+                                         .format(request.user.username, group_name),
+                                         ErrorCodes.MISSING_PERMISSION)
+
                 group = Group.objects.get(name=group_name)
                 bgroup = BossGroup.objects.get(group=group)
                 data = {"name": group.name, "owner": bgroup.creator.username}
@@ -319,6 +324,9 @@ class BossUserGroup(APIView):
                 return Response(data, status=200)
             except Group.DoesNotExist:
                 return BossGroupNotFoundError(group_name)
+            except BossGroup.DoesNotExist:
+                return BossHTTPError("The group {} is not configured correctly and does not have a creator. "
+                                     "Contact an admin to update it".format(group_name), ErrorCodes.UNABLE_TO_VALIDATE)
         else:
             # Get all the groups that the logged in user is a member of
             list_member_groups = request.user.groups.values_list('name', flat=True)

@@ -17,11 +17,13 @@ from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework import generics
 
-from bosscore.error import BossError, ErrorCodes
+from bosscore.error import BossError, ErrorCodes, BossHTTPError
 from bossingest.ingest_manager import IngestManager
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
+from bossingest.models import IngestJob
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
@@ -33,37 +35,60 @@ class IngestJobView(APIView):
 
     """
 
-    def get(self, request, ingest_job_id):
+    def get(self, request, ingest_job_id=None):
         """
-
+        Join a job with the specified job id
         Args:
-            job_id:
+            request: Django rest framework request object
+            ingest_job_id: Ingest job id
 
         Returns:
-
+            Ingest job
         """
         try:
+            # list all ingest jobs if no id is specified
+            if ingest_job_id is None:
+                # List all jobs in progress for the user
+                jobs = IngestJob.objects.filter(creator=request.user, status=0)
+                list_jobs = []
+                for item in jobs:
+                    job = {'id': item.id, 'config_data': item.config_data}
+                    list_jobs.append(job)
+                data = {"Ingest jobs": list_jobs}
+                return Response(data, status=status.HTTP_200_OK)
+
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
+
+            # Check permissions
+            if ingest_job.creator != request.user:
+                return BossHTTPError("Forbidden. Cannot join the ingest job ", ErrorCodes.INVALID_REQUEST)
+
             serializer = IngestJobListSerializer(ingest_job)
-            print (serializer.data)
 
             # Start setting up output
-            data = {}
-            data['ingest_job'] = serializer.data
-            if ingest_job.status == 3 or ingest_job.status == 2:
-                # Return the information for the deleted job/completed job
+            data = {'ingest_job': serializer.data}
+
+            if ingest_job.status == 3:
+                # The job has been deleted
+                raise BossError("The job with id {} has been deleted".format(ingest_job_id),
+                                ErrorCodes.INVALID_REQUEST)
+            elif ingest_job.status == 2 or ingest_job.status == 4:
+                # Failed job or completed job
                 return Response(data, status=status.HTTP_200_OK)
+
             elif ingest_job.status == 0:
-                # check if all message are in the upload queue
-                upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
-                if int(upload_queue.queue.attributes['ApproximateNumberOfMessages']) == int(ingest_job.tile_count):
-                    #generate credentials
+                # Job is still in progress
+                # check status of the step function
+                session = bossutils.aws.get_session()
+                if bossutils.aws.sfn_status(session, ingest_job.step_function_arn) == 'SUCCEEDED':
+                    # generate credentials
                     ingest_job.status = 1
                     ingest_job.save()
-                elif int(upload_queue.queue.attributes['ApproximateNumberOfMessages']) > int(ingest_job.tile_count):
-                    # This indicates an error in the lambda
-                    raise BossError("Error generating ingest job messages due to resources timing out ."
+                    ingest_mgmr.generate_ingest_credentials(ingest_job)
+                elif bossutils.aws.sfn_status(session, ingest_job.step_function_arn) == 'FAILED':
+                    # This indicates an error in step function
+                    raise BossError("Error generating ingest job messages"
                                     " Delete the ingest job with id {} and try again.".format(ingest_job_id),
                                     ErrorCodes.BOSS_SYSTEM_ERROR)
 
@@ -71,15 +96,14 @@ class IngestJobView(APIView):
                 data['ingest_job']['status'] = 1
                 ingest_creds = IngestCredentials()
                 data['credentials'] = ingest_creds.get_credentials(ingest_job.id)
+                print(data['credentials'])
             else:
                 data['credentials'] = None
-
 
             data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
             data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
-
 
             # add the lambda - Possibly remove this later
             config = bossutils.configuration.BossConfig()
@@ -90,10 +114,10 @@ class IngestJobView(APIView):
             experiment = Experiment.objects.get(name=data['ingest_job']["experiment"], collection=collection)
             channel = Channel.objects.get(name=data['ingest_job']["channel"], experiment=experiment)
 
-            resource = {}
+            resource={}
             resource['boss_key'] = '{}&{}&{}'.format(data['ingest_job']["collection"],
-                                                      data['ingest_job']["experiment"],
-                                                      data['ingest_job']["channel"])
+                                                     data['ingest_job']["experiment"],
+                                                     data['ingest_job']["channel"])
             resource['lookup_key'] = '{}&{}&{}'.format(collection.id,
                                                        experiment.id,
                                                        channel.id)
@@ -116,12 +140,13 @@ class IngestJobView(APIView):
         except Exception as err:
             return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
 
-    def post(self,request):
+    def post(self, request):
         """
         Post a new config job and create a new ingest job
 
         Args:
-            ingest_config_data:
+            request: Django Rest framework Request object
+            ingest_config_data: COnfiguration data for the ingest job
 
         Returns:
 
@@ -141,6 +166,7 @@ class IngestJobView(APIView):
         """
 
         Args:
+            request:
             ingest_job_id:
 
         Returns:
@@ -148,7 +174,94 @@ class IngestJobView(APIView):
         """
         try:
             ingest_mgmr = IngestManager()
-            ingest_mgmr.delete_ingest_job(ingest_job_id)
+            ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
+
+            # Check permissions
+            if ingest_job.creator != request.user:
+                return BossHTTPError("Forbidden. Cannot join the ingest job ", ErrorCodes.INVALID_REQUEST)
+
+            ingest_mgmr.delete_ingest_job(ingest_job)
             return Response(status=status.HTTP_204_NO_CONTENT)
+
         except BossError as err:
                 return err.to_http()
+
+
+class IngestJobStatusView(APIView):
+    """
+    Get the status of an ingest job creation. This return's the status and the ~ number
+    of messages in the upload queue
+
+    """
+
+    def get(self, request, ingest_job_id):
+        """
+        Get the status of an ingest_job and number of messages in the upload queue
+        Args:
+            request: Django Rest framework object
+            ingest_job_id: Ingest job id
+
+        Returns: Status of the job
+
+        """
+        try:
+            ingest_mgmr = IngestManager()
+            ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
+            if ingest_job.creator != request.user:
+                return BossHTTPError("Forbidden.The logged in user is not the job creator", ErrorCodes.INVALID_REQUEST)
+
+            serializer = IngestJobListSerializer(ingest_job)
+            print(serializer.data)
+
+            # Start setting up output
+            data = {'ingest_job': serializer.data}
+            if ingest_job.status == 3:
+                # Deleted Job
+                raise BossError("The job with id {} has been deleted".format(ingest_job_id),
+                                ErrorCodes.INVALID_REQUEST)
+            elif ingest_job.status == 2:
+                # Failed job
+                raise BossError("The job with id {} has failed".format(ingest_job_id),
+                                ErrorCodes.INVALID_REQUEST)
+            elif ingest_job.status == 0 or ingest_job.status == 1:
+                # Complete or preparing
+                upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
+                num_messages_in_queue = int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
+                if num_messages_in_queue < ingest_job.tile_count:
+                    for n in range(9):
+                        num_messages_in_queue += int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
+                    num_messages_in_queue /= 10
+
+                data = {"id": ingest_job.id,
+                        "status": ingest_job.status,
+                        "Total message count": ingest_job.tile_count,
+                        "Current message count": int(num_messages_in_queue)}
+
+            return Response(data, status=status.HTTP_200_OK)
+        except BossError as err:
+                return err.to_http()
+        except Exception as err:
+            return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
+
+
+class IngestJobListView(generics.ListCreateAPIView):
+    """
+    List all coordinate frames
+    """
+    queryset = IngestJob.objects.all()
+    serializer_class = IngestJobListSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Display all ingest jobs for a user
+        Args:
+            request: DRF request
+            *args:
+            **kwargs:
+
+        Returns: A list of job ids for the user
+
+        """
+        jobs = IngestJob.objects.filter(creator=request.user, status=0)
+        data = {"IDS": [job.id for job in jobs]}
+        return Response(data)

@@ -86,6 +86,9 @@ class BloscParser(BaseParser):
             # Decompress
             raw_data = blosc.decompress(stream.read())
             data_mat = np.fromstring(raw_data, dtype=resource.get_numpy_data_type())
+        except MemoryError:
+            return BossParserError("Ran out of memory decompressing data.",
+                                    ErrorCodes.BOSS_SYSTEM_ERROR)
         except:
             return BossParserError("Failed to decompress data. Verify the datatype/bitdepth of your data "
                                    "matches the channel.", ErrorCodes.DATATYPE_DOES_NOT_MATCH)

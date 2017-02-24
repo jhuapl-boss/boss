@@ -87,14 +87,14 @@ class CoordinateFrame(models.Model):
         ('centimeters', 'CENTIMETERS')
     )
     voxel_unit = models.CharField(choices=VOXEL_UNIT_CHOICES, max_length=100)
-    time_step = models.IntegerField(blank=True, null=True)
-    TIMESTEP_UNIT_CHOICES = (
-        ('nanoseconds', 'NANOSECONDS'),
-        ('microseconds', 'MICROSECONDS'),
-        ('milliseconds', 'MILLISECONDS'),
-        ('seconds', 'SECONDS'),
-    )
-    time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100, blank=True, null=True)
+    # time_step = models.IntegerField(blank=True, null=True)
+    # TIMESTEP_UNIT_CHOICES = (
+    #     ('nanoseconds', 'NANOSECONDS'),
+    #     ('microseconds', 'MICROSECONDS'),
+    #     ('milliseconds', 'MILLISECONDS'),
+    #     ('seconds', 'SECONDS'),
+    # )
+    # time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100, blank=True, null=True)
     to_be_deleted = models.DateTimeField(null=True, blank=True)
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
@@ -142,6 +142,14 @@ class Experiment(models.Model):
     )
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
     num_time_samples = models.IntegerField(default=1)
+    time_step = models.IntegerField(blank=True, null=True)
+    TIMESTEP_UNIT_CHOICES = (
+        ('nanoseconds', 'NANOSECONDS'),
+        ('microseconds', 'MICROSECONDS'),
+        ('milliseconds', 'MILLISECONDS'),
+        ('seconds', 'SECONDS'),
+    )
+    time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100, blank=True, null=True)
     to_be_deleted = models.DateTimeField(null=True, blank=True)
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),

@@ -94,5 +94,6 @@ OBJECTIO_CONFIG = {"s3_flush_queue": config['aws']['s3-flush-queue'],
                    "ingest_lambda_function": config['lambda']['ingest_function'],
                    "s3_index_table": config['aws']['s3-index-table'],
                    "id_index_table": config['aws']['id-index-table'],
-                   "id_count_table": config['aws']['id-count-table']
+                   "id_count_table": config['aws']['id-count-table'],
+                   "prod_mailing_list": config["aws"]["prod_mailing_list"]
                    }

@@ -152,8 +152,7 @@ class TestDjangoResource(APITestCase):
         assert coord.y_voxel_size == self.request_channel.coord_frame.y_voxel_size
         assert coord.z_voxel_size == self.request_channel.coord_frame.z_voxel_size
         assert coord.voxel_unit == self.request_channel.coord_frame.voxel_unit
-        assert coord.time_step == self.request_channel.coord_frame.time_step
-        assert coord.time_step_unit == self.request_channel.coord_frame.time_step_unit
+
 
     def test_django_resource_experiment(self):
         """Test basic get experiment interface
@@ -170,6 +169,8 @@ class TestDjangoResource(APITestCase):
         assert exp.description == self.request_channel.experiment.description
         assert exp.num_hierarchy_levels == self.request_channel.experiment.num_hierarchy_levels
         assert exp.hierarchy_method == self.request_channel.experiment.hierarchy_method
+        assert exp.time_step == self.request_channel.experiment.time_step
+        assert exp.time_step_unit == self.request_channel.experiment.time_step_unit
 
     def test_django_resource_channel_image(self):
         """Test basic get channel interface
