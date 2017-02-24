@@ -233,6 +233,32 @@ class GroupMemberTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data['members']), 2)
 
+    def test_add_member_invalid(self):
+        """ Add a new member to admin or public group. This is invalid """
+
+        # Add user to the group
+        url = '/' + version + '/groups/admin/members/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 400)
+
+        # Add user to the group
+        url = '/' + version + '/groups/public/members/testuser2555/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 400)
+
+    def test_remove_member_invalid(self):
+        """ Remove a new member to admin or public group. This is invalid """
+
+        # Add user to the group
+        url = '/' + version + '/groups/admin/members/testuser2555/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 400)
+
+        # Add user to the group
+        url = '/' + version + '/groups/public/members/testuser2555/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 400)
+
     def test_remove_member_group(self):
         """ Remove a member from the group. """
 

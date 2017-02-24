@@ -87,6 +87,10 @@ class BossGroupMember(APIView):
 
         """
         try:
+            if group_name == 'public' or group_name == 'admin':
+                return BossHTTPError('Cannot add a member to the group {}. This is an admin managed group'
+                                     .format(group_name), ErrorCodes.BAD_REQUEST)
+
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
 
@@ -119,7 +123,9 @@ class BossGroupMember(APIView):
 
         """
         try:
-
+            if group_name == 'public' or group_name == 'admin':
+                return BossHTTPError('Cannot remove a user from the group {}. This is an admin managed group'
+                                     .format(group_name), ErrorCodes.BAD_REQUEST)
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
 
@@ -199,6 +205,10 @@ class BossGroupMaintainer(APIView):
 
         """
         try:
+            if group_name == 'public' or group_name == 'admin':
+                return BossHTTPError('Cannot add a maintainer to the group {}. This is an admin managed group'
+                                     .format(group_name), ErrorCodes.BAD_REQUEST)
+
             if user_name is None:
                 return BossHTTPError('Missing username in post.', ErrorCodes.INVALID_URL)
 
@@ -239,6 +249,9 @@ class BossGroupMaintainer(APIView):
 
         """
         try:
+            if group_name == 'public' or group_name == 'admin':
+                return BossHTTPError('Cannot remove a maintainer from the group {}. This is an admin managed group'
+                                     .format(group_name), ErrorCodes.BAD_REQUEST)
             if user_name is None:
                 return BossHTTPError('Missing username parameter in post.', ErrorCodes.INVALID_URL)
 

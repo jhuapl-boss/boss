@@ -29,6 +29,7 @@ class ErrorCodes(IntEnum):
     INVALID_POST_ARGUMENT = 1003
     UNABLE_TO_VALIDATE = 1004
     INVALID_ARGUMENT = 1005
+    BAD_REQUEST = 1006
 
     # Request Validation
     REQUEST_TOO_LARGE = 2000
@@ -79,6 +80,7 @@ RESP_CODES = {
     ErrorCodes.TYPE_ERROR: 400,
     ErrorCodes.INVALID_POST_ARGUMENT: 400,
     ErrorCodes.INVALID_ARGUMENT: 400,
+    ErrorCodes.BAD_REQUEST: 400,
     ErrorCodes.UNABLE_TO_VALIDATE: 400,
     ErrorCodes.REQUEST_TOO_LARGE: 413,
     ErrorCodes.DATATYPE_DOES_NOT_MATCH: 400,
