@@ -29,6 +29,8 @@ import redis
 import time
 import blosc
 import random
+import os
+import unittest
 
 from spdb.spatialdb.test.setup import SetupTests
 from botocore.exceptions import ClientError
@@ -62,6 +64,7 @@ FLUSH_QUEUE_NAME = "intTest.S3FlushQueue.{}".format(domain).replace('.', '-')
 @override_settings(KVIO_SETTINGS=KVIO_SETTINGS)
 @override_settings(STATEIO_CONFIG=STATEIO_CONFIG)
 @override_settings(OBJECTIO_CONFIG=OBJECTIO_CONFIG)
+@unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
 class CutoutViewIntegration8BitTests(CutoutInterfaceViewUint8TestMixin, APITestCase):
 
     def test_delayed_write(self):
