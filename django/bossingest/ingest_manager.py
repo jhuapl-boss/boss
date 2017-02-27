@@ -18,8 +18,8 @@ import boto3
 import io
 import math
 
-from ingest.core.config import Configuration
-from ingest.core.backend import BossBackend
+from ingestclient.core.config import Configuration
+from ingestclient.core.backend import BossBackend
 
 from bossingest.serializers import IngestJobCreateSerializer, IngestJobListSerializer
 from bossingest.models import IngestJob

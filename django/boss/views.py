@@ -59,7 +59,40 @@ class Unsupported(APIView):
 
     def get(self, request):
         """
-        Return the server IP
+        Return the unsupported error
+
+        :param request: DRF Request object
+        :type request: rest_framework.request.Request
+        :return:
+        """
+        return BossHTTPError(" This API version is unsupported. Update to version {}".format(version),
+                             ErrorCodes.UNSUPPORTED_VERSION)
+
+    def post(self, request):
+        """
+        Return the unsupported error
+
+        :param request: DRF Request object
+        :type request: rest_framework.request.Request
+        :return:
+        """
+        return BossHTTPError(" This API version is unsupported. Update to version {}".format(version),
+                             ErrorCodes.UNSUPPORTED_VERSION)
+
+    def delete(self, request):
+        """
+        Return the unsupported error
+
+        :param request: DRF Request object
+        :type request: rest_framework.request.Request
+        :return:
+        """
+        return BossHTTPError(" This API version is unsupported. Update to version {}".format(version),
+                             ErrorCodes.UNSUPPORTED_VERSION)
+
+    def put(self, request):
+        """
+        Return the unsupported error
 
         :param request: DRF Request object
         :type request: rest_framework.request.Request
