@@ -432,6 +432,8 @@ class ExperimentDetail(APIView):
             return BossResourceNotFoundError(collection)
         except Experiment.DoesNotExist:
             return BossResourceNotFoundError(experiment)
+        except BossError as err:
+            return err.to_http()
 
     @transaction.atomic
     @check_role("resource-manager")

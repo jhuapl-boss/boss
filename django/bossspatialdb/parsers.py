@@ -26,6 +26,23 @@ from bosscore.error import BossParserError, BossError, ErrorCodes
 import spdb
 
 
+def is_too_large(request_obj, bit_depth):
+    """Method to check if a request is too large to handle
+
+    Args:
+        request_obj:
+
+    Returns:
+        bool
+    """
+    t_span = request_obj.get_time().stop - request_obj.get_time().start
+    total_bytes = request_obj.get_x_span() * request_obj.get_y_span() * request_obj.get_z_span() * t_span * bit_depth/8
+    if total_bytes > settings.CUTOUT_MAX_SIZE:
+        return True
+    else:
+        return False
+
+
 class BloscParser(BaseParser):
     """
     Parser that handles blosc compressed binary data
@@ -76,9 +93,8 @@ class BloscParser(BaseParser):
             return BossParserError("Unsupported data type provided to parser: {}".format(resource.get_data_type()),
                                    ErrorCodes.TYPE_ERROR)
 
-        # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth / 8
-        if total_bytes > settings.CUTOUT_MAX_SIZE:
+        # Make sure cutout request is under 500MB UNCOMPRESSED
+        if is_too_large(req, bit_depth):
             return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
                                    ErrorCodes.REQUEST_TOO_LARGE)
 
@@ -162,9 +178,8 @@ class BloscPythonParser(BaseParser):
             return BossParserError("Unsupported data type provided to parser: {}".format(resource.get_data_type()),
                                    ErrorCodes.TYPE_ERROR)
 
-        # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth / 8
-        if total_bytes > settings.CUTOUT_MAX_SIZE:
+        # Make sure cutout request is under 500MB UNCOMPRESSED
+        if is_too_large(req, bit_depth):
             return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
                                    ErrorCodes.REQUEST_TOO_LARGE)
 
@@ -225,9 +240,8 @@ class NpygzParser(BaseParser):
             return BossParserError("Unsupported data type provided to parser: {}".format(resource.get_data_type()),
                                    ErrorCodes.TYPE_ERROR)
 
-        # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * bit_depth / 8
-        if total_bytes > settings.CUTOUT_MAX_SIZE:
+        # Make sure cutout request is under 500MB UNCOMPRESSED
+        if is_too_large(req, bit_depth):
             return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
                                    ErrorCodes.REQUEST_TOO_LARGE)
 

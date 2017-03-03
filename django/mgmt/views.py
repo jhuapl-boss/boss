@@ -7,6 +7,7 @@ from django.shortcuts import redirect
 from django.core.urlresolvers import reverse
 
 from bosscore.privileges import BossPrivilegeManager, check_role
+from bosscore.error import BossError
 
 from .forms import UserForm, RoleForm, GroupForm, GroupMemberForm
 from .forms import CollectionForm, ExperimentForm, ChannelForm
@@ -617,7 +618,7 @@ class Experiment(LoginRequiredMixin, View):
                     form.add_error(None, err)
                 else:
                     return redirect('mgmt:experiment', collection_name, experiment_name)
-            return self.get(request, collection_name, experiment_name, exp_form=form)
+            return self.get(request, collection_name, experiment_name, chan_form=form)
         elif action == 'meta':
             form = MetaForm(request.POST)
             if form.is_valid():
@@ -686,10 +687,6 @@ class Channel(LoginRequiredMixin, View):
         if err:
             return err
 
-        #meta_url = reverse('mgmt:meta', args=[collection_name, experiment_name, channel_name])
-        #metas_args = utils.make_metas_pagination(request, metas, 'Channel', meta_url)
-        #perms_args = utils.make_perms_pagination(request, perms)
-
         args = {
             'user_roles': get_roles(request),
             'page_error': page_error,
@@ -737,11 +734,19 @@ class Channel(LoginRequiredMixin, View):
             if form.is_valid():
                 data = form.cleaned_update_data
 
-                err = api.up_channel(request, collection_name, experiment_name, channel_name, data)
-                if err:
-                    form.add_error(None, err)
-                else:
-                    return redirect('mgmt:channel', collection_name, experiment_name, data['name'])
+                # DMK - Boss request throws a BossError if the related channels don't exist
+                try:
+                    err = api.up_channel(request, collection_name, experiment_name, channel_name, data)
+
+                    if err:
+                        form.add_error(None, err)
+                    else:
+                        return redirect('mgmt:channel', collection_name, experiment_name, data['name'])
+
+                except BossError as err:
+                    form.add_error(None, err.message)
+
+
             return self.get(request, collection_name, experiment_name, channel_name, chan_form=form)
         else:
             return HttpResponse(status=400, reason="Unknown post action")

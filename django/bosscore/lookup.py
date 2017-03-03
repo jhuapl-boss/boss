@@ -206,7 +206,7 @@ class LookUpKey:
                 split_key[1] = experiment_name
                 boss_key = '&'.join(split_key)
 
-                boss_key = re.sub(old_experiment_name, experiment_name, item.boss_key)
+                #boss_key = re.sub(old_experiment_name, experiment_name, item.boss_key)
                 lookup_data = {'lookup_key': item.lookup_key, 'boss_key': boss_key,
                                'experiment_name': experiment_name
                                }

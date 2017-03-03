@@ -18,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework import authentication, permissions
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 
-from .parsers import BloscParser, BloscPythonParser, NpygzParser
+from .parsers import BloscParser, BloscPythonParser, NpygzParser, is_too_large
 from .renderers import BloscRenderer, BloscPythonRenderer, NpygzRenderer
 
 from django.http import HttpResponse
@@ -97,9 +97,8 @@ class Cutout(APIView):
         except ValueError:
             return BossHTTPError("Unsupported data type: {}".format(resource.get_data_type()), ErrorCodes.TYPE_ERROR)
 
-        # Make sure cutout request is under 1GB UNCOMPRESSED
-        total_bytes = req.get_x_span() * req.get_y_span() * req.get_z_span() * len(req.get_time()) * (self.bit_depth / 8)
-        if total_bytes > settings.CUTOUT_MAX_SIZE:
+        # Make sure cutout request is under 500MB UNCOMPRESSED
+        if is_too_large(req, self.bit_depth):
             return BossHTTPError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
                                  ErrorCodes.REQUEST_TOO_LARGE)
 

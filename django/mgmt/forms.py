@@ -175,8 +175,8 @@ class ChannelForm(UpdateForm):
                                          help_text="Resolution hierarchy level assumed to be 'native'. <br>Used primarily for dynamic resampling of annotation channels. Default to 0")
     default_time_sample = forms.IntegerField(required=False,
                                              help_text="Time sample used when omitted from a request. <br>For non-time series data always set to 0")
-    source = DelimitedCharField(label="Source Channel", required=False,
-                                help_text="Optional comma separated list of channels from which this channel is derived.<br>Useful for linking annotation to image channels")
+    sources = DelimitedCharField(label="Source Channel", required=False,
+                                 help_text="Optional comma separated list of channels from which this channel is derived.<br>Useful for linking annotation to image channels")
     related = DelimitedCharField(label="Related Channels", required=False,
                                  help_text="Optional comma separated list of channels related to this channel.")
 
