@@ -99,7 +99,7 @@ class Cutout(APIView):
 
         # Make sure cutout request is under 500MB UNCOMPRESSED
         if is_too_large(req, self.bit_depth):
-            return BossHTTPError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+            return BossHTTPError("Cutout request is over 500MB when uncompressed. Reduce cutout dimensions.",
                                  ErrorCodes.REQUEST_TOO_LARGE)
 
         # Get interface to SPDB cache

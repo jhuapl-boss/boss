@@ -95,7 +95,7 @@ class BloscParser(BaseParser):
 
         # Make sure cutout request is under 500MB UNCOMPRESSED
         if is_too_large(req, bit_depth):
-            return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+            return BossParserError("Cutout request is over 500MB when uncompressed. Reduce cutout dimensions.",
                                    ErrorCodes.REQUEST_TOO_LARGE)
 
         try:
@@ -180,7 +180,7 @@ class BloscPythonParser(BaseParser):
 
         # Make sure cutout request is under 500MB UNCOMPRESSED
         if is_too_large(req, bit_depth):
-            return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+            return BossParserError("Cutout request is over 500MB when uncompressed. Reduce cutout dimensions.",
                                    ErrorCodes.REQUEST_TOO_LARGE)
 
         # Decompress and return
@@ -242,7 +242,7 @@ class NpygzParser(BaseParser):
 
         # Make sure cutout request is under 500MB UNCOMPRESSED
         if is_too_large(req, bit_depth):
-            return BossParserError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
+            return BossParserError("Cutout request is over 500MB when uncompressed. Reduce cutout dimensions.",
                                    ErrorCodes.REQUEST_TOO_LARGE)
 
         # Decompress and return
