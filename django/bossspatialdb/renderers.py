@@ -17,6 +17,7 @@ import blosc
 import numpy as np
 import zlib
 import io
+from PIL import Image
 
 
 class BloscPythonRenderer(renderers.BaseRenderer):
@@ -114,11 +115,11 @@ class JpegRenderer(renderers.BaseRenderer):
             self.media_type = 'application/json'
             self.format = 'json'
             err_msg = {"status": 400, "message": "The cutout service JPEG interface does not support 4D cutouts",
-                       "code": 2003}
+                       "code": 2005}
             return err_msg
 
         if renderer_context['view'].bit_depth != 8:
-            # This appears to contain time data. Error out
+            # This renderer only works on uint8 data
             self.media_type = 'application/json'
             self.format = 'json'
             err_msg = {"status": 400, "message": "The cutout service JPEG interface does not support 4D cutouts",
@@ -126,15 +127,14 @@ class JpegRenderer(renderers.BaseRenderer):
             return err_msg
 
         # Reshape matrix
+        d_shape = data["data"].data.shape
+        data["data"].data = np.reshape(data["data"].data, (d_shape[0] * d_shape[1], d_shape[2]), order="C")
 
         # Save to Image
+        jpeg_image = Image.fromarray(data["data"].data)
         img_file = io.BytesIO()
-        np.save(npy_file, data["data"].data, allow_pickle=False)
-
-        # Compress npy
-        npy_gz = zlib.compress(npy_file.getvalue())
+        jpeg_image.save(img_file, "JPEG", quality=85)
 
         # Send file
-        npy_gz_file = io.BytesIO(npy_gz)
-        npy_gz_file.seek(0)
-        return npy_gz_file.read()
+        jpeg_image.seek(0)
+        return jpeg_image.read()

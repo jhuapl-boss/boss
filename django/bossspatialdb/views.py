@@ -19,7 +19,7 @@ from rest_framework import authentication, permissions
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 
 from .parsers import BloscParser, BloscPythonParser, NpygzParser, is_too_large
-from .renderers import BloscRenderer, BloscPythonRenderer, NpygzRenderer
+from .renderers import BloscRenderer, BloscPythonRenderer, NpygzRenderer, JpegRenderer
 
 from django.http import HttpResponse
 from django.conf import settings
@@ -38,8 +38,9 @@ class Cutout(APIView):
     * Requires authentication.
     """
     # Set Parser and Renderer
-    parser_classes = (BloscParser, BloscPythonParser, NpygzParser)
-    renderer_classes = (BloscRenderer, BloscPythonRenderer, NpygzRenderer, JSONRenderer, BrowsableAPIRenderer)
+    parser_classes = (BloscParser, BloscPythonParser, NpygzParser, BrowsableAPIRenderer)
+    renderer_classes = (BloscRenderer, BloscPythonRenderer, NpygzRenderer, JpegRenderer,
+                        JSONRenderer, BrowsableAPIRenderer)
 
     def __init__(self):
         super().__init__()
