@@ -93,3 +93,48 @@ class NpygzRenderer(renderers.BaseRenderer):
         npy_gz_file = io.BytesIO(npy_gz)
         npy_gz_file.seek(0)
         return npy_gz_file.read()
+
+
+class JpegRenderer(renderers.BaseRenderer):
+    """ A DRF renderer for a jpeg 'sprite sheet' encoded cube of data. Here, we concat z-slices
+
+    """
+    media_type = 'image/jpeg'
+    format = 'jpg'
+    charset = None
+
+    def render(self, data, media_type=None, renderer_context=None):
+
+        # Return data, squeezing time dimension as this only works with 3D data
+        if not data["time_request"]:
+            self.render_style = 'binary'
+            data["data"].data = np.squeeze(data["data"].data, axis=(0,))
+        else:
+            # This appears to contain time data. Error out
+            self.media_type = 'application/json'
+            self.format = 'json'
+            err_msg = {"status": 400, "message": "The cutout service JPEG interface does not support 4D cutouts",
+                       "code": 2003}
+            return err_msg
+
+        if renderer_context['view'].bit_depth != 8:
+            # This appears to contain time data. Error out
+            self.media_type = 'application/json'
+            self.format = 'json'
+            err_msg = {"status": 400, "message": "The cutout service JPEG interface does not support 4D cutouts",
+                       "code": 2003}
+            return err_msg
+
+        # Reshape matrix
+
+        # Save to Image
+        img_file = io.BytesIO()
+        np.save(npy_file, data["data"].data, allow_pickle=False)
+
+        # Compress npy
+        npy_gz = zlib.compress(npy_file.getvalue())
+
+        # Send file
+        npy_gz_file = io.BytesIO(npy_gz)
+        npy_gz_file.seek(0)
+        return npy_gz_file.read()
