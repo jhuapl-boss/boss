@@ -164,7 +164,7 @@ class BloscPythonParser(BaseParser):
 
             req = BossRequest(parser_context['request'], request_args)
         except BossError as err:
-            return BossParserError(err.message, err.status_code)
+            return BossParserError(err.message, err.error_code)
         except Exception as err:
             return BossParserError(str(err), ErrorCodes.UNHANDLED_EXCEPTION)
 
@@ -226,7 +226,7 @@ class NpygzParser(BaseParser):
 
             req = BossRequest(parser_context['request'], request_args)
         except BossError as err:
-            return BossParserError(err.message, err.status_code)
+            return BossParserError(err.message, err.error_code)
         except Exception as err:
             return BossParserError(str(err), ErrorCodes.UNHANDLED_EXCEPTION)
 

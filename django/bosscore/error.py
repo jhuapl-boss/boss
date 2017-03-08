@@ -121,14 +121,14 @@ class BossError(Exception):
 
     When you reach a point in your code where you want to stop execution and return an error to the user:
 
-        raise BossError(409, "Key already exists", 20001)
+        raise BossError("Key already exists", ErrorCodes.INVALID_REQUEST)
 
     """
 
     def __init__(self, *args):
         """
         Custom error class
-        :param args: A tuple of (http_status_code, message, error_code)
+        :param args: A tuple of (message, error_code)
         :return:
         """
         # Set status code
@@ -155,7 +155,7 @@ class BossParserError(object):
 
     When you reach a point in a DRF parser where you want to stop execution and return an error to the user:
 
-        return BossParserError(409, "Key already exists", 20001)
+        return BossParserError("Key already exists", ErrorCodes.INVALID_REQUEST)
 
     In your view's POST handler you can then check if request.data is of type BossParserError and then return the error
     to the user if it is:
@@ -168,7 +168,7 @@ class BossParserError(object):
     def __init__(self, *args):
         """
         Custom HTTP error class
-        :param args: A tuple of (http_status_code, message, error_code)
+        :param args: A tuple of (message, error_code)
         :return:
         """
         # Set status code
@@ -194,7 +194,7 @@ class BossHTTPError(JsonResponse):
 
     When you reach a point in a django view where you want to stop execution and return an error to the user:
 
-        return BossHTTPError(409, 20001, "Key already exists")
+        return BossHTTPError("Key already exists", ErrorCodes.INVALID_REQUEST)
 
     """
 
