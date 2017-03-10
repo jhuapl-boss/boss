@@ -426,7 +426,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(np.unique(data_mat), np.arange(0, 1, dtype=np.uint64))
 
-    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
+    @unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
     def test_channel_uint64_cuboid_unaligned_offset_no_time_blosc(self):
         """ Test uint64 data, not cuboid aligned, offset, no time samples, blosc interface"""
 
@@ -467,7 +467,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
+    @unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
     def test_channel_uint64_cuboid_unaligned_offset_time_blosc(self):
         """ Test uint64 data, not cuboid aligned, offset, time samples, blosc interface
 
@@ -622,7 +622,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
+    @unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
     def test_channel_uint64_cuboid_unaligned_offset_time_blosc_numpy(self):
         """ Test uint64 data, not cuboid aligned, offset, time samples, blosc interface
 
@@ -663,7 +663,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
-    @unittest.skipUnless(os.environ.get('RUN_HIGH_MEM_TESTS'), "Test Requires >2.5GB of Memory")
+    @unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
     def test_channel_uint64_cuboid_unaligned_offset_time_offset_blosc_numpy(self):
         """ Test uint64 data, not cuboid aligned, offset, time samples, blosc interface
 
