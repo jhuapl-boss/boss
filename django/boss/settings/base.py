@@ -152,3 +152,6 @@ CUTOUT_MAX_SIZE = 5 * 10 ** 8
 
 # Allow all cross site origins
 CORS_ORIGIN_ALLOW_ALL = True
+
+# Test RUN_HIGH_MEM_TESTS FLag
+RUN_HIGH_MEM_TESTS = os.environ.get('RUN_HIGH_MEM_TESTS')
