@@ -43,7 +43,27 @@ def is_too_large(request_obj, bit_depth):
         return False
 
 
-class BloscParser(BaseParser):
+class ConsumeReqMixin:
+    """
+    Provides a method to ensure a request is entirely consumed by a parser
+    when exiting .parse() early due to an error.  Failure to completely
+    consume the request causes Nginx to lose its connection with uwsgi.
+    """
+    
+    def consume_request(self, stream):
+        """
+        Consume the request and do not allow exceptions.
+
+        Args:
+            stream (stream-like object): The stream to consume.
+        """
+        try:
+            stream.read()
+        except:
+            pass
+
+
+class BloscParser(BaseParser, ConsumeReqMixin):
     """
     Parser that handles blosc compressed binary data
     """
@@ -79,8 +99,10 @@ class BloscParser(BaseParser):
 
             req = BossRequest(parser_context['request'], request_args)
         except BossError as err:
+            self.consume_request(stream)
             return BossParserError(err.message, err.error_code)
         except Exception as err:
+            self.consume_request(stream)
             return BossParserError(str(err), ErrorCodes.UNHANDLED_EXCEPTION)
 
         # Convert to Resource
@@ -129,7 +151,7 @@ class BloscParser(BaseParser):
         return req, resource, parsed_data
 
 
-class BloscPythonParser(BaseParser):
+class BloscPythonParser(BaseParser, ConsumeReqMixin):
     """
     Parser that handles blosc compressed binary data in python numpy format
     """
@@ -164,8 +186,10 @@ class BloscPythonParser(BaseParser):
 
             req = BossRequest(parser_context['request'], request_args)
         except BossError as err:
+            self.consume_request(stream)
             return BossParserError(err.message, err.error_code)
         except Exception as err:
+            self.consume_request(stream)
             return BossParserError(str(err), ErrorCodes.UNHANDLED_EXCEPTION)
 
         # Convert to Resource
@@ -175,17 +199,22 @@ class BloscPythonParser(BaseParser):
         try:
             bit_depth = resource.get_bit_depth()
         except ValueError:
+            self.consume_request(stream)
             return BossParserError("Unsupported data type provided to parser: {}".format(resource.get_data_type()),
                                    ErrorCodes.TYPE_ERROR)
 
         # Make sure cutout request is under 500MB UNCOMPRESSED
         if is_too_large(req, bit_depth):
+            self.consume_request(stream)
             return BossParserError("Cutout request is over 500MB when uncompressed. Reduce cutout dimensions.",
                                    ErrorCodes.REQUEST_TOO_LARGE)
 
         # Decompress and return
         try:
             parsed_data = blosc.unpack_array(stream.read())
+        except MemoryError:
+            return BossParserError("Ran out of memory decompressing data.",
+                                    ErrorCodes.BOSS_SYSTEM_ERROR)
         except EOFError:
             return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
                                    "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
@@ -193,7 +222,7 @@ class BloscPythonParser(BaseParser):
         return req, resource, parsed_data
 
 
-class NpygzParser(BaseParser):
+class NpygzParser(BaseParser, ConsumeReqMixin):
     """
     Parser that handles npygz compressed binary data
     """
@@ -226,8 +255,10 @@ class NpygzParser(BaseParser):
 
             req = BossRequest(parser_context['request'], request_args)
         except BossError as err:
+            self.consume_request(stream)
             return BossParserError(err.message, err.error_code)
         except Exception as err:
+            self.consume_request(stream)
             return BossParserError(str(err), ErrorCodes.UNHANDLED_EXCEPTION)
 
         # Convert to Resource
@@ -237,11 +268,13 @@ class NpygzParser(BaseParser):
         try:
             bit_depth = resource.get_bit_depth()
         except ValueError:
+            self.consume_request(stream)
             return BossParserError("Unsupported data type provided to parser: {}".format(resource.get_data_type()),
                                    ErrorCodes.TYPE_ERROR)
 
         # Make sure cutout request is under 500MB UNCOMPRESSED
         if is_too_large(req, bit_depth):
+            self.consume_request(stream)
             return BossParserError("Cutout request is over 500MB when uncompressed. Reduce cutout dimensions.",
                                    ErrorCodes.REQUEST_TOO_LARGE)
 
@@ -252,6 +285,9 @@ class NpygzParser(BaseParser):
             # Open
             data_obj = io.BytesIO(data_bytes)
             parsed_data = np.load(data_obj)
+        except MemoryError:
+            return BossParserError("Ran out of memory decompressing data.",
+                                    ErrorCodes.BOSS_SYSTEM_ERROR)
         except EOFError:
             return BossParserError("Failed to unpack data. Verify the datatype of your POSTed data and "
                                    "xyz dimensions used in the POST URL.", ErrorCodes.DATA_DIMENSION_MISMATCH)
