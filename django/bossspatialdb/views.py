@@ -113,10 +113,12 @@ class Cutout(APIView):
         extent = (req.get_x_span(), req.get_y_span(), req.get_z_span())
 
         # Get a Cube instance with all time samples
+        print(cache.__dict__['kvio'].__dict__)
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop],
                             filter_ids=req.get_filter_ids())
         to_renderer = {"time_request": req.time_request,
                        "data": data}
+        print("in get: {}".format(data.data.sum()))
 
         # Send data to renderer
         return Response(to_renderer)
@@ -175,6 +177,8 @@ class Cutout(APIView):
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
 
         try:
+            print(cache.__dict__['kvio'].__dict__)
+            print("in post: {}".format(request.data[2].sum()))
             if len(request.data[2].shape) == 4:
                 cache.write_cuboid(resource, corner, req.get_resolution(), request.data[2], req.get_time()[0])
             else:

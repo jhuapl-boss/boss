@@ -103,6 +103,7 @@ class JpegRenderer(renderers.BaseRenderer):
     media_type = 'image/jpeg'
     format = 'jpg'
     charset = None
+    render_style = 'binary'
 
     def render(self, data, media_type=None, renderer_context=None):
 
@@ -111,6 +112,7 @@ class JpegRenderer(renderers.BaseRenderer):
             self.render_style = 'binary'
             data["data"].data = np.squeeze(data["data"].data, axis=(0,))
         else:
+            print("Bad REQ")
             # This appears to contain time data. Error out
             self.media_type = 'application/json'
             self.format = 'json'
@@ -119,7 +121,9 @@ class JpegRenderer(renderers.BaseRenderer):
             return err_msg
 
         if renderer_context['view'].bit_depth != 8:
+            print("Bad Bit")
             # This renderer only works on uint8 data
+
             self.media_type = 'application/json'
             self.format = 'json'
             err_msg = {"status": 400, "message": "The cutout service JPEG interface does not support 4D cutouts",
@@ -131,10 +135,11 @@ class JpegRenderer(renderers.BaseRenderer):
         data["data"].data = np.reshape(data["data"].data, (d_shape[0] * d_shape[1], d_shape[2]), order="C")
 
         # Save to Image
+        print(data["data"].data.sum())
         jpeg_image = Image.fromarray(data["data"].data)
         img_file = io.BytesIO()
         jpeg_image.save(img_file, "JPEG", quality=85)
 
         # Send file
-        jpeg_image.seek(0)
-        return jpeg_image.read()
+        img_file.seek(0)
+        return img_file.read()
