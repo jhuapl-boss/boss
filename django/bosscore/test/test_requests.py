@@ -490,8 +490,10 @@ class CutoutInvalidRequestTests(APITestCase):
             :return:
         """
         self.rf = APIRequestFactory()
-        user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
+        dbsetup.create_super_user()
+
+        user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup.set_user(user)
         dbsetup.add_role('resource-manager')
         self.user = user

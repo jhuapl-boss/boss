@@ -17,16 +17,18 @@ import json
 import bossutils
 from bossutils.aws import *
 from django.conf import settings
+from django.contrib.auth.models import User
 from rest_framework.test import APITestCase
 
 from bossmeta.test.test_meta_views import MetaServiceViewTestsMixin
+from bosscore.test.setup_db import SetupTestDB
 from botocore.exceptions import ClientError
 
 version = settings.BOSS_VERSION
 
 # Get the table name from boss.config
 config = bossutils.configuration.BossConfig()
-testtablename = "test." + config["aws"]["meta-db"]
+testtablename = "intTest." + config["aws"]["meta-db"]
 
 
 class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITestCase):
@@ -35,6 +37,17 @@ class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITest
 
     Uses Vault and AWS's DynamoDB (as opposed to a local DynamoDB).
     """
+    user = None
+
+    def setUp(self):
+        dbsetup = SetupTestDB()
+        dbsetup.create_super_user()
+        self.user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
+        dbsetup.set_user(self.user)
+
+        self.client.force_login(self.user)
+        dbsetup.insert_test_data()
+
     @classmethod
     def setUpTestData(cls):
         # Load table info

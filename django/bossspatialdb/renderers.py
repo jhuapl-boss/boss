@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from rest_framework import renderers
+from rest_framework.renderers import JSONRenderer
 import blosc
 import numpy as np
 import zlib
@@ -112,30 +113,32 @@ class JpegRenderer(renderers.BaseRenderer):
             self.render_style = 'binary'
             data["data"].data = np.squeeze(data["data"].data, axis=(0,))
         else:
-            print("Bad REQ")
             # This appears to contain time data. Error out
+            renderer_context["response"].status_code = 400
+            renderer_context["accepted_media_type"] = 'application/json'
             self.media_type = 'application/json'
             self.format = 'json'
             err_msg = {"status": 400, "message": "The cutout service JPEG interface does not support 4D cutouts",
                        "code": 2005}
-            return err_msg
+            jr = JSONRenderer()
+            return jr.render(err_msg, 'application/json', renderer_context)
 
         if renderer_context['view'].bit_depth != 8:
-            print("Bad Bit")
             # This renderer only works on uint8 data
-
+            renderer_context["response"].status_code = 400
+            renderer_context["accepted_media_type"] = 'application/json'
             self.media_type = 'application/json'
             self.format = 'json'
-            err_msg = {"status": 400, "message": "The cutout service JPEG interface does not support 4D cutouts",
-                       "code": 2003}
-            return err_msg
+            err_msg = {"status": 400, "message": "The cutout service JPEG interface only supports uint8 image data",
+                       "code": 2001}
+            jr = JSONRenderer()
+            return jr.render(err_msg, 'application/json', renderer_context)
 
         # Reshape matrix
         d_shape = data["data"].data.shape
         data["data"].data = np.reshape(data["data"].data, (d_shape[0] * d_shape[1], d_shape[2]), order="C")
 
         # Save to Image
-        print(data["data"].data.sum())
         jpeg_image = Image.fromarray(data["data"].data)
         img_file = io.BytesIO()
         jpeg_image.save(img_file, "JPEG", quality=85)

@@ -15,3 +15,4 @@ django-guardian
 django-cors-headers
 django-bootstrap-form
 django-redis
+git+https://github.com/jhuapl-boss/django-nose2.git

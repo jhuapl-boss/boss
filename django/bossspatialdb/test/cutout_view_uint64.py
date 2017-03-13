@@ -156,7 +156,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         factory = APIRequestFactory()
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:100000/0:100000/0:10000/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:2048/0:2048/0:66/',
                               accepts='application/blosc')
 
         # log in user
@@ -164,7 +164,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
-                                    resolution='0', x_range='0:100000', y_range='0:100000', z_range='0:100000', t_range=None)
+                                    resolution='0', x_range='0:2048', y_range='0:2048', z_range='0:66', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
 
     def test_channel_uint64_cuboid_aligned_no_offset_no_time_blosc(self):

@@ -20,15 +20,22 @@ from guardian.shortcuts import assign_perm
 
 from ..models import Collection, Experiment, CoordinateFrame, Channel, BossLookup, BossRole, BossGroup
 
+from spdb.spatialdb.test.setup import AWSSetupLayer
+
+
 test_user = 'testuser'
 test_group = 'testuser-primary'
 
 
 class SetupTestDB:
     def __init__(self):
-        self.user = self.create_super_user()
+        self.created_super_user = False
 
     def create_user(self, username=None):
+        # If you have yet to create the superuser, you need to do that first for permissions to work OK
+        if not self.created_super_user:
+            self.create_super_user()
+
         if not username:
             username = test_user
 
@@ -57,6 +64,8 @@ class SetupTestDB:
         self.user.groups.add(user_primary_group)
         self.user.groups.add(public_group)
         self.user.groups.add(admin_group)
+
+        self.created_super_user = True
 
         return self.user
 
@@ -250,3 +259,20 @@ class SetupTestDB:
         self.add_permissions(primary_group, channel)
 
         return channel
+
+
+class DjangoSetupLayer(AWSSetupLayer):
+    """A nose2 layer for setting up temporary AWS resources for testing ONCE per run"""
+    django_setup_helper = SetupTestDB()
+    user = None
+
+    @classmethod
+    def setUp(cls):
+        # Create a user in django
+        cls.superuser = cls.django_setup_helper.create_super_user()
+        cls.user = cls.django_setup_helper.create_user('testuser')
+        cls.django_setup_helper.add_role('resource-manager')
+        cls.django_setup_helper.set_user(cls.user)
+
+        # Populate django models DB
+        cls.django_setup_helper.insert_spatialdb_test_data()

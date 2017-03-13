@@ -147,11 +147,15 @@ REST_FRAMEWORK = {
 }
 # Version that unit tests are being run against
 BOSS_VERSION = 'v0.8'
-# Maximum number of bytes in an uncompressed matrix supported by the Cutout Service
-CUTOUT_MAX_SIZE = 5 * 10 ** 8
 
+# Maximum number of bytes in an uncompressed matrix supported by the Cutout Service
+CUTOUT_MAX_SIZE = 520 * 1048576
+545259520
 # Allow all cross site origins
 CORS_ORIGIN_ALLOW_ALL = True
 
 # Test RUN_HIGH_MEM_TESTS FLag
 RUN_HIGH_MEM_TESTS = os.environ.get('RUN_HIGH_MEM_TESTS')
+
+# Select nose2 test runner so testing Layers will work
+TEST_RUNNER="djnose2.TestRunner"

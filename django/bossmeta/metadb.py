@@ -41,7 +41,8 @@ class MetaDB:
             session = get_session()
             dynamodb = session.resource('dynamodb')
             if 'test' in sys.argv:
-                tablename = 'test.' + config["aws"]["meta-db"]
+                # TODO: This needs to be made more robust. Parameters should be mocked, not assumed.
+                tablename = 'intTest.' + config["aws"]["meta-db"]
             else:
                 tablename = config["aws"]["meta-db"]
         else:

@@ -227,7 +227,6 @@ class ResourceViewsExperimentTests(APITestCase):
         Initialize the database
 
         """
-
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
         dbsetup.add_role('resource-manager')
@@ -700,7 +699,6 @@ class ResourceViewsChannelTests(APITestCase):
         Initialize the database
 
         """
-
         dbsetup = SetupTestDB()
         user = dbsetup.create_user('testuser')
         dbsetup.add_role('resource-manager')

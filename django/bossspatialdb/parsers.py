@@ -37,6 +37,9 @@ def is_too_large(request_obj, bit_depth):
     """
     t_span = request_obj.get_time().stop - request_obj.get_time().start
     total_bytes = request_obj.get_x_span() * request_obj.get_y_span() * request_obj.get_z_span() * t_span * bit_depth/8
+    if bit_depth == 64:
+        # Allow larger annotation posts since things compress so well
+        total_bytes /= 4
     if total_bytes > settings.CUTOUT_MAX_SIZE:
         return True
     else:
