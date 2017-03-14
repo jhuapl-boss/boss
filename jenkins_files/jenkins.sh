@@ -3,6 +3,9 @@
 # This script is run by Jenkins and is assumed to be invoked from the root
 # folder of the repo.
 
+# Update Python packages if necessary.
+pip3 install -r requirements.txt
+
 # settings.py disables some dependencies when this env variable is set.
 export USING_DJANGO_TESTRUNNER=1
 export DJANGO_SETTINGS_MODULE=boss.settings.jenkins
