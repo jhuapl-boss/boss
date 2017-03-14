@@ -11,7 +11,7 @@ export VIRTUALENVWRAPPER_SCRIPT=/usr/local/bin/virtualenvwrapper.sh
 source /usr/local/bin/virtualenvwrapper_lazy.sh
 
 # Update Python packages if necessary.
-mkvirtualenv -r requirements.txt endpoint 
+mkvirtualenv -r $WORKSPACE/requirements.txt endpoint 
 
 # settings.py disables some dependencies when this env variable is set.
 export USING_DJANGO_TESTRUNNER=1
