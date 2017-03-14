@@ -3,15 +3,14 @@
 # This script is run by Jenkins and is assumed to be invoked from the root
 # folder of the repo.
 
+VENV_NAME=endpoint
+
 # Configure Python virtual environment.
-export VIRTUALENVWRAPPER_PYTHON=/usr/local/bin/python3
-export WORKON_HOME=$HOME/.virtualenvs
-export PROJECT_HOME=$HOME/jobs
-export VIRTUALENVWRAPPER_SCRIPT=/usr/local/bin/virtualenvwrapper.sh
-source /usr/local/bin/virtualenvwrapper_lazy.sh
+python3 -m virtualenv ~/.virtualenvs/$VENV_NAME
+source ~/.virtualenvs/$VENV_NAME/bin/activate
 
 # Update Python packages if necessary.
-mkvirtualenv -r $WORKSPACE/requirements.txt endpoint 
+pip3 install -r requirements.txt 
 
 # settings.py disables some dependencies when this env variable is set.
 export USING_DJANGO_TESTRUNNER=1
