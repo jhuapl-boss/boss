@@ -6,7 +6,7 @@
 VENV_NAME=endpoint
 
 # Configure Python virtual environment.
-python3 -m virtualenv ~/.virtualenvs/$VENV_NAME
+python3 -m virtualenv --system-site-packages ~/.virtualenvs/$VENV_NAME
 source ~/.virtualenvs/$VENV_NAME/bin/activate
 
 # Update Python packages if necessary.
