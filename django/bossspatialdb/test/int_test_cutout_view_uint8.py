@@ -119,5 +119,14 @@ class CutoutViewIntegration8BitTests(APITestCase, CutoutInterfaceViewUint8TestMi
                                    port=6379, db=1, decode_responses=False)
         client.flushdb()
 
+    def tearDown(self):
+        # Flush cache between tests
+        client = redis.StrictRedis(host=self.kvio_config['cache_host'],
+                                   port=6379, db=1, decode_responses=False)
+        client.flushdb()
+        client = redis.StrictRedis(host=self.state_config['cache_state_host'],
+                                   port=6379, db=1, decode_responses=False)
+        client.flushdb()
+
 
 

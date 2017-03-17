@@ -105,4 +105,13 @@ class TileViewIntegrationTests(TileInterfaceViewTestMixin, APITestCase):
                                  resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16', t_range=None)
             self.test_data_loaded = True
 
+    def tearDown(self):
+        # Flush cache between tests
+        client = redis.StrictRedis(host=self.kvio_config['cache_host'],
+                                   port=6379, db=1, decode_responses=False)
+        client.flushdb()
+        client = redis.StrictRedis(host=self.state_config['cache_state_host'],
+                                   port=6379, db=1, decode_responses=False)
+        client.flushdb()
+
 

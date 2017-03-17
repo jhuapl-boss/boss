@@ -590,6 +590,49 @@ class CutoutInterfaceViewUint8TestMixin(object):
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
 
+    def test_channel_uint8_cuboid_unaligned_offset_time_offset_overwrite_blosc__numpy(self):
+        """ Test uint8 data, not cuboid aligned, offset, time samples, blosc interface
+
+        Test Requires >=2GB of memory!
+        """
+        # Do this a couple times to the same region....should succeed every time
+        for _ in range(0, 2):
+            test_mat = np.random.randint(1, 254, (3, 17, 300, 500))
+            test_mat = test_mat.astype(np.uint8)
+            bb = blosc.pack_array(test_mat)
+
+            # Create request
+            factory = APIRequestFactory()
+            request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/40:57/200:203', bb,
+                                   content_type='application/blosc-python')
+            # log in user
+            force_authenticate(request, user=self.user)
+
+            # Make request
+            response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                        resolution='0', x_range='100:600', y_range='450:750', z_range='40:57',
+                                        t_range='200:203')
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+            # Create Request to get data you posted
+            request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/40:57/200:203',
+                                  HTTP_ACCEPT='application/blosc-python')
+
+            # log in user
+            force_authenticate(request, user=self.user)
+
+            # Make request
+            response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                        resolution='0', x_range='100:600', y_range='450:750', z_range='40:57',
+                                        t_range='200:203').render()
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            # Decompress
+            data_mat = blosc.unpack_array(response.content)
+
+            # Test for data equality (what you put in is what you got back!)
+            np.testing.assert_array_equal(data_mat, test_mat)
+
     def test_channel_uint8_notime_npygz_download(self):
         """ Test uint8 data, using the npygz interface
         """
@@ -631,6 +674,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
+
     def test_channel_uint8_time_npygz_download(self):
         """ Test uint8 data, using the npygz interface with time series support
 
@@ -642,7 +686,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/200:203', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/100:103', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
@@ -650,11 +694,11 @@ class CutoutInterfaceViewUint8TestMixin(object):
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
-                                    t_range='200:203')
+                                    t_range='100:103')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/200:203',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/100:103',
                               HTTP_ACCEPT='application/npygz')
 
         # log in user
@@ -663,7 +707,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
-                                    t_range='200:203').render()
+                                    t_range='100:103').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -749,7 +793,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/200:203',
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/150:153',
                                npy_gz_file.read(),
                                content_type='application/npygz')
         # log in user
@@ -758,11 +802,11 @@ class CutoutInterfaceViewUint8TestMixin(object):
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
-                                    t_range='200:203')
+                                    t_range='150:153')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/200:203',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/150:153',
                               HTTP_ACCEPT='application/npygz')
 
         # log in user
@@ -771,7 +815,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
                                     resolution='0', x_range='100:600', y_range='450:750', z_range='20:37',
-                                    t_range='200:203').render()
+                                    t_range='150:153').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
