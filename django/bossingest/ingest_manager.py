@@ -387,13 +387,11 @@ class IngestManager:
 
         # DP ???: create IngestJob method that creates the StepFunction arguments?
         args = {
+            'upload_sfn': config['sfn']['upload_sfn'],
+
             'job_id': ingest_job.id,
             'upload_queue': ingest_job.upload_queue,
             'ingest_queue': ingest_job.ingest_queue,
-
-            'collection_name': ingest_job.collection,
-            'experiment_name': ingest_job.experiment,
-            'channel_name': ingest_job.channel,
 
             'resolution': ingest_job.resolution,
             'project_info': lookup_key.split(CONNECTER),
