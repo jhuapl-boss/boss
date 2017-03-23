@@ -23,6 +23,7 @@ from bossingest.ingest_manager import IngestManager
 from bossingest.test.setup import SetupTests
 from bosscore.test.setup_db import SetupTestDB
 
+from ndingest.ndqueue.ndqueue import NDQueue
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
@@ -50,7 +51,7 @@ class BossIntegrationIngestManagerTestMixin(object):
         assert (ingest_mgmr.config.config_data is not None)
 
     def test_validate_properties(self):
-        """Methos to test validation of properties of the config data"""
+        """Methods to test validation of properties of the config data"""
 
         ingest_mgmr = IngestManager()
         ingest_mgmr.validate_config_file(self.example_config_data)
@@ -140,15 +141,20 @@ class BossIntegrationIngestManagerTestMixin(object):
         assert (msg['job_id'] == 595)
 
 
-# class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, APITestCase):
-    # TODO: Add test back after fixing ndingest
-    # def setUp(self):
-    #     # Get the config_data
-    #     self.user = User.objects.create_superuser(username='testuser1', email='test@test.com', password='testuser')
-    #     config_data = SetupTests().get_ingest_config_data_dict()
-    #     self.example_config_data = config_data
-    #     dbsetup = SetupTestDB()
-    #     dbsetup.set_user(self.user)
-    #     dbsetup.insert_ingest_test_data()
+class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, APITestCase):
+     def setUp(self):
+         # Randomize queue names.
+         NDQueue.test_mode = True
+
+         # Get the config_data
+         self.user = User.objects.create_superuser(username='testuser1', email='test@test.com', password='testuser')
+         config_data = SetupTests().get_ingest_config_data_dict()
+         self.example_config_data = config_data
+         dbsetup = SetupTestDB()
+         dbsetup.set_user(self.user)
+         dbsetup.insert_ingest_test_data()
+
+     def tearDown(self):
+         NDQueue.test_mode = False
 
 

@@ -24,6 +24,7 @@ from bosscore.test.setup_db import SetupTestDB
 from bossingest.test.setup import SetupTests
 from bossingest.ingest_manager import IngestManager
 
+from ndingest.ndqueue.ndqueue import NDQueue
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
@@ -41,6 +42,10 @@ class BossIngestViewTestMixin(object):
         :return:
         """
         self.client.force_login(self.user)
+        NDQueue.test_mode = True
+
+    def tearDown(self):
+        NDQueue.test_mode = False
 
     def test_post_new_ingest_job(self):
         """ Test view to create a new ingest job """
@@ -76,17 +81,17 @@ class BossIngestViewTestMixin(object):
         response = self.client.delete(url)
         assert (response.status_code == 204)
         
-# TODO: Add test back after fixing ndingest
-#class TestIntegrationBossIngestView(BossIngestViewTestMixin, APITestCase):
-#
-#    @classmethod
-#    def setUpTestData(cls):
-#        # Set the environment variable for the tests
-#        dbsetup = SetupTestDB()
-#        cls.user = dbsetup.create_user('testuser')
-#        dbsetup.set_user(cls.user)
-#        dbsetup.insert_ingest_test_data()
-#
-#        cls.setup_helper = SetupTests()
+
+class TestIntegrationBossIngestView(BossIngestViewTestMixin, APITestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        # Set the environment variable for the tests
+        dbsetup = SetupTestDB()
+        cls.user = dbsetup.create_user('testuser')
+        dbsetup.set_user(cls.user)
+        dbsetup.insert_ingest_test_data()
+
+        cls.setup_helper = SetupTests()
 
 
