@@ -1,7 +1,7 @@
 
 function groups_handler(response) {
     // Reformat
-    var group_detail_root = mgmt_path_root().replace("/mgmt/groups", "/mgmt/group/");
+    var group_detail_root = window.location.href.replace("/mgmt/groups", "/mgmt/group/");
     var output = [];
     for (var idx in response) {
         var actions_str = "<a type='button' class='btn btn-default btn-sm action-button' href=" + group_detail_root + response[idx] + ">";

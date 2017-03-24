@@ -96,7 +96,7 @@ RESP_CODES = {
     ErrorCodes.RESOURCE_NOT_FOUND: 404,
     ErrorCodes.GROUP_NOT_FOUND: 404,
     ErrorCodes.USER_NOT_FOUND: 404,
-    ErrorCodes.INTEGRITY_ERROR: 404,
+    ErrorCodes.INTEGRITY_ERROR: 400,
     ErrorCodes.OBJECT_NOT_FOUND: 404,
     ErrorCodes.RESOURCE_MARKED_FOR_DELETION: 404,
     ErrorCodes.IO_ERROR: 404,

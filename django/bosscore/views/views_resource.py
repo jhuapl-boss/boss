@@ -159,7 +159,7 @@ class CollectionDetail(APIView):
                 serializer = CollectionSerializer(collection_obj)
                 if len(serializer.get_experiments(collection_obj)) > 0:
                     # This collection has experiments that reference it and cannot be deleted
-                    return BossHTTPError(" Collection {} has experiments that reference it and cannot be deleted."
+                    return BossHTTPError("Collection {} has experiments that reference it and cannot be deleted."
                                          "Please delete the experiments first.".format(collection),
                                          ErrorCodes.INTEGRITY_ERROR)
 
