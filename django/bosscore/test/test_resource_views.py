@@ -191,7 +191,7 @@ class ResourceViewsCollectionTests(APITestCase):
 
         # Get an existing collection
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_delete_collection_doesnotexist(self):
         """
@@ -465,7 +465,7 @@ class ResourceViewsExperimentTests(APITestCase):
         url = '/' + version + '/collection/col1/experiment/exp1/'
 
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_delete_experiment_doesnotexist(self):
         """
@@ -675,7 +675,7 @@ class ResourceViewsCoordinateTests(APITestCase):
 
         # Get an existing collection
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_delete_coordinateframe_doesnotexist(self):
         """
@@ -1084,7 +1084,7 @@ class ResourceViewsChannelTests(APITestCase):
 
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
         # Get an existing experiment
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1/'
