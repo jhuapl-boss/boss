@@ -150,7 +150,7 @@ BOSS_VERSION = 'v0.8'
 
 # Maximum number of bytes in an uncompressed matrix supported by the Cutout Service
 CUTOUT_MAX_SIZE = 520 * 1048576
-545259520
+
 # Allow all cross site origins
 CORS_ORIGIN_ALLOW_ALL = True
 

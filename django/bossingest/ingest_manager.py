@@ -40,8 +40,8 @@ from bossutils.ingestcreds import IngestCredentials
 
 # Get the ingest bucket name from boss.config
 config = bossutils.configuration.BossConfig()
-ingest_bucket = config["aws"]["ingest_bucket"]
-ingest_lambda = config["lambda"]["ingest_function"]
+INGEST_BUCKET = config["aws"]["ingest_bucket"]
+INGEST_LAMBDA = config["lambda"]["ingest_function"]
 
 CONNECTER = '&'
 MAX_NUM_MSG_PER_FILE = 10000
@@ -271,24 +271,38 @@ class IngestManager:
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         return queue
 
-
-    def delete_ingest_job(self, ingest_job):
+    def get_ingest_job_ingest_queue(self, ingest_job):
         """
-        Delete an ingest job with a specific id. Note this deletes the queues, credentials and all the remaining tiles
-        in the tile bucket for this job id. It does not delete the ingest job datamodel but marks it as deleted.
+        Return the ingest queue for an ingest job
         Args:
-            ingest_job_id: Ingest job  to delete
+            ingest_job: Ingest job model
 
         Returns:
-            Int : ingest job id for the job that was successfully deleted
+            Ndingest.ingestqueue
+        """
+        proj_class = BossIngestProj.load()
+        self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
+                                  ingest_job.resolution, ingest_job.id)
+        queue = IngestQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
+    def cleanup_ingest_job(self, ingest_job, job_status):
+        """
+        Delete or complete an ingest job with a specific id. Note this deletes the queues, credentials and all the remaining tiles
+        in the tile bucket for this job id. It does not delete the ingest job datamodel but changes its state.
+        Args:
+            ingest_job: Ingest job to cleanup
+            job_status(int): Status to update to
+
+        Returns:
+            (int): ingest job id for the job that was successfully deleted
 
         Raises:
             BossError : If the the job id is not valid or any exception happens in deletion process
 
         """
         try:
-
-            # delete ingest job
+            # cleanup ingest job
             proj_class = BossIngestProj.load()
             self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
                                       ingest_job.resolution, ingest_job.id)
@@ -300,7 +314,7 @@ class IngestManager:
             # delete any pending entries in the tile index database and tile bucket
             self.delete_tiles(ingest_job)
 
-            ingest_job.status = 3
+            ingest_job.status = job_status
             ingest_job.ingest_queue = None
             ingest_job.upload_queue = None
             ingest_job.save()
@@ -309,7 +323,7 @@ class IngestManager:
             self.remove_ingest_credentials(ingest_job.id)
 
         except Exception as e:
-            raise BossError("Unable to delete the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
+            raise BossError("Unable to cleanup the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
         except IngestJob.DoesNotExist:
             raise BossError("Ingest job with id {} does not exist".format(ingest_job.id), ErrorCodes.OBJECT_NOT_FOUND)
         return ingest_job.id
@@ -385,7 +399,7 @@ class IngestManager:
         [col_id, exp_id, ch_id] = lookup_key.split('&')
         project_info = [col_id, exp_id, ch_id]
 
-        # DP ???: create IngestJob method that creates the StepFunction arguments?
+        # TODO DP ???: create IngestJob method that creates the StepFunction arguments?
         args = {
             'upload_sfn': config['sfn']['upload_sfn'],
 
@@ -542,7 +556,7 @@ class IngestManager:
 
         """
         s3 = boto3.resource('s3')
-        s3.Bucket(ingest_bucket).put_object(Key=file_name_key, Body=data)
+        s3.Bucket(INGEST_BUCKET).put_object(Key=file_name_key, Body=data)
         self.invoke_lambda(file_name_key)
 
     def invoke_lambda(self, file_name):
@@ -552,16 +566,45 @@ class IngestManager:
 
         """
         msg_data = {"lambda-name": "upload_enqueue",
-                    "upload_bucket_name": ingest_bucket,
-                    "filename" : file_name }
+                    "upload_bucket_name": INGEST_BUCKET,
+                    "filename": file_name}
         # Trigger lambda to handle it
         client = boto3.client('lambda', region_name=bossutils.aws.get_region())
 
         response = client.invoke(
-            FunctionName=ingest_lambda,
+            FunctionName=INGEST_LAMBDA,
             InvocationType='Event',
             Payload=json.dumps(msg_data).encode())
 
+    def invoke_ingest_lambda(self, ingest_job, num_invokes=1):
+        """Method to trigger extra lambda functions to make sure all the ingest jobs that are actually fully populated
+        kick through
+
+        Args:
+            ingest_job: Ingest job object
+            num_invokes(int): number of invocations to fire
+
+        Returns:
+
+        """
+        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
+        lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
+        [col_id, exp_id, ch_id] = lookup_key.split('&')
+        project_info = [col_id, exp_id, ch_id]
+        fake_chunk_key = (BossBackend(self.config)).encode_chunk_key(16, project_info,
+                                                                     ingest_job.resolution,
+                                                                     0, 0, 0, 0)
+
+        event = {"ingest_job": ingest_job.id,
+                 "chunk_key": fake_chunk_key,
+                 "lambda-name": "ingest"}
+
+        # Invoke Ingest lambda functions
+        lambda_client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        for _ in range(0, num_invokes):
+            lambda_client.invoke(FunctionName=INGEST_LAMBDA,
+                                 InvocationType='Event',
+                                 Payload=json.dumps(event).encode())
 
     @staticmethod
     def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):

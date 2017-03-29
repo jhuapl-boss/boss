@@ -14,6 +14,8 @@
 
 from django.shortcuts import render
 from django.conf import settings
+from django.contrib.auth.models import User
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -27,6 +29,7 @@ from bossingest.models import IngestJob
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
+import time
 
 
 class IngestJobView(APIView):
@@ -180,7 +183,53 @@ class IngestJobView(APIView):
             if ingest_job.creator != request.user:
                 return BossHTTPError("Forbidden. Cannot join the ingest job ", ErrorCodes.INVALID_REQUEST)
 
-            ingest_mgmr.delete_ingest_job(ingest_job)
+            # "DELETED" status is 3
+            ingest_mgmr.cleanup_ingest_job(ingest_job, 3)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        except BossError as err:
+                return err.to_http()
+
+
+class IngestJobCompleteView(APIView):
+    """
+    View to handle "completing" ingest jobs
+
+    """
+    def post(self, request, ingest_job_id):
+        """
+        Signal an ingest job is complete and should be cleaned up by POSTing to this view
+
+        Args:
+            request: Django Rest framework Request object
+            ingest_job_id: Ingest job id
+
+        Returns:
+
+
+        """
+        try:
+            ingest_mgmr = IngestManager()
+            ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
+
+            # Check if user is the ingest job creator or the sys admin
+            admin_user = User.objects.get(username='bossadmin')
+            if ingest_job.creator != request.user or admin_user != request.user:
+                return BossHTTPError("Only the creating user or admin can mark a job as complete ",
+                                     ErrorCodes.INVALID_REQUEST)
+
+            # Check if any messages remain in the ingest queue
+            ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
+            num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
+
+            # Kick off extra lambdas just in case
+            ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
+
+            # Give lambda a few seconds to fire things off
+            time.sleep(15)
+
+            # "COMPLETE" status is 2
+            ingest_mgmr.cleanup_ingest_job(ingest_job, 2)
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         except BossError as err:
