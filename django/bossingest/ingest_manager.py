@@ -17,6 +17,7 @@ import jsonschema
 import boto3
 import io
 import math
+from django.utils import timezone
 
 from ingestclient.core.config import Configuration
 from ingestclient.core.backend import BossBackend
@@ -317,6 +318,7 @@ class IngestManager:
             ingest_job.status = job_status
             ingest_job.ingest_queue = None
             ingest_job.upload_queue = None
+            ingest_job.end_date = timezone.now()
             ingest_job.save()
 
             # Remove ingest credentials for a job

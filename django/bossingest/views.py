@@ -15,6 +15,7 @@
 from django.shortcuts import render
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -30,17 +31,70 @@ from bossingest.models import IngestJob
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
 import time
+import json
 
 
-class IngestJobView(APIView):
+class IngestServiceView(APIView):
+    """Parent class for all ingest services that has some built-in methods"""
+
+    def is_user_or_admin(self, request, ingest_job):
+        """Method to check if logged in user is the creator of an ingest job or the admin
+
+        Args:
+            request:
+            ingest_job:
+
+        Returns:
+
+        """
+        if ingest_job.creator == request.user or self.get_admin_user() == request.user:
+            return True
+        else:
+            return False
+
+    def get_admin_user(self):
+        """Return the admin user"""
+        return User.objects.get(username='bossadmin')
+
+
+class IngestJobView(IngestServiceView):
     """
     View to create and delete ingest jobs
 
     """
+    def list_ingest_jobs(self, request):
+        """Method to list all ingest jobs
+
+        Args:
+            request(rest_framework.request.Request): the current request
+
+        Returns:
+            rest_framework.response.Response
+        """
+        if self.get_admin_user() == request.user:
+            # If admin user, get all Jobs that aren't "cancelled"
+            jobs = IngestJob.objects.filter(~Q(status=3))
+        else:
+            # Just get the active user's Jobs that aren't "cancelled"
+            jobs = IngestJob.objects.filter(Q(creator=request.user) & ~Q(status=3))
+
+        list_jobs = []
+        for item in jobs:
+            config_data = json.loads(item.config_data)
+            job = {'id': item.id,
+                   'collection': config_data["database"]["collection"],
+                   'experiment': config_data["database"]["experiment"],
+                   'channel': config_data["database"]["channel"],
+                   'created_on': item.start_date,
+                   'completed_on': item.end_date,
+                   'status': item.status}
+            list_jobs.append(job)
+
+        return Response({"ingest_jobs": list_jobs}, status=status.HTTP_200_OK)
 
     def get(self, request, ingest_job_id=None):
         """
-        Join a job with the specified job id
+        Join a job with the specified job id or list all job ids if ingest_job_id is omitted
         Args:
             request: Django rest framework request object
             ingest_job_id: Ingest job id
@@ -49,23 +103,17 @@ class IngestJobView(APIView):
             Ingest job
         """
         try:
-            # list all ingest jobs if no id is specified
             if ingest_job_id is None:
-                # List all jobs in progress for the user
-                jobs = IngestJob.objects.filter(creator=request.user, status=0)
-                list_jobs = []
-                for item in jobs:
-                    job = {'id': item.id, 'config_data': item.config_data}
-                    list_jobs.append(job)
-                data = {"ingest_jobs": list_jobs}
-                return Response(data, status=status.HTTP_200_OK)
+                # If the job ID is empty on a get, you are listing jobs
+                return self.list_ingest_jobs(request)
 
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
 
             # Check permissions
-            if ingest_job.creator != request.user:
-                return BossHTTPError("Forbidden. Cannot join the ingest job ", ErrorCodes.INVALID_REQUEST)
+            if not self.is_user_or_admin(request, ingest_job):
+                return BossHTTPError("Only the creator or admin can join an ingest job",
+                                     ErrorCodes.INGEST_NOT_CREATOR)
 
             serializer = IngestJobListSerializer(ingest_job)
 
@@ -99,7 +147,6 @@ class IngestJobView(APIView):
                 data['ingest_job']['status'] = 1
                 ingest_creds = IngestCredentials()
                 data['credentials'] = ingest_creds.get_credentials(ingest_job.id)
-                print(data['credentials'])
             else:
                 data['credentials'] = None
 
@@ -180,8 +227,9 @@ class IngestJobView(APIView):
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
 
             # Check permissions
-            if ingest_job.creator != request.user:
-                return BossHTTPError("Forbidden. Cannot join the ingest job ", ErrorCodes.INVALID_REQUEST)
+            if not self.is_user_or_admin(request, ingest_job):
+                return BossHTTPError("Only the creator or admin can cancel an ingest job",
+                                     ErrorCodes.INGEST_NOT_CREATOR)
 
             # "DELETED" status is 3
             ingest_mgmr.cleanup_ingest_job(ingest_job, 3)
@@ -191,7 +239,7 @@ class IngestJobView(APIView):
                 return err.to_http()
 
 
-class IngestJobCompleteView(APIView):
+class IngestJobCompleteView(IngestServiceView):
     """
     View to handle "completing" ingest jobs
 
@@ -209,34 +257,35 @@ class IngestJobCompleteView(APIView):
 
         """
         try:
+            # TODO: Add logging
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
 
             # Check if user is the ingest job creator or the sys admin
-            admin_user = User.objects.get(username='bossadmin')
-            if ingest_job.creator != request.user or admin_user != request.user:
-                return BossHTTPError("Only the creating user or admin can mark a job as complete ",
-                                     ErrorCodes.INVALID_REQUEST)
+            if not self.is_user_or_admin(request, ingest_job):
+                return BossHTTPError("Only the creator or admin can cancel an ingest job",
+                                     ErrorCodes.INGEST_NOT_CREATOR)
 
             # Check if any messages remain in the ingest queue
             ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
             num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
 
             # Kick off extra lambdas just in case
-            ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
+            if num_messages_in_queue:
+                ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
 
-            # Give lambda a few seconds to fire things off
-            time.sleep(15)
+                # Give lambda a few seconds to fire things off
+                time.sleep(15)
 
             # "COMPLETE" status is 2
             ingest_mgmr.cleanup_ingest_job(ingest_job, 2)
-            return Response(status=status.HTTP_204_NO_CONTENT)
 
+            return Response(status=status.HTTP_204_NO_CONTENT)
         except BossError as err:
                 return err.to_http()
 
 
-class IngestJobStatusView(APIView):
+class IngestJobStatusView(IngestServiceView):
     """
     Get the status of an ingest job creation. This return's the status and the ~ number
     of messages in the upload queue
@@ -256,30 +305,27 @@ class IngestJobStatusView(APIView):
         try:
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
-            if ingest_job.creator != request.user:
-                return BossHTTPError("Forbidden.The logged in user is not the job creator", ErrorCodes.INVALID_REQUEST)
 
-            serializer = IngestJobListSerializer(ingest_job)
-            print(serializer.data)
+            # Check if user is the ingest job creator or the sys admin
+            if not self.is_user_or_admin(request, ingest_job):
+                return BossHTTPError("Only the creator or admin can check the status of an ingest job",
+                                     ErrorCodes.INGEST_NOT_CREATOR)
 
-            # Start setting up output
-            data = {'ingest_job': serializer.data}
             if ingest_job.status == 3:
                 # Deleted Job
                 raise BossError("The job with id {} has been deleted".format(ingest_job_id),
                                 ErrorCodes.INVALID_REQUEST)
-            elif ingest_job.status == 2:
-                # Failed job
-                raise BossError("The job with id {} has failed".format(ingest_job_id),
-                                ErrorCodes.INVALID_REQUEST)
-            elif ingest_job.status == 0 or ingest_job.status == 1:
-                # Complete or preparing
-                upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
-                num_messages_in_queue = int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
-                if num_messages_in_queue < ingest_job.tile_count:
-                    for n in range(9):
-                        num_messages_in_queue += int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
-                    num_messages_in_queue /= 10
+            else:
+                if ingest_job.status == 2:
+                    # Job is Complete so queues are gone
+                    num_messages_in_queue = 0
+                else:
+                    upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
+                    num_messages_in_queue = int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
+                    if num_messages_in_queue < ingest_job.tile_count:
+                        for n in range(9):
+                            num_messages_in_queue += int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
+                        num_messages_in_queue /= 10
 
                 data = {"id": ingest_job.id,
                         "status": ingest_job.status,
@@ -291,26 +337,3 @@ class IngestJobStatusView(APIView):
                 return err.to_http()
         except Exception as err:
             return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
-
-
-class IngestJobListView(generics.ListCreateAPIView):
-    """
-    List all coordinate frames
-    """
-    queryset = IngestJob.objects.all()
-    serializer_class = IngestJobListSerializer
-
-    def list(self, request, *args, **kwargs):
-        """
-        Display all ingest jobs for a user
-        Args:
-            request: DRF request
-            *args:
-            **kwargs:
-
-        Returns: A list of job ids for the user
-
-        """
-        jobs = IngestJob.objects.filter(creator=request.user, status=0)
-        data = {"ids": [job.id for job in jobs]}
-        return Response(data)
