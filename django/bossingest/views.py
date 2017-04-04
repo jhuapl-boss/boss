@@ -27,6 +27,7 @@ from bossingest.ingest_manager import IngestManager
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
+from bossutils.logger import BossLogger
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
@@ -233,6 +234,8 @@ class IngestJobView(IngestServiceView):
 
             # "DELETED" status is 3
             ingest_mgmr.cleanup_ingest_job(ingest_job, 3)
+            blog = BossLogger().logger
+            blog.info("Deleted Ingest Job {}".format(ingest_job_id))
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         except BossError as err:
@@ -257,7 +260,8 @@ class IngestJobCompleteView(IngestServiceView):
 
         """
         try:
-            # TODO: Add logging
+            blog = BossLogger().logger
+            blog.info("Completing Ingest Job {}".format(ingest_job_id))
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
 
@@ -272,6 +276,7 @@ class IngestJobCompleteView(IngestServiceView):
 
             # Kick off extra lambdas just in case
             if num_messages_in_queue:
+                blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
                 ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
 
                 # Give lambda a few seconds to fire things off
@@ -279,7 +284,7 @@ class IngestJobCompleteView(IngestServiceView):
 
             # "COMPLETE" status is 2
             ingest_mgmr.cleanup_ingest_job(ingest_job, 2)
-
+            blog.info("Complete successful")
             return Response(status=status.HTTP_204_NO_CONTENT)
         except BossError as err:
                 return err.to_http()
