@@ -15,7 +15,7 @@
 from rest_framework.test import APITestCase
 from django.core.urlresolvers import resolve
 from django.conf import settings
-from bossingest.views import IngestJobView, IngestJobStatusView, IngestJobListView
+from bossingest.views import IngestJobView, IngestJobStatusView
 
 version = settings.BOSS_VERSION
 
