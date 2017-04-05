@@ -558,7 +558,7 @@ class BossRequest:
                                 .format(experiment_name),ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
             self.coord_frame = self.experiment.coord_frame
         else:
-            raise BossError("Collection {} not found".format(experiment_name), ErrorCodes.RESOURCE_NOT_FOUND)
+            raise BossError("Experiment {} not found".format(experiment_name), ErrorCodes.RESOURCE_NOT_FOUND)
 
         return True
 
