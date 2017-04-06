@@ -260,32 +260,51 @@ class IngestJobCompleteView(IngestServiceView):
 
         """
         try:
-            blog = BossLogger().logger
-            blog.info("Completing Ingest Job {}".format(ingest_job_id))
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
 
-            # Check if user is the ingest job creator or the sys admin
-            if not self.is_user_or_admin(request, ingest_job):
-                return BossHTTPError("Only the creator or admin can cancel an ingest job",
-                                     ErrorCodes.INGEST_NOT_CREATOR)
+            if ingest_job.status == 0:
+                # If status is Preparing. Deny
+                return BossHTTPError("You cannot complete a job that is still preparing. You must cancel instead.",
+                                     ErrorCodes.BAD_REQUEST)
+            elif ingest_job.status == 1:
+                # If status is Uploading. Complete the job.
+                blog = BossLogger().logger
+                blog.info("Completing Ingest Job {}".format(ingest_job_id))
 
-            # Check if any messages remain in the ingest queue
-            ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
-            num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
+                # Check if user is the ingest job creator or the sys admin
+                if not self.is_user_or_admin(request, ingest_job):
+                    return BossHTTPError("Only the creator or admin can cancel an ingest job",
+                                         ErrorCodes.INGEST_NOT_CREATOR)
 
-            # Kick off extra lambdas just in case
-            if num_messages_in_queue:
-                blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
-                ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
+                # Check if any messages remain in the ingest queue
+                ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
+                num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
 
-                # Give lambda a few seconds to fire things off
-                time.sleep(15)
+                # Kick off extra lambdas just in case
+                if num_messages_in_queue:
+                    blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
+                    ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
 
-            # "COMPLETE" status is 2
-            ingest_mgmr.cleanup_ingest_job(ingest_job, 2)
-            blog.info("Complete successful")
-            return Response(status=status.HTTP_204_NO_CONTENT)
+                    # Give lambda a few seconds to fire things off
+                    time.sleep(15)
+
+                # "COMPLETE" status is 2
+                ingest_mgmr.cleanup_ingest_job(ingest_job, 2)
+                blog.info("Complete successful")
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            elif ingest_job.status == 2:
+                # If status is already Complete, just return another 204
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            elif ingest_job.status == 3:
+                # Job had already been cancelled
+                return BossHTTPError("Ingest job has already been cancelled.",
+                                     ErrorCodes.BAD_REQUEST)
+            elif ingest_job.status == 4:
+                # Job had failed
+                return BossHTTPError("Ingest job has failed during creation. You must Cancel instead.",
+                                     ErrorCodes.BAD_REQUEST)
+
         except BossError as err:
                 return err.to_http()
 
