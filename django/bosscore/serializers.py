@@ -82,7 +82,7 @@ class ChannelSerializer(serializers.ModelSerializer):
     class Meta:
         model = Channel
         fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
-                  'base_resolution', 'datatype', 'creator')
+                  'base_resolution', 'datatype', 'downsample_status', 'creator')
 
     def validate(self, data):
         """Validate the default_time_step and base_resolution
@@ -159,7 +159,7 @@ class ChannelReadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Channel
         fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
-                  'base_resolution', 'datatype', 'creator', 'sources', 'related')
+                  'base_resolution', 'datatype', 'creator', 'sources', 'downsample_status', 'related')
 
     def get_sources(self, channel):
         """

@@ -138,8 +138,8 @@ class ExperimentForm(UpdateForm):
 
     coord_frame = forms.CharField(help_text="String identifier for this experiment's Coordinate Frame") # DP TODO: make a drop down with valid coord frame names
     num_hierarchy_levels = forms.IntegerField(help_text="Number of levels to render in the resolution hierarchy")
-    hierarchy_method = forms.ChoiceField(choices=[(c,c) for c in ['', 'near_iso', 'iso', 'slice']],
-                                         help_text="Downsampling method")
+    hierarchy_method = forms.ChoiceField(choices=[(c,c) for c in ['', 'anisotropic', 'isotropic']],
+                                         help_text="Downsampling method. See documentation for details.")
     num_time_samples = forms.IntegerField(help_text="Maximum number of time samples in the experiment (used for request validation). Non-time series data, set to 1")
 
     time_step = forms.IntegerField(required=False, help_text="(Optional) If time-series data, duration between samples.")
