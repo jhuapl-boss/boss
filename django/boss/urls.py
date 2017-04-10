@@ -51,11 +51,12 @@ urlpatterns = [
     url(r'^v0.6/', views.Unsupported.as_view()),
     url(r'^v0.7/', views.Unsupported.as_view()),
 
-    # API version 0.7
+    # API version 0.8
     url(r'^v0.8/meta/', include('bossmeta.urls', namespace='v0.8')),
     url(r'^v0.8/permissions/?', include('bosscore.urls.permission-urls', namespace='v0.8')),
     url(r'^v0.8/groups/', include('bosscore.urls.group-urls', namespace='v0.8')),
     url(r'^v0.8/cutout/', include('bossspatialdb.urls', namespace='v0.8')),
+    url(r'^v0.8/downsample/', include('bossspatialdb.urls_downsample', namespace='v0.8')),
     url(r'^v0.8/image/', include('bosstiles.image_urls', namespace='v0.8')),
     url(r'^v0.8/tile/', include('bosstiles.tile_urls', namespace='v0.8')),
     url(r'^v0.8/ingest/', include('bossingest.urls', namespace='v0.8')),

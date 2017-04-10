@@ -26,8 +26,9 @@ from django.conf import settings
 
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
+from bosscore.models import Channel
 
-from spdb.spatialdb.spatialdb import SpatialDB
+from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb import project
 
 
@@ -187,3 +188,166 @@ class Cutout(APIView):
         # Send data to renderer
         return HttpResponse(status=201)
 
+
+class Downsample(APIView):
+    """
+    View to handle downsample service requests
+
+    * Requires authentication.
+    """
+    # Set Parser and Renderer
+    parser_classes = (JSONRenderer, BrowsableAPIRenderer)
+    renderer_classes = (JSONRenderer, BrowsableAPIRenderer)
+
+    def get(self, request, collection, experiment, channel):
+        """View to provide a channel's downsample status and properties
+
+        Args:
+            request: DRF Request object
+            collection (str): Unique Collection identifier, indicating which collection you want to access
+            experiment (str): Experiment identifier, indicating which experiment you want to access
+            channel (str): Channel identifier, indicating which channel you want to access
+
+        Returns:
+
+        """
+        if "iso" in request.query_params:
+            if request.query_params["iso"].lower() == "true":
+                iso = True
+            else:
+                iso = False
+        else:
+            iso = False
+
+        # Process request and validate
+        try:
+            request_args = {
+                "service": "downsample",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel
+            }
+            req = BossRequest(request, request_args)
+        except BossError as err:
+            return err.to_http()
+
+        # Convert to Resource
+        resource = project.BossResourceDjango(req)
+
+        # Get Status
+        channel = resource.get_channel()
+        experiment = resource.get_experiment()
+        to_renderer = {"status": channel.downsample_status}
+
+        # Get hierarchy levels
+        to_renderer["num_hierarchy_levels"] = experiment.num_hierarchy_levels
+
+        # Gen Voxel dims
+        voxel_size = {}
+        voxel_dims = resource.get_downsampled_voxel_dims(iso=iso)
+        for res, dims in enumerate(voxel_dims):
+            voxel_size["{}".format(res)] = dims
+
+        to_renderer["voxel_size"] = voxel_size
+
+        # Gen Extent dims
+        extent = {}
+        extent_dims = resource.get_downsampled_extent_dims(iso=iso)
+        for res, dims in enumerate(extent_dims):
+            extent["{}".format(res)] = dims
+        to_renderer["extent"] = extent
+
+        # Get Cuboid dims
+        cuboid_size = {}
+        for res in range(0, experiment.num_hierarchy_levels):
+            cuboid_size["{}".format(res)] = CUBOIDSIZE[res]
+        to_renderer["cuboid_size"] = cuboid_size
+
+        # Send data to renderer
+        return Response(to_renderer)
+
+    def post(self, request, collection, experiment, channel):
+        """View to kick off a channel's downsample process
+
+        Args:
+            request: DRF Request object
+            collection (str): Unique Collection identifier, indicating which collection you want to access
+            experiment (str): Experiment identifier, indicating which experiment you want to access
+            channel (str): Channel identifier, indicating which channel you want to access
+
+        Returns:
+
+        """
+        # Process request and validate
+        try:
+            request_args = {
+                "service": "downsample",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel
+            }
+            req = BossRequest(request, request_args)
+        except BossError as err:
+            return err.to_http()
+
+        # Convert to Resource
+        resource = project.BossResourceDjango(req)
+
+        channel = resource.get_channel()
+        if channel.downsample_status.upper() == "IN_PROGRESS":
+            return BossHTTPError("Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
+        elif channel.downsample_status.upper() == "DOWNSAMPLED":
+            return BossHTTPError("Channel is already downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
+
+        # TODO Call Step Function Here
+
+        # Save ARN
+        channel.downsample_arn = "ARNXXXXX"
+
+        # Change Status
+        channel.downsample_status = "IN_PROGRESS"
+        channel.save()
+
+        return HttpResponse(status=201)
+
+    def delete(self, request, collection, experiment, channel):
+        """View to cancel an in-progress downsample operation
+
+        Args:
+            request: DRF Request object
+            collection (str): Unique Collection identifier, indicating which collection you want to access
+            experiment (str): Experiment identifier, indicating which experiment you want to access
+            channel (str): Channel identifier, indicating which channel you want to access
+
+        Returns:
+
+        """
+        # Process request and validate
+        try:
+            request_args = {
+                "service": "downsample",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel
+            }
+            req = BossRequest(request, request_args)
+        except BossError as err:
+            return err.to_http()
+
+        # Convert to Resource
+        resource = project.BossResourceDjango(req)
+
+        channel = resource.get_channel()
+        if channel.downsample_status.upper() != "IN_PROGRESS":
+            return BossHTTPError("You can only cancel and in-progress downsample operation.", ErrorCodes.INVALID_STATE)
+
+        # TODO Call cancel on the Step Function Here
+
+        # Save ARN
+        channel.downsample_arn = ""
+
+        # Change Status
+        channel.downsample_status = "NOT_DOWNSAMPLED"
+        channel.save()
+
+        return HttpResponse(status=204)

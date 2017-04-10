@@ -38,6 +38,7 @@ class TestDjangoResource(APITestCase):
         dbsetup.add_role("resource-manager", self.user)
         self.client.force_login(self.user)
         dbsetup.insert_test_data()
+        dbsetup.insert_iso_data()
 
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
@@ -300,3 +301,288 @@ class TestDjangoResource(APITestCase):
         assert "lookup_key" in data
         assert "boss_key" in data
         assert "coord_frame" in data
+
+    def test_basic_resource_get_iso_level_anisotropic(self):
+        """Test get iso level anisotropic
+
+        Returns:
+            None
+
+        """
+        url = '/' + version + '/cutout/col1/exp_aniso/channel1/0/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp_aniso",
+            "channel_name": "channel1",
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        req = BossRequest(drfrequest, request_args)
+        resource = BossResourceDjango(req)
+        self.assertEqual(resource.get_isotropic_level(), 3)
+
+    def test_basic_resource_get_iso_level_isotropic(self):
+        """Test get iso level isotropic
+
+        Returns:
+            None
+
+        """
+        url = '/' + version + '/cutout/col1/exp_iso/channel1/0/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp_iso",
+            "channel_name": "channel1",
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        req = BossRequest(drfrequest, request_args)
+        resource = BossResourceDjango(req)
+
+        self.assertEqual(resource.get_isotropic_level(), 0)
+
+    def test_basic_resource_get_downsampled_voxel_dims_anisotropic(self):
+        """Test downsample voxel dims anisotropic
+
+        Returns:
+            None
+
+        """
+        url = '/' + version + '/cutout/col1/exp_aniso/channel1/0/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp_aniso",
+            "channel_name": "channel1",
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        req = BossRequest(drfrequest, request_args)
+        resource = BossResourceDjango(req)
+
+        voxel_dims = resource.get_downsampled_voxel_dims()
+        self.assertEqual(len(voxel_dims), 8)
+        self.assertEqual(voxel_dims[0], [4, 4, 35])
+        self.assertEqual(voxel_dims[4], [64, 64, 35])
+
+    def test_basic_resource_get_downsampled_voxel_dims_anisotropic_iso(self):
+        """Test downsample voxel dims anisotropic with iso flag
+
+        Returns:
+            None
+
+        """
+        url = '/' + version + '/cutout/col1/exp_aniso/channel1/0/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp_aniso",
+            "channel_name": "channel1",
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        req = BossRequest(drfrequest, request_args)
+        resource = BossResourceDjango(req)
+
+        voxel_dims = resource.get_downsampled_voxel_dims(iso=True)
+        self.assertEqual(len(voxel_dims), 8)
+        self.assertEqual(voxel_dims[0], [4, 4, 35])
+        self.assertEqual(voxel_dims[1], [8, 8, 35])
+        self.assertEqual(voxel_dims[2], [16, 16, 35])
+        self.assertEqual(voxel_dims[3], [32, 32, 35])
+        self.assertEqual(voxel_dims[4], [64, 64, 70])
+        self.assertEqual(voxel_dims[5], [128, 128, 140])
+
+    def test_basic_resource_get_downsampled_voxel_dims_isotropic(self):
+        """Test downsample voxel dims isotropic
+
+        Returns:
+            None
+
+        """
+        url = '/' + version + '/cutout/col1/exp_iso/channel1/0/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp_iso",
+            "channel_name": "channel1",
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        req = BossRequest(drfrequest, request_args)
+        resource = BossResourceDjango(req)
+
+        voxel_dims = resource.get_downsampled_voxel_dims()
+        self.assertEqual(len(voxel_dims), 8)
+        self.assertEqual(voxel_dims[0], [6, 6, 6])
+        self.assertEqual(voxel_dims[3], [48, 48, 48])
+
+    def test_basic_resource_get_downsampled_extent_dims_anisotropic(self):
+        """Test downsample extent anisotropic
+
+        Returns:
+            None
+
+        """
+        url = '/' + version + '/cutout/col1/exp_aniso/channel1/0/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp_aniso",
+            "channel_name": "channel1",
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        req = BossRequest(drfrequest, request_args)
+        resource = BossResourceDjango(req)
+
+        extent_dims = resource.get_downsampled_extent_dims()
+        self.assertEqual(len(extent_dims), 8)
+        self.assertEqual(extent_dims[0], [2000, 5000, 200])
+        self.assertEqual(extent_dims[4], [125, 313, 200])
+
+    def test_basic_resource_get_downsampled_extent_dims_anisotropic_iso(self):
+        """Test downsample extent anisotropic with isotropic flag
+
+        Returns:
+            None
+
+        """
+        url = '/' + version + '/cutout/col1/exp_aniso/channel1/0/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp_aniso",
+            "channel_name": "channel1",
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        req = BossRequest(drfrequest, request_args)
+        resource = BossResourceDjango(req)
+
+        extent_dims = resource.get_downsampled_extent_dims(iso=True)
+        self.assertEqual(len(extent_dims), 8)
+        self.assertEqual(extent_dims[0], [2000, 5000, 200])
+        self.assertEqual(extent_dims[3], [250, 625, 200])
+        self.assertEqual(extent_dims[4], [125, 313, 100])
+
+    def test_basic_resource_get_downsampled_extent_dims_isotropic(self):
+        """Test downsample extent isotropic
+
+        Returns:
+            None
+
+        """
+        url = '/' + version + '/cutout/col1/exp_iso/channel1/0/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp_iso",
+            "channel_name": "channel1",
+            "resolution": 0,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        req = BossRequest(drfrequest, request_args)
+        resource = BossResourceDjango(req)
+
+        extent_dims = resource.get_downsampled_extent_dims()
+        self.assertEqual(len(extent_dims), 8)
+        self.assertEqual(extent_dims[0], [2000, 5000, 200])
+        self.assertEqual(extent_dims[1], [1000, 2500, 100])
+        self.assertEqual(extent_dims[3], [250, 625, 25])
+
+
+
+
+
+
