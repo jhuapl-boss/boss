@@ -177,14 +177,11 @@ class BossIngestViewTestMixin(object):
         response = self.client.delete(url)
         assert (response.status_code == 204)
 
-        # Add a completed job
+        # Add another job
         url = '/' + version + '/ingest/'
         response = self.client.post(url, data=config_data, format='json')
         assert (response.status_code == 201)
-        ingest_job_completed = response.json()
-        url = '/' + version + '/ingest/{}/complete'.format(ingest_job_completed['id'])
-        response = self.client.post(url)
-        assert(response.status_code == 204)
+        ingest_job_3 = response.json()
 
         # List
         url = '/' + version + '/ingest/'
@@ -193,8 +190,8 @@ class BossIngestViewTestMixin(object):
         self.assertEqual(2, len(result["ingest_jobs"]))
         self.assertEqual(result["ingest_jobs"][0]['id'], ingest_job_2['id'])
         self.assertEqual(result["ingest_jobs"][0]['status'], 0)
-        self.assertEqual(result["ingest_jobs"][1]['id'], ingest_job_completed['id'])
-        self.assertEqual(result["ingest_jobs"][1]['status'], 2)
+        self.assertEqual(result["ingest_jobs"][1]['id'], ingest_job_3['id'])
+        self.assertEqual(result["ingest_jobs"][1]['status'], 0)
 
     def test_list_admin_jobs(self):
         """ Test listing ALL jobs as the admin user"""
@@ -226,6 +223,25 @@ class BossIngestViewTestMixin(object):
         response = self.client.post(url, data=config_data, format='json')
         assert (response.status_code == 201)
         ingest_job_completed = response.json()
+        url = '/' + version + '/ingest/{}/complete'.format(ingest_job_completed['id'])
+        response = self.client.post(url)
+        # Can't complete until it is done
+        assert(response.status_code == 400)
+
+        # Wait for job to complete
+        for cnt in range(0, 30):
+            # Try joining to kick the status
+            url = '/' + version + '/ingest/{}/'.format(ingest_job_completed['id'])
+            self.client.get(url)
+
+            url = '/' + version + '/ingest/{}/status'.format(ingest_job_completed['id'])
+            response = self.client.get(url)
+            if response.json()["status"] == 1:
+                break
+
+            time.sleep(10)
+
+        # Complete the job
         url = '/' + version + '/ingest/{}/complete'.format(ingest_job_completed['id'])
         response = self.client.post(url)
         assert(response.status_code == 204)
@@ -281,6 +297,26 @@ class BossIngestViewTestMixin(object):
         # Complete the job
         url = '/' + version + '/ingest/{}/complete'.format(ingest_job['id'])
         response = self.client.post(url)
+
+        # Can't complete until it is done
+        assert(response.status_code == 400)
+
+        # Wait for job to complete
+        for cnt in range(0, 30):
+            # Try joining to kick the status
+            url = '/' + version + '/ingest/{}/'.format(ingest_job['id'])
+            self.client.get(url)
+
+            url = '/' + version + '/ingest/{}/status'.format(ingest_job['id'])
+            response = self.client.get(url)
+            if response.json()["status"] == 1:
+                break
+
+            time.sleep(10)
+
+        # Complete the job
+        url = '/' + version + '/ingest/{}/complete'.format(ingest_job['id'])
+        response = self.client.post(url)
         assert(response.status_code == 204)
 
         # Verify Queues are removed
@@ -324,6 +360,7 @@ class BossIngestViewTestMixin(object):
 
             time.sleep(10)
 
+        url = '/' + version + '/ingest/{}/status'.format(ingest_job['id'])
         response = self.client.get(url)
         status = response.json()
         self.assertEqual(status["status"], 1)

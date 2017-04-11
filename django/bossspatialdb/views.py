@@ -30,6 +30,7 @@ from bosscore.models import Channel
 
 from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb import project
+import bossutils
 
 
 class Cutout(APIView):
@@ -239,6 +240,28 @@ class Downsample(APIView):
         experiment = resource.get_experiment()
         to_renderer = {"status": channel.downsample_status}
 
+        # Check Step Function if status is in-progress and update
+        if channel.downsample_status == "IN_PROGRESS":
+            lookup_key = resource.get_lookup_key()
+            _, exp_id, _ = lookup_key.split("&")
+            # Get channel object
+            channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
+            # Update the status from the step function
+            session = bossutils.aws.get_session()
+            status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
+            if status == "SUCCEEDED":
+                # Change to DOWNSAMPLED
+                channel_obj.downsample_status = "DOWNSAMPLED"
+                channel_obj.save()
+                to_renderer["status"] = "DOWNSAMPLED"
+
+            elif status == "FAILED" or status == "TIMED_OUT":
+                # Change status to FAILED
+                channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
+                channel_obj.downsample_status = "FAILED"
+                channel_obj.save()
+                to_renderer["status"] = "FAILED"
+
         # Get hierarchy levels
         to_renderer["num_hierarchy_levels"] = experiment.num_hierarchy_levels
 
@@ -299,14 +322,48 @@ class Downsample(APIView):
         elif channel.downsample_status.upper() == "DOWNSAMPLED":
             return BossHTTPError("Channel is already downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
 
-        # TODO Call Step Function Here
+        # Call Step Function
+        boss_config = bossutils.configuration.BossConfig()
+        experiment = resource.get_experiment()
+        coord_frame = resource.get_coord_frame()
+        lookup_key = resource.get_lookup_key()
+        col_id, exp_id, ch_id = lookup_key.split("&")
+        args = {
+            'collection_id': int(col_id),
+            'experiment_id': int(exp_id),
+            'channel_id': int(ch_id),
+            'annotation_channel': not channel.is_image(),
+            'data_type': resource.get_data_type(),
 
-        # Save ARN
-        channel.downsample_arn = "ARNXXXXX"
+            's3_bucket': boss_config["aws"]["cuboid_bucket"],
+            's3_index': boss_config["aws"]["s3-index-table"],
+            'id_index': boss_config["aws"]["id-index-table"],
 
-        # Change Status
-        channel.downsample_status = "IN_PROGRESS"
-        channel.save()
+            'x_start': int(coord_frame.x_start),
+            'y_start': int(coord_frame.y_start),
+            'z_start': int(coord_frame.z_start),
+
+            'x_stop': int(coord_frame.x_stop),
+            'y_stop': int(coord_frame.y_stop),
+            'z_stop': int(coord_frame.z_stop),
+
+            'resolution': int(channel.base_resolution),
+            'resolution_max': int(experiment.num_hierarchy_levels),
+            'res_lt_max': int(channel.base_resolution) + 1 < int(experiment.num_hierarchy_levels),
+
+            'type': experiment.hierarchy_method,
+            'iso_resolution': int(resource.get_isotropic_level())
+        }
+
+        session = bossutils.aws.get_session()
+        downsample_sfn = boss_config['sfn']['downsample_sfn']
+        arn = bossutils.aws.sfn_execute(session, downsample_sfn, dict(args))
+
+        # Change Status and Save ARN
+        channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
+        channel_obj.downsample_status = "IN_PROGRESS"
+        channel_obj.downsample_arn = arn
+        channel_obj.save()
 
         return HttpResponse(status=201)
 

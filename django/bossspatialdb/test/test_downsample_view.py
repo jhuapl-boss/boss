@@ -23,33 +23,18 @@ from bossspatialdb.views import Downsample
 from bosscore.test.setup_db import SetupTestDB
 from bosscore.error import BossError
 import json
+from unittest.mock import patch
 
 
 version = settings.BOSS_VERSION
 
-#@patch('redis.StrictRedis', mock_strict_redis_client)
-#def mock_init_(self, kv_conf, state_conf, object_store_conf):
-#    print("init mocker")
-#    self.kv_config = kv_conf
-#    self.state_conf = state_conf
-#    self.object_store_config = object_store_conf
-#
-#    # Threshold number of cuboids for using lambda on reads
-#    self.read_lambda_threshold = 600  # Currently high since read lambda not implemented
-#    # Number of seconds to wait for dirty cubes to get clean
-#    self.dirty_read_timeout = 60
-#
-#    if not _test_globals['cache']:
-#        kv_conf["cache_db"] = 1
-#        state_conf["cache_state_db"] = 1
-#        print(kv_conf)
-#        print(state_conf)
-#        _test_globals['cache'] = RedisKVIO(kv_conf)
-#        _test_globals['state'] = CacheStateDB(state_conf)
-#
-#    self.kvio = _test_globals['cache']
-#    self.cache_state = _test_globals['state']
-#    self.objectio = AWSObjectStore(object_store_conf)
+
+def mock_sfn_status(a, b):
+    return "RUNNING"
+
+
+def mock_sfn_execute(a, b, c):
+    return "ARN:abc123"
 
 
 class DownsampleInterfaceViewMixin(object):
@@ -198,8 +183,36 @@ class DownsampleInterfaceViewMixin(object):
         self.assertEqual(response.data["cuboid_size"]['3'], [512, 512, 16])
         self.assertEqual(response.data["cuboid_size"]['5'], [512, 512, 16])
 
+    def test_start_downsample_aniso(self):
+        self.dbsetup.insert_downsample_data()
 
-#@patch('spdb.spatialdb.SpatialDB.__init__', mock_init_)
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/downsample/col1/exp_ds_aniso/channel1/',
+                               content_type='application/json')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
+                                        channel='channel1')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Make Sure status has changed
+        factory = APIRequestFactory()
+        request = factory.get('/' + version + '/downsample/col1/exp_ds_aniso/channel1/',
+                              content_type='application/json')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
+                                        channel='channel1').render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["num_hierarchy_levels"], 3)
+        self.assertEqual(response.data["status"], "IN_PROGRESS")
+
+@patch('bossutils.aws.sfn_status', mock_sfn_status)
+@patch('bossutils.aws.sfn_execute', mock_sfn_execute)
 class TestDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITestCase):
 
     def setUp(self):
@@ -208,13 +221,9 @@ class TestDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITestCase):
         :return:
         """
         # Create a user
-        dbsetup = SetupTestDB()
-        self.user = dbsetup.create_user('testuser')
+        self.dbsetup = SetupTestDB()
+        self.user = self.dbsetup.create_user('testuser')
 
         # Populate DB
-        dbsetup.insert_spatialdb_test_data()
-        dbsetup.insert_iso_data()
-
-    def tearDown(self):
-        # Stop mocking
-        pass
+        self.dbsetup.insert_spatialdb_test_data()
+        self.dbsetup.insert_iso_data()

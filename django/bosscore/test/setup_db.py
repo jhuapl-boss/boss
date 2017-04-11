@@ -125,6 +125,16 @@ class SetupTestDB:
         self.add_experiment('col1', 'exp_iso', 'cf2iso', 8, 500, 1, hierarchy_method="isotropic")
         self.add_channel('col1', 'exp_iso', 'channel1', 0, 0, 'uint8', 'image')
 
+    def insert_downsample_data(self):
+        """Some resources for small downsample tests"""
+        self.add_coordinate_frame('cf_ds_aniso', 'Description for cf2', 0, 4069, 0, 4069, 0, 128, 4, 4, 35)
+        self.add_experiment('col1', 'exp_ds_aniso', 'cf_ds_aniso', 3, 500, 1)
+        self.add_channel('col1', 'exp_ds_aniso', 'channel1', 0, 0, 'uint8', 'image')
+
+        self.add_coordinate_frame('cf_ds_iso', 'Description for cf2', 0, 4069, 0, 4069, 0, 128, 6, 6, 6)
+        self.add_experiment('col1', 'exp_ds_iso', 'cf_ds_iso', 3, 500, 1, hierarchy_method="isotropic")
+        self.add_channel('col1', 'exp_ds_iso', 'channel1', 0, 0, 'uint8', 'image')
+
     @staticmethod
     def add_permissions(group, obj):
         # Get the type of model
