@@ -48,25 +48,25 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/1536:1664/1536:1664/0:16/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/bbchan1/0/1536:1664/1536:1664/0:16/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                     resolution='0', x_range='1536:1664', y_range='1536:1664', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/1536:1664/1536:1664/0:16/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/bbchan1/0/1536:1664/1536:1664/0:16/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                     resolution='0', x_range='1536:1664', y_range='1536:1664', z_range='0:16', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -82,12 +82,12 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/4')
+        request = factory.get('/' + version + '/boundingbox/col1/exp1/bbchan1/0/4')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                          resolution='0', id='4')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -108,25 +108,25 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:516/0:526/0:18/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/bbchan1/0/0:516/0:526/0:18/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                     resolution='0', x_range='0:516', y_range='0:516', z_range='0:18', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:516/0:516/0:18/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/bbchan1/0/0:516/0:516/0:18/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                     resolution='0', x_range='0:516', y_range='0:516', z_range='0:18', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -142,12 +142,12 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/1')
+        request = factory.get('/' + version + '/boundingbox/col1/exp1/bbchan1/0/1')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                          resolution='0', id='1')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -168,25 +168,25 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/1024:1152/1024:1152/0:16/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/bbchan1/0/1024:1152/1024:1152/0:16/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                     resolution='0', x_range='1024:1152', y_range='1024:1152', z_range='0:16', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/1024:1152/1024:1152/0:16/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/bbchan1/0/1024:1152/1024:1152/0:16/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                     resolution='0', x_range='1024:1152', y_range='1024:1152', z_range='0:16', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -202,12 +202,12 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/3?type=tight')
+        request = factory.get('/' + version + '/boundingbox/col1/exp1/bbchan1/0/3?type=tight')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                          resolution='0', id='3')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -229,25 +229,25 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/layer1/0/0:516/0:516/0:18/', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/bbchan1/0/0:516/0:516/0:18/', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                     resolution='0', x_range='0:516', y_range='0:516', z_range='0:18', t_range=None)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/layer1/0/0:516/0:516/0:18/',
+        request = factory.get('/' + version + '/cutout/col1/exp1/bbchan1/0/0:516/0:516/0:18/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                     resolution='0', x_range='0:516', y_range='0:516', z_range='0:18', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -263,12 +263,12 @@ class BoundingBoxMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/boundingbox/col1/exp1/layer1/0/2/?type=tight')
+        request = factory.get('/' + version + '/boundingbox/col1/exp1/bbchan1/0/2/?type=tight')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='layer1',
+        response = BoundingBox.as_view()(request, collection='col1', experiment='exp1', channel='bbchan1',
                                          resolution='0', id='2')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -108,6 +108,8 @@ class SetupTestDB:
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8', 'image')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint16', 'image')
         self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint64', 'annotation')
+        # bbchan1 is a channel for bounding box tests.
+        self.add_channel('col1', 'exp1', 'bbchan1', 0, 0, 'uint64', 'annotation')
 
     def insert_ingest_test_data(self):
 
