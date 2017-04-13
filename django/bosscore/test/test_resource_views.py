@@ -272,7 +272,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'isotropic', 'num_time_samples': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -290,7 +290,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col2/experiment/exp1'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'isotropic', 'num_time_samples': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -309,7 +309,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10, 'dummy': 'dummy'}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'anisotropic', 'num_time_samples': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -328,7 +328,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice'}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'anisotropic'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -359,7 +359,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp1'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'anisotropic', 'num_time_samples': 10}
 
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
@@ -379,11 +379,10 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10,
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'anisotropic', 'num_time_samples': 10,
                 'time_step': 1, 'time_step_unit': 'nanoseconds'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
-
 
     def test_post_experiment_no_data(self):
         """
@@ -444,7 +443,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/exp2'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'isotropic', 'num_time_samples': 10}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -729,6 +728,7 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'channel1')
+        self.assertEqual(response.data['downsample_status'], 'NOT_DOWNSAMPLED')
 
     def test_post_channel(self):
         """
@@ -958,6 +958,27 @@ class ResourceViewsChannelTests(APITestCase):
         # Get an existing collection
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
+
+    def test_put_channel_downsample(self):
+        """
+        Try to update a downsample property of the channel but you can't
+
+        """
+        # Post a new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8',
+                'sources': ['channel1'],
+                'related': ['channel2', 'channel3']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        data = {'downsample_status': 'DOWNSAMPLED'}
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+        data = {'downsample_arn': 'asdfasfasdf'}
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 400)
 
     def test_put_channel_remove_source(self):
         """

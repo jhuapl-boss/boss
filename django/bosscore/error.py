@@ -39,6 +39,7 @@ class ErrorCodes(IntEnum):
     DATATYPE_NOT_SUPPORTED = 2003
     INVALID_REQUEST = 2004
     UNSUPPORTED_4D = 2005
+    INVALID_STATE = 2006
 
     # Unauthorized
     MISSING_ROLE = 3000
@@ -90,6 +91,7 @@ RESP_CODES = {
     ErrorCodes.DATA_DIMENSION_MISMATCH: 400,
     ErrorCodes.DATATYPE_NOT_SUPPORTED: 400,
     ErrorCodes.UNSUPPORTED_4D: 400,
+    ErrorCodes.INVALID_STATE: 409,
     ErrorCodes.INVALID_REQUEST: 404,
     ErrorCodes.MISSING_ROLE: 403,
     ErrorCodes.MISSING_PERMISSION: 403,

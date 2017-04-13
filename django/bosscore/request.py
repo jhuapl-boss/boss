@@ -107,6 +107,9 @@ class BossRequest:
         elif self.service == 'boundingbox':
             self.validate_bounding_box()
 
+        elif self.service == 'downsample':
+            self.validate_downsample_service()
+
         else:
             self.validate_cutout_service()
 
@@ -127,6 +130,19 @@ class BossRequest:
             self.set_key(self.bossrequest['key'])
         if 'value' in self.bossrequest:
             self.set_value(self.bossrequest['value'])
+
+    def validate_downsample_service(self):
+        """
+        "Validate all downsample data requests.
+
+        Args:
+            webargs:
+
+        Returns:
+
+        """
+        self.initialize_request(self.bossrequest['collection_name'], self.bossrequest['experiment_name'],
+                                self.bossrequest['channel_name'])
 
     def validate_cutout_service(self):
         """
@@ -772,7 +788,7 @@ class BossRequest:
             self.bosskey(str) : String that represents the boss key for the current request
         """
         if self.service == 'cutout' or self.service == 'image' or self.service == 'tile' or self.service == 'ids'\
-                or self.service == 'boundingbox':
+                or self.service == 'boundingbox' or self.service == 'downsample':
             perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
 
         elif self.service == 'meta':

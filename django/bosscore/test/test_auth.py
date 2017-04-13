@@ -314,7 +314,7 @@ class UserPermissionsExperiment(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/unittestcol/experiment/unittestexpnew'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10, 'dummy': 'dummy'}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'isotropic', 'num_time_samples': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -333,7 +333,7 @@ class UserPermissionsExperiment(APITestCase):
         # Post a new experiment
         url = '/' + version + '/collection/col1/experiment/unittestexpnew'
         data = {'description': 'This is a new experiment', 'coord_frame': cf,
-                'num_hierarchy_levels': 10, 'hierarchy_method': 'slice', 'num_time_samples': 10, 'dummy': 'dummy'}
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'isotropic', 'num_time_samples': 10, 'dummy': 'dummy'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 403)
 

@@ -136,9 +136,8 @@ class Experiment(models.Model):
     num_hierarchy_levels = models.IntegerField(default=1)
 
     HIERARCHY_METHOD_CHOICES = (
-        ('near_iso', 'NEAR_ISO'),
-        ('iso', 'ISO'),
-        ('slice', 'SLICE'),
+        ('anisotropic', 'ANISOTROPIC'),
+        ('isotropic', 'ISOTROPIC'),
     )
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
     num_time_samples = models.IntegerField(default=1)
@@ -211,12 +210,20 @@ class Channel(models.Model):
     )
     deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True, blank=True)
 
+    DOWNSAMPLE_METHOD_CHOICES = (
+        ('NOT_DOWNSAMPLED', 'Not Downsampled'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('DOWNSAMPLED', 'Downsampled'),
+        ('FAILED', 'Failed'),
+    )
+    downsample_status = models.CharField(choices=DOWNSAMPLE_METHOD_CHOICES, default="NOT_DOWNSAMPLED", max_length=100)
+    downsample_arn = models.CharField(max_length=4096, blank=True, null=True)
+
     class Meta:
         db_table = u"channel"
         unique_together = ('experiment', 'name')
         default_permissions = ()
         permissions = (
-
             ('read', 'Can view resource'),
             ('update', 'Can update resource'),
             ('delete', 'Can delete resource'),
@@ -226,7 +233,6 @@ class Channel(models.Model):
             ('add_volumetric_data', 'Can add volumetric data for the channel'),
             ('read_volumetric_data', 'Can read volumetric data for the channel'),
             ('delete_volumetric_data', 'Can delete volumetric data for the channel'),
-
         )
 
     def add_source(self, source):

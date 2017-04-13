@@ -118,6 +118,34 @@ class SetupTestDB:
         self.add_experiment('my_col_1', 'my_exp_1', 'cf1', 10, 500, 1)
         self.add_channel('my_col_1', 'my_exp_1', 'my_ch_1', 0, 0, 'uint8', 'image')
 
+    def insert_iso_data(self):
+        self.add_coordinate_frame('cf2aniso', 'Description for cf2', 0, 2000, 0, 5000, 0, 200, 4, 4, 35)
+        self.add_experiment('col1', 'exp_aniso', 'cf2aniso', 8, 500, 1)
+        self.add_channel('col1', 'exp_aniso', 'channel1', 0, 0, 'uint8', 'image')
+
+        self.add_coordinate_frame('cf2iso', 'Description for cf2', 0, 2000, 0, 5000, 0, 200, 6, 6, 6)
+        self.add_experiment('col1', 'exp_iso', 'cf2iso', 8, 500, 1, hierarchy_method="isotropic")
+        self.add_channel('col1', 'exp_iso', 'channel1', 0, 0, 'uint8', 'image')
+
+    def insert_downsample_data(self):
+        """Some resources for small downsample tests"""
+        self.add_coordinate_frame('cf_ds_aniso', 'Description for cf2', 0, 4096, 0, 4096, 0, 128, 4, 4, 35)
+        self.add_experiment('col1', 'exp_ds_aniso', 'cf_ds_aniso', 5, 500, 1)
+        self.add_channel('col1', 'exp_ds_aniso', 'channel1', 0, 0, 'uint8', 'image')
+
+        self.add_coordinate_frame('cf_ds_iso', 'Description for cf2', 0, 4096, 0, 4096, 0, 128, 6, 6, 6)
+        self.add_experiment('col1', 'exp_ds_iso', 'cf_ds_iso', 3, 500, 1, hierarchy_method="isotropic")
+        self.add_channel('col1', 'exp_ds_iso', 'channel1', 0, 0, 'uint8', 'image')
+
+    def insert_downsample_write_data(self):
+        """Some resources for writing to an off 0 base res (tests write at 4)"""
+        self.add_experiment('col1', 'exp_ds_aniso_4', 'cf_ds_aniso', 5, 500, 1)
+        self.add_channel('col1', 'exp_ds_aniso_4', 'channel1', 0, 4, 'uint8', 'image')
+
+        self.add_experiment('col1', 'exp_ds_iso_4', 'cf_ds_iso', 5, 500, 1, hierarchy_method="isotropic")
+        self.add_channel('col1', 'exp_ds_iso_4', 'channel1', 0, 4, 'uint8', 'image')
+
+
     @staticmethod
     def add_permissions(group, obj):
         # Get the type of model
@@ -192,7 +220,7 @@ class SetupTestDB:
         return cf
 
     def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels,
-                       num_time_samples,time_step):
+                       num_time_samples, time_step, hierarchy_method="anisotropic"):
         """
 
         Args:
@@ -209,7 +237,7 @@ class SetupTestDB:
         col = Collection.objects.get(name=collection_name)
         cf = CoordinateFrame.objects.get(name=coordinate_name)
         exp = Experiment.objects.create(name=experiment_name, collection=col, coord_frame=cf,
-                                        num_hierarchy_levels=num_hierarchy_levels,
+                                        num_hierarchy_levels=num_hierarchy_levels, hierarchy_method=hierarchy_method,
                                         num_time_samples=num_time_samples, time_step=time_step, creator=self.user)
 
         lkup_key = str(col.pk) + '&' + str(exp.pk)
