@@ -1,4 +1,4 @@
-boto3==1.4.0
+boto3>=1.4.0
 Django==1.9.1
 django-filter==0.11.0
 djangorestframework==3.3.1
