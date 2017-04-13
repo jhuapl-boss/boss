@@ -50,7 +50,7 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
 
     def test_start_downsample_get_status_and_check_data(self):
         """A large complex test that verifies all the pluming for downsample.
-         Does not validate data short of existing."""
+         Does not validate data integrity, but does make sure data exists at different levels and iso vs. aniso."""
 
         self.dbsetup.insert_downsample_data()
 
@@ -107,7 +107,7 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
         response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
                                         channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["num_hierarchy_levels"], 3)
+        self.assertEqual(response.data["num_hierarchy_levels"], 5)
         self.assertEqual(response.data["status"], "IN_PROGRESS")
 
         for _ in range(0, 30):
@@ -125,7 +125,7 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
         response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
                                         channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["num_hierarchy_levels"], 3)
+        self.assertEqual(response.data["num_hierarchy_levels"], 5)
         self.assertEqual(response.data["status"], "DOWNSAMPLED")
 
         # Get data at res 1 and verify it's non-zero
@@ -141,11 +141,92 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
                                     z_range='0:16', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         raw_data = blosc.decompress(response.content)
-        data_mat = np.fromstring(raw_data, dtype=np.uint8)
-        data_mat = np.reshape(data_mat, (16, 512, 512), order='C')
+        data_mat_res1_aniso = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat_res1_aniso = np.reshape(data_mat_res1_aniso, (16, 512, 512), order='C')
 
         # Make sure not blank
-        self.assertGreater(data_mat.sum(), 100)
+        self.assertGreater(data_mat_res1_aniso.sum(), 100)
+
+        # Get data at res 1 with iso flag and verify it's non-zero and the same as without flag
+        request = factory.get('/' + version + '/cutout/col1/exp_ds_aniso/channel1/1/0:512/0:512/0:16/?iso=true',
+                              accepts='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso', channel='channel1',
+                                    resolution='1', x_range='0:512', y_range='0:512',
+                                    z_range='0:16', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        raw_data = blosc.decompress(response.content)
+        data_mat_res1_iso = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat_res1_iso = np.reshape(data_mat_res1_iso, (16, 512, 512), order='C')
+
+        # Make sure not blank
+        self.assertGreater(data_mat_res1_iso.sum(), 100)
+        np.testing.assert_array_equal(data_mat_res1_iso, data_mat_res1_aniso)
+
+        # Get data at res 4 with iso flag and verify it's non-zero and DIFFERENT than without flag
+        request = factory.get('/' + version + '/cutout/col1/exp_ds_aniso/channel1/4/0:256/0:256/0:8/?iso=false',
+                              accepts='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso', channel='channel1',
+                                    resolution='4', x_range='0:256', y_range='0:256',
+                                    z_range='0:8', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        raw_data = blosc.decompress(response.content)
+        data_mat_res4_aniso = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat_res4_aniso = np.reshape(data_mat_res4_aniso, (8, 256, 256), order='C')
+
+        # Make sure not blank
+        self.assertGreater(data_mat_res4_aniso.sum(), 1)
+
+        # Get data at res 4 with iso flag and verify it's non-zero and DIFFERENT than without flag
+        request = factory.get('/' + version + '/cutout/col1/exp_ds_aniso/channel1/4/0:256/0:256/0:8/?iso=true',
+                              accepts='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso', channel='channel1',
+                                    resolution='4', x_range='0:256', y_range='0:256',
+                                    z_range='0:8', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        raw_data = blosc.decompress(response.content)
+        data_mat_res4_iso = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat_res4_iso = np.reshape(data_mat_res4_iso, (8, 256, 256), order='C')
+
+        # Make sure not blank
+        self.assertGreater(data_mat_res4_iso.sum(), 1)
+        self.assertRaises(AssertionError, np.testing.assert_array_equal, data_mat_res4_aniso, data_mat_res4_iso)
+
+        # Post data, invalidating the downsample operation
+        request = factory.post('/' + version + '/cutout/col1/exp_ds_aniso/channel1/0/0:1024/0:1024/0:16/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso', channel='channel1',
+                                    resolution='0', x_range='0:1024', y_range='0:1024', z_range='0:16', t_range=None)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Verify now NOT downsampled
+        request = factory.get('/' + version + '/downsample/col1/exp_ds_aniso/channel1/',
+                              content_type='application/json')
+        # log in user
+        force_authenticate(request, user=self.user)
+        response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
+                                        channel='channel1').render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["num_hierarchy_levels"], 5)
+        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
 
     def setUp(self):
         """ Copy params from the Layer setUpClass

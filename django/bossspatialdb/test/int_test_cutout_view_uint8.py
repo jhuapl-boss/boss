@@ -119,6 +119,8 @@ class CutoutViewIntegration8BitTests(APITestCase, CutoutInterfaceViewUint8TestMi
                                    port=6379, db=1, decode_responses=False)
         client.flushdb()
 
+        self.dbsetup = self.layer.django_setup_helper
+
     def tearDown(self):
         # Flush cache between tests
         client = redis.StrictRedis(host=self.kvio_config['cache_host'],

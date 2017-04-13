@@ -70,6 +70,14 @@ class Cutout(APIView):
         else:
             ids = None
 
+        if "iso" in request.query_params:
+            if request.query_params["iso"].lower() == "true":
+                iso = True
+            else:
+                iso = False
+        else:
+            iso = False
+
         if isinstance(request.data, BossParserError):
             return request.data.to_http()
 
@@ -116,7 +124,7 @@ class Cutout(APIView):
 
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop],
-                            filter_ids=req.get_filter_ids())
+                            filter_ids=req.get_filter_ids(), iso=iso)
         to_renderer = {"time_request": req.time_request,
                        "data": data}
 
@@ -143,6 +151,15 @@ class Cutout(APIView):
         # Check if parsing completed without error. If an error did occur, return to user.
         if isinstance(request.data, BossParserError):
             return request.data.to_http()
+
+        # Check for optional iso flag
+        if "iso" in request.query_params:
+            if request.query_params["iso"].lower() == "true":
+                iso = True
+            else:
+                iso = False
+        else:
+            iso = False
 
         # Get BossRequest and BossResource from parser
         req = request.data[0]
@@ -178,13 +195,24 @@ class Cutout(APIView):
 
         try:
             if len(request.data[2].shape) == 4:
-                cache.write_cuboid(resource, corner, req.get_resolution(), request.data[2], req.get_time()[0])
+                cache.write_cuboid(resource, corner, req.get_resolution(), request.data[2], req.get_time()[0], iso=iso)
             else:
                 cache.write_cuboid(resource, corner, req.get_resolution(),
-                                   np.expand_dims(request.data[2], axis=0), req.get_time()[0])
+                                   np.expand_dims(request.data[2], axis=0), req.get_time()[0], iso=iso)
         except Exception as e:
             # TODO: Eventually remove as this level of detail should not be sent to the user
             return BossHTTPError('Error during write_cuboid: {}'.format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
+
+        # If the channel status is DOWNSAMPLED change status to NOT_DOWNSAMPLED since you just wrote data
+        channel = resource.get_channel()
+        if channel.downsample_status.upper() == "DOWNSAMPLED":
+            # Get Channel object and update status
+            lookup_key = resource.get_lookup_key()
+            _, exp_id, _ = lookup_key.split("&")
+            channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
+            channel_obj.downsample_status = "NOT_DOWNSAMPLED"
+            channel_obj.downsample_arn = ""
+            channel_obj.save()
 
         # Send data to renderer
         return HttpResponse(status=201)
@@ -398,13 +426,21 @@ class Downsample(APIView):
         if channel.downsample_status.upper() != "IN_PROGRESS":
             return BossHTTPError("You can only cancel and in-progress downsample operation.", ErrorCodes.INVALID_STATE)
 
-        # TODO Call cancel on the Step Function Here
+        # Get Channel object
+        lookup_key = resource.get_lookup_key()
+        _, exp_id, _ = lookup_key.split("&")
+        channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
 
-        # Save ARN
-        channel.downsample_arn = ""
+        # Call cancel on the Step Function
+        session = bossutils.aws.get_session()
+        bossutils.aws.sfn_cancel(session, channel_obj.downsample_arn, error="User Cancel",
+                                 cause="User has requested the downsample operation to stop.")
+
+        # Clear ARN
+        channel_obj.downsample_arn = ""
 
         # Change Status
-        channel.downsample_status = "NOT_DOWNSAMPLED"
-        channel.save()
+        channel_obj.downsample_status = "NOT_DOWNSAMPLED"
+        channel_obj.save()
 
         return HttpResponse(status=204)

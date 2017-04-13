@@ -37,6 +37,10 @@ def mock_sfn_execute(a, b, c):
     return "ARN:abc123"
 
 
+def mock_sfn_cancel(session, arn, error="Error", cause="Unknown Cause"):
+    pass
+
+
 class DownsampleInterfaceViewMixin(object):
 
     def test_get_iso_properties_no_arg(self):
@@ -183,7 +187,7 @@ class DownsampleInterfaceViewMixin(object):
         self.assertEqual(response.data["cuboid_size"]['3'], [512, 512, 16])
         self.assertEqual(response.data["cuboid_size"]['5'], [512, 512, 16])
 
-    def test_start_downsample_aniso(self):
+    def test_start_and_cancel_downsample_aniso(self):
         self.dbsetup.insert_downsample_data()
 
         factory = APIRequestFactory()
@@ -208,11 +212,48 @@ class DownsampleInterfaceViewMixin(object):
         response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
                                         channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["num_hierarchy_levels"], 3)
+        self.assertEqual(response.data["num_hierarchy_levels"], 5)
         self.assertEqual(response.data["status"], "IN_PROGRESS")
+
+        # Cancel the downsample job
+        request = factory.delete('/' + version + '/downsample/col1/exp_ds_aniso/channel1/',
+                                 content_type='application/json')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
+                                        channel='channel1')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Make Sure status has changed
+        factory = APIRequestFactory()
+        request = factory.get('/' + version + '/downsample/col1/exp_ds_aniso/channel1/',
+                              content_type='application/json')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
+                                        channel='channel1').render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+
+        # Try to cancel the downsample job again, but it won't because in NOT_DOWNSAMPLED state
+        request = factory.delete('/' + version + '/downsample/col1/exp_ds_aniso/channel1/',
+                                 content_type='application/json')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
+                                        channel='channel1')
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+
 
 @patch('bossutils.aws.sfn_status', mock_sfn_status)
 @patch('bossutils.aws.sfn_execute', mock_sfn_execute)
+@patch('bossutils.aws.sfn_cancel', mock_sfn_cancel)
 class TestDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITestCase):
 
     def setUp(self):

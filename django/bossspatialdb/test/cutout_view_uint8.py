@@ -914,6 +914,176 @@ class CutoutInterfaceViewUint8TestMixin(object):
                                     t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_channel_uint8_downsample_below_iso_fork(self):
+        """ Test writing/reading data to non-base resolution below the iso fork"""
+
+        self.dbsetup.insert_downsample_data()
+
+        test_mat = np.random.randint(1, 254, (17, 300, 500))
+        test_mat = test_mat.astype(np.uint8)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=8)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp_ds_aniso/channel1/1/100:600/450:750/20:37/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range=None)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp_ds_aniso/channel1/0/100:600/450:750/20:37/',
+                              HTTP_ACCEPT='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso', channel='channel1',
+                                    resolution='0', x_range='100:600', y_range='450:750',
+                                    z_range='20:37', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.reshape(data_mat, (17, 300, 500), order='C')
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(data_mat, test_mat)
+
+    def test_channel_uint8_downsample_above_iso_fork(self):
+        """ Test writing/reading data to non-base resolution above the iso fork"""
+        self.dbsetup.insert_downsample_data()
+        self.dbsetup.insert_downsample_write_data()
+
+        test_mat = np.random.randint(1, 254, (2, 256, 256))
+        test_mat = test_mat.astype(np.uint8)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=8)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp_ds_aniso_4/channel1/4/0:256/0:256/2:4/?iso=true', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso_4', channel='channel1',
+                                    resolution='4', x_range='0:256', y_range='0:256', z_range='2:4', t_range=None)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted, but ask for aniso data
+        request = factory.get('/' + version + '/cutout/col1/exp_ds_aniso_4/channel1/4/0:256/0:256/2:4/?iso=false',
+                              HTTP_ACCEPT='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso_4', channel='channel1',
+                                    resolution='4', x_range='0:256', y_range='0:256',
+                                    z_range='2:4', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.reshape(data_mat, (2, 256, 256), order='C')
+
+        # Should be 0 at non-iso, since you wrote directly to iso level
+        self.assertEqual(data_mat.sum(), 0)
+
+        # Create Request to get data you posted, but ask for iso data
+        request = factory.get('/' + version + '/cutout/col1/exp_ds_aniso_4/channel1/4/0:256/0:256/2:4/?iso=true',
+                              HTTP_ACCEPT='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_aniso_4', channel='channel1',
+                                    resolution='4', x_range='0:256', y_range='0:256',
+                                    z_range='2:4', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.reshape(data_mat, (2, 256, 256), order='C')
+
+        # Should be 0 at non-iso, since you wrote directly to iso level
+        np.testing.assert_array_equal(data_mat, test_mat)
+
+    def test_channel_uint8_downsample_above_iso_fork_isotropic(self):
+        """ Test writing/reading data to non-base resolution above the iso fork with an isotropic channel"""
+        self.dbsetup.insert_downsample_data()
+        self.dbsetup.insert_downsample_write_data()
+
+        test_mat = np.random.randint(1, 254, (2, 256, 256))
+        test_mat = test_mat.astype(np.uint8)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=8)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp_ds_iso_4/channel1/4/0:256/0:256/2:4/?iso=true', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_iso_4', channel='channel1',
+                                    resolution='4', x_range='0:256', y_range='0:256', z_range='2:4', t_range=None)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted, but ask for aniso data
+        request = factory.get('/' + version + '/cutout/col1/exp_ds_iso_4/channel1/4/0:256/0:256/2:4/?iso=false',
+                              HTTP_ACCEPT='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_iso_4', channel='channel1',
+                                    resolution='4', x_range='0:256', y_range='0:256',
+                                    z_range='2:4', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.reshape(data_mat, (2, 256, 256), order='C')
+
+        # Should be equal to what you wrote (data is only isotropic)
+        np.testing.assert_array_equal(data_mat, test_mat)
+
+        # Create Request to get data you posted, but ask for iso data
+        request = factory.get('/' + version + '/cutout/col1/exp_ds_iso_4/channel1/4/0:256/0:256/2:4/?iso=true',
+                              HTTP_ACCEPT='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp_ds_iso_4', channel='channel1',
+                                    resolution='4', x_range='0:256', y_range='0:256',
+                                    z_range='2:4', t_range=None).render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.reshape(data_mat, (2, 256, 256), order='C')
+
+        # Should be equal to what you wrote (data is only isotropic)
+        np.testing.assert_array_equal(data_mat, test_mat)
 
 # @patch('bossutils.configuration.BossConfig', new=MockBossConfig)
 # @patch('redis.StrictRedis', new=mock_strict_redis_client)
@@ -927,11 +1097,11 @@ class TestCutoutInterfaceView(CutoutInterfaceViewUint8TestMixin, APITestCase):
         :return:
         """
         # Create a user
-        dbsetup = SetupTestDB()
-        self.user = dbsetup.create_user('testuser')
+        self.dbsetup = SetupTestDB()
+        self.user = self.dbsetup.create_user('testuser')
 
         # Populate DB
-        dbsetup.insert_spatialdb_test_data()
+        self.dbsetup.insert_spatialdb_test_data()
 
         # Mock config parser so dummy params get loaded (redis is also mocked)
         #self.patcher = patch('bossutils.configuration.BossConfig', MockBossConfig)
@@ -939,11 +1109,12 @@ class TestCutoutInterfaceView(CutoutInterfaceViewUint8TestMixin, APITestCase):
 
         ##self.mock_redis = self.redis_patcher.start()
 
-        self.spdb_patcher = patch('spdb.spatialdb.spatialdb.SpatialDB', MockSpatialDB)
-        self.mock_spdb = self.spdb_patcher.start()
+        #self.spdb_patcher = patch('spdb.spatialdb.spatialdb.SpatialDB', mock_init_)
+        #self.mock_spdb = self.spdb_patcher.start()
 
     def tearDown(self):
         # Stop mocking
         #self.patcher.stop()
-        self.spdb_patcher.stop()
+        #self.spdb_patcher.stop()
         #self.redis_patcher.stop()
+        pass
