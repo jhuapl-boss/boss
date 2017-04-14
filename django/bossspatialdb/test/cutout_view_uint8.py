@@ -370,18 +370,18 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/0:3', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/30:47/0:3', bb,
                                content_type='application/blosc')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='0:3')
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='30:47', t_range='0:3')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/0:3',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/30:47/0:3',
                               HTTP_ACCEPT='application/blosc')
 
         # log in user
@@ -389,7 +389,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='0:3').render()
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='30:47', t_range='0:3').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
@@ -521,18 +521,18 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # Create request
         factory = APIRequestFactory()
-        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/0:3', bb,
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/50:67/0:3', bb,
                                content_type='application/blosc-python')
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='0:3')
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='50:67', t_range='0:3')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         # Create Request to get data you posted
-        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/20:37/0:3',
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/100:600/450:750/50:67/0:3',
                               HTTP_ACCEPT='application/blosc-python')
 
         # log in user
@@ -540,7 +540,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
-                                    resolution='0', x_range='100:600', y_range='450:750', z_range='20:37', t_range='0:3').render()
+                                    resolution='0', x_range='100:600', y_range='450:750', z_range='50:67', t_range='0:3').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress

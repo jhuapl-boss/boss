@@ -181,6 +181,16 @@ class IngestJobView(IngestServiceView):
             resource['channel']['sources'] = [x.name for x in channel.sources.all()]
             resource['channel']['related'] = [x.name for x in channel.related.all()]
             resource['channel']['default_time_sample'] = channel.default_time_sample
+            resource['channel']['downsample_status'] = channel.downsample_status
+
+            resource['experiment'] = {}
+            resource['experiment']['name'] = experiment.name
+            resource['experiment']['description'] = ""
+            resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
+            resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
+            resource['experiment']['num_time_samples'] = experiment.num_time_samples
+            resource['experiment']['time_step'] = experiment.time_step
+            resource['experiment']['time_step_unit'] = experiment.time_step_unit
 
             # Set resource
             data['resource'] = resource
@@ -274,7 +284,7 @@ class IngestJobCompleteView(IngestServiceView):
 
                 # Check if user is the ingest job creator or the sys admin
                 if not self.is_user_or_admin(request, ingest_job):
-                    return BossHTTPError("Only the creator or admin can cancel an ingest job",
+                    return BossHTTPError("Only the creator or admin can complete an ingest job",
                                          ErrorCodes.INGEST_NOT_CREATOR)
 
                 # Check if any messages remain in the ingest queue
