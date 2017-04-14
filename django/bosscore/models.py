@@ -139,7 +139,7 @@ class Experiment(models.Model):
         ('anisotropic', 'ANISOTROPIC'),
         ('isotropic', 'ISOTROPIC'),
     )
-    hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100)
+    hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100, default='anisotropic')
     num_time_samples = models.IntegerField(default=1)
     time_step = models.IntegerField(blank=True, null=True)
     TIMESTEP_UNIT_CHOICES = (
