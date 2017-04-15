@@ -163,6 +163,7 @@ class IngestJobView(IngestServiceView):
             # Generate a "resource" for the ingest lambda function to be able to use SPDB cleanly
             collection = Collection.objects.get(name=data['ingest_job']["collection"])
             experiment = Experiment.objects.get(name=data['ingest_job']["experiment"], collection=collection)
+            coord_frame = experiment.coord_frame
             channel = Channel.objects.get(name=data['ingest_job']["channel"], experiment=experiment)
 
             resource={}
@@ -172,25 +173,24 @@ class IngestJobView(IngestServiceView):
             resource['lookup_key'] = '{}&{}&{}'.format(collection.id,
                                                        experiment.id,
                                                        channel.id)
+
+            # The Lambda function needs certain resource properties to perform write ops. Set required things only.
+            # This is because S3 metadata is limited to 2kb, so we only set the bits of info needed, and in the lambda
+            # Function Populate the rest with dummy info
+            # IF YOU NEED ADDITIONAL DATA YOU MUST ADD IT HERE AND IN THE LAMBDA FUNCTION
             resource['channel'] = {}
-            resource['channel']['name'] = channel.name
-            resource['channel']['description'] = ""
             resource['channel']['type'] = channel.type
             resource['channel']['datatype'] = channel.datatype
             resource['channel']['base_resolution'] = channel.base_resolution
-            resource['channel']['sources'] = [x.name for x in channel.sources.all()]
-            resource['channel']['related'] = [x.name for x in channel.related.all()]
-            resource['channel']['default_time_sample'] = channel.default_time_sample
-            resource['channel']['downsample_status'] = channel.downsample_status
 
             resource['experiment'] = {}
-            resource['experiment']['name'] = experiment.name
-            resource['experiment']['description'] = ""
             resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
             resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
-            resource['experiment']['num_time_samples'] = experiment.num_time_samples
-            resource['experiment']['time_step'] = experiment.time_step
-            resource['experiment']['time_step_unit'] = experiment.time_step_unit
+
+            resource['coord_frame'] = {}
+            resource['coord_frame']['x_voxel_size'] = coord_frame.x_voxel_size
+            resource['coord_frame']['y_voxel_size'] = coord_frame.y_voxel_size
+            resource['coord_frame']['z_voxel_size'] = coord_frame.z_voxel_size
 
             # Set resource
             data['resource'] = resource
