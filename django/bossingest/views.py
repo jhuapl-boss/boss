@@ -297,7 +297,7 @@ class IngestJobCompleteView(IngestServiceView):
                     ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
 
                     # Give lambda a few seconds to fire things off
-                    time.sleep(15)
+                    time.sleep(30)
 
                 # "COMPLETE" status is 2
                 ingest_mgmr.cleanup_ingest_job(ingest_job, 2)
