@@ -213,7 +213,7 @@ class TestDjangoResource(APITestCase):
         assert channel.base_resolution == self.request_annotation.channel.base_resolution
         assert channel.default_time_sample == self.request_annotation.channel.default_time_sample
         assert channel.related == []
-        assert channel.sources == []
+        assert channel.sources == ['channel1']
 
     def test_django_resource_channel_image_with_links(self):
         """Test basic get channel interface
