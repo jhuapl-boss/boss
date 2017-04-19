@@ -1118,10 +1118,20 @@ class ResourceViewsChannelTests(APITestCase):
 
         """
 
-        # Post a new channel
+        # Post new channels
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel11/'
+        data = {'description': 'This is a new source channel', 'type': 'image', 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel22/'
+        data = {'description': 'This is a new related channel', 'type': 'image', 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint64',
-                'sources': ['channel1'], 'related': ['channel2']}
+                'sources': ['channel11'], 'related': ['channel22']}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
@@ -1131,12 +1141,12 @@ class ResourceViewsChannelTests(APITestCase):
         self.assertEqual(response.status_code, 204)
 
         # Delete the source channel
-        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel11'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
         # Delete the related channel
-        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel2'
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel22'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
