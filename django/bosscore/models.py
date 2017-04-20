@@ -254,7 +254,7 @@ class Channel(models.Model):
         Do not return any channels that are marked for deletion.
 
         Returns:
-            (list-like object of Source objects)
+            (QuerySet)
         """
         derived = Source.objects.filter(source_channel=self).exclude(derived_channel__to_be_deleted__isnull=False)
         return derived

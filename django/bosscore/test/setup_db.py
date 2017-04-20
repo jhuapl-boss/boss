@@ -258,14 +258,14 @@ class SetupTestDB:
         """
 
         Args:
-            collection_name (string): Name of the collection
-            experiment_name (string): Name of the experiment
-            channel_name (string): Name of the channel
+            collection_name (str): Name of the collection
+            experiment_name (str): Name of the experiment
+            channel_name (str): Name of the channel
             default_time_sample: Default time sample
             base_resolution: Base resolution of the channel
-            datatype (string): Data type
-            channel_type (string):  Channel Type (image or annotation)
-            source_channels (list[string]): Source channel(s) for an annotation channel
+            datatype (str): Data type
+            channel_type (str):  Channel Type (image or annotation)
+            source_channels (list[str]): Source channel(s) for an annotation channel
 
         Returns:
             Channel
