@@ -19,6 +19,7 @@ from django.contrib.contenttypes.models import ContentType
 from guardian.shortcuts import assign_perm
 
 from ..models import Collection, Experiment, CoordinateFrame, Channel, BossLookup, BossRole, BossGroup
+from ..views.views_resource import ChannelDetail
 
 from spdb.spatialdb.test.setup import AWSSetupLayer
 
@@ -97,8 +98,8 @@ class SetupTestDB:
         self.add_experiment('col1', 'exp22', 'cf1', 10, 500, 1)
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8', 'image')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint8', 'image')
-        self.add_channel('col1', 'exp1', 'channel3', 0, 0, 'uint64', 'annotation')
-        self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint64', 'annotation')
+        self.add_channel('col1', 'exp1', 'channel3', 0, 0, 'uint64', 'annotation', ['channel1'])
+        self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint64', 'annotation', ['channel1'])
 
     def insert_spatialdb_test_data(self):
 
@@ -107,9 +108,9 @@ class SetupTestDB:
         self.add_experiment('col1', 'exp1', 'cf1', 10, 500, 1)
         self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8', 'image')
         self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint16', 'image')
-        self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint64', 'annotation')
+        self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint64', 'annotation', ['channel1'])
         # bbchan1 is a channel for bounding box tests.
-        self.add_channel('col1', 'exp1', 'bbchan1', 0, 0, 'uint64', 'annotation')
+        self.add_channel('col1', 'exp1', 'bbchan1', 0, 0, 'uint64', 'annotation', ['channel1'])
 
     def insert_ingest_test_data(self):
 
@@ -252,17 +253,19 @@ class SetupTestDB:
         return exp
 
     def add_channel(self, collection_name, experiment_name, channel_name,
-                    default_time_sample, base_resolution, datatype, channel_type=None):
+                    default_time_sample, base_resolution, datatype, 
+                    channel_type=None, source_channels=[]):
         """
 
         Args:
-            collection_name: Name of the collection
-            experiment_name: Name of the experiment
-            channel_name: Name of the channel
+            collection_name (str): Name of the collection
+            experiment_name (str): Name of the experiment
+            channel_name (str): Name of the channel
             default_time_sample: Default time sample
             base_resolution: Base resolution of the channel
-            datatype: Data type
-            channel_type:  Channel Type (image or annotation)
+            datatype (str): Data type
+            channel_type (str):  Channel Type (image or annotation)
+            source_channels (list[str]): Source channel(s) for an annotation channel
 
         Returns:
             Channel
@@ -270,12 +273,26 @@ class SetupTestDB:
         """
         if channel_type is None:
             channel_type = 'image'
+        elif channel_type == 'annotation' and len(source_channels) == 0:
+            raise Exception('Annotation channel must have source channel.')
+
+        # Not setting up any related channels.
+        related_channels = []
+
         col = Collection.objects.get(name=collection_name)
         exp = Experiment.objects.get(name=experiment_name, collection=col)
         channel = Channel.objects.create(name=channel_name, experiment=exp,
                                          default_time_sample=default_time_sample, base_resolution=base_resolution,
                                          type=channel_type, datatype=datatype, creator=self.user)
 
+        src_chan_objs, rel_chan_objs = ChannelDetail.validate_source_related_channels(
+                exp, source_channels, related_channels)
+
+        # Add source channels.
+        channel = ChannelDetail.add_source_related_channels(
+                channel, exp, src_chan_objs, rel_chan_objs)
+
+        # Set lookup key.
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(channel.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + channel.name
         BossLookup.objects.create(lookup_key=base_lkup_key, boss_key=base_bs_key,

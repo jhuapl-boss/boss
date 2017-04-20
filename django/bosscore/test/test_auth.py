@@ -430,7 +430,7 @@ class UserPermissionsChannel(APITestCase):
         dbsetup.add_experiment('unittestcol', 'unittestexp', 'unittestcf', 10, 10, 1)
 
         dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestchannel', 0, 0, 'uint8')
-        dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestlayer', 0, 0, 'uint16', 'annotation')
+        dbsetup.add_channel('unittestcol', 'unittestexp', 'unittestlayer', 0, 0, 'uint16', 'annotation', ['unittestchannel'])
 
     def test_get_channel_no_permission(self):
         """

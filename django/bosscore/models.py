@@ -248,7 +248,15 @@ class Channel(models.Model):
         return
 
     def get_derived(self):
-        derived = Source.objects.filter(source_channel=self)
+        """
+        Get channels that list this channel as either a source or related channel.
+
+        Do not return any channels that are marked for deletion.
+
+        Returns:
+            (QuerySet)
+        """
+        derived = Source.objects.filter(source_channel=self).exclude(derived_channel__to_be_deleted__isnull=False)
         return derived
 
     def __str__(self):

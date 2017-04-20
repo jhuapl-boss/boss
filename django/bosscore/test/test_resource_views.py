@@ -1073,7 +1073,7 @@ class ResourceViewsChannelTests(APITestCase):
 
     def test_delete_channel(self):
         """
-        Delete a experiment
+        Delete a channel
 
         """
         # Post a new channel
@@ -1107,10 +1107,48 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 400)
 
-        # Get an existing experiment
+        # Ensure channel still exists
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+
+    def test_delete_channel_ignore_derived_channels_marked_for_deletion(self):
+        """
+        Delete a channel (allow when all derived channels are marked for deletion)
+
+        """
+
+        # Post new channels
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel11/'
+        data = {'description': 'This is a new source channel', 'type': 'image', 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel22/'
+        data = {'description': 'This is a new related channel', 'type': 'image', 'datatype': 'uint8'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint64',
+                'sources': ['channel11'], 'related': ['channel22']}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        # Delete the new channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        response = self.client.delete(url, data=data)
+        self.assertEqual(response.status_code, 204)
+
+        # Delete the source channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel11'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
+
+        # Delete the related channel
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel22'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 204)
 
     def test_delete_channel_doesnotexist(self):
         """
