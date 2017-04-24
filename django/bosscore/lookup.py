@@ -198,8 +198,9 @@ class LookUpKey:
 
 
             # update all channels that reference this experiment
-            all_lookup_objs = BossLookup.objects.filter(experiment_name=old_experiment_name).exclude(
-                lookup_key=lookup_key)
+            all_lookup_objs = BossLookup.objects.filter(
+                collection_name=collection_name, experiment_name=old_experiment_name).exclude(
+                    lookup_key=lookup_key)
             for item in all_lookup_objs:
 
                 split_key = item.boss_key.split('&')
