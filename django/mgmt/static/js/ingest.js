@@ -66,11 +66,6 @@ function ingest_job_list_formatter(response) {
 
 function get_job_callback(params, response){
     // Update the UI
-    //resource = response['resource']["boss_key"].split("&");
-    //$("#collection").text(resource[0]);
-    //$("#experiment").text(resource[1]);
-    //$("#channel").text(resource[2]);
-
     $("#collection").text(response['ingest_job']["collection"]);
     $("#experiment").text(response['ingest_job']["experiment"]);
     $("#channel").text(response['ingest_job']["channel"]);
