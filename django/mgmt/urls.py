@@ -31,6 +31,9 @@ urlpatterns = [
 
     url(r'coord/(?P<coord_name>[\w_-]+)/?', views.CoordinateFrame.as_view(), name='coord'),
 
+    url(r'ingest/(?P<ingest_job_id>\d+)?/?', views.IngestJob.as_view(), name='ingest_job'),
+    url(r'ingest/?', views.IngestJob.as_view(), name='ingest'),
+
     url(r'meta/(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/?', views.Meta.as_view(), name='meta'),
     url(r'meta/(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/?', views.Meta.as_view(), name='meta'),
     url(r'meta/(?P<collection>[\w_\-]+)/?$', views.Meta.as_view(), name='meta'),

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load mgmt %}
+{% load static %}
+
+{% block title %}
+Ingest Jobs
+{% endblock %}
+{% block subtitle %}
+Monitor and manage ingest jobs
+{% endblock %}
+
+
+{% block content %}
+{% url 'mgmt:ingest' as current_url %}
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 id="collections_panel" class="panel-title">Ingest Jobs</h3>
+              </div>
+              <div class="panel-body">
+                  <table id="ingest_table"
+                         data-toggle="table"
+                         data-response-handler="ingest_job_list_formatter"
+                         data-ajax="get_ingest_job_list"
+                         data-side-pagination="client"
+                         data-sort-name="id"
+                         data-sort-order="desc"
+                         data-pagination="true"
+                         data-search="true"
+                         data-page-size="10"
+                         data-striped="true"
+                         data-cache="false"
+                         data-show-refresh="true"
+                         data-smart-display="true"
+                         data-show-toggle="true">
+                      <thead>
+                      <tr>
+                          <th data-field="id" data-sortable="true" 	data-order="desc">ID</th>
+                          <th data-field="status" data-sortable="true">Status</th>
+                          <th data-field="resource" data-sortable="true">Resource</th>
+                          <th data-field="created" data-sortable="true">Created On</th>
+                          <th data-field="actions">Actions</th>
+                      </tr>
+                      </thead>
+                  </table>
+
+              </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+
+{% block js_includes %}
+<script type="text/javascript" src="{% static "js/ingest.js" %}"></script>
+<script type="text/javascript">
+$(function () {
+  if (hopscotch.getState() === "boss-tour:8") {
+    hopscotch.startTour(tour);
+  }
+});
+</script>
+{% endblock %}
+

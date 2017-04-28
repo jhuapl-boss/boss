@@ -32,3 +32,17 @@
     min-height:175px;
     height:175px;
 }
+
+.panel-body .progress{
+    height: 35px;
+    line-height: 15px;
+}
+
+.panel-body .progress .progress-bar {
+    font-size: 12px;
+    line-height: 35px;
+}
+
+.panel-title #progress-detail {
+    font-weight: 600 !important;
+}
