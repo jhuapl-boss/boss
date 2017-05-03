@@ -171,6 +171,7 @@ function complete_job(id){
 
 function cancel_job(id){
     $("#cancel-btn").addClass('disabled');
+
     swal({
         title: 'Are you sure?',
         text: "You won't be able to revert this!",
@@ -180,6 +181,12 @@ function cancel_job(id){
         cancelButtonColor: '#E74C3C',
         confirmButtonText: 'Yes, cancel it!'
     }).then(function () {
+        // Stop Polling
+        clearInterval(STATUS_TIMER);
+        $("#status").text("Attempting To Cancel");
+        $("#progress-detail").text("Cancelling Job. Please wait...");
+        $("#cancel-btn").addClass('disabled');
+
         $.ajax({
             url: API_ROOT + "ingest/" + id,
             type: "DELETE",
