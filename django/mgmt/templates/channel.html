@@ -25,6 +25,25 @@
         <div class="panel-body">
           <div class="row">
             <div class="col-xs-10 col-xs-offset-1">
+                <div class="row">
+                    <div class="col-xs-10 col-xs-offset-2">
+                        <div class="panel panel-default">
+                            <div class="row">
+                                <div class="col-xs-5">
+                                    <div class="panel-body">
+                                        <strong>Downsample Status: </strong> <span id="downsample_status" class="label label-default"> </span>
+                                    </div>
+                                </div>
+                                <div class="col-xs-7">
+                                    <div class="panel-body">
+                                        <a id="downsample-btn" type='button' class='btn btn-primary btn-sm action-button disabled' href='javascript:void(0);' onclick='start_downsample("{{ collection_name }}", "{{ experiment_name }}", "{{ channel_name }}")'><span class='glyphicon glyphicon-sort-by-attributes-alt' aria-hidden='true'></span> Start Downsample</a>
+                                        <a id="cancel-btn" type='button' class='btn btn-danger btn-sm action-button disabled' href='javascript:void(0);' onclick='cancel_downsample("{{collection_name }}", "{{ experiment_name }}", "{{ channel_name }}")'><span class='glyphicon glyphicon-remove' aria-hidden='true'></span> Cancel Downsample</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
               {% mgmt_url current_url action="update" as update_url %}
               {% update_form chan_form chan_error "Update Channel" update_url Creator=channel.creator %}
             </div>
@@ -118,6 +137,7 @@
 
 {% block js_includes %}
 <script type="text/javascript" src="{% static "js/channel.js" %}"></script>
+<script type="text/javascript" src="{% static "js/downsample.js" %}"></script>
   <script type="text/javascript">
     $(function () {
       $('[data-toggle="popover"]').popover();
@@ -128,6 +148,9 @@
       $('#permission_table').bootstrapTable({
         data: perm_data
       });
+
+      // Get the channel's downsample status and update the UI
+      get_downsample_status()
     });
   </script>
 {% endblock %}`
