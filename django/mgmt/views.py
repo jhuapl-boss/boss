@@ -808,3 +808,18 @@ class Meta(LoginRequiredMixin, View):
             else:
                 return HttpResponseRedirect(back_url)
         return self.get(request, collection, experiment, channel, meta_form=form)
+
+
+class IngestJob(LoginRequiredMixin, View):
+    def get(self, request, ingest_job_id=None):
+        args = {'user_roles': get_roles(request),
+                'id':ingest_job_id}
+
+        if not ingest_job_id:
+            # This is just the main ingest job listing
+            return HttpResponse(render_to_string('ingest_jobs.html', args, RequestContext(request)))
+
+        else:
+            # This is a single ingest job
+            return HttpResponse(render_to_string('ingest_job.html', args, RequestContext(request)))
+
