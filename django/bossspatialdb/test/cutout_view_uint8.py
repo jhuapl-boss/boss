@@ -1085,6 +1085,45 @@ class CutoutInterfaceViewUint8TestMixin(object):
         # Should be equal to what you wrote (data is only isotropic)
         np.testing.assert_array_equal(data_mat, test_mat)
 
+    def test_channel_uint8_no_cache_blosc_numpy(self):
+        """ Test uint8 data, not cuboid aligned, offset, blosc interface with a no-cache read
+
+        Test Requires >=2GB of memory!
+        """
+        test_mat = np.random.randint(1, 254, (1, 17, 530, 550))
+        test_mat = test_mat.astype(np.uint8)
+        bb = blosc.pack_array(test_mat)
+
+        # Create request
+        factory = APIRequestFactory()
+        request = factory.post('/' + version + '/cutout/col1/exp1/channel1/0/400:950/620:1150/75:92/', bb,
+                               content_type='application/blosc')
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='400:950', y_range='620:1150', z_range='75:92')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Create Request to get data you posted
+        request = factory.get('/' + version + '/cutout/col1/exp1/channel1/0/400:950/620:1150/75:92/?no-cache=true',
+                              HTTP_ACCEPT='application/blosc')
+
+        # log in user
+        force_authenticate(request, user=self.user)
+
+        # Make request
+        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                    resolution='0', x_range='400:950', y_range='620:1150', z_range='75:92').render()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Decompress
+        data_mat = blosc.unpack_array(response.content)
+
+        # Test for data equality (what you put in is what you got back!)
+        np.testing.assert_array_equal(data_mat, test_mat)
+
 # @patch('bossutils.configuration.BossConfig', new=MockBossConfig)
 # @patch('redis.StrictRedis', new=mock_strict_redis_client)
 # @patch('spdb.spatialdb.spatialdb.SpatialDB', MockSpatialDB)
