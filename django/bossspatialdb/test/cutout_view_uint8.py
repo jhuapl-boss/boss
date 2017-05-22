@@ -1092,7 +1092,8 @@ class CutoutInterfaceViewUint8TestMixin(object):
         """
         test_mat = np.random.randint(1, 254, (1, 17, 530, 550))
         test_mat = test_mat.astype(np.uint8)
-        bb = blosc.pack_array(test_mat)
+        h = test_mat.tobytes()
+        bb = blosc.compress(h, typesize=8)
 
         # Create request
         factory = APIRequestFactory()
@@ -1119,10 +1120,14 @@ class CutoutInterfaceViewUint8TestMixin(object):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Decompress
-        data_mat = blosc.unpack_array(response.content)
+
+        raw_data = blosc.decompress(response.content)
+        data_mat = np.fromstring(raw_data, dtype=np.uint8)
+        data_mat = np.reshape(data_mat, (1, 17, 530, 550), order='C')
 
         # Test for data equality (what you put in is what you got back!)
         np.testing.assert_array_equal(data_mat, test_mat)
+
 
 # @patch('bossutils.configuration.BossConfig', new=MockBossConfig)
 # @patch('redis.StrictRedis', new=mock_strict_redis_client)
