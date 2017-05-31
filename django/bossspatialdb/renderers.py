@@ -141,7 +141,7 @@ class JpegRenderer(renderers.BaseRenderer):
         # Save to Image
         jpeg_image = Image.fromarray(data["data"].data)
         img_file = io.BytesIO()
-        jpeg_image.save(img_file, "JPEG", quality=85)
+        jpeg_image.save(img_file, "JPEG", quality=95)
 
         # Send file
         img_file.seek(0)
