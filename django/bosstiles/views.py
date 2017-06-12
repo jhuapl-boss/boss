@@ -71,6 +71,14 @@ class CutoutTile(APIView):
         except BossError as err:
             return err.to_http()
 
+        if "no-cache" in request.query_params:
+            if request.query_params["no-cache"].lower() == "true":
+                no_cache = True
+            else:
+                no_cache = False
+        else:
+            no_cache = False
+
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
 
@@ -97,7 +105,7 @@ class CutoutTile(APIView):
 
         # Do a cutout as specified
         data = cache.cutout(resource, corner, extent, req.get_resolution(),
-                            [req.get_time().start, req.get_time().stop])
+                            [req.get_time().start, req.get_time().stop], no_cache=no_cache)
 
         # Covert the cutout back to an image and return it
         if orientation == 'xy':
@@ -143,8 +151,6 @@ class Tile(APIView):
         :return:
         """
         # TODO: DMK Merge Tile and Image view once updated request validation is sorted out
-
-
         # Process request and validate
         try:
             request_args = {
@@ -163,6 +169,14 @@ class Tile(APIView):
             req = BossRequest(request, request_args)
         except BossError as err:
             return err.to_http()
+
+        if "no-cache" in request.query_params:
+            if request.query_params["no-cache"].lower() == "true":
+                no_cache = True
+            else:
+                no_cache = False
+        else:
+            no_cache = False
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -190,7 +204,7 @@ class Tile(APIView):
 
         # Do a cutout as specified
         data = cache.cutout(resource, corner, extent, req.get_resolution(),
-                            [req.get_time().start, req.get_time().stop])
+                            [req.get_time().start, req.get_time().stop], no_cache=no_cache)
 
         # Covert the cutout back to an image and return it
         if orientation == 'xy':
