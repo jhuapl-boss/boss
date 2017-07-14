@@ -25,7 +25,7 @@ config = bossutils.configuration.BossConfig()
 
 SECRET_KEY = vault.read('secret/endpoint/django', 'secret_key')
 
-DEBUG = False
+DEBUG = True
 
 # ToDo: update with actual allowed host names.
 ALLOWED_HOSTS = ['*']

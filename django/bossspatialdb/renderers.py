@@ -20,6 +20,7 @@ import zlib
 import io
 from PIL import Image
 
+from bosscore.renderer_helper import check_for_403
 
 class BloscPythonRenderer(renderers.BaseRenderer):
     """ A DRF renderer for a blosc encoded cube of data using the numpy interface
@@ -31,6 +32,7 @@ class BloscPythonRenderer(renderers.BaseRenderer):
     charset = None
     render_style = 'binary'
 
+    @check_for_403
     def render(self, data, media_type=None, renderer_context=None):
 
         if not data["data"].data.flags['C_CONTIGUOUS']:
@@ -52,7 +54,17 @@ class BloscRenderer(renderers.BaseRenderer):
     charset = None
     render_style = 'binary'
 
+    @check_for_403
     def render(self, data, media_type=None, renderer_context=None):
+
+        if renderer_context['response'].status_code == 403:
+            renderer_context["accepted_media_type"] = 'application/json'
+            self.media_type = 'application/json'
+            self.format = 'json'
+            err_msg = {"status": 403, "message": "Access denied, are you logged in?",
+                       "code": 2005}
+            jr = JSONRenderer()
+            return jr.render(err_msg, 'application/json', renderer_context)
 
         if not data["data"].data.flags['C_CONTIGUOUS']:
             data["data"].data = np.ascontiguousarray(data["data"].data, dtype=data["data"].data.dtype)
@@ -75,6 +87,7 @@ class NpygzRenderer(renderers.BaseRenderer):
     charset = None
     render_style = 'binary'
 
+    @check_for_403
     def render(self, data, media_type=None, renderer_context=None):
 
         if not data["data"].data.flags['C_CONTIGUOUS']:
@@ -106,6 +119,7 @@ class JpegRenderer(renderers.BaseRenderer):
     charset = None
     render_style = 'binary'
 
+    @check_for_403
     def render(self, data, media_type=None, renderer_context=None):
 
         # Return data, squeezing time dimension as this only works with 3D data
@@ -115,6 +129,7 @@ class JpegRenderer(renderers.BaseRenderer):
         else:
             # This appears to contain time data. Error out
             renderer_context["response"].status_code = 400
+            renderer_context['response']['Content-Type'] = 'application/json'
             renderer_context["accepted_media_type"] = 'application/json'
             self.media_type = 'application/json'
             self.format = 'json'
@@ -126,6 +141,7 @@ class JpegRenderer(renderers.BaseRenderer):
         if renderer_context['view'].bit_depth != 8:
             # This renderer only works on uint8 data
             renderer_context["response"].status_code = 400
+            renderer_context['response']['Content-Type'] = 'application/json'
             renderer_context["accepted_media_type"] = 'application/json'
             self.media_type = 'application/json'
             self.format = 'json'

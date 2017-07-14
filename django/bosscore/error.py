@@ -46,6 +46,7 @@ class ErrorCodes(IntEnum):
     MISSING_PERMISSION = 3001
     UNRECOGNIZED_PERMISSION = 3002
     INGEST_NOT_CREATOR = 3003
+    ACCESS_DENIED_UNKNOWN = 3004        # User may not even be logged in. 
 
     # Database errors
     RESOURCE_NOT_FOUND = 4000
