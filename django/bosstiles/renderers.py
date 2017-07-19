@@ -27,18 +27,6 @@ class PNGRenderer(renderers.BaseRenderer):
 
     @check_for_403
     def render(self, data, media_type=None, renderer_context=None):
-        """
-        if renderer_context['response'].status_code == 403:
-            renderer_context["accepted_media_type"] = 'application/json'
-            renderer_context['response']['Content-Type'] = 'application/json'
-            self.media_type = 'application/json'
-            self.format = 'json'
-            err_msg = {"status": 403, "message": "Access denied, are you logged in?",
-                       "code": 2004}
-            jr = JSONRenderer()
-            return jr.render(err_msg, 'application/json', renderer_context)
-        """
-
         file_obj = io.BytesIO()
         data.save(file_obj, "PNG")
         file_obj.seek(0)
@@ -55,17 +43,6 @@ class JPEGRenderer(renderers.BaseRenderer):
 
     @check_for_403
     def render(self, data, media_type=None, renderer_context=None):
-        """
-        if renderer_context['response'].status_code == 403:
-            renderer_context["accepted_media_type"] = 'application/json'
-            self.media_type = 'application/json'
-            self.format = 'json'
-            err_msg = {"status": 403, "message": "Access denied, are you logged in?",
-                       "code": 2006}
-            jr = JSONRenderer()
-            return jr.render(err_msg, 'application/json', renderer_context)
-        """
-
         file_obj = io.BytesIO()
         data.save(file_obj, "JPEG")
         file_obj.seek(0)
