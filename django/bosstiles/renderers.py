@@ -13,6 +13,8 @@
 # limitations under the License.
 import io
 from rest_framework import renderers
+from rest_framework.renderers import JSONRenderer
+from bosscore.renderer_helper import check_for_403
 
 
 class PNGRenderer(renderers.BaseRenderer):
@@ -23,6 +25,7 @@ class PNGRenderer(renderers.BaseRenderer):
     charset = None
     render_style = 'binary'
 
+    @check_for_403
     def render(self, data, media_type=None, renderer_context=None):
         file_obj = io.BytesIO()
         data.save(file_obj, "PNG")
@@ -38,6 +41,7 @@ class JPEGRenderer(renderers.BaseRenderer):
     charset = None
     render_style = 'binary'
 
+    @check_for_403
     def render(self, data, media_type=None, renderer_context=None):
         file_obj = io.BytesIO()
         data.save(file_obj, "JPEG")
