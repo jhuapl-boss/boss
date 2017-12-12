@@ -388,7 +388,9 @@ class Downsample(APIView):
             'res_lt_max': int(channel.base_resolution) + 1 < int(experiment.num_hierarchy_levels),
 
             'type': experiment.hierarchy_method,
-            'iso_resolution': int(resource.get_isotropic_level())
+            'iso_resolution': int(resource.get_isotropic_level()),
+
+            'downsample_volume_sfn': boss_config['sfn']['downsample_volume_sfn'],
         }
 
         session = bossutils.aws.get_session()
