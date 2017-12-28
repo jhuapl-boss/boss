@@ -388,7 +388,8 @@ class Downsample(APIView):
             'res_lt_max': int(channel.base_resolution) + 1 < int(experiment.num_hierarchy_levels),
 
             # DP NOTE: hardcode for the moment, users will expect not all resolutions will be indexed
-            'annotation_index_max': 1, # Create index for resolutions  1, 2 (Resolution 0 should already exist)
+            'annotation_index_max': 1,  # Set to 1 to avoid resolutions on other downsampling levels other then 0.
+                                        # (Resolution 0 should already exist)
 
             'type': experiment.hierarchy_method,
             'iso_resolution': int(resource.get_isotropic_level()),
