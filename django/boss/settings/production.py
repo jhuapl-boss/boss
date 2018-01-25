@@ -96,5 +96,6 @@ OBJECTIO_CONFIG = {"s3_flush_queue": config['aws']['s3-flush-queue'],
                    "id_index_table": config['aws']['id-index-table'],
                    "id_count_table": config['aws']['id-count-table'],
                    "prod_mailing_list": config["aws"]["prod_mailing_list"],
-                   "id_index_new_chunk_threshold": config["aws"]["id-index-new-chunk-threshold"]
+                   "id_index_new_chunk_threshold": config["aws"]["id-index-new-chunk-threshold"],
+                   "index_deadletter_queue": config["aws"]["index-deadletter-queue"]
                    }
