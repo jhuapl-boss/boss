@@ -426,7 +426,9 @@ class IngestManager:
 
             'z_start': ingest_job.z_start,
             'z_stop': ingest_job.z_stop,
-            'z_tile_size': 16,
+            'z_tile_size': 1,
+
+
         }
 
         session = bossutils.aws.get_session()
