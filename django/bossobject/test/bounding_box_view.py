@@ -37,6 +37,7 @@ version = settings.BOSS_VERSION
 
 class BoundingBoxMixin(object):
 
+    @unittest.skip('Skipping - currently indexing disabled')
     def test_get_object_bounding_box_single_cuboid(self):
         """ Test getting the bounding box of a object"""
 
@@ -157,6 +158,7 @@ class BoundingBoxMixin(object):
         self.assertEqual(bb['y_range'], [0, 1024])
         self.assertEqual(bb['z_range'], [0, 32])
 
+    @unittest.skip('Skipping - currently indexing disabled')
     def test_get_object_bounding_box_tight_single_cuboid(self):
         """ Test getting the bounding box of a object"""
 
