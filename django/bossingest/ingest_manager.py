@@ -313,7 +313,8 @@ class IngestManager:
             self.delete_ingest_queue()
 
             # delete any pending entries in the tile index database and tile bucket
-            self.delete_tiles(ingest_job)
+            # Commented out due to removal of tile index's GSI.
+            # self.delete_tiles(ingest_job)
 
             ingest_job.status = job_status
             ingest_job.ingest_queue = None
@@ -663,6 +664,12 @@ class IngestManager:
     def delete_tiles(self, ingest_job):
         """
         Delete all remaining tiles from the tile index database and tile bucket
+
+        5/24/2018 - This code depends on a GSI for the tile index.  The GSI was
+        removed because its key didn't shard well.  Cleanup will now be handled
+        by TTL policies applied to the tile bucket and the tile index.  This
+        method will be removed once that code is merged.
+
         Args:
             ingest_job: Ingest job model
 
