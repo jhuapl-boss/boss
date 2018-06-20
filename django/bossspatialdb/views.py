@@ -373,7 +373,6 @@ class Downsample(APIView):
 
             's3_bucket': boss_config["aws"]["cuboid_bucket"],
             's3_index': boss_config["aws"]["s3-index-table"],
-            'id_index': boss_config["aws"]["id-index-table"],
 
             'x_start': int(coord_frame.x_start),
             'y_start': int(coord_frame.y_start),
@@ -387,14 +386,10 @@ class Downsample(APIView):
             'resolution_max': int(experiment.num_hierarchy_levels),
             'res_lt_max': int(channel.base_resolution) + 1 < int(experiment.num_hierarchy_levels),
 
-            # DP NOTE: hardcode for the moment, users will expect not all resolutions will be indexed
-            'annotation_index_max': 1,  # Set to 1 to avoid resolutions on other downsampling levels other then 0.
-                                        # (Resolution 0 should already exist)
-
             'type': experiment.hierarchy_method,
             'iso_resolution': int(resource.get_isotropic_level()),
 
-            'downsample_volume_sfn': boss_config['sfn']['downsample_volume_sfn'],
+            'downsample_volume_lambda': boss_config['lambda']['downsample_volume'],
         }
 
         session = bossutils.aws.get_session()
