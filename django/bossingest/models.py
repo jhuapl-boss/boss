@@ -48,6 +48,11 @@ class IngestJob(models.Model):
     experiment = models.CharField(max_length=128)
     channel = models.CharField(max_length=128)
 
+    # Store the id for all these in case the names are changed.
+    collection_id = models.IntegerField(null=True)
+    experiment_id = models.IntegerField(null=True)
+    channel_id = models.IntegerField(null=True)
+
     resolution = models.IntegerField()
     x_start = models.IntegerField()
     y_start = models.IntegerField()
