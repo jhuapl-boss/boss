@@ -15,7 +15,7 @@
 from rest_framework.test import APITestCase
 from django.core.urlresolvers import resolve
 from django.conf import settings
-from bossingest.views import IngestJobView, IngestJobStatusView
+from bossingest.views import IngestJobView, IngestJobStatusView, IngestJobCompleteView
 
 version = settings.BOSS_VERSION
 
@@ -48,5 +48,15 @@ class BossIngestServiceRoutingTests(APITestCase):
         """
         match = resolve('/' + version + '/ingest/1/status')
         self.assertEqual(match.func.__name__, IngestJobStatusView.as_view().__name__)
+
+
+    def test_ingest_urls_with_id_status_resolves_to_BossIngestComplete_views(self):
+        """
+        Test that the ingest complete url resolves to the ingest complete view
+
+        Returns: None
+        """
+        match = resolve('/' + version + '/ingest/1/complete')
+        self.assertEqual(match.func.__name__, IngestJobCompleteView.as_view().__name__)
 
 

@@ -23,12 +23,20 @@ class IngestJob(models.Model):
     creator = models.ForeignKey(settings.AUTH_USER_MODEL)
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True)
+
+    # Ingest status constants.
+    PREPARING = 0
+    UPLOADING = 1
+    COMPLETE = 2
+    DELETED = 3
+    FAILED = 4
+
     INGEST_STATUS_OPTIONS = (
-            (0, 'Preparing'),
-            (1, 'Uploading'),
-            (2, 'Complete'),
-            (3, 'Deleted'),
-            (4, 'Failed'),
+            (PREPARING, 'Preparing'),
+            (UPLOADING, 'Uploading'),
+            (COMPLETE, 'Complete'),
+            (DELETED, 'Deleted'),
+            (FAILED, 'Failed')
         )
     status = models.IntegerField(choices=INGEST_STATUS_OPTIONS, default=0)
     upload_queue = models.URLField(max_length=512, null=True)
