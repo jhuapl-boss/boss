@@ -24,6 +24,7 @@ from ingestclient.core.backend import BossBackend
 
 from bossingest.serializers import IngestJobCreateSerializer, IngestJobListSerializer
 from bossingest.models import IngestJob
+from bossingest.utils import query_tile_index, patch_upload_queue
 
 from bosscore.error import BossError, ErrorCodes, BossResourceNotFoundError
 from bosscore.models import Collection, Experiment, Channel
@@ -43,6 +44,7 @@ from bossutils.ingestcreds import IngestCredentials
 config = bossutils.configuration.BossConfig()
 INGEST_BUCKET = config["aws"]["ingest_bucket"]
 INGEST_LAMBDA = config["lambda"]["ingest_function"]
+TILE_INDEX = config["aws"]["tile-index-table"]
 
 CONNECTER = '&'
 MAX_NUM_MSG_PER_FILE = 10000
@@ -287,6 +289,28 @@ class IngestManager:
         queue = IngestQueue(self.nd_proj, endpoint_url=None)
         return queue
 
+    def verify_ingest_job(self, ingest_job):
+        """
+        Verify that all tiles ingested successfully
+        Args:
+            ingest_job (IngestJob):
+
+        Returns:
+            (bool): True == verified
+        """
+        try:
+            csv_file = query_tile_index(ingest_job.id, TILE_INDEX, bossutils.aws.get_region())
+            if csv_file is not None:
+                upload_queue = self.get_ingest_job_upload_queue(ingest_job)
+                args = self._generate_upload_queue_args(ingest_job)
+                patch_upload_queue(upload_queue.queue, args, csv_file)
+                return False
+
+            # success
+            return True
+        except Exception as e:
+            raise BossError("Unable to verify ingest job: {}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
+
     def cleanup_ingest_job(self, ingest_job, job_status):
         """
         Delete or complete an ingest job with a specific id. Note this deletes the queues, credentials and all the remaining tiles
@@ -313,7 +337,8 @@ class IngestManager:
             self.delete_ingest_queue()
 
             # delete any pending entries in the tile index database and tile bucket
-            self.delete_tiles(ingest_job)
+            # Commented out due to removal of tile index's GSI.
+            # self.delete_tiles(ingest_job)
 
             ingest_job.status = job_status
             ingest_job.ingest_queue = None
@@ -394,17 +419,32 @@ class IngestManager:
             raise BossError("Unable to generate upload tasks for the ingest service. Please specify a ingest job",
                             ErrorCodes.UNABLE_TO_VALIDATE)
 
-        ingest_job = self.job
+        args = self._generate_upload_queue_args(self.job)
+        args['upload_sfn'] = config['sfn']['upload_sfn']
+
+        session = bossutils.aws.get_session()
+        populate_sfn = config['sfn']['populate_upload_queue']
+        arn = bossutils.aws.sfn_execute(session, populate_sfn, args)
+
+        return arn
+
+    def _generate_upload_queue_args(self, ingest_job):
+        """
+        Generate dictionary to include in messages placed in the tile upload queue.
+        
+        Args:
+            ()
+
+        Returns:
+            (dict)
+        """
 
         bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
         lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
         [col_id, exp_id, ch_id] = lookup_key.split('&')
         project_info = [col_id, exp_id, ch_id]
 
-        # TODO DP ???: create IngestJob method that creates the StepFunction arguments?
         args = {
-            'upload_sfn': config['sfn']['upload_sfn'],
-
             'job_id': ingest_job.id,
             'upload_queue': ingest_job.upload_queue,
             'ingest_queue': ingest_job.ingest_queue,
@@ -426,14 +466,12 @@ class IngestManager:
 
             'z_start': ingest_job.z_start,
             'z_stop': ingest_job.z_stop,
-            'z_tile_size': 16,
+            'z_tile_size': 1,
+
+            'z_chunk_size': 16
         }
 
-        session = bossutils.aws.get_session()
-        populate_sfn = config['sfn']['populate_upload_queue']
-        arn = bossutils.aws.sfn_execute(session, populate_sfn, args)
-
-        return arn
+        return args
 
     def generate_upload_tasks(self, job_id=None):
         """
@@ -661,6 +699,12 @@ class IngestManager:
     def delete_tiles(self, ingest_job):
         """
         Delete all remaining tiles from the tile index database and tile bucket
+
+        5/24/2018 - This code depends on a GSI for the tile index.  The GSI was
+        removed because its key didn't shard well.  Cleanup will now be handled
+        by TTL policies applied to the tile bucket and the tile index.  This
+        method will be removed once that code is merged.
+
         Args:
             ingest_job: Ingest job model
 

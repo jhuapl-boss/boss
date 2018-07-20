@@ -13,12 +13,16 @@
 # limitations under the License.
 from __future__ import absolute_import
 import json
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
-from bossingest.ingest_manager import IngestManager
+from bossingest.ingest_manager import IngestManager, query_tile_index
+from bossingest.models import IngestJob
 from bossingest.test.setup import SetupTests
 from bosscore.test.setup_db import SetupTestDB
+from bosscore.lookup import LookUpKey
+import bossutils.aws
 from django.contrib.auth.models import User
+from ndingest.ndqueue.uploadqueue import UploadQueue
 from rest_framework.test import APITestCase
 
 
@@ -96,3 +100,45 @@ class BossIngestManagerTest(APITestCase):
 #         ingest_mgmr.job = job
 # #        ingest_mgmr.create_ingest_credentials()
 
+    @patch('bossutils.aws.get_region', return_value='us-east-1')
+    @patch('bossingest.ingest_manager.query_tile_index', return_value=None)
+    def test_verify_ingest_job_good(self, fake_query_tile_ind, fake_get_region):
+        """Test with no chunks left in tile index"""
+        ingest_mgmr = IngestManager()
+        ingest_job = IngestJob()
+        ingest_job.status = IngestJob.UPLOADING
+
+        with patch.object(ingest_job, 'save') as fake_save:
+            actual = ingest_mgmr.verify_ingest_job(ingest_job)
+        self.assertTrue(actual)
+
+    @patch('bossutils.aws.get_region', return_value='us-east-1')
+    @patch('bossingest.ingest_manager.LookUpKey')
+    @patch('bossingest.ingest_manager.UploadQueue')
+    @patch('bossingest.ingest_manager.patch_upload_queue')
+    @patch('bossingest.ingest_manager.query_tile_index', return_value='chunks.csv')
+    def test_verify_ingest_job_not_ready(
+        self, fake_query_tile_ind, fake_patch_upl_q, fake_upload_q, fake_lookup_key, fake_get_region
+    ):
+        """Test false returned when chunks still remain in tile index"""
+        ingest_mgmr = IngestManager()
+        ingest_job = IngestJob()
+        ingest_job.status = IngestJob.UPLOADING
+        ingest_job.collection = 'test_coll'
+        ingest_job.experiment = 'test_exp'
+        ingest_job.channel = 'test_chan'
+        ingest_job.resolution = 0
+        ingest_job.id = 8
+
+        queue = MagicMock(spec=UploadQueue)
+        queue.queue = MagicMock()
+        fake_upload_q.return_value = queue
+        key = MagicMock()
+        key.lookup_key = '3&8&1'
+        fake_lookup_key.get_lookup_key.return_value = key
+
+        # Method under test.
+        actual = ingest_mgmr.verify_ingest_job(ingest_job)
+
+        self.assertFalse(actual)
+        self.assertEqual(IngestJob.UPLOADING, ingest_job.status)

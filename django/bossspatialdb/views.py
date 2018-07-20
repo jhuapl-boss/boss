@@ -391,9 +391,10 @@ class Downsample(APIView):
             'iso_resolution': int(resource.get_isotropic_level()),
 
             # This step function executes: boss-tools/activities/resolution_hierarchy.py
-            'downsample_volume_sfn': boss_config['sfn']['downsample_volume_sfn'],
+            'downsample_volume_lambda': boss_config['lambda']['downsample_volume'],
 
-            'aws_region': get_region()
+            'aws_region': get_region(),
+
         }
 
         session = bossutils.aws.get_session()
