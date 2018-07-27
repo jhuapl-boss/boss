@@ -129,6 +129,10 @@ class BossGroupMember(APIView):
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
 
+            if user_name == 'bossadmin':
+                return BossHTTPError('Cannot remove bossadmin from any group'
+                                     .format(group_name), ErrorCodes.BAD_REQUEST)
+
             # Check the users permissions.
             if request.user.has_perm("maintain_group", bgroup):
                 usr = User.objects.get(username=user_name)
@@ -254,6 +258,10 @@ class BossGroupMaintainer(APIView):
                                      .format(group_name), ErrorCodes.BAD_REQUEST)
             if user_name is None:
                 return BossHTTPError('Missing username parameter in post.', ErrorCodes.INVALID_URL)
+            
+            elif user_name == 'bossadmin':
+                return BossHTTPError('Cannot remove boassadmin maintainer from any group',
+                                     ErrorCodes.BAD_REQUEST)
 
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
@@ -422,7 +430,7 @@ class BossUserGroup(APIView):
             if request.user == bgroup.creator or bpm.has_role('admin'):
                 if group_name == 'admin' or group_name == 'public':
                     return BossHTTPError('Admin and public groups cannot be deleted.',
-                                        ErrorCodes.ACCESS_DENIED_UNKNOWN)  
+                                        ErrorCodes.BAD_REQUEST)  
                 else:
                     group.delete()
                     return Response(status=204)
