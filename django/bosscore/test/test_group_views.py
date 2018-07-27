@@ -145,7 +145,6 @@ class GroupsTests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
-
 class GroupMemberTests(APITestCase):
     """
     Class to test gropup member views
@@ -283,6 +282,25 @@ class GroupMemberTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['result'], False)
+
+    def test_remove_bossadmin_member_invalid(self):
+
+        # Add user to the group
+        url = '/' + version + '/groups/unittest/members/bossadmin/'
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 204)
+
+        """ Remove bossadmin member from a group. This is invalid"""
+        # Check if user is a member of the group
+        url = '/' + version + '/groups/unittest/members/bossadmin/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['result'], True)
+
+        # Remove user from the group
+        url = '/' + version + '/groups/unittest/members/bossadmin/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 400)
 
     def test_group_member_invalid_group(self):
         """ Test group-memeber api calls with a group that does not exist """
@@ -507,6 +525,20 @@ class GroupMaintainerTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('testuser', response.data['maintainers'])
 
+    def test_remove_bossadmin_maintainer_group_fails(self):
+        """ Test removal of bossadmin as a maintainer of a group fails"""
+
+        # Check if bossadmin user is a member of the group
+        url = '/' + version + '/groups/unittest/maintainers/bossadmin/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['result'], True)
+
+        # Attempt removal of bossadmin from the group
+        url = '/' + version + '/groups/unittest/maintainers/bossadmin/'
+        response = self.client.delete(url)
+        self.assertRaises(Exception)
+
     def test_group_maintainer_invalid_group(self):
         """ Test group-maintainer api calls with a group that does not exist """
 
@@ -599,4 +631,3 @@ class GroupMaintainerTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(set(response.data['maintainers']), set(['testuser']))
-
