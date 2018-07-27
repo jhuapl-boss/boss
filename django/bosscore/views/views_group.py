@@ -238,7 +238,7 @@ class BossGroupMaintainer(APIView):
     @check_role("resource-manager")
     def delete(self, request, group_name, user_name):
         """
-        Removes a maintainer form the group
+        Removes a maintainer from the group
         Args:
             request: Django rest framework request
             group_name:Group name from the request
@@ -416,13 +416,16 @@ class BossUserGroup(APIView):
 
         """
         try:
-
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
             bpm = BossPrivilegeManager(request.user)
             if request.user == bgroup.creator or bpm.has_role('admin'):
-                group.delete()
-                return Response(status=204)
+                if group_name == 'admin' or group_name == 'public':
+                    return BossHTTPError('Admin and public groups cannot be deleted.',
+                                        ErrorCodes.ACCESS_DENIED_UNKNOWN)  
+                else:
+                    group.delete()
+                    return Response(status=204)
             else:
                 return BossHTTPError('Groups can only be deleted by the creator or administrator',
                                      ErrorCodes.MISSING_ROLE)
