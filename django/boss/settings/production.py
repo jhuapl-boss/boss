@@ -41,19 +41,21 @@ DATABASES = {
     }
 }
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://{}:6379/3".format(config['aws']['cache']),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+if config['aws']['cache-session'] != '':
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": "redis://{}:6379/{}".format(
+                config['aws']['cache-session'], config['aws']['cache-session-db']),
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            }
         }
     }
-}
 
-# DP ???: Are these needed, it looks like they just ensure that the default cache is used
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
-SESSION_CACHE_ALIAS = 'default'
+    # DP ???: Are these needed, it looks like they just ensure that the default cache is used
+    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    SESSION_CACHE_ALIAS = 'default'
 
 INSTALLED_APPS.append("bossoidc")
 INSTALLED_APPS.append("djangooidc")
