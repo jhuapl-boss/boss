@@ -147,8 +147,8 @@
 <script type="text/javascript" src="{% static "js/tour.js" %}"></script>
 <script type="text/javascript">
   //var API_ROOT= window.location.protocol + "//" + window.location.hostname + "/" + window.location.pathname.split("/")[1] + "/";
-  var API_ROOT = window.location.protocol + "//" + window.location.hostname + "/" + "{% url 'mgmt:home' %}".split("/")[1] + "/";
-  var MGMT_ROOT = window.location.protocol + "//" + window.location.hostname + "{% url 'mgmt:home' %}";
+  var API_ROOT = window.location.protocol + "//" + window.location.host + "/" + "{% url 'mgmt:home' %}".split("/")[1] + "/";
+  var MGMT_ROOT = window.location.protocol + "//" + window.location.host + "{% url 'mgmt:home' %}";
   var USER_ROLES= {% autoescape off %}{{ user_roles }}{% endautoescape %};
 </script>
 
