@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import authentication, permissions
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
+from rest_framework.parsers import JSONParser
 
 from .parsers import BloscParser, BloscPythonParser, NpygzParser, is_too_large
 from .renderers import BloscRenderer, BloscPythonRenderer, NpygzRenderer, JpegRenderer
@@ -234,7 +235,7 @@ class Downsample(APIView):
     * Requires authentication.
     """
     # Set Parser and Renderer
-    parser_classes = (JSONRenderer, BrowsableAPIRenderer)
+    parser_classes = (JSONParser, BrowsableAPIRenderer)
     renderer_classes = (JSONRenderer, BrowsableAPIRenderer)
 
     def get(self, request, collection, experiment, channel):
@@ -291,6 +292,8 @@ class Downsample(APIView):
                 channel_obj.downsample_status = "DOWNSAMPLED"
                 channel_obj.save()
                 to_renderer["status"] = "DOWNSAMPLED"
+
+                # DP TODO: Clear cache of any data from the channel
 
             elif status == "FAILED" or status == "TIMED_OUT":
                 # Change status to FAILED
@@ -356,8 +359,15 @@ class Downsample(APIView):
         channel = resource.get_channel()
         if channel.downsample_status.upper() == "IN_PROGRESS":
             return BossHTTPError("Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
-        elif channel.downsample_status.upper() == "DOWNSAMPLED":
+        elif channel.downsample_status.upper() == "DOWNSAMPLED" and \
+             not request.user.is_staff:
             return BossHTTPError("Channel is already downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
+
+        if request.user.is_staff:
+            # DP HACK: allow admin users to override the coordinate frame
+            frame = request.data
+        else:
+            frame = {}
 
         # Call Step Function
         boss_config = bossutils.configuration.BossConfig()
@@ -365,6 +375,10 @@ class Downsample(APIView):
         coord_frame = resource.get_coord_frame()
         lookup_key = resource.get_lookup_key()
         col_id, exp_id, ch_id = lookup_key.split("&")
+
+        def get_frame(idx):
+            return int(frame.get(idx, getattr(coord_frame, idx)))
+
         args = {
             'collection_id': int(col_id),
             'experiment_id': int(exp_id),
@@ -375,13 +389,13 @@ class Downsample(APIView):
             's3_bucket': boss_config["aws"]["cuboid_bucket"],
             's3_index': boss_config["aws"]["s3-index-table"],
 
-            'x_start': int(coord_frame.x_start),
-            'y_start': int(coord_frame.y_start),
-            'z_start': int(coord_frame.z_start),
+            'x_start': get_frame('x_start'),
+            'y_start': get_frame('y_start'),
+            'z_start': get_frame('z_start'),
 
-            'x_stop': int(coord_frame.x_stop),
-            'y_stop': int(coord_frame.y_stop),
-            'z_stop': int(coord_frame.z_stop),
+            'x_stop': get_frame('x_stop'),
+            'y_stop': get_frame('y_stop'),
+            'z_stop': get_frame('z_stop'),
 
             'resolution': int(channel.base_resolution),
             'resolution_max': int(experiment.num_hierarchy_levels),
