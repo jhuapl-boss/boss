@@ -30,9 +30,11 @@ from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
 from bosscore.models import Channel
 
 from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
+from spdb.spatialdb.rediskvio import RedisKVIO
 from spdb import project
 import bossutils
 from bossutils.aws import get_region
+from bossutils.logger import BossLogger
 
 
 class Cutout(APIView):
@@ -293,7 +295,18 @@ class Downsample(APIView):
                 channel_obj.save()
                 to_renderer["status"] = "DOWNSAMPLED"
 
-                # DP TODO: Clear cache of any data from the channel
+                # DP NOTE: Clear the cache of any cubes for the channel
+                #          This is to prevent serving stale data after
+                #          (re)downsampling
+                try:
+                    cache = RedisKVIO(settings.KVIO_SETTINGS)
+                    pipe = cache.cache_client.pipeline()
+                    for key in pipe.scan_iter("CACHED-CUBOID&"+lookup_key+"&*"):
+                        pipe.delete(key)
+                    pipe.execute()
+                except Exception as ex:
+                    log = BossLogger().logger
+                    log.exception("Problem clearing cache after downsample finished")
 
             elif status == "FAILED" or status == "TIMED_OUT":
                 # Change status to FAILED
