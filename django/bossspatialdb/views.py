@@ -295,6 +295,9 @@ class Downsample(APIView):
                 channel_obj.save()
                 to_renderer["status"] = "DOWNSAMPLED"
 
+                # DP NOTE: This code should be moved to spdb when change
+                #          tracking is added to automatically calculate
+                #          frame extents for the user
                 # DP NOTE: Clear the cache of any cubes for the channel
                 #          This is to prevent serving stale data after
                 #          (re)downsampling
