@@ -298,15 +298,18 @@ class Downsample(APIView):
                 # DP NOTE: Clear the cache of any cubes for the channel
                 #          This is to prevent serving stale data after
                 #          (re)downsampling
-                try:
-                    cache = RedisKVIO(settings.KVIO_SETTINGS)
-                    pipe = cache.cache_client.pipeline()
-                    for key in pipe.scan_iter("CACHED-CUBOID*&"+lookup_key+"&*"):
-                        pipe.delete(key)
-                    pipe.execute()
-                except Exception as ex:
-                    log = BossLogger().logger
-                    log.exception("Problem clearing cache after downsample finished")
+                log = BossLogger().logger
+                for pattern in ("CACHED-CUBOID&"+lookup_key+"&*",
+                                "CACHED-CUBOID&ISO&"+lookup_key+"&*"):
+                    log.debug("Clearing cache of {} cubes".format(pattern))
+                    try:
+                        cache = RedisKVIO(settings.KVIO_SETTINGS)
+                        pipe = cache.cache_client.pipeline()
+                        for key in pipe.scan_iter(match=pattern):
+                            pipe.delete(key)
+                        pipe.execute()
+                    except Exception as ex:
+                        log.exception("Problem clearing cache after downsample finished")
 
             elif status == "FAILED" or status == "TIMED_OUT":
                 # Change status to FAILED
