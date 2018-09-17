@@ -305,7 +305,7 @@ class Downsample(APIView):
                     try:
                         cache = RedisKVIO(settings.KVIO_SETTINGS)
                         pipe = cache.cache_client.pipeline()
-                        for key in pipe.scan_iter(match=pattern):
+                        for key in cache.scan_iter(match=pattern):
                             pipe.delete(key)
                         pipe.execute()
                     except Exception as ex:
