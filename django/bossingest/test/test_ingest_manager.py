@@ -88,18 +88,6 @@ class BossIngestManagerTest(APITestCase):
         tile_bucket_name = ingest_mgmr.get_tile_bucket()
         assert(tile_bucket_name is not None)
 
-
-#     def test_create_ingest_credentials(self):
-#         """"""
-#         ingest_mgmr = IngestManager()
-#         ingest_mgmr = IngestManager()
-#         ingest_mgmr.validate_config_file(self.example_config_data)
-#         ingest_mgmr.validate_properties()
-#         ingest_mgmr.owner = self.user.pk
-#         job = ingest_mgmr.create_ingest_job()
-#         ingest_mgmr.job = job
-# #        ingest_mgmr.create_ingest_credentials()
-
     @patch('bossutils.aws.get_region', return_value='us-east-1')
     @patch('bossingest.ingest_manager.query_tile_index', return_value=None)
     def test_verify_ingest_job_good(self, fake_query_tile_ind, fake_get_region):

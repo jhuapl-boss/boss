@@ -190,9 +190,6 @@ class IngestManager:
                 self.job.tile_count = num_tiles_in_x * num_tiles_in_y * num_tiles_in_z * num_tiles_in_t
                 self.job.save()
 
-                # tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
-                # self.create_ingest_credentials(upload_queue, tile_bucket)
-
         except BossError as err:
             raise BossError(err.message, err.error_code)
         except Exception as e:
@@ -587,24 +584,6 @@ class IngestManager:
         except Exception as e:
             raise BossError("Exception while deleteing tiles for the ingest job {}. {}".format(ingest_job.id, e),
                             ErrorCodes.BOSS_SYSTEM_ERROR)
-
-    def create_ingest_credentials(self, upload_queue, tile_bucket):
-        """
-        Create new ingest credentials for a job
-        Args:
-            upload_queue : Upload queue for the job
-            tile_bucket : Name of the tile bucket for the job
-        Returns:
-            None
-
-        """
-        # Generate credentials for the ingest_job
-        # Create the credentials for the job
-        # tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
-        # self.create_ingest_credentials(upload_queue, tile_bucket)
-        ingest_creds = IngestCredentials()
-        policy = BossUtil.generate_ingest_policy(self.job.id, upload_queue, tile_bucket)
-        ingest_creds.generate_credentials(self.job.id, policy.arn)
 
     def generate_ingest_credentials(self, ingest_job):
         """
