@@ -24,6 +24,15 @@ class IngestJob(models.Model):
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True)
 
+    # Ingest type constants.
+    TILE_INGEST = 0
+    VOLUMETRIC_INGEST = 1
+
+    INGEST_TYPE_OPTIONS = (
+            (TILE_INGEST, 'Tile'),
+            (VOLUMETRIC_INGEST, 'Volumetric')
+        )
+
     # Ingest status constants.
     PREPARING = 0
     UPLOADING = 1
@@ -38,7 +47,9 @@ class IngestJob(models.Model):
             (DELETED, 'Deleted'),
             (FAILED, 'Failed')
         )
-    status = models.IntegerField(choices=INGEST_STATUS_OPTIONS, default=0)
+
+    ingest_type = models.IntegerField(choices=INGEST_TYPE_OPTIONS, default=TILE_INGEST)
+    status = models.IntegerField(choices=INGEST_STATUS_OPTIONS, default=PREPARING)
     upload_queue = models.URLField(max_length=512, null=True)
     ingest_queue = models.URLField(max_length=512, null=True)
     step_function_arn = models.URLField(max_length=512, null=True, blank=True)
