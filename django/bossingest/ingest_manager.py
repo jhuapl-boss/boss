@@ -500,56 +500,6 @@ class IngestManager:
                                  InvocationType='Event',
                                  Payload=json.dumps(event).encode())
 
-    @staticmethod
-    def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):
-        """
-        Create a dictionary with the upload task message for the tilekey
-        Args:
-            job_id: Job id of the ingest job
-            chunk_key: Chunk key of the chunk in which the tile is
-            tile_key: Unique tile key for the tile
-            upload_queue_arn: Upload queue url
-            ingest_queue_arn: Ingest queue url
-
-        Returns:
-            Dict : A single upload task message that corresponds to a tile
-        """
-        msg = {}
-        msg['job_id'] = job_id
-        msg['chunk_key'] = chunk_key
-        msg['tile_key'] = tile_key
-        msg['upload_queue_arn'] = upload_queue_arn
-        msg['ingest_queue_arn'] = ingest_queue_arn
-        return json.dumps(msg)
-
-    def send_upload_task_message(self, msg):
-        """
-        Upload one message to the upload queue
-        (Note : Currently not used. Replaced with the send_upload_message_batch)
-        Args:
-            msg: Message to send to the upload queue
-
-        Returns:
-            None
-
-        """
-        queue = UploadQueue(self.nd_proj, endpoint_url=None)
-        queue.sendMessage(msg)
-
-    def send_upload_message_batch(self, list_msg):
-        """
-        Upload a batch of 10 messages to the upload queue. An error is raised if more than 10 messages are in the batch
-        Args:
-            list_msg: The list containing the messages to upload
-
-        Returns:
-            None
-
-        """
-        queue = UploadQueue(self.nd_proj, endpoint_url=None)
-        status = queue.sendBatchMessages(list_msg)
-        return status
-
     def delete_tiles(self, ingest_job):
         """
         Delete all remaining tiles from the tile index database and tile bucket

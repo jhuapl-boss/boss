@@ -93,20 +93,6 @@ class BossIntegrationIngestManagerTestMixin(object):
             ingest_mgmr.delete_upload_queue()
             ingest_mgmr.delete_ingest_queue()
 
-    @staticmethod
-    def test_create_upload_task_message():
-        """
-        Test method that creates an upload task message
-        Returns:
-
-        """
-        ingest_mgmr = IngestManager()
-        msg = ingest_mgmr.create_upload_task_message(595, '3534561bd72dcfce1af7c041fc783379&16&1&1&1&0&1&1&3&0',
-                                                     '3534561bd72dcfpppaf7c041fc783379&1&1&1&0&1&1&3&0',
-                                                     'test_upload_queue_url', 'test_ingest_queue_url')
-        msg = json.loads(msg)
-        assert (msg['job_id'] == 595)
-
 
 class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, APITestCase):
      def setUp(self):
