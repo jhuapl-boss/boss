@@ -69,6 +69,7 @@ class IngestJob(models.Model):
     z_stop = models.IntegerField()
     t_stop = models.IntegerField()
 
+    # Also use tile_size_* columns for chunk size for volumetric ingests.
     tile_size_x = models.IntegerField()
     tile_size_y = models.IntegerField()
     tile_size_z = models.IntegerField()

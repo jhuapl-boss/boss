@@ -311,19 +311,25 @@ class IngestJobCompleteView(IngestServiceView):
                 return BossHTTPError("Only the creator or admin can complete an ingest job",
                                      ErrorCodes.INGEST_NOT_CREATOR)
 
-            # Check if any messages remain in the ingest queue
-            ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
-            num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
+            if ingest_job.ingest_type == IngestJob.TILE_INGEST:
+                # Check if any messages remain in the ingest queue
+                ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
+                num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
 
-            # Kick off extra lambdas just in case
-            if num_messages_in_queue:
-                blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
-                ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
+                # Kick off extra lambdas just in case
+                if num_messages_in_queue:
+                    blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
+                    ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
 
-                # Give lambda a few seconds to fire things off
-                time.sleep(30)
+                    # Give lambda a few seconds to fire things off
+                    time.sleep(30)
 
-            ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+                ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+
+            # ToDo: call cleanup method for volumetric ingests.  Don't want
+            # to cleanup until after testing with real data.
+            #ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+
             blog.info("Complete successful")
             return Response(status=status.HTTP_204_NO_CONTENT)
         except BossError as err:

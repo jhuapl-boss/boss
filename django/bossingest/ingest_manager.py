@@ -46,7 +46,7 @@ INGEST_BUCKET = config["aws"]["ingest_bucket"]
 INGEST_LAMBDA = config["lambda"]["ingest_function"]
 TILE_INDEX = config["aws"]["tile-index-table"]
 
-CONNECTER = '&'
+CONNECTOR = '&'
 MAX_NUM_MSG_PER_FILE = 10000
 
 
@@ -172,13 +172,17 @@ class IngestManager:
                 self.job.upload_queue = upload_queue.url
 
                 # Create the ingest queue
-                ingest_queue = self.create_ingest_queue()
-                self.job.ingest_queue = ingest_queue.url
+                if self.job.ingest_type == IngestJob.TILE_INGEST:
+                    ingest_queue = self.create_ingest_queue()
+                    self.job.ingest_queue = ingest_queue.url
+                elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+                    # Will the management console be ok with ingest_queue being null?
+                    pass
 
                 # Call the step function to populate the queue.
-                self.job.step_function_arn = self.populate_upload_queue()
+                self.job.step_function_arn = self.populate_upload_queue(self.job)
 
-                # Compute # of tiles in the job
+                # Compute # of tiles or chunks in the job
                 x_extent = self.job.x_stop - self.job.x_start
                 y_extent = self.job.y_stop - self.job.y_start
                 z_extent = self.job.z_stop - self.job.z_start
@@ -205,7 +209,7 @@ class IngestManager:
             IngestJob : Data model with the current ingest job
 
         Raises:
-            BossError : For serialization errors that occur while creating a ingest job
+            BossError : For serialization errors that occur while creating a ingest job or if ingest_type is invalid
         """
 
         ingest_job_serializer_data = {
@@ -223,11 +227,27 @@ class IngestManager:
             'z_stop': self.config.config_data["ingest_job"]["extent"]["z"][1],
             't_start': self.config.config_data["ingest_job"]["extent"]["t"][0],
             't_stop': self.config.config_data["ingest_job"]["extent"]["t"][1],
-            'tile_size_x': self.config.config_data["ingest_job"]["tile_size"]["x"],
-            'tile_size_y': self.config.config_data["ingest_job"]["tile_size"]["y"],
-            'tile_size_z': self.config.config_data["ingest_job"]["tile_size"]["z"],
-            'tile_size_t': self.config.config_data["ingest_job"]["tile_size"]["t"],
         }
+
+        if "ingest_type" in self.config.config_data["ingest_job"]:
+            ingest_job_serializer_data["ingest_type"] = self.config.config_data["ingest_job"]["ingest_type"]
+        else:
+            ingest_job_serializer_data["ingest_type"] = IngestJob.TILE_INGEST
+
+        if ingest_job_serializer_data["ingest_type"] == IngestJob.TILE_INGEST:
+            ingest_job_serializer_data['tile_size_x'] = self.config.config_data["ingest_job"]["tile_size"]["x"]
+            ingest_job_serializer_data['tile_size_y'] = self.config.config_data["ingest_job"]["tile_size"]["y"]
+            #ingest_job_serializer_data['tile_size_z'] = self.config.config_data["ingest_job"]["tile_size"]["z"]
+            ingest_job_serializer_data['tile_size_z'] = 1
+            ingest_job_serializer_data['tile_size_t'] = self.config.config_data["ingest_job"]["tile_size"]["t"]
+        elif ingest_job_serializer_data["ingest_type"] == IngestJob.VOLUMETRIC_INGEST:
+            ingest_job_serializer_data['tile_size_x'] = self.config.config_data["ingest_job"]["chunk_size"]["x"]
+            ingest_job_serializer_data['tile_size_y'] = self.config.config_data["ingest_job"]["chunk_size"]["y"]
+            ingest_job_serializer_data['tile_size_z'] = self.config.config_data["ingest_job"]["chunk_size"]["z"]
+            ingest_job_serializer_data['tile_size_t'] = 1
+        else:
+            raise BossError('Invalid ingest_type: {}'.format(ingest_job_serializer_data["ingest_type"]), ErrorCodes.UNABLE_TO_VALIDATE)
+
         serializer = IngestJobCreateSerializer(data=ingest_job_serializer_data)
         if serializer.is_valid():
             ingest_job = serializer.save()
@@ -295,6 +315,10 @@ class IngestManager:
         Returns:
             (bool): True == verified
         """
+        if ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            # ToDo: check lambda deadletter queue.
+            return True
+
         try:
             csv_file = query_tile_index(ingest_job.id, TILE_INDEX, bossutils.aws.get_region())
             if csv_file is not None:
@@ -331,7 +355,8 @@ class IngestManager:
 
             # delete the ingest and upload_queue
             self.delete_upload_queue()
-            self.delete_ingest_queue()
+            if ingest_job.ingest_type != IngestJob.VOLUMETRIC_INGEST:
+                self.delete_ingest_queue()
 
             # delete any pending entries in the tile index database and tile bucket
             # Commented out due to removal of tile index's GSI.
@@ -402,22 +427,27 @@ class IngestManager:
         """
         return TileBucket.getBucketName()
 
-    def populate_upload_queue(self):
+    def populate_upload_queue(self, job):
         """Execute the populate_upload_queue Step Function
 
+        Args:
+            job (IngestJob):
+
         Returns:
-            string: ARN of the StepFunction Execution started
+            (string): ARN of the StepFunction Execution started
 
         Raises:
-            BossError : if there is no valid ingest job
+            (BossError) : if there is no valid ingest job
         """
-
-        if self.job is None:
-            raise BossError("Unable to generate upload tasks for the ingest service. Please specify a ingest job",
-                            ErrorCodes.UNABLE_TO_VALIDATE)
-
-        args = self._generate_upload_queue_args(self.job)
-        args['upload_sfn'] = config['sfn']['upload_sfn']
+        args = self._generate_upload_queue_args(job)
+        if job.ingest_type == IngestJob.TILE_INGEST:
+            args['upload_sfn'] = config['sfn']['upload_sfn']
+        elif job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            args['upload_sfn'] = config['sfn']['volumetric_upload_sfn']
+        else:
+            raise BossError(
+                "Ingest job's ingest_type has invalid value: {}".format(
+                    job.ingest_type), ErrorCodes.UNABLE_TO_VALIDATE)
 
         session = bossutils.aws.get_session()
         populate_sfn = config['sfn']['populate_upload_queue']
@@ -430,16 +460,18 @@ class IngestManager:
         Generate dictionary to include in messages placed in the tile upload queue.
         
         Args:
-            ()
+            ingest_job (IngestJob):
 
         Returns:
             (dict)
+
+        Raises:
+            (BossError): If ingest_job.ingest_type invalid.
         """
 
-        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
+        bosskey = ingest_job.collection + CONNECTOR + ingest_job.experiment + CONNECTOR + ingest_job.channel
         lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
         [col_id, exp_id, ch_id] = lookup_key.split('&')
-        project_info = [col_id, exp_id, ch_id]
 
         args = {
             'job_id': ingest_job.id,
@@ -447,7 +479,8 @@ class IngestManager:
             'ingest_queue': ingest_job.ingest_queue,
 
             'resolution': ingest_job.resolution,
-            'project_info': lookup_key.split(CONNECTER),
+            'project_info': lookup_key.split(CONNECTOR),
+            'ingest_type': ingest_job.ingest_type,
 
             't_start': ingest_job.t_start,
             't_stop': ingest_job.t_stop,
@@ -463,11 +496,20 @@ class IngestManager:
 
             'z_start': ingest_job.z_start,
             'z_stop': ingest_job.z_stop,
-            'z_tile_size': 1,
-
-            'z_chunk_size': 16
+            'z_tile_size': 1
         }
 
+
+        if ingest_job.ingest_type == IngestJob.TILE_INGEST:
+            # Always the Boss cuboid z size for tile jobs.
+            args['z_chunk_size'] = 16
+        elif ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            # tile_size_* holds the chunk size dimensions for volumetric jobs.
+            args['z_chunk_size'] = ingest_job.tile_size_z
+        else:
+            raise BossError(
+                "Ingest job's ingest_type has invalid value: {}".format(
+                    self.job.ingest_type), ErrorCodes.UNABLE_TO_VALIDATE)
         return args
 
     def invoke_ingest_lambda(self, ingest_job, num_invokes=1):
@@ -481,7 +523,7 @@ class IngestManager:
         Returns:
 
         """
-        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
+        bosskey = ingest_job.collection + CONNECTOR + ingest_job.experiment + CONNECTOR + ingest_job.channel
         lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
         [col_id, exp_id, ch_id] = lookup_key.split('&')
         project_info = [col_id, exp_id, ch_id]
@@ -525,7 +567,6 @@ class IngestManager:
             chunks = list(tiledb.getTaskItems(ingest_job.id))
 
             for chunk in chunks:
-                chunk_key = chunk['chunk_key']
                 # delete each tile in the chunk
                 for key in chunk['tile_uploaded_map']:
                     response = tilebucket.deleteObject(key)
@@ -539,8 +580,7 @@ class IngestManager:
         """
         Create new ingest credentials for a job
         Args:
-            upload_queue : Upload queue for the job
-            tile_bucket : Name of the tile bucket for the job
+            ingest_job: Ingest job model
         Returns:
             None
 
@@ -550,7 +590,7 @@ class IngestManager:
         tile_bucket = TileBucket(ingest_job.collection + '&' + ingest_job.experiment)
         upload_queue = self.get_ingest_job_upload_queue(ingest_job)
         ingest_creds = IngestCredentials()
-        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, tile_bucket)
+        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, tile_bucket, ingest_type=ingest_job.ingest_type)
         ingest_creds.generate_credentials(ingest_job.id, policy.arn)
 
     def remove_ingest_credentials(self, job_id):

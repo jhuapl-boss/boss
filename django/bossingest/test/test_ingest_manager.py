@@ -40,9 +40,13 @@ class BossIngestManagerTest(APITestCase):
         self.client.force_login(self.user)
         dbsetup.insert_ingest_test_data()
 
-        # Get the config_data
-        config_data = SetupTests().get_ingest_config_data_dict()
+        setup = SetupTests()
+
+        # Get the config_data for v1 schema
+        config_data = setup.get_ingest_config_data_dict()
         self.example_config_data = config_data
+
+        self.volumetric_config_data = setup.get_ingest_config_data_dict_volumetric()
 
     def test_validate_ingest(self):
         """Method to test validation method"""
@@ -80,6 +84,47 @@ class BossIngestManagerTest(APITestCase):
         ingest_mgmr.owner = self.user.pk
         job = ingest_mgmr.create_ingest_job()
         assert (job.id is not None)
+        assert (job.ingest_type == IngestJob.TILE_INGEST)
+        assert (job.tile_size_x == 512)
+        assert (job.tile_size_y == 512)
+        assert (job.tile_size_z == 1)
+        assert (job.tile_size_t == 1)
+
+    def test_create_ingest_job_volumetric(self):
+        ingest_mgmr = IngestManager()
+        ingest_mgmr.validate_config_file(self.volumetric_config_data)
+        ingest_mgmr.validate_properties()
+        ingest_mgmr.owner = self.user.pk
+        job = ingest_mgmr.create_ingest_job()
+        assert (job.id is not None)
+        assert (job.ingest_type == IngestJob.VOLUMETRIC_INGEST)
+        assert (job.tile_size_x == 1024)
+        assert (job.tile_size_y == 1024)
+        assert (job.tile_size_z == 64)
+        assert (job.tile_size_t == 1)
+
+    def test_generate_upload_queue_args_tile_job(self):
+        """Ensure ingest_type set properly"""
+        ingest_mgmr = IngestManager()
+        ingest_mgmr.validate_config_file(self.example_config_data)
+        ingest_mgmr.validate_properties()
+        ingest_mgmr.owner = self.user.pk
+        job = ingest_mgmr.create_ingest_job()
+        actual = ingest_mgmr._generate_upload_queue_args(job)
+        assert actual['ingest_type'] == IngestJob.TILE_INGEST
+        assert actual['z_chunk_size'] == 16
+
+    def test_generate_upload_queue_args_volumetric_job(self):
+        """Ensure ingest_type set properly"""
+        ingest_mgmr = IngestManager()
+        ingest_mgmr.validate_config_file(self.volumetric_config_data)
+        ingest_mgmr.validate_properties()
+        ingest_mgmr.owner = self.user.pk
+        job = ingest_mgmr.create_ingest_job()
+        actual = ingest_mgmr._generate_upload_queue_args(job)
+        assert actual['ingest_type'] == IngestJob.VOLUMETRIC_INGEST
+        assert actual['z_chunk_size'] == 64
+        assert actual['ingest_queue'] is None
 
     def test_tile_bucket_name(self):
         """ Test get tile bucket name"""
