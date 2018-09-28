@@ -133,9 +133,10 @@ class SetupTests(object):
         data['client']['path_processor']['class'] = "ingest.plugins.multipage_tiff.SingleTimeTiffPathProcessor"
         data['client']['path_processor']['params'] = {}
 
-        data['client']['tile_processor'] = {}
-        data['client']['tile_processor']['class'] = "ingest.plugins.multipage_tiff.SingleTimeTiffTileProcessor"
-        data['client']['tile_processor']['params'] = {}
+        # This isn't a proper chunk processor but fine for testing purposes.
+        data['client']['chunk_processor'] = {}
+        data['client']['chunk_processor']['class'] = "ingest.plugins.multipage_tiff.SingleTimeTiffTileProcessor"
+        data['client']['chunk_processor']['params'] = {}
 
         data['database'] = {}
         data['database']['collection'] = "my_col_1"
@@ -155,7 +156,7 @@ class SetupTests(object):
         data['ingest_job']['chunk_size']['y'] = 1024
         data['ingest_job']['chunk_size']['z'] = 64
 
-        data['ingest_job']['ingest_type'] = IngestJob.VOLUMETRIC_INGEST
+        data['ingest_job']['ingest_type'] = 'volumetric'
 
         return data
 

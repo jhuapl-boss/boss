@@ -95,11 +95,15 @@ class IngestManager:
             self.config = Configuration(config_data)
             self.validator = self.config.get_validator()
             self.validator.schema = self.config.schema
-            self.validator.validate_schema()
+            results = self.validator.validate()
         except jsonschema.ValidationError as e:
             raise BossError("Schema validation failed! {}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
         except Exception as e:
-            raise BossError(" Could not validate the schema file.{}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
+            raise BossError("Could not validate the schema file.{}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
+
+        if len(results['error']) > 0:
+            raise BossError('Could not validate the schema: ' + '\n'.join(results['error']),
+                ErrorCodes.UNABLE_TO_VALIDATE)
 
         return True
 
@@ -230,7 +234,8 @@ class IngestManager:
         }
 
         if "ingest_type" in self.config.config_data["ingest_job"]:
-            ingest_job_serializer_data["ingest_type"] = self.config.config_data["ingest_job"]["ingest_type"]
+            ingest_job_serializer_data["ingest_type"] = self._convert_string_to_ingest_job(
+                self.config.config_data["ingest_job"]["ingest_type"])
         else:
             ingest_job_serializer_data["ingest_type"] = IngestJob.TILE_INGEST
 
@@ -255,6 +260,27 @@ class IngestManager:
 
         else:
             raise BossError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
+
+    def _convert_string_to_ingest_job(self, s):
+        """
+        Convert a string representation of ingest_type to int.
+
+        Args:
+            s (str):
+
+        Returns:
+            (int): IngestJob.TILE_INGEST | IngestJob.VOLUMETRIC_INGEST
+
+        Raises:
+            (BossError): If string is invalid.
+        """
+        lowered = s.lower()
+        if lowered == 'tile':
+            return IngestJob.TILE_INGEST
+        if lowered == 'volumetric':
+            return IngestJob.VOLUMETRIC_INGEST
+
+        raise BossError('Unknown ingest_type: {}'.format(s))
 
     def get_ingest_job(self, ingest_job_id):
         """
