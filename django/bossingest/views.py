@@ -88,7 +88,8 @@ class IngestJobView(IngestServiceView):
                    'channel': config_data["database"]["channel"],
                    'created_on': item.start_date,
                    'completed_on': item.end_date,
-                   'status': item.status}
+                   'status': item.status,
+                   'ingest_type': item.ingest_type}
             list_jobs.append(job)
 
         return Response({"ingest_jobs": list_jobs}, status=status.HTTP_200_OK)
