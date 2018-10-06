@@ -327,6 +327,9 @@ class IngestJobCompleteView(IngestServiceView):
 
                 ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
 
+            elif ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+                ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+
             # ToDo: call cleanup method for volumetric ingests.  Don't want
             # to cleanup until after testing with real data.
             #ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
