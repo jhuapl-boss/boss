@@ -609,14 +609,20 @@ class IngestManager:
             ingest_job: Ingest job model
         Returns:
             None
+        Raises:
+            (ValueError): On bad ingest_type
 
         """
         # Generate credentials for the ingest_job
-        # Create the credentials for the job
-        tile_bucket = TileBucket(ingest_job.collection + '&' + ingest_job.experiment)
         upload_queue = self.get_ingest_job_upload_queue(ingest_job)
         ingest_creds = IngestCredentials()
-        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, tile_bucket, ingest_type=ingest_job.ingest_type)
+        if ingest_job.ingest_type == IngestJob.TILE_INGEST:
+            bucket_name = TileBucket.getBucketName()
+        elif ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            bucket_name = INGEST_BUCKET 
+        else:
+            raise ValueError('Unknown ingest_type: {}'.format(ingest_job.ingest_type))
+        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, bucket_name, ingest_type=ingest_job.ingest_type)
         ingest_creds.generate_credentials(ingest_job.id, policy.arn)
 
     def remove_ingest_credentials(self, job_id):
