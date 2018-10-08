@@ -23,7 +23,7 @@ from rest_framework import status
 from rest_framework import generics
 
 from bosscore.error import BossError, ErrorCodes, BossHTTPError
-from bossingest.ingest_manager import IngestManager
+from bossingest.ingest_manager import IngestManager, INGEST_BUCKET
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
@@ -153,6 +153,7 @@ class IngestJobView(IngestServiceView):
                 data['credentials'] = None
 
             data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
+            data['ingest_bucket_name'] = INGEST_BUCKET
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
             data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
