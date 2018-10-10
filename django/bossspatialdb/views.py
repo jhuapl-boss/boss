@@ -79,13 +79,13 @@ class Cutout(APIView):
         else:
             iso = False
 
-        if "no-cache" in request.query_params:
-            if request.query_params["no-cache"].lower() == "true":
-                no_cache = True
-            else:
-                no_cache = False
+        if "access_mode" in request.query_params:
+            if request.query_params["access_mode"].lower() == "raw":
+                access_mode = "raw"
+            elif request.query_params["access_mode"].lower() == "no_cache":
+                access_mode = "no_cache"
         else:
-            no_cache = False
+            access_mode = "cache"
 
         if isinstance(request.data, BossParserError):
             return request.data.to_http()
@@ -133,7 +133,7 @@ class Cutout(APIView):
 
         # Get a Cube instance with all time samples
         data = cache.cutout(resource, corner, extent, req.get_resolution(), [req.get_time().start, req.get_time().stop],
-                            filter_ids=req.get_filter_ids(), iso=iso, no_cache=no_cache)
+                            filter_ids=req.get_filter_ids(), iso=iso, access_mode=access_mode)
         to_renderer = {"time_request": req.time_request,
                        "data": data}
 
