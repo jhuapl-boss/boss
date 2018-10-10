@@ -70,6 +70,13 @@ class CutoutTile(APIView):
             req = BossRequest(request, request_args)
         except BossError as err:
             return err.to_http()
+            
+        #Translation from no-cache boolean param to access_mode param for backwards compatability. 
+        if "no-cache" in request.query_params:
+            if request.query_params["no-cache"].lower() == "true":
+                access_mode = "no_cache"
+            elif request.query_params["no-cache"].lower() == "false":
+                access_mode = "cache"
 
         if "access_mode" in request.query_params:
             if request.query_params["access_mode"].lower() == "raw":
@@ -169,6 +176,13 @@ class Tile(APIView):
             req = BossRequest(request, request_args)
         except BossError as err:
             return err.to_http()
+
+        #Translation from no-cache boolean param to access_mode param for backwards compatability. 
+        if "no-cache" in request.query_params:
+            if request.query_params["no-cache"].lower() == "true":
+                access_mode = "no_cache"
+            elif request.query_params["no-cache"].lower() == "false":
+                access_mode = "cache"
 
         if "access_mode" in request.query_params:
             if request.query_params["access_mode"].lower() == "raw":
