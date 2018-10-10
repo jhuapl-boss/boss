@@ -74,7 +74,7 @@ class CutoutTile(APIView):
         if "access_mode" in request.query_params:
             if request.query_params["access_mode"].lower() == "raw":
                 access_mode = "raw"
-            elif request.query_params["access_mode"].lower() == "no_cache":
+            elif request.query_params["access_mode"].lower() == "no-cache":
                 access_mode = "no_cache"
         else:
             access_mode = "cache"
@@ -173,7 +173,7 @@ class Tile(APIView):
         if "access_mode" in request.query_params:
             if request.query_params["access_mode"].lower() == "raw":
                 access_mode = "raw"
-            elif request.query_params["access_mode"].lower() == "no_cache":
+            elif request.query_params["access_mode"].lower() == "no-cache":
                 access_mode = "no_cache"
         else:
             access_mode = "cache"
