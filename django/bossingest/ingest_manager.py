@@ -637,6 +637,7 @@ class IngestManager:
 
         event = {"ingest_job": ingest_job.id,
                  "chunk_key": fake_chunk_key,
+                 "function-name": INGEST_LAMBDA,
                  "lambda-name": "ingest"}
 
         # Invoke Ingest lambda functions
