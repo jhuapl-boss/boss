@@ -91,8 +91,8 @@ class Cutout(APIView):
                 access_mode = "raw"
             elif request.query_params["access_mode"].lower() == "no-cache":
                 access_mode = "no_cache"
-        else:
-            access_mode = "cache"
+            else:
+                access_mode = "cache"
 
         if isinstance(request.data, BossParserError):
             return request.data.to_http()

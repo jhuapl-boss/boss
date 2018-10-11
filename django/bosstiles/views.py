@@ -70,7 +70,7 @@ class CutoutTile(APIView):
             req = BossRequest(request, request_args)
         except BossError as err:
             return err.to_http()
-            
+
         #Translation from no-cache boolean param to access_mode param for backwards compatability. 
         if "no-cache" in request.query_params:
             if request.query_params["no-cache"].lower() == "true":
@@ -83,8 +83,8 @@ class CutoutTile(APIView):
                 access_mode = "raw"
             elif request.query_params["access_mode"].lower() == "no-cache":
                 access_mode = "no_cache"
-        else:
-            access_mode = "cache"
+            else:
+                access_mode = "cache"
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -189,8 +189,8 @@ class Tile(APIView):
                 access_mode = "raw"
             elif request.query_params["access_mode"].lower() == "no-cache":
                 access_mode = "no_cache"
-        else:
-            access_mode = "cache"
+            else:
+                access_mode = "cache"
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
