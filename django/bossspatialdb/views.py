@@ -28,6 +28,8 @@ from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
 from bosscore.models import Channel
 
+from boss.utils import BossUtils
+
 from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb import project
 import bossutils
@@ -79,22 +81,8 @@ class Cutout(APIView):
         else:
             iso = False
 
-        #Default access_mode to cache on the server side in case it is not explicitly defined in an API call. 
-        access_mode = "cache"
-        #Translation from no-cache boolean param to access_mode param for backwards compatability. 
-        if "no-cache" in request.query_params:
-            if request.query_params["no-cache"].lower() == "true":
-                access_mode = "no_cache"
-            elif request.query_params["no-cache"].lower() == "false":
-                access_mode = "cache"
-                
-        if "access_mode" in request.query_params:
-            if request.query_params["access_mode"].lower() == "raw":
-                access_mode = "raw"
-            elif request.query_params["access_mode"].lower() == "no-cache":
-                access_mode = "no_cache"
-            else:
-                access_mode = "cache"
+        # Define access mode.
+        access_mode = BossUtils.get_access_mode(request)
 
         if isinstance(request.data, BossParserError):
             return request.data.to_http()
