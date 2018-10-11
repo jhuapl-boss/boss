@@ -79,6 +79,8 @@ class Cutout(APIView):
         else:
             iso = False
 
+        #Default access_mode to cache on the server side in case it is not explicitly defined in an API call. 
+        access_mode = "cache"
         #Translation from no-cache boolean param to access_mode param for backwards compatability. 
         if "no-cache" in request.query_params:
             if request.query_params["no-cache"].lower() == "true":
