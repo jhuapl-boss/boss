@@ -28,7 +28,7 @@ from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
 from bosscore.models import Channel
 
-from boss.utils import BossUtils
+from boss import utils
 
 from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb import project
@@ -82,7 +82,7 @@ class Cutout(APIView):
             iso = False
 
         # Define access mode.
-        access_mode = BossUtils.get_access_mode(request)
+        access_mode = utils.get_access_mode(request)
 
         if isinstance(request.data, BossParserError):
             return request.data.to_http()

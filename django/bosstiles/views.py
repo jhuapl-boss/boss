@@ -16,11 +16,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 
-from boss.utils import BossUtils
+from boss import utils
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, ErrorCodes
-
-from bossutils.logger import BossLogger
 
 import spdb
 
@@ -75,8 +73,7 @@ class CutoutTile(APIView):
             return err.to_http()
 
         #Define access mode
-        access_mode = BossUtils.get_access_mode(request)
-        
+        access_mode = utils.get_access_mode(request)
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -170,7 +167,7 @@ class Tile(APIView):
             return err.to_http()
 
         #Define access_mode
-        access_mode = BossUtils.get_access_mode(request)
+        access_mode = utils.get_access_mode(request)
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
