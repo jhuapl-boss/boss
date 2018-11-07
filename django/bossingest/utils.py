@@ -7,6 +7,7 @@ from ndingest.ndingestproj.bossingestproj import BossIngestProj
 from ndingest.ndqueue.uploadqueue import UploadQueue
 import os
 from tempfile import NamedTemporaryFile
+import time
 
 # First value should be job id.
 CSV_FORMAT_STR = 'tiles-{}&'
