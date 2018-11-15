@@ -3,8 +3,9 @@ function channel_handler(response) {
     var detail_base_url = window.location.href + "/";
     var delete_function = "delete_channel";
     var delete_base_url = API_ROOT + "collection/" + resources[0] + "/experiment/" + resources[1] + "/channel/";
+    var neuroglancer_url = "https://neuroglancer.theboss.io/#!{'layers':{'" + resources[1] + "':{'source':'boss://https://api.theboss.io/" + resources[0] + "/" + resources[1] + "/";
 
-    return resource_formatter(response, detail_base_url, delete_function, delete_base_url);
+    return channel_resource_formatter(response, detail_base_url, delete_function, delete_base_url, neuroglancer_url);
 }
 
 function get_channels_callback(params, response) {
