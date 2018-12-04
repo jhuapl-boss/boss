@@ -23,7 +23,7 @@ from rest_framework import status
 from rest_framework import generics
 
 from bosscore.error import BossError, ErrorCodes, BossHTTPError
-from bossingest.ingest_manager import IngestManager
+from bossingest.ingest_manager import IngestManager, INGEST_BUCKET
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
@@ -88,7 +88,8 @@ class IngestJobView(IngestServiceView):
                    'channel': config_data["database"]["channel"],
                    'created_on': item.start_date,
                    'completed_on': item.end_date,
-                   'status': item.status}
+                   'status': item.status,
+                   'ingest_type': item.ingest_type}
             list_jobs.append(job)
 
         return Response({"ingest_jobs": list_jobs}, status=status.HTTP_200_OK)
@@ -152,6 +153,7 @@ class IngestJobView(IngestServiceView):
                 data['credentials'] = None
 
             data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
+            data['ingest_bucket_name'] = INGEST_BUCKET
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
             data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
@@ -311,19 +313,28 @@ class IngestJobCompleteView(IngestServiceView):
                 return BossHTTPError("Only the creator or admin can complete an ingest job",
                                      ErrorCodes.INGEST_NOT_CREATOR)
 
-            # Check if any messages remain in the ingest queue
-            ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
-            num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
+            if ingest_job.ingest_type == IngestJob.TILE_INGEST:
+                # Check if any messages remain in the ingest queue
+                ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
+                num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
 
-            # Kick off extra lambdas just in case
-            if num_messages_in_queue:
-                blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
-                ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
+                # Kick off extra lambdas just in case
+                if num_messages_in_queue:
+                    blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
+                    ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
 
-                # Give lambda a few seconds to fire things off
-                time.sleep(30)
+                    # Give lambda a few seconds to fire things off
+                    time.sleep(30)
 
-            ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+                ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+
+            elif ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+                ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+
+            # ToDo: call cleanup method for volumetric ingests.  Don't want
+            # to cleanup until after testing with real data.
+            #ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+
             blog.info("Complete successful")
             return Response(status=status.HTTP_204_NO_CONTENT)
         except BossError as err:

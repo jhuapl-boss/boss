@@ -122,6 +122,49 @@ class BossIngestViewTestMixin(object):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
+    def test_post_new_volumetric_ingest_job(self):
+        """ Test view to create a new volumetric_ingest job """
+        config_data = self.setup_helper.get_ingest_config_data_dict_volumetric()
+        config_data = json.loads(json.dumps(config_data))
+
+        # # Post the data
+        url = '/' + version + '/ingest/'
+        response = self.client.post(url, data=config_data, format='json')
+        self.assertEqual(201, response.status_code)
+
+        # Check if the queue's exist
+        ingest_job = response.json()
+        proj_class = BossIngestProj.load()
+        nd_proj = proj_class(ingest_job['collection'], ingest_job['experiment'], ingest_job['channel'],
+                             0, ingest_job['id'])
+        self.nd_proj = nd_proj
+        upload_queue = UploadQueue(nd_proj, endpoint_url=None)
+        self.assertIsNotNone(upload_queue)
+
+        # There shouldn't be an ingest queue for a volumetric ingest
+        with self.assertRaises(ClientError):
+            IngestQueue(nd_proj, endpoint_url=None)
+
+        # Test joining the job
+        url = '/' + version + '/ingest/{}/'.format(ingest_job['id'])
+        response = self.client.get(url)
+        self.assertEqual(response.json()['ingest_job']['id'], ingest_job['id'])
+        self.assertIn("credentials", response.json())
+
+        # # Delete the job
+        url = '/' + version + '/ingest/{}/'.format(ingest_job['id'])
+        response = self.client.delete(url)
+        self.assertEqual(204, response.status_code)
+
+        # Verify Queues are removed
+        with self.assertRaises(ClientError):
+            UploadQueue(nd_proj, endpoint_url=None)
+
+        # Verify the job is deleted
+        url = '/' + version + '/ingest/{}/status'.format(ingest_job['id'])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
     def test_not_creator(self):
         """Method to test only creators or admins can interact with ingest jobs"""
         config_data = self.setup_helper.get_ingest_config_data_dict()
