@@ -313,8 +313,9 @@ class IngestJobCompleteView(IngestServiceView):
                 return BossHTTPError("Only the creator or admin can complete an ingest job",
                                      ErrorCodes.INGEST_NOT_CREATOR)
 
-            # Curently have issues with clean up.  Skipping that for now.
-            return Response(status=status.HTTP_200_OK)
+            # TODO SH This is a quick fix to make sure the ingest-client does not run close option.
+            #      the clean up code commented out below, because it is not working correctly.
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
             # if ingest_job.ingest_type == IngestJob.TILE_INGEST:
             #     # Check if any messages remain in the ingest queue
