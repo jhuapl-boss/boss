@@ -123,7 +123,7 @@ class IngestJobView(IngestServiceView):
             data = {'ingest_job': serializer.data}
             data['ingest_job']['tile_index_queue'] = None
             if ingest_job.ingest_type == IngestJob.TILE_INGEST:
-                data['ingest_job']['tile_index_queue'] = ingest_mgmr.get_ingest_job_tile_index_queue().url
+                data['ingest_job']['tile_index_queue'] = ingest_mgmr.get_ingest_job_tile_index_queue(ingest_job).url
 
             if ingest_job.status == 3:
                 # The job has been deleted

@@ -45,10 +45,12 @@ from bossutils.ingestcreds import IngestCredentials
 config = bossutils.configuration.BossConfig()
 INGEST_BUCKET = config["aws"]["ingest_bucket"]
 INGEST_LAMBDA = config["lambda"]["ingest_function"]
+TILE_UPLOADED_LAMBDA = config["lambda"]["tile_uploaded_function"]
 TILE_INDEX = config["aws"]["tile-index-table"]
 
 CONNECTOR = '&'
 MAX_NUM_MSG_PER_FILE = 10000
+MAX_SQS_BATCH_SIZE = 10
 
 
 class IngestManager:
@@ -180,7 +182,8 @@ class IngestManager:
                 if self.job.ingest_type == IngestJob.TILE_INGEST:
                     ingest_queue = self.create_ingest_queue()
                     self.job.ingest_queue = ingest_queue.url
-                    self.create_tile_index_queue()
+                    tile_index_queue = self.create_tile_index_queue()
+                    self.add_trigger_tile_uploaded_lambda_from_queue(tile_index_queue.arn)
                     self.create_tile_error_queue()
                 elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
                     # Will the management console be ok with ingest_queue being null?
@@ -453,7 +456,7 @@ class IngestManager:
         """
         Create an tile index queue for an ingest job using the ndingest library
         Returns:
-            UploadQueue : Returns a tile index queue object
+            TileIndexQueue : Returns a tile index queue object
 
         """
         TileIndexQueue.createQueue(self.nd_proj, endpoint_url=None)
@@ -464,7 +467,7 @@ class IngestManager:
         """
         Create an tile error queue for an ingest job using the ndingest library
         Returns:
-            UploadQueue : Returns a tile index queue object
+            TileErrorQueue : Returns a tile index queue object
 
         """
         TileErrorQueue.createQueue(self.nd_proj, endpoint_url=None)
@@ -493,16 +496,20 @@ class IngestManager:
 
     def delete_tile_index_queue(self):
         """
-        Delete the current upload queue
+        Delete the current tile index queue.  Also removes the queue as an
+        event trigger for the tile uploaded lambda.
+
         Returns:
             None
 
         """
-        TileIndexQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+        queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
+        self.remove_trigger_tile_uploaded_lambda_from_queue(queue.arn)
+        queue.deleteQueue(self.nd_proj, endpoint_url=None)
 
     def delete_tile_error_queue(self):
         """
-        Delete the current upload queue
+        Delete the current tile error queue
         Returns:
             None
 
@@ -517,6 +524,40 @@ class IngestManager:
 
         """
         IngestQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+
+    def add_trigger_tile_uploaded_lambda_from_queue(self, queue_arn, num_msgs=1):
+        """
+        Adds an SQS event trigger to the tile uploaded lambda.
+
+        Args:
+            queue_arn (str): Arn of SQS queue that will be the trigger source.
+            num_msgs (optional[int]): Number of messages to send to the lambda.  Defaults to 1, max 10.
+
+        Raises:
+            (ValueError): if num_msgs is greater than the SQS max batch size.
+        """
+        if num_msgs < 1 or num_msgs > MAX_SQS_BATCH_SIZE:
+            raise ValueError('trigger_tile_uploaded_lambda_from_queue(): Bad num_msgs: {}'.format(num_msgs))
+
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        client.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=TILE_UPLOADED_LAMBDA,
+            BatchSize=num_msgs)
+
+    def remove_trigger_tile_uploaded_lambda_from_queue(self, queue_arn):
+        """
+        Removes an SQS event triggger from the tile uploaded lambda.
+
+        Args:
+            queue_arn (str): Arn of SQS queue that will be the trigger source.
+        """
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        resp = client.list_event_source_mappings(
+            EventSourceArn=queue_arn,
+            FunctionName=TILE_UPLOADED_LAMBDA)
+        for evt in resp['EventSourceMappings']:
+            client.delete_event_source_mapping(UUID=evt['UUID'])
 
     def get_tile_bucket(self):
         """
