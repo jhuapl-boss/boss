@@ -285,11 +285,19 @@ class IngestJobCompleteView(IngestServiceView):
                     return BossHTTPError("Only the creator or admin can start verification of an ingest job",
                                          ErrorCodes.INGEST_NOT_CREATOR)
 
+                # Disable verification until it is reworked and always return
+                # success for now.
+                blog.info('Telling client job complete - completion/verificcation to be fixed later.')
+                return Response(status=status.HTTP_204_NO_CONTENT)
+
+                """
                 blog.info('Verifying ingest job {}'.format(ingest_job_id))
+
                 # Start verification process
                 if not ingest_mgmr.verify_ingest_job(ingest_job):
                     # Ingest not finished
                     return Response(status=status.HTTP_202_ACCEPTED)
+                """
 
                 # Verification successful, fall through to the complete process.
 
