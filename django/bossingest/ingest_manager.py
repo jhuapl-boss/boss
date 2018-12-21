@@ -505,7 +505,7 @@ class IngestManager:
         """
         queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
         self.remove_trigger_tile_uploaded_lambda_from_queue(queue.arn)
-        queue.deleteQueue(self.nd_proj, endpoint_url=None)
+        queue.deleteQueue(self.nd_proj, endpoint_url=None, delete_deadletter_queue=True)
 
     def delete_tile_error_queue(self):
         """
