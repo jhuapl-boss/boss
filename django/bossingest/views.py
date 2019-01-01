@@ -288,11 +288,19 @@ class IngestJobCompleteView(IngestServiceView):
                     return BossHTTPError("Only the creator or admin can start verification of an ingest job",
                                          ErrorCodes.INGEST_NOT_CREATOR)
 
+                # Disable verification until it is reworked and always return
+                # success for now.
+                blog.info('Telling client job complete - completion/verificcation to be fixed later.')
+                return Response(status=status.HTTP_204_NO_CONTENT)
+
+                """
                 blog.info('Verifying ingest job {}'.format(ingest_job_id))
+
                 # Start verification process
                 if not ingest_mgmr.verify_ingest_job(ingest_job):
                     # Ingest not finished
                     return Response(status=status.HTTP_202_ACCEPTED)
+                """
 
                 # Verification successful, fall through to the complete process.
 
@@ -316,8 +324,9 @@ class IngestJobCompleteView(IngestServiceView):
                 return BossHTTPError("Only the creator or admin can complete an ingest job",
                                      ErrorCodes.INGEST_NOT_CREATOR)
 
-            # Curently have issues with clean up.  Skipping that for now.
-            return Response(status=status.HTTP_200_OK)
+            # TODO SH This is a quick fix to make sure the ingest-client does not run close option.
+            #      the clean up code commented out below, because it is not working correctly.
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
             # if ingest_job.ingest_type == IngestJob.TILE_INGEST:
             #     # Check if any messages remain in the ingest queue
