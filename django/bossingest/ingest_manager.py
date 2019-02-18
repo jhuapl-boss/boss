@@ -15,23 +15,24 @@
 import json
 import jsonschema
 import boto3
-import io
 import math
 from django.utils import timezone
 
 from ingestclient.core.config import Configuration
 from ingestclient.core.backend import BossBackend
 
-from bossingest.serializers import IngestJobCreateSerializer, IngestJobListSerializer
+from bossingest.serializers import IngestJobCreateSerializer
 from bossingest.models import IngestJob
 from bossingest.utils import query_tile_index, patch_upload_queue
 
-from bosscore.error import BossError, ErrorCodes, BossResourceNotFoundError
+from bosscore.error import BossError, ErrorCodes
 from bosscore.models import Collection, Experiment, Channel
 from bosscore.lookup import LookUpKey
 
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
+from ndingest.ndqueue.tileindexqueue import TileIndexQueue
+from ndingest.ndqueue.tileerrorqueue import TileErrorQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
 from ndingest.nddynamo.boss_tileindexdb import BossTileIndexDB
 from ndingest.ndbucket.tilebucket import TileBucket
@@ -44,10 +45,12 @@ from bossutils.ingestcreds import IngestCredentials
 config = bossutils.configuration.BossConfig()
 INGEST_BUCKET = config["aws"]["ingest_bucket"]
 INGEST_LAMBDA = config["lambda"]["ingest_function"]
+TILE_UPLOADED_LAMBDA = config["lambda"]["tile_uploaded_function"]
 TILE_INDEX = config["aws"]["tile-index-table"]
 
 CONNECTOR = '&'
 MAX_NUM_MSG_PER_FILE = 10000
+MAX_SQS_BATCH_SIZE = 10
 
 
 class IngestManager:
@@ -179,6 +182,9 @@ class IngestManager:
                 if self.job.ingest_type == IngestJob.TILE_INGEST:
                     ingest_queue = self.create_ingest_queue()
                     self.job.ingest_queue = ingest_queue.url
+                    tile_index_queue = self.create_tile_index_queue()
+                    self.add_trigger_tile_uploaded_lambda_from_queue(tile_index_queue.arn)
+                    self.create_tile_error_queue()
                 elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
                     # Will the management console be ok with ingest_queue being null?
                     pass
@@ -317,6 +323,36 @@ class IngestManager:
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         return queue
 
+    def get_ingest_job_tile_index_queue(self, ingest_job):
+        """
+        Return the tile index queue for an ingest job
+        Args:
+            ingest_job: Ingest job model
+
+        Returns:
+            ndingest.TileIndexQueue
+        """
+        proj_class = BossIngestProj.load()
+        self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
+                                  ingest_job.resolution, ingest_job.id)
+        queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
+    def get_ingest_job_tile_error_queue(self, ingest_job):
+        """
+        Return the tile index queue for an ingest job
+        Args:
+            ingest_job: Ingest job model
+
+        Returns:
+            ndingest.TileIndexQueue
+        """
+        proj_class = BossIngestProj.load()
+        self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
+                                  ingest_job.resolution, ingest_job.id)
+        queue = TileErrorQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
     def get_ingest_job_ingest_queue(self, ingest_job):
         """
         Return the ingest queue for an ingest job
@@ -379,10 +415,12 @@ class IngestManager:
             self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
                                       ingest_job.resolution, ingest_job.id)
 
-            # delete the ingest and upload_queue
+            # delete the queues
             self.delete_upload_queue()
             if ingest_job.ingest_type != IngestJob.VOLUMETRIC_INGEST:
                 self.delete_ingest_queue()
+                self.delete_tile_index_queue()
+                self.delete_tile_error_queue()
 
             # delete any pending entries in the tile index database and tile bucket
             # Commented out due to removal of tile index's GSI.
@@ -414,6 +452,28 @@ class IngestManager:
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         return queue
 
+    def create_tile_index_queue(self):
+        """
+        Create an tile index queue for an ingest job using the ndingest library
+        Returns:
+            TileIndexQueue : Returns a tile index queue object
+
+        """
+        TileIndexQueue.createQueue(self.nd_proj, endpoint_url=None)
+        queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
+    def create_tile_error_queue(self):
+        """
+        Create an tile error queue for an ingest job using the ndingest library
+        Returns:
+            TileErrorQueue : Returns a tile index queue object
+
+        """
+        TileErrorQueue.createQueue(self.nd_proj, endpoint_url=None)
+        queue = TileErrorQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
     def create_ingest_queue(self):
         """
         Create an ingest queue for an ingest job using the ndingest library
@@ -434,6 +494,28 @@ class IngestManager:
         """
         UploadQueue.deleteQueue(self.nd_proj, endpoint_url=None)
 
+    def delete_tile_index_queue(self):
+        """
+        Delete the current tile index queue.  Also removes the queue as an
+        event trigger for the tile uploaded lambda.
+
+        Returns:
+            None
+
+        """
+        queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
+        self.remove_trigger_tile_uploaded_lambda_from_queue(queue.arn)
+        queue.deleteQueue(self.nd_proj, endpoint_url=None, delete_deadletter_queue=True)
+
+    def delete_tile_error_queue(self):
+        """
+        Delete the current tile error queue
+        Returns:
+            None
+
+        """
+        TileErrorQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+
     def delete_ingest_queue(self):
         """
         Delete the current ingest queue
@@ -442,6 +524,40 @@ class IngestManager:
 
         """
         IngestQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+
+    def add_trigger_tile_uploaded_lambda_from_queue(self, queue_arn, num_msgs=1):
+        """
+        Adds an SQS event trigger to the tile uploaded lambda.
+
+        Args:
+            queue_arn (str): Arn of SQS queue that will be the trigger source.
+            num_msgs (optional[int]): Number of messages to send to the lambda.  Defaults to 1, max 10.
+
+        Raises:
+            (ValueError): if num_msgs is greater than the SQS max batch size.
+        """
+        if num_msgs < 1 or num_msgs > MAX_SQS_BATCH_SIZE:
+            raise ValueError('trigger_tile_uploaded_lambda_from_queue(): Bad num_msgs: {}'.format(num_msgs))
+
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        client.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=TILE_UPLOADED_LAMBDA,
+            BatchSize=num_msgs)
+
+    def remove_trigger_tile_uploaded_lambda_from_queue(self, queue_arn):
+        """
+        Removes an SQS event triggger from the tile uploaded lambda.
+
+        Args:
+            queue_arn (str): Arn of SQS queue that will be the trigger source.
+        """
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        resp = client.list_event_source_mappings(
+            EventSourceArn=queue_arn,
+            FunctionName=TILE_UPLOADED_LAMBDA)
+        for evt in resp['EventSourceMappings']:
+            client.delete_event_source_mapping(UUID=evt['UUID'])
 
     def get_tile_bucket(self):
         """
@@ -616,14 +732,16 @@ class IngestManager:
         """
         # Generate credentials for the ingest_job
         upload_queue = self.get_ingest_job_upload_queue(ingest_job)
+        tile_index_queue = None
         ingest_creds = IngestCredentials()
         if ingest_job.ingest_type == IngestJob.TILE_INGEST:
             bucket_name = TileBucket.getBucketName()
+            tile_index_queue = self.get_ingest_job_tile_index_queue(ingest_job)
         elif ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
             bucket_name = INGEST_BUCKET 
         else:
             raise ValueError('Unknown ingest_type: {}'.format(ingest_job.ingest_type))
-        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, bucket_name, ingest_type=ingest_job.ingest_type)
+        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, tile_index_queue, bucket_name, ingest_type=ingest_job.ingest_type)
         ingest_creds.generate_credentials(ingest_job.id, policy.arn)
 
     def remove_ingest_credentials(self, job_id):
