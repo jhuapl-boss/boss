@@ -257,5 +257,4 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
         self.dbsetup.insert_iso_data()
 
     def tearDown(self):
-        # Stop mocking
-        pass
+        self.layer.clear_flush_queue()

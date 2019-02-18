@@ -130,5 +130,5 @@ class CutoutViewIntegration8BitTests(APITestCase, CutoutInterfaceViewUint8TestMi
                                    port=6379, db=1, decode_responses=False)
         client.flushdb()
 
-
+        self.layer.clear_flush_queue()
 
