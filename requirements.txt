@@ -22,7 +22,7 @@ django-guardian==1.4.9
 # django-cors-headers 2.5.0 has removed support for django 1.8, 1.9 and 1.10.
 #    Using it causes: ImportError: cannot import name 'MiddlewareMixin' in
 #    uwsgi logs and fails to work properly.
-django-cors-headers=2.4.1
+django-cors-headers==2.4.1
 django-bootstrap-form
 django-redis
 git+https://github.com/jhuapl-boss/django-nose2.git
