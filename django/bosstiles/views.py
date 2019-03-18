@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 
+from boss import utils
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, ErrorCodes
 
@@ -71,13 +72,8 @@ class CutoutTile(APIView):
         except BossError as err:
             return err.to_http()
 
-        if "no-cache" in request.query_params:
-            if request.query_params["no-cache"].lower() == "true":
-                no_cache = True
-            else:
-                no_cache = False
-        else:
-            no_cache = False
+        #Define access mode
+        access_mode = utils.get_access_mode(request)
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -105,7 +101,7 @@ class CutoutTile(APIView):
 
         # Do a cutout as specified
         data = cache.cutout(resource, corner, extent, req.get_resolution(),
-                            [req.get_time().start, req.get_time().stop], no_cache=no_cache)
+                            [req.get_time().start, req.get_time().stop], access_mode=access_mode)
 
         # Covert the cutout back to an image and return it
         if orientation == 'xy':
@@ -170,13 +166,8 @@ class Tile(APIView):
         except BossError as err:
             return err.to_http()
 
-        if "no-cache" in request.query_params:
-            if request.query_params["no-cache"].lower() == "true":
-                no_cache = True
-            else:
-                no_cache = False
-        else:
-            no_cache = False
+        #Define access_mode
+        access_mode = utils.get_access_mode(request)
 
         # Convert to Resource
         resource = spdb.project.BossResourceDjango(req)
@@ -204,7 +195,7 @@ class Tile(APIView):
 
         # Do a cutout as specified
         data = cache.cutout(resource, corner, extent, req.get_resolution(),
-                            [req.get_time().start, req.get_time().stop], no_cache=no_cache)
+                            [req.get_time().start, req.get_time().stop], access_mode=access_mode)
 
         # Covert the cutout back to an image and return it
         if orientation == 'xy':
