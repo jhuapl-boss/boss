@@ -111,7 +111,7 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
         self.assertEqual(response.data["num_hierarchy_levels"], 5)
         self.assertEqual(response.data["status"], "IN_PROGRESS")
 
-        for _ in range(0, 0):
+        for _ in range(0, 30):
             # Make request
             response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
                                             channel='channel1').render()
