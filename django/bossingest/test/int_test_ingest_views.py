@@ -402,6 +402,8 @@ class BossIngestViewTestMixin(object):
         self.assertEqual(200, response.status_code)
         self.assertEqual(response.json()["status"], 2)
 
+    # TODO: This test should be re-enabled once the verfication step is re-enabled
+    @unittest.skip("Skipping test_verify_ingest_job_not_done until verification is re-enabled")
     def test_verify_ingest_job_not_done(self):
         """ Test view to create a new ingest job """
         config_data = self.setup_helper.get_ingest_config_data_dict()
