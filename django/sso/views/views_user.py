@@ -163,14 +163,18 @@ class BossUser(APIView):
             None
         """
         # DP TODO: verify user_name is not an admin
-        try:
-            with KeyCloakClient('BOSS') as kc:
-                kc.delete_user(user_name)
-
-            return Response(status=204)
-        except KeyCloakError:
-            msg = "Error deleting user '{}' from Keycloak".format(user_name)
+        if user_name == 'bossadmin':
+            msg = "Cannot delete user bossadmin from Keycloak".format(user_name)
             return BossKeycloakError(msg)
+        else:
+            try:
+                with KeyCloakClient('BOSS') as kc:
+                    kc.delete_user(user_name)
+
+                return Response(status=204)
+            except KeyCloakError:
+                msg = "Error deleting user '{}' from Keycloak".format(user_name)
+                return BossKeycloakError(msg)
 
 class BossUserRole(APIView):
     """

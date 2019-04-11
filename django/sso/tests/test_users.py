@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from unittest import mock
+from sso.views.views_user import *
 import json
 
 from .test_base import TestBase, raise_error
@@ -123,6 +124,15 @@ class TestBossUser(TestBase):
 
         call = mock.call.delete_user('test')
         self.assertEqual(ctxMgr.mock_calls, [call])
+
+    @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
+    def test_delete_user_bossadmin(self, mKCC):
+        ctxMgr = mKCC.return_value.__enter__.return_value
+
+        request = self.makeRequest(delete='/' + version + '/sso/user/bossadmin')
+        response = BossUser.as_view()(request, 'bossadmin')
+
+        self.assertEqual(response.status_code, 500)
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
     def test_failed_delete_user(self, mKCC):
