@@ -11,8 +11,18 @@ uWSGI==2.0.12
 -e git+http://github.com/jhuapl-boss/drf-oidc-auth.git#egg=drf-oidc-auth
 -e git+http://github.com/jhuapl-boss/django-oidc.git#egg=django-oidc
 -e git+http://github.com/jhuapl-boss/boss-oidc.git#egg=boss-oidc
-django-guardian
-django-cors-headers
+
+# django-guardian 1.5.0 get this error on endpoint when trying to make migrations:
+# File "/usr/local/lib/python3.5/site-packages/guardian/admin.py", line 11, in <module>'}}
+#    from django.urls import reverse'}}
+#    "ImportError: No module named 'django.urls'"}}
+# Pinning at 1.4.9 for now.
+django-guardian==1.4.9
+
+# django-cors-headers 2.5.0 has removed support for django 1.8, 1.9 and 1.10.
+#    Using it causes: ImportError: cannot import name 'MiddlewareMixin' in
+#    uwsgi logs and fails to work properly.
+django-cors-headers==2.4.1
 django-bootstrap-form
 django-redis
 git+https://github.com/jhuapl-boss/django-nose2.git

@@ -115,6 +115,51 @@ class SetupTests(object):
         data['ingest_job']['tile_size']['t'] = 1
         return data
 
+    def get_ingest_config_data_dict_volumetric(self):
+        """Method to get the config dictionary ingest job"""
+        data = {}
+        data['schema'] = {}
+        data['schema']['name'] = "boss-v0.2-schema"
+        data['schema']['validator'] = "BossValidatorV02"
+
+        data['client'] = {}
+        data['client']['backend'] = {}
+        data['client']['backend']['name'] = "boss"
+        data['client']['backend']['class'] = "BossBackend"
+        data['client']['backend']['host'] = "api.theboss.io"
+        data['client']['backend']['protocol'] = "https"
+
+        data['client']['path_processor'] = {}
+        data['client']['path_processor']['class'] = "ingest.plugins.multipage_tiff.SingleTimeTiffPathProcessor"
+        data['client']['path_processor']['params'] = {}
+
+        # This isn't a proper chunk processor but fine for testing purposes.
+        data['client']['chunk_processor'] = {}
+        data['client']['chunk_processor']['class'] = "ingest.plugins.multipage_tiff.SingleTimeTiffTileProcessor"
+        data['client']['chunk_processor']['params'] = {}
+
+        data['database'] = {}
+        data['database']['collection'] = "my_col_1"
+        data['database']['experiment'] = "my_exp_1"
+        data['database']['channel'] = "my_ch_1"
+
+        data['ingest_job'] = {}
+        data['ingest_job']['resolution'] = 0
+        data['ingest_job']['extent'] = {}
+        data['ingest_job']['extent']['x'] = [0, 2048]
+        data['ingest_job']['extent']['y'] = [0, 2048]
+        data['ingest_job']['extent']['z'] = [0, 40]
+        data['ingest_job']['extent']['t'] = [0, 1]
+
+        data['ingest_job']['chunk_size'] = {}
+        data['ingest_job']['chunk_size']['x'] = 1024
+        data['ingest_job']['chunk_size']['y'] = 1024
+        data['ingest_job']['chunk_size']['z'] = 64
+
+        data['ingest_job']['ingest_type'] = 'volumetric'
+
+        return data
+
     def create_ingest_job(self, creator = None):
         config_data = self.get_ingest_config_data_dict()
         # create the django model for the job

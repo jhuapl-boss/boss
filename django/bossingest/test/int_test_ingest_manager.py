@@ -93,53 +93,6 @@ class BossIntegrationIngestManagerTestMixin(object):
             ingest_mgmr.delete_upload_queue()
             ingest_mgmr.delete_ingest_queue()
 
-    def test_generate_upload_tasks(self):
-        """"""
-        try:
-            ingest_mgmr = IngestManager()
-            ingest_job = ingest_mgmr.setup_ingest(self.user.id, self.example_config_data)
-            ingest_mgmr.generate_upload_tasks(ingest_job.id)
-            assert (ingest_job.collection == 'my_col_1')
-            assert (ingest_job.experiment == 'my_exp_1')
-            assert (ingest_job.channel == 'my_ch_1')
-
-            # Pull the messages off the queue
-            proj_class = BossIngestProj.load()
-            nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
-                             ingest_job.resolution, ingest_job.id)
-            queue = UploadQueue(nd_proj, endpoint_url=None)
-
-            tmp = queue.receiveMessage(number_of_messages=10)
-            # receive message from the queue
-            for message_id, receipt_handle, message_body in tmp:
-                assert(message_body['job_id'] == ingest_job.id)
-
-                # delete message from the queue
-                response = queue.deleteMessage(message_id, receipt_handle)
-                assert ('Successful' in response)
-            ingest_mgmr.remove_ingest_credentials(ingest_job.id)
-
-        except:
-            raise
-        finally:
-            ingest_mgmr.delete_upload_queue()
-            ingest_mgmr.delete_ingest_queue()
-
-
-    @staticmethod
-    def test_create_upload_task_message():
-        """
-        Test method that creates an upload task message
-        Returns:
-
-        """
-        ingest_mgmr = IngestManager()
-        msg = ingest_mgmr.create_upload_task_message(595, '3534561bd72dcfce1af7c041fc783379&16&1&1&1&0&1&1&3&0',
-                                                     '3534561bd72dcfpppaf7c041fc783379&1&1&1&0&1&1&3&0',
-                                                     'test_upload_queue_url', 'test_ingest_queue_url')
-        msg = json.loads(msg)
-        assert (msg['job_id'] == 595)
-
 
 class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, APITestCase):
      def setUp(self):

@@ -15,23 +15,24 @@
 import json
 import jsonschema
 import boto3
-import io
 import math
 from django.utils import timezone
 
 from ingestclient.core.config import Configuration
 from ingestclient.core.backend import BossBackend
 
-from bossingest.serializers import IngestJobCreateSerializer, IngestJobListSerializer
+from bossingest.serializers import IngestJobCreateSerializer
 from bossingest.models import IngestJob
 from bossingest.utils import query_tile_index, patch_upload_queue
 
-from bosscore.error import BossError, ErrorCodes, BossResourceNotFoundError
+from bosscore.error import BossError, ErrorCodes
 from bosscore.models import Collection, Experiment, Channel
 from bosscore.lookup import LookUpKey
 
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
+from ndingest.ndqueue.tileindexqueue import TileIndexQueue
+from ndingest.ndqueue.tileerrorqueue import TileErrorQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
 from ndingest.nddynamo.boss_tileindexdb import BossTileIndexDB
 from ndingest.ndbucket.tilebucket import TileBucket
@@ -44,10 +45,12 @@ from bossutils.ingestcreds import IngestCredentials
 config = bossutils.configuration.BossConfig()
 INGEST_BUCKET = config["aws"]["ingest_bucket"]
 INGEST_LAMBDA = config["lambda"]["ingest_function"]
+TILE_UPLOADED_LAMBDA = config["lambda"]["tile_uploaded_function"]
 TILE_INDEX = config["aws"]["tile-index-table"]
 
-CONNECTER = '&'
+CONNECTOR = '&'
 MAX_NUM_MSG_PER_FILE = 10000
+MAX_SQS_BATCH_SIZE = 10
 
 
 class IngestManager:
@@ -95,11 +98,15 @@ class IngestManager:
             self.config = Configuration(config_data)
             self.validator = self.config.get_validator()
             self.validator.schema = self.config.schema
-            self.validator.validate_schema()
+            results = self.validator.validate()
         except jsonschema.ValidationError as e:
             raise BossError("Schema validation failed! {}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
         except Exception as e:
-            raise BossError(" Could not validate the schema file.{}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
+            raise BossError("Could not validate the schema file.{}".format(e), ErrorCodes.UNABLE_TO_VALIDATE)
+
+        if len(results['error']) > 0:
+            raise BossError('Could not validate the schema: ' + '\n'.join(results['error']),
+                ErrorCodes.UNABLE_TO_VALIDATE)
 
         return True
 
@@ -172,13 +179,20 @@ class IngestManager:
                 self.job.upload_queue = upload_queue.url
 
                 # Create the ingest queue
-                ingest_queue = self.create_ingest_queue()
-                self.job.ingest_queue = ingest_queue.url
+                if self.job.ingest_type == IngestJob.TILE_INGEST:
+                    ingest_queue = self.create_ingest_queue()
+                    self.job.ingest_queue = ingest_queue.url
+                    tile_index_queue = self.create_tile_index_queue()
+                    self.add_trigger_tile_uploaded_lambda_from_queue(tile_index_queue.arn)
+                    self.create_tile_error_queue()
+                elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+                    # Will the management console be ok with ingest_queue being null?
+                    pass
 
                 # Call the step function to populate the queue.
-                self.job.step_function_arn = self.populate_upload_queue()
+                self.job.step_function_arn = self.populate_upload_queue(self.job)
 
-                # Compute # of tiles in the job
+                # Compute # of tiles or chunks in the job
                 x_extent = self.job.x_stop - self.job.x_start
                 y_extent = self.job.y_stop - self.job.y_start
                 z_extent = self.job.z_stop - self.job.z_start
@@ -189,9 +203,6 @@ class IngestManager:
                 num_tiles_in_t = math.ceil(t_extent / self.job.tile_size_t)
                 self.job.tile_count = num_tiles_in_x * num_tiles_in_y * num_tiles_in_z * num_tiles_in_t
                 self.job.save()
-
-                # tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
-                # self.create_ingest_credentials(upload_queue, tile_bucket)
 
         except BossError as err:
             raise BossError(err.message, err.error_code)
@@ -208,7 +219,7 @@ class IngestManager:
             IngestJob : Data model with the current ingest job
 
         Raises:
-            BossError : For serialization errors that occur while creating a ingest job
+            BossError : For serialization errors that occur while creating a ingest job or if ingest_type is invalid
         """
 
         ingest_job_serializer_data = {
@@ -216,6 +227,9 @@ class IngestManager:
             'collection': self.collection.name,
             'experiment': self.experiment.name,
             'channel': self.channel.name,
+            'collection_id': self.collection.id,
+            'experiment_id': self.experiment.id,
+            'channel_id': self.channel.id,
             'config_data': json.dumps(self.config.config_data),
             'resolution': self.resolution,
             'x_start': self.config.config_data["ingest_job"]["extent"]["x"][0],
@@ -226,11 +240,28 @@ class IngestManager:
             'z_stop': self.config.config_data["ingest_job"]["extent"]["z"][1],
             't_start': self.config.config_data["ingest_job"]["extent"]["t"][0],
             't_stop': self.config.config_data["ingest_job"]["extent"]["t"][1],
-            'tile_size_x': self.config.config_data["ingest_job"]["tile_size"]["x"],
-            'tile_size_y': self.config.config_data["ingest_job"]["tile_size"]["y"],
-            'tile_size_z': self.config.config_data["ingest_job"]["tile_size"]["z"],
-            'tile_size_t': self.config.config_data["ingest_job"]["tile_size"]["t"],
         }
+
+        if "ingest_type" in self.config.config_data["ingest_job"]:
+            ingest_job_serializer_data["ingest_type"] = self._convert_string_to_ingest_job(
+                self.config.config_data["ingest_job"]["ingest_type"])
+        else:
+            ingest_job_serializer_data["ingest_type"] = IngestJob.TILE_INGEST
+
+        if ingest_job_serializer_data["ingest_type"] == IngestJob.TILE_INGEST:
+            ingest_job_serializer_data['tile_size_x'] = self.config.config_data["ingest_job"]["tile_size"]["x"]
+            ingest_job_serializer_data['tile_size_y'] = self.config.config_data["ingest_job"]["tile_size"]["y"]
+            #ingest_job_serializer_data['tile_size_z'] = self.config.config_data["ingest_job"]["tile_size"]["z"]
+            ingest_job_serializer_data['tile_size_z'] = 1
+            ingest_job_serializer_data['tile_size_t'] = self.config.config_data["ingest_job"]["tile_size"]["t"]
+        elif ingest_job_serializer_data["ingest_type"] == IngestJob.VOLUMETRIC_INGEST:
+            ingest_job_serializer_data['tile_size_x'] = self.config.config_data["ingest_job"]["chunk_size"]["x"]
+            ingest_job_serializer_data['tile_size_y'] = self.config.config_data["ingest_job"]["chunk_size"]["y"]
+            ingest_job_serializer_data['tile_size_z'] = self.config.config_data["ingest_job"]["chunk_size"]["z"]
+            ingest_job_serializer_data['tile_size_t'] = 1
+        else:
+            raise BossError('Invalid ingest_type: {}'.format(ingest_job_serializer_data["ingest_type"]), ErrorCodes.UNABLE_TO_VALIDATE)
+
         serializer = IngestJobCreateSerializer(data=ingest_job_serializer_data)
         if serializer.is_valid():
             ingest_job = serializer.save()
@@ -238,6 +269,27 @@ class IngestManager:
 
         else:
             raise BossError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
+
+    def _convert_string_to_ingest_job(self, s):
+        """
+        Convert a string representation of ingest_type to int.
+
+        Args:
+            s (str):
+
+        Returns:
+            (int): IngestJob.TILE_INGEST | IngestJob.VOLUMETRIC_INGEST
+
+        Raises:
+            (BossError): If string is invalid.
+        """
+        lowered = s.lower()
+        if lowered == 'tile':
+            return IngestJob.TILE_INGEST
+        if lowered == 'volumetric':
+            return IngestJob.VOLUMETRIC_INGEST
+
+        raise BossError('Unknown ingest_type: {}'.format(s))
 
     def get_ingest_job(self, ingest_job_id):
         """
@@ -274,6 +326,36 @@ class IngestManager:
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         return queue
 
+    def get_ingest_job_tile_index_queue(self, ingest_job):
+        """
+        Return the tile index queue for an ingest job
+        Args:
+            ingest_job: Ingest job model
+
+        Returns:
+            ndingest.TileIndexQueue
+        """
+        proj_class = BossIngestProj.load()
+        self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
+                                  ingest_job.resolution, ingest_job.id)
+        queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
+    def get_ingest_job_tile_error_queue(self, ingest_job):
+        """
+        Return the tile index queue for an ingest job
+        Args:
+            ingest_job: Ingest job model
+
+        Returns:
+            ndingest.TileIndexQueue
+        """
+        proj_class = BossIngestProj.load()
+        self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
+                                  ingest_job.resolution, ingest_job.id)
+        queue = TileErrorQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
     def get_ingest_job_ingest_queue(self, ingest_job):
         """
         Return the ingest queue for an ingest job
@@ -298,6 +380,10 @@ class IngestManager:
         Returns:
             (bool): True == verified
         """
+        if ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            # ToDo: check lambda deadletter queue.
+            return True
+
         try:
             csv_file = query_tile_index(ingest_job.id, TILE_INDEX, bossutils.aws.get_region())
             if csv_file is not None:
@@ -332,9 +418,12 @@ class IngestManager:
             self.nd_proj = proj_class(ingest_job.collection, ingest_job.experiment, ingest_job.channel,
                                       ingest_job.resolution, ingest_job.id)
 
-            # delete the ingest and upload_queue
+            # delete the queues
             self.delete_upload_queue()
-            self.delete_ingest_queue()
+            if ingest_job.ingest_type != IngestJob.VOLUMETRIC_INGEST:
+                self.delete_ingest_queue()
+                self.delete_tile_index_queue()
+                self.delete_tile_error_queue()
 
             # delete any pending entries in the tile index database and tile bucket
             # Commented out due to removal of tile index's GSI.
@@ -366,6 +455,28 @@ class IngestManager:
         queue = UploadQueue(self.nd_proj, endpoint_url=None)
         return queue
 
+    def create_tile_index_queue(self):
+        """
+        Create an tile index queue for an ingest job using the ndingest library
+        Returns:
+            TileIndexQueue : Returns a tile index queue object
+
+        """
+        TileIndexQueue.createQueue(self.nd_proj, endpoint_url=None)
+        queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
+    def create_tile_error_queue(self):
+        """
+        Create an tile error queue for an ingest job using the ndingest library
+        Returns:
+            TileErrorQueue : Returns a tile index queue object
+
+        """
+        TileErrorQueue.createQueue(self.nd_proj, endpoint_url=None)
+        queue = TileErrorQueue(self.nd_proj, endpoint_url=None)
+        return queue
+
     def create_ingest_queue(self):
         """
         Create an ingest queue for an ingest job using the ndingest library
@@ -386,6 +497,27 @@ class IngestManager:
         """
         UploadQueue.deleteQueue(self.nd_proj, endpoint_url=None)
 
+    def delete_tile_index_queue(self):
+        """
+        Delete the current tile index queue.  Also removes the queue as an
+        event trigger for the tile uploaded lambda.
+
+        Returns:
+            None
+
+        """
+        # self.remove_trigger_tile_uploaded_lambda_from_queue(queue.arn)
+        TileIndexQueue.deleteQueue(self.nd_proj, endpoint_url=None, delete_deadletter_queue=True)
+
+    def delete_tile_error_queue(self):
+        """
+        Delete the current tile error queue
+        Returns:
+            None
+
+        """
+        TileErrorQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+
     def delete_ingest_queue(self):
         """
         Delete the current ingest queue
@@ -394,6 +526,40 @@ class IngestManager:
 
         """
         IngestQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+
+    def add_trigger_tile_uploaded_lambda_from_queue(self, queue_arn, num_msgs=1):
+        """
+        Adds an SQS event trigger to the tile uploaded lambda.
+
+        Args:
+            queue_arn (str): Arn of SQS queue that will be the trigger source.
+            num_msgs (optional[int]): Number of messages to send to the lambda.  Defaults to 1, max 10.
+
+        Raises:
+            (ValueError): if num_msgs is greater than the SQS max batch size.
+        """
+        if num_msgs < 1 or num_msgs > MAX_SQS_BATCH_SIZE:
+            raise ValueError('trigger_tile_uploaded_lambda_from_queue(): Bad num_msgs: {}'.format(num_msgs))
+
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        client.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=TILE_UPLOADED_LAMBDA,
+            BatchSize=num_msgs)
+
+    def remove_trigger_tile_uploaded_lambda_from_queue(self, queue_arn):
+        """
+        Removes an SQS event triggger from the tile uploaded lambda.
+
+        Args:
+            queue_arn (str): Arn of SQS queue that will be the trigger source.
+        """
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        resp = client.list_event_source_mappings(
+            EventSourceArn=queue_arn,
+            FunctionName=TILE_UPLOADED_LAMBDA)
+        for evt in resp['EventSourceMappings']:
+            client.delete_event_source_mapping(UUID=evt['UUID'])
 
     def get_tile_bucket(self):
         """
@@ -405,22 +571,27 @@ class IngestManager:
         """
         return TileBucket.getBucketName()
 
-    def populate_upload_queue(self):
+    def populate_upload_queue(self, job):
         """Execute the populate_upload_queue Step Function
 
+        Args:
+            job (IngestJob):
+
         Returns:
-            string: ARN of the StepFunction Execution started
+            (string): ARN of the StepFunction Execution started
 
         Raises:
-            BossError : if there is no valid ingest job
+            (BossError) : if there is no valid ingest job
         """
-
-        if self.job is None:
-            raise BossError("Unable to generate upload tasks for the ingest service. Please specify a ingest job",
-                            ErrorCodes.UNABLE_TO_VALIDATE)
-
-        args = self._generate_upload_queue_args(self.job)
-        args['upload_sfn'] = config['sfn']['upload_sfn']
+        args = self._generate_upload_queue_args(job)
+        if job.ingest_type == IngestJob.TILE_INGEST:
+            args['upload_sfn'] = config['sfn']['upload_sfn']
+        elif job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            args['upload_sfn'] = config['sfn']['volumetric_upload_sfn']
+        else:
+            raise BossError(
+                "Ingest job's ingest_type has invalid value: {}".format(
+                    job.ingest_type), ErrorCodes.UNABLE_TO_VALIDATE)
 
         session = bossutils.aws.get_session()
         populate_sfn = config['sfn']['populate_upload_queue']
@@ -433,16 +604,18 @@ class IngestManager:
         Generate dictionary to include in messages placed in the tile upload queue.
         
         Args:
-            ()
+            ingest_job (IngestJob):
 
         Returns:
             (dict)
+
+        Raises:
+            (BossError): If ingest_job.ingest_type invalid.
         """
 
-        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
+        bosskey = ingest_job.collection + CONNECTOR + ingest_job.experiment + CONNECTOR + ingest_job.channel
         lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
         [col_id, exp_id, ch_id] = lookup_key.split('&')
-        project_info = [col_id, exp_id, ch_id]
 
         args = {
             'job_id': ingest_job.id,
@@ -450,7 +623,8 @@ class IngestManager:
             'ingest_queue': ingest_job.ingest_queue,
 
             'resolution': ingest_job.resolution,
-            'project_info': lookup_key.split(CONNECTER),
+            'project_info': lookup_key.split(CONNECTOR),
+            'ingest_type': ingest_job.ingest_type,
 
             't_start': ingest_job.t_start,
             't_stop': ingest_job.t_stop,
@@ -466,155 +640,21 @@ class IngestManager:
 
             'z_start': ingest_job.z_start,
             'z_stop': ingest_job.z_stop,
-            'z_tile_size': 1,
-
-            'z_chunk_size': 16
+            'z_tile_size': 1
         }
 
-        return args
 
-    def generate_upload_tasks(self, job_id=None):
-        """
-        Generate upload tasks for the ingest job. This creates once task for each tile that has to be uploaded in the
-        ingest queue
-
-        Args:
-            job_id: Job id of the ingest queue. If not included this takes the current ingest job
-
-        Returns:
-            None
-        Raises:
-            BossError : if there is no valid ingest job
-
-        """
-
-        if job_id is None and self.job is None:
-            raise BossError("Unable to generate upload tasks for the ingest service. Please specify a ingest job",
-                            ErrorCodes.UNABLE_TO_VALIDATE)
-        elif job_id:
-            # Using the job id to get the job
-            try:
-                ingest_job = IngestJob.objects.get(id=job_id)
-            except IngestJob.DoesNotExist:
-                raise BossError("Ingest job with id {} does not exist".format(job_id), ErrorCodes.RESOURCE_NOT_FOUND)
+        if ingest_job.ingest_type == IngestJob.TILE_INGEST:
+            # Always the Boss cuboid z size for tile jobs.
+            args['z_chunk_size'] = 16
+        elif ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            # tile_size_* holds the chunk size dimensions for volumetric jobs.
+            args['z_chunk_size'] = ingest_job.tile_size_z
         else:
-            ingest_job = self.job
-
-        # Generate upload tasks for the ingest job
-        # Get the project information
-        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
-        lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
-        [col_id, exp_id, ch_id] = lookup_key.split('&')
-        project_info = [col_id, exp_id, ch_id]
-
-        # Batch messages and write to file
-        base_file_name = 'tasks_' + lookup_key + '_' + str(ingest_job.id)
-        self.file_index = 0
-
-        # open file
-        f = io.StringIO()
-        header = {'job_id': ingest_job.id, 'upload_queue_url': ingest_job.upload_queue,
-                  'ingest_queue_url': ingest_job.ingest_queue}
-        f.write(json.dumps(header))
-        f.write('\n')
-        num_msg_per_file = 0
-
-        for time_step in range(ingest_job.t_start, ingest_job.t_stop, 1):
-            # For each time step, compute the chunks and tile keys
-
-            for z in range(ingest_job.z_start, ingest_job.z_stop, 16):
-                for y in range(ingest_job.y_start, ingest_job.y_stop, ingest_job.tile_size_y):
-                    for x in range(ingest_job.x_start, ingest_job.x_stop, ingest_job.tile_size_x):
-
-                        # compute the chunk indices
-                        chunk_x = int(x/ingest_job.tile_size_x)
-                        chunk_y = int(y/ingest_job.tile_size_y)
-                        chunk_z = int(z/16)
-
-                        # Compute the number of tiles in the chunk
-                        if ingest_job.z_stop-z >= 16:
-                            num_of_tiles = 16
-                        else:
-                            num_of_tiles = ingest_job.z_stop-z
-
-                        # Generate the chunk key
-                        chunk_key = (BossBackend(self.config)).encode_chunk_key(num_of_tiles, project_info,
-                                                                                ingest_job.resolution,
-                                                                                chunk_x, chunk_y, chunk_z, time_step)
-
-                        self.num_of_chunks += 1
-
-                        # get the tiles keys for this chunk
-                        for tile in range(z, z + num_of_tiles):
-                            # get the tile key
-                            tile_key = (BossBackend(self.config)).encode_tile_key(project_info, ingest_job.resolution,
-                                                                                  chunk_x, chunk_y, tile, time_step)
-                            self.count_of_tiles += 1
-
-                            # Generate the upload task msg
-                            msg = chunk_key + ',' + tile_key + '\n'
-                            f.write(msg)
-                            num_msg_per_file += 1
-
-                            # if there are 10 messages in the batch send it to the upload queue.
-                            if num_msg_per_file == MAX_NUM_MSG_PER_FILE:
-                                fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
-                                self.upload_task_file(fname, f.getvalue())
-                                self.file_index += 1
-                                f.close()
-                                # status = self.send_upload_message_batch(batch_msg)
-
-                                fname = base_file_name + '_' + str(self.file_index+1) + '.txt'
-                                f = io.StringIO()
-                                header = {'job_id': ingest_job.id, 'upload_queue_url': ingest_job.upload_queue,
-                                          'ingest_queue_url':
-                                              ingest_job.ingest_queue}
-                                f.write(json.dumps(header))
-                                f.write('\n')
-                                num_msg_per_file = 0
-
-        # Edge case: the last batch size maybe smaller than 10
-        if num_msg_per_file != 0:
-            fname = base_file_name + '_' + str(self.file_index + 1) + '.txt'
-            self.upload_task_file(fname, f.getvalue())
-            f.close()
-            self.file_index += 1
-            num_msg_per_file = 0
-
-        # Update status
-        self.job.tile_count = self.count_of_tiles
-        self.job.save()
-
-    def upload_task_file(self, file_name_key, data):
-        """
-        Upload a file with ingest tasks to the ingest s3 bucket
-        Args:
-            file_name: Filename of the file to upload
-
-        Returns:
-            status
-
-        """
-        s3 = boto3.resource('s3')
-        s3.Bucket(INGEST_BUCKET).put_object(Key=file_name_key, Body=data)
-        self.invoke_lambda(file_name_key)
-
-    def invoke_lambda(self, file_name):
-        """
-        Invoke the lamda per file
-        Returns:
-
-        """
-        msg_data = {"lambda-name": "upload_enqueue",
-                    "upload_bucket_name": INGEST_BUCKET,
-                    "filename": file_name}
-        # Trigger lambda to handle it
-        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
-
-        response = client.invoke(
-            FunctionName=INGEST_LAMBDA,
-            InvocationType='Event',
-            Payload=json.dumps(msg_data).encode())
+            raise BossError(
+                "Ingest job's ingest_type has invalid value: {}".format(
+                    self.job.ingest_type), ErrorCodes.UNABLE_TO_VALIDATE)
+        return args
 
     def invoke_ingest_lambda(self, ingest_job, num_invokes=1):
         """Method to trigger extra lambda functions to make sure all the ingest jobs that are actually fully populated
@@ -627,7 +667,7 @@ class IngestManager:
         Returns:
 
         """
-        bosskey = ingest_job.collection + CONNECTER + ingest_job.experiment + CONNECTER + ingest_job.channel
+        bosskey = ingest_job.collection + CONNECTOR + ingest_job.experiment + CONNECTOR + ingest_job.channel
         lookup_key = (LookUpKey.get_lookup_key(bosskey)).lookup_key
         [col_id, exp_id, ch_id] = lookup_key.split('&')
         project_info = [col_id, exp_id, ch_id]
@@ -646,56 +686,6 @@ class IngestManager:
             lambda_client.invoke(FunctionName=INGEST_LAMBDA,
                                  InvocationType='Event',
                                  Payload=json.dumps(event).encode())
-
-    @staticmethod
-    def create_upload_task_message(job_id, chunk_key, tile_key, upload_queue_arn, ingest_queue_arn):
-        """
-        Create a dictionary with the upload task message for the tilekey
-        Args:
-            job_id: Job id of the ingest job
-            chunk_key: Chunk key of the chunk in which the tile is
-            tile_key: Unique tile key for the tile
-            upload_queue_arn: Upload queue url
-            ingest_queue_arn: Ingest queue url
-
-        Returns:
-            Dict : A single upload task message that corresponds to a tile
-        """
-        msg = {}
-        msg['job_id'] = job_id
-        msg['chunk_key'] = chunk_key
-        msg['tile_key'] = tile_key
-        msg['upload_queue_arn'] = upload_queue_arn
-        msg['ingest_queue_arn'] = ingest_queue_arn
-        return json.dumps(msg)
-
-    def send_upload_task_message(self, msg):
-        """
-        Upload one message to the upload queue
-        (Note : Currently not used. Replaced with the send_upload_message_batch)
-        Args:
-            msg: Message to send to the upload queue
-
-        Returns:
-            None
-
-        """
-        queue = UploadQueue(self.nd_proj, endpoint_url=None)
-        queue.sendMessage(msg)
-
-    def send_upload_message_batch(self, list_msg):
-        """
-        Upload a batch of 10 messages to the upload queue. An error is raised if more than 10 messages are in the batch
-        Args:
-            list_msg: The list containing the messages to upload
-
-        Returns:
-            None
-
-        """
-        queue = UploadQueue(self.nd_proj, endpoint_url=None)
-        status = queue.sendBatchMessages(list_msg)
-        return status
 
     def delete_tiles(self, ingest_job):
         """
@@ -722,7 +712,6 @@ class IngestManager:
             chunks = list(tiledb.getTaskItems(ingest_job.id))
 
             for chunk in chunks:
-                chunk_key = chunk['chunk_key']
                 # delete each tile in the chunk
                 for key in chunk['tile_uploaded_map']:
                     response = tilebucket.deleteObject(key)
@@ -732,40 +721,29 @@ class IngestManager:
             raise BossError("Exception while deleteing tiles for the ingest job {}. {}".format(ingest_job.id, e),
                             ErrorCodes.BOSS_SYSTEM_ERROR)
 
-    def create_ingest_credentials(self, upload_queue, tile_bucket):
-        """
-        Create new ingest credentials for a job
-        Args:
-            upload_queue : Upload queue for the job
-            tile_bucket : Name of the tile bucket for the job
-        Returns:
-            None
-
-        """
-        # Generate credentials for the ingest_job
-        # Create the credentials for the job
-        # tile_bucket = TileBucket(self.job.collection + '&' + self.job.experiment)
-        # self.create_ingest_credentials(upload_queue, tile_bucket)
-        ingest_creds = IngestCredentials()
-        policy = BossUtil.generate_ingest_policy(self.job.id, upload_queue, tile_bucket)
-        ingest_creds.generate_credentials(self.job.id, policy.arn)
-
     def generate_ingest_credentials(self, ingest_job):
         """
         Create new ingest credentials for a job
         Args:
-            upload_queue : Upload queue for the job
-            tile_bucket : Name of the tile bucket for the job
+            ingest_job: Ingest job model
         Returns:
             None
+        Raises:
+            (ValueError): On bad ingest_type
 
         """
         # Generate credentials for the ingest_job
-        # Create the credentials for the job
-        tile_bucket = TileBucket(ingest_job.collection + '&' + ingest_job.experiment)
         upload_queue = self.get_ingest_job_upload_queue(ingest_job)
+        tile_index_queue = None
         ingest_creds = IngestCredentials()
-        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, tile_bucket)
+        if ingest_job.ingest_type == IngestJob.TILE_INGEST:
+            bucket_name = TileBucket.getBucketName()
+            tile_index_queue = self.get_ingest_job_tile_index_queue(ingest_job)
+        elif ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            bucket_name = INGEST_BUCKET 
+        else:
+            raise ValueError('Unknown ingest_type: {}'.format(ingest_job.ingest_type))
+        policy = BossUtil.generate_ingest_policy(ingest_job.id, upload_queue, tile_index_queue, bucket_name, ingest_type=ingest_job.ingest_type)
         ingest_creds.generate_credentials(ingest_job.id, policy.arn)
 
     def remove_ingest_credentials(self, job_id):

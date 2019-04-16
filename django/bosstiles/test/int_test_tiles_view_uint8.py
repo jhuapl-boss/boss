@@ -26,6 +26,7 @@ from bosstiles.views import Tile, CutoutTile
 import numpy as np
 import blosc
 import redis
+import time
 
 version = settings.BOSS_VERSION
 
@@ -76,6 +77,8 @@ class ImageViewIntegrationTests(ImageInterfaceViewTestMixin, APITestCase):
         request = factory.get('/' + version + '/image/col1/exp1/channel1/xy/0/400:700/300:800/3/?no-cache=true',
                               Accept='image/png')
         force_authenticate(request, user=self.user)
+
+        time.sleep(10)
 
         # Make request
         response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
@@ -135,6 +138,8 @@ class TileViewIntegrationTests(TileInterfaceViewTestMixin, APITestCase):
         request = factory.get('/' + version + '/tile/col1/exp1/channel1/xy/512/0/0/0/5/?no-cache=true',
                               Accept='image/png')
         force_authenticate(request, user=self.user)
+
+        time.sleep(10)
 
         # Make request
         response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',

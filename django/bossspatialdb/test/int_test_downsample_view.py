@@ -48,6 +48,7 @@ def mock_boss_cfg():
 class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITestCase):
     layer = DjangoSetupLayer
 
+    @unittest.skip("Skipping test_start_downsample_get_status_and_check_data. Takes about 50 mins to complete downsample")
     def test_start_downsample_get_status_and_check_data(self):
         """A large complex test that verifies all the pluming for downsample.
          Does not validate data integrity, but does make sure data exists at different levels and iso vs. aniso."""
@@ -257,5 +258,4 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
         self.dbsetup.insert_iso_data()
 
     def tearDown(self):
-        # Stop mocking
-        pass
+        self.layer.clear_flush_queue()

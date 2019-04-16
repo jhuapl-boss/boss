@@ -34,6 +34,16 @@ function set_button_modes(val) {
     }
 }
 
+function get_type_str(val) {
+    var type = "Invalid";
+    if (val == 0) {
+        type = "Tile";
+    } else if (val == 1) {
+        type = "Volumetric";
+    }
+    return type;
+}
+
 function get_ingest_jobs_callback(params, response) {
     params.success(response.ingest_jobs);
 }
@@ -57,7 +67,9 @@ function ingest_job_list_formatter(response) {
                      "resource": response[idx]["collection"] + "/" + response[idx]["experiment"] + "/" + response[idx]["channel"],
                      "status": status,
                      "created": response[idx]["created_on"],
-                     "actions": actions_str})
+                     "actions": actions_str,
+                     "type": get_type_str(response[idx]["ingest_type"])
+                    });
     }
 
     return output
@@ -70,6 +82,7 @@ function get_job_callback(params, response){
     $("#experiment").text(response['ingest_job']["experiment"]);
     $("#channel").text(response['ingest_job']["channel"]);
     $("#status").text(get_status_str(response["ingest_job"]["status"]));
+    $("#type").text(get_type_str(response["ingest_job"]["ingest_type"]));
 }
 
 function get_job_status_callback(params, response){
