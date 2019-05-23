@@ -37,7 +37,7 @@ version = settings.BOSS_VERSION
 
 class BoundingBoxMixin(object):
 
-    @unittest.skip('Skipping - currently indexing disabled')
+    @unittest.skip('Skipping - indexing is now an asynchronous process')
     def test_get_object_bounding_box_single_cuboid(self):
         """ Test getting the bounding box of a object"""
 
@@ -98,7 +98,8 @@ class BoundingBoxMixin(object):
         self.assertEqual(bb['y_range'], [1536, 2048])
         self.assertEqual(bb['z_range'], [0, 16])
 
-    @unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
+    #@unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
+    @unittest.skip('Skipping - indexing is now an asynchronous process')
     def test_get_object_bounding_box_span_cuboid_boundary(self):
         """ Test getting the bounding box of a object that spans the z boundary of a cuboid"""
 
@@ -158,7 +159,7 @@ class BoundingBoxMixin(object):
         self.assertEqual(bb['y_range'], [0, 1024])
         self.assertEqual(bb['z_range'], [0, 32])
 
-    @unittest.skip('Skipping - currently indexing disabled')
+    @unittest.skip('Skipping - indexing is now an asynchronous process')
     def test_get_object_bounding_box_tight_single_cuboid(self):
         """ Test getting the bounding box of a object"""
 
@@ -219,7 +220,8 @@ class BoundingBoxMixin(object):
         self.assertEqual(bb['y_range'], [1024, 1152])
         self.assertEqual(bb['z_range'], [0, 16])
 
-    @unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
+    #@unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
+    @unittest.skip('Skipping - indexing is now an asynchronous process')
     def test_get_object_bounding_box_tight_span_cuboid_boundary(self):
         """ Test getting the bounding box of a object that spans the z boundary of a cuboid"""
 
