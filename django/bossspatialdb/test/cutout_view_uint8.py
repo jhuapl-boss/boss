@@ -27,6 +27,7 @@ from bosscore.error import BossError
 import numpy as np
 import zlib
 import io
+import time
 from PIL import Image
 
 from unittest.mock import patch
@@ -1113,6 +1114,8 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
         # log in user
         force_authenticate(request, user=self.user)
+
+        time.sleep(10)
 
         # Make request
         response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='channel1',

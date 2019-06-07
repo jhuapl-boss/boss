@@ -189,6 +189,22 @@ function resource_formatter(response, detail_base_url, delete_function, delete_b
     return output
 }
 
+function channel_resource_formatter(response, detail_base_url, delete_function, delete_base_url, neuroglancer_url) {
+    // Base formatter for channel resource bottstrap table plugin
+    var output = [];
+    for (var idx in response) {
+        var actions_str = "<a type='button' class='btn btn-default btn-sm action-button' href=" + detail_base_url + response[idx] + ">";
+        actions_str += "<span class='glyphicon glyphicon-pencil' aria-hidden='true'></span>  Details</a>";
+        actions_str += "<a type='button' class='btn btn-default btn-sm action-button' href=" + neuroglancer_url + response[idx] +  "'}}}" + ">";
+        actions_str += "<span class='glyphicon' aria-hidden='true'></span>  Neuroglancer</a>";
+        actions_str += "<a type='button' class='btn btn-danger btn-sm action-button' href='javascript:void(0);' onclick='" + delete_function + "(\"" + delete_base_url + response[idx] + "\")'>";
+        actions_str += "<span class='glyphicon glyphicon-remove' aria-hidden='true'></span>  Delete</a>";
+        output.push({"name": response[idx], "actions": actions_str})
+    }
+
+    return output
+}
+
 function metadata_handler(response) {
     // Format handler for all metadata bootstrap table plugins
     var output = [];

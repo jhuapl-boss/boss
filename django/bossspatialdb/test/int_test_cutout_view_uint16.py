@@ -57,3 +57,5 @@ class CutoutViewIntegration16BitTests(CutoutInterfaceViewUint16TestMixin, APITes
         client = redis.StrictRedis(host=self.state_config['cache_state_host'],
                                    port=6379, db=1, decode_responses=False)
         client.flushdb()
+
+        self.layer.clear_flush_queue()

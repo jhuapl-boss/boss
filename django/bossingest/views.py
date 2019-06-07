@@ -23,7 +23,7 @@ from rest_framework import status
 from rest_framework import generics
 
 from bosscore.error import BossError, ErrorCodes, BossHTTPError
-from bossingest.ingest_manager import IngestManager
+from bossingest.ingest_manager import IngestManager, INGEST_BUCKET
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
@@ -88,7 +88,8 @@ class IngestJobView(IngestServiceView):
                    'channel': config_data["database"]["channel"],
                    'created_on': item.start_date,
                    'completed_on': item.end_date,
-                   'status': item.status}
+                   'status': item.status,
+                   'ingest_type': item.ingest_type}
             list_jobs.append(job)
 
         return Response({"ingest_jobs": list_jobs}, status=status.HTTP_200_OK)
@@ -120,6 +121,9 @@ class IngestJobView(IngestServiceView):
 
             # Start setting up output
             data = {'ingest_job': serializer.data}
+            data['ingest_job']['tile_index_queue'] = None
+            if ingest_job.ingest_type == IngestJob.TILE_INGEST:
+                data['ingest_job']['tile_index_queue'] = ingest_mgmr.get_ingest_job_tile_index_queue(ingest_job).url
 
             if ingest_job.status == 3:
                 # The job has been deleted
@@ -152,9 +156,16 @@ class IngestJobView(IngestServiceView):
                 data['credentials'] = None
 
             data['tile_bucket_name'] = ingest_mgmr.get_tile_bucket()
+            data['ingest_bucket_name'] = INGEST_BUCKET
             data['KVIO_SETTINGS'] = settings.KVIO_SETTINGS
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
             data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
+
+            # Strip out un-needed data from OBJECTIO_CONFIG to save space when
+            # including in S3 metadata.
+            data['OBJECTIO_CONFIG'].pop('index_deadletter_queue', None)
+            data['OBJECTIO_CONFIG'].pop('index_cuboids_keys_queue', None)
+
 
             # add the lambda - Possibly remove this later
             config = bossutils.configuration.BossConfig()
@@ -283,11 +294,19 @@ class IngestJobCompleteView(IngestServiceView):
                     return BossHTTPError("Only the creator or admin can start verification of an ingest job",
                                          ErrorCodes.INGEST_NOT_CREATOR)
 
+                # Disable verification until it is reworked and always return
+                # success for now.
+                blog.info('Telling client job complete - completion/verificcation to be fixed later.')
+                return Response(status=status.HTTP_204_NO_CONTENT)
+
+                """
                 blog.info('Verifying ingest job {}'.format(ingest_job_id))
+
                 # Start verification process
                 if not ingest_mgmr.verify_ingest_job(ingest_job):
                     # Ingest not finished
                     return Response(status=status.HTTP_202_ACCEPTED)
+                """
 
                 # Verification successful, fall through to the complete process.
 
@@ -311,21 +330,34 @@ class IngestJobCompleteView(IngestServiceView):
                 return BossHTTPError("Only the creator or admin can complete an ingest job",
                                      ErrorCodes.INGEST_NOT_CREATOR)
 
-            # Check if any messages remain in the ingest queue
-            ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
-            num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
-
-            # Kick off extra lambdas just in case
-            if num_messages_in_queue:
-                blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
-                ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
-
-                # Give lambda a few seconds to fire things off
-                time.sleep(30)
-
-            ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
-            blog.info("Complete successful")
+            # TODO SH This is a quick fix to make sure the ingest-client does not run close option.
+            #      the clean up code commented out below, because it is not working correctly.
             return Response(status=status.HTTP_204_NO_CONTENT)
+
+            # if ingest_job.ingest_type == IngestJob.TILE_INGEST:
+            #     # Check if any messages remain in the ingest queue
+            #     ingest_queue = ingest_mgmr.get_ingest_job_ingest_queue(ingest_job)
+            #     num_messages_in_queue = int(ingest_queue.queue.attributes['ApproximateNumberOfMessages'])
+            #
+            #     # Kick off extra lambdas just in case
+            #     if num_messages_in_queue:
+            #         blog.info("{} messages remaining in Ingest Queue".format(num_messages_in_queue))
+            #         ingest_mgmr.invoke_ingest_lambda(ingest_job, num_messages_in_queue)
+            #
+            #         # Give lambda a few seconds to fire things off
+            #         time.sleep(30)
+            #
+            #     ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+            #
+            # elif ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            #     ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+            #
+            # # ToDo: call cleanup method for volumetric ingests.  Don't want
+            # # to cleanup until after testing with real data.
+            # #ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.COMPLETE)
+            #
+            # blog.info("Complete successful")
+            # return Response(status=status.HTTP_204_NO_CONTENT)
         except BossError as err:
                 return err.to_http()
         except Exception as err:

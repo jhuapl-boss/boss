@@ -64,7 +64,11 @@ function get_downsample_callback(params, response){
     set_button_modes(response['status'])
 }
 
-function downsample_ajax(collection, experiment, channel, type){
+function downsample_ajax(collection, experiment, channel, type, data){
+    if (data) {
+        data = JSON.stringify(data)
+    }
+
     $.ajax({
         url: API_ROOT + "downsample/" + collection + "/" + experiment + "/" + channel,
         type: type,
@@ -73,6 +77,8 @@ function downsample_ajax(collection, experiment, channel, type){
             "Content-Type": "application/json; charset=utf-8",
             "X-CSRFToken": get_csrf_token()
         },
+        data: data,
+        processData: false,
         cache: false,
         statusCode: {
             201: function (response) {
@@ -121,7 +127,72 @@ function downsample_ajax(collection, experiment, channel, type){
 function start_downsample(collection, experiment, channel){
     $("#downsample-btn").addClass('disabled');
     downsample_ajax(collection, experiment, channel, "POST")
+}
 
+function start_redownsample(collection, experiment, channel){
+    function get(url, callback) {
+        $.ajax({
+            url: url,
+            type: "GET",
+            headers: {
+                "Accept" : "application/json; charset=utf-8",
+                "Content-Type": "application/json; charset=utf-8",
+                "X-CSRFToken": get_csrf_token()
+            },
+            cache: false,
+            success: function(data) { callback(data); },
+            error: function() { swal("Uh Oh.", "Something went wrong", "error"); }
+        });
+    }
+
+    function create_input(name, val) {
+        id = "dwnspl_" + name;
+        return '<label for="' + id + '">' + name + ':</label>&nbsp;' +
+               '<input type="number" id="' + id + '" name="' + id + '"' +
+               ' placeholder="' + name + '" step="1" value="' + val + '"/>' +
+               '<br/>';
+    }
+
+    function get_input(name) {
+        return document.getElementById("dwnspl_" + name).value;
+    }
+
+    get(API_ROOT + "collection/" + collection + "/experiment/" + experiment + "/",
+        function(exp) {
+            get(API_ROOT + "coord/" + exp.coord_frame + "/",
+                function(coord) {
+                    frame = swal({
+                        title: "Downsample Coordinate Frame",
+                        html:
+                            '<b>X Coodinates</b><br/>' +
+                            create_input('start_x', coord.x_start) +
+                            create_input('stop_x', coord.x_stop) +
+                            '<br/><b>Y Coodinates</b><br/>' +
+                            create_input('start_y', coord.y_start) +
+                            create_input('stop_y', coord.y_stop) +
+                            '<br/><b>Z Coodinates</b><br/>' +
+                            create_input('start_z', coord.z_start) +
+                            create_input('stop_z', coord.z_stop),
+                        showCancelButton: true,
+                        preConfirm: function() {
+                            frame = {
+                                x_start: get_input("start_x"),
+                                x_stop: get_input("stop_x"),
+
+                                y_start: get_input("start_y"),
+                                y_stop: get_input("stop_y"),
+
+                                z_start: get_input("start_z"),
+                                z_stop: get_input("stop_z"),
+                            }
+
+                            return Promise.resolve(frame);
+                        }
+                    }).then(function(frame){
+                        downsample_ajax(collection, experiment, channel, "post", frame);
+                    });
+                })
+        })
 }
 
 function cancel_downsample(collection, experiment, channel){
