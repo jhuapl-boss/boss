@@ -161,6 +161,12 @@ class IngestJobView(IngestServiceView):
             data['STATEIO_CONFIG'] = settings.STATEIO_CONFIG
             data['OBJECTIO_CONFIG'] = settings.OBJECTIO_CONFIG
 
+            # Strip out un-needed data from OBJECTIO_CONFIG to save space when
+            # including in S3 metadata.
+            data['OBJECTIO_CONFIG'].pop('index_deadletter_queue', None)
+            data['OBJECTIO_CONFIG'].pop('index_cuboids_keys_queue', None)
+
+
             # add the lambda - Possibly remove this later
             config = bossutils.configuration.BossConfig()
             data['ingest_lambda'] = config["lambda"]["page_in_function"]

@@ -28,6 +28,7 @@ from bosscore.test.setup_db import DjangoSetupLayer
 from bosscore.test.setup_db import SetupTestDB
 from bosscore.error import BossError
 import json
+import unittest
 from unittest.mock import patch
 import time
 import redis

@@ -129,6 +129,10 @@ class BossGroupMember(APIView):
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
 
+            if user_name == 'bossadmin':
+                return BossHTTPError('Cannot remove bossadmin from any group'
+                                     .format(group_name), ErrorCodes.BAD_REQUEST)
+
             # Check the users permissions.
             if request.user.has_perm("maintain_group", bgroup):
                 usr = User.objects.get(username=user_name)
@@ -238,7 +242,7 @@ class BossGroupMaintainer(APIView):
     @check_role("resource-manager")
     def delete(self, request, group_name, user_name):
         """
-        Removes a maintainer form the group
+        Removes a maintainer from the group
         Args:
             request: Django rest framework request
             group_name:Group name from the request
@@ -254,6 +258,10 @@ class BossGroupMaintainer(APIView):
                                      .format(group_name), ErrorCodes.BAD_REQUEST)
             if user_name is None:
                 return BossHTTPError('Missing username parameter in post.', ErrorCodes.INVALID_URL)
+            
+            elif user_name == 'bossadmin':
+                return BossHTTPError('Cannot remove boassadmin maintainer from any group',
+                                     ErrorCodes.BAD_REQUEST)
 
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
@@ -416,13 +424,16 @@ class BossUserGroup(APIView):
 
         """
         try:
-
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
             bpm = BossPrivilegeManager(request.user)
             if request.user == bgroup.creator or bpm.has_role('admin'):
-                group.delete()
-                return Response(status=204)
+                if group_name == 'admin' or group_name == 'public':
+                    return BossHTTPError('Admin and public groups cannot be deleted.',
+                                        ErrorCodes.BAD_REQUEST)  
+                else:
+                    group.delete()
+                    return Response(status=204)
             else:
                 return BossHTTPError('Groups can only be deleted by the creator or administrator',
                                      ErrorCodes.MISSING_ROLE)
