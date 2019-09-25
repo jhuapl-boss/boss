@@ -468,7 +468,7 @@ class Downsample(APIView):
                 'Dimensions': [
                     {'Name': 'User', 'Value': request.user.name},
                     {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection, experiment, channel)},
-                    {'Name': 'Compute-Cost': 'Value': str(cost)}
+                    {'Name': 'Compute-Cost', 'Value': str(cost)}
                 ],
                 'Value': 1.0,
                 'Unit': 'Count'
