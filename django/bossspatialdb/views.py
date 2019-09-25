@@ -387,7 +387,7 @@ class Downsample(APIView):
             # Verify that the channel is still being downsampled
             status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
             if status == 'IN_PROGRESS':
-                return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCode.INVALID_STATE)
+                return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
 
         if request.user.is_staff:
             # DP HACK: allow admin users to override the coordinate frame
@@ -443,7 +443,7 @@ class Downsample(APIView):
            ((args['x_stop'] - args['x_start']) * \
             (args['y_stop'] - args['y_start']) * \
             (args['z_stop'] - args['z_start']) > large_frame):
-            return BossHTTPError("Large downsamples require admin permissions to trigger. Invalid Request.", ErrorCode.INVALID_STATE)
+            return BossHTTPError("Large downsamples require admin permissions to trigger. Invalid Request.", ErrorCodes.INVALID_STATE)
 
         # Add metrics to CloudWatch
         def get_cubes(axis, dim):
