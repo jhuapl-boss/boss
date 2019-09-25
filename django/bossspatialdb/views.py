@@ -439,10 +439,10 @@ class Downsample(APIView):
 
         # Check that only administrators are triggering extra large downsamples
         large_frame = 100000 * 100000 * 3000 # ~ 200 x 200 x 200 cubes
-        if not request.user.is_staff and \
-           (args['x_stop'] - args['x_start']) * \
-           (args['y_stop'] - args['y_start']) * \
-           (args['z_stop'] - args['z_start']) > large_frame:
+        if (not request.user.is_staff) and \
+           ((args['x_stop'] - args['x_start']) * \
+            (args['y_stop'] - args['y_start']) * \
+            (args['z_stop'] - args['z_start']) > large_frame):
             return BossHTTPError("Large downsamples require admin permissions to trigger. Invalid Request.", ErrorCode.INVALID_STATE)
 
         # Add metrics to CloudWatch
