@@ -379,6 +379,16 @@ class Downsample(APIView):
              not request.user.is_staff:
             return BossHTTPError("Channel is already downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
 
+        session = bossutils.aws.get_session()
+
+        # Make sure only one Channel is downsampled at a time
+        channel_objs = Channel.objects.filter(downsample_status = 'IN_PROGRESS')
+        for channel_obj in channel_objs:
+            # Verify that the channel is still being downsampled
+            status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
+            if status == 'IN_PROGRESS':
+                return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCode.INVALID_STATE)
+
         if request.user.is_staff:
             # DP HACK: allow admin users to override the coordinate frame
             frame = request.data
@@ -427,7 +437,45 @@ class Downsample(APIView):
 
         }
 
-        session = bossutils.aws.get_session()
+        # Check that only administrators are triggering extra large downsamples
+        large_frame = 100000 * 100000 * 3000 # ~ 200 x 200 x 200 cubes
+        if not request.user.is_staff and \
+           (args['x_stop'] - args['x_start']) * \
+           (args['y_stop'] - args['y_start']) * \
+           (args['z_stop'] - args['z_start']) > large_frame:
+            return BossHTTPError("Large downsamples require admin permissions to trigger. Invalid Request.", ErrorCode.INVALID_STATE)
+
+        # Add metrics to CloudWatch
+        def get_cubes(axis, dim):
+            extent = args['{}_stop'.format(axis)] - args['{}_start'.format(axis)]
+            return -(-extent // dim) ## ceil div
+
+        cost = (  get_cubes('x')
+                * get_cubes('y')
+                * get_cubes('z')
+                / 4 # Number of cubes for a downsampled volume
+                * 0.75 # Assume the frame is only 75% filled
+                * 2 # 1 for invoking a lambda
+                    # 1 for time it takes lambda to run
+                * 1.33 # Add 33% overhead for all other non-base resolution downsamples
+               )
+
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Downsample",
+            MericData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': [
+                    {'Name': 'User', 'Value': request.user.name},
+                    {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection, experiment, channel)},
+                    {'Name': 'Compute-Cost': 'Value': str(cost)}
+                ],
+                'Value': 1.0,
+                'Unit': 'Count'
+            }]
+        )
+
+        # Start downsample
         downsample_sfn = boss_config['sfn']['downsample_sfn']
         arn = bossutils.aws.sfn_execute(session, downsample_sfn, dict(args))
 
