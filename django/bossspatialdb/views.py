@@ -450,9 +450,9 @@ class Downsample(APIView):
             extent = args['{}_stop'.format(axis)] - args['{}_start'.format(axis)]
             return -(-extent // dim) ## ceil div
 
-        cost = (  get_cubes('x')
-                * get_cubes('y')
-                * get_cubes('z')
+        cost = (  get_cubes('x', 512)
+                * get_cubes('y', 512)
+                * get_cubes('z', 16)
                 / 4 # Number of cubes for a downsampled volume
                 * 0.75 # Assume the frame is only 75% filled
                 * 2 # 1 for invoking a lambda
