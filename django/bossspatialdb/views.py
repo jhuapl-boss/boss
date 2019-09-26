@@ -383,14 +383,10 @@ class Downsample(APIView):
 
         # Make sure only one Channel is downsampled at a time
         channel_objs = Channel.objects.filter(downsample_status = 'IN_PROGRESS')
-        log = BossLogger().logger
         for channel_obj in channel_objs:
             # Verify that the channel is still being downsampled
             status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
-            log.debug('Checking downsample status: {} -> {} -> {}'.format(channel_obj.name,
-                                                                          channel_obj.downsample_status,
-                                                                          status))
-            if status == 'IN_PROGRESS':
+            if status == 'RUNNING':
                 return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
 
         if request.user.is_staff:
