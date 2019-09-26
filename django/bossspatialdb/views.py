@@ -466,7 +466,7 @@ class Downsample(APIView):
             MericData = [{
                 'MetricName': 'InvokeCount',
                 'Dimensions': [
-                    {'Name': 'User', 'Value': request.user.name},
+                    {'Name': 'User', 'Value': request.user.username},
                     {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection, experiment, channel)},
                     {'Name': 'Compute-Cost', 'Value': str(cost)}
                 ],
