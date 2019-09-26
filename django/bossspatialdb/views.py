@@ -383,9 +383,13 @@ class Downsample(APIView):
 
         # Make sure only one Channel is downsampled at a time
         channel_objs = Channel.objects.filter(downsample_status = 'IN_PROGRESS')
+        log = BossLogger().logger
         for channel_obj in channel_objs:
             # Verify that the channel is still being downsampled
             status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
+            log.debug('Checking downsample status: {} -> {} -> {}'.format(channel_obj.name,
+                                                                          channel_obj.downsample_status,
+                                                                          status))
             if status == 'IN_PROGRESS':
                 return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
 
@@ -460,17 +464,26 @@ class Downsample(APIView):
                 * 1.33 # Add 33% overhead for all other non-base resolution downsamples
                )
 
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
+                                                            experiment.name,
+                                                            channel.name)},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
         client = session.client('cloudwatch')
         client.put_metric_data(
             Namespace = "BOSS/Downsample",
-            MericData = [{
+            MetricData = [{
                 'MetricName': 'InvokeCount',
-                'Dimensions': [
-                    {'Name': 'User', 'Value': request.user.username},
-                    {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection, experiment, channel)},
-                    {'Name': 'Compute-Cost', 'Value': str(cost)}
-                ],
+                'Dimensions': dimensions,
                 'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'ComputeCost',
+                'Dimensions': dimensions,
+                'Value': cost,
                 'Unit': 'Count'
             }]
         )
