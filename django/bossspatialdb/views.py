@@ -122,6 +122,41 @@ class Cutout(APIView):
             return BossHTTPError("Cutout request is over 500MB when uncompressed. Reduce cutout dimensions.",
                                  ErrorCodes.REQUEST_TOO_LARGE)
 
+        # Add metrics to CloudWatch
+        cost = ( req.get_x_span()
+               * req.get_y_span()
+               * req.get_z_span()
+               * (req.get_time().stop - req.get_time().start)
+               * self.bit_depth
+               / 8
+               ) # Calculating the number of bytes
+
+        boss_config = bossutils.configuration.BossConfig()
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
+                                                            experiment,
+                                                            channel)},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        session = bossutils.aws.get_session()
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Cutout",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'EgressCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Count'
+            }]
+        )
+
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
                           settings.STATEIO_CONFIG,
@@ -193,6 +228,41 @@ class Cutout(APIView):
         if expected_shape != request.data[2].shape:
             return BossHTTPError("Data dimensions in URL do not match POSTed data.",
                                  ErrorCodes.DATA_DIMENSION_MISMATCH)
+
+        # Add metrics to CloudWatch
+        cost = ( req.get_x_span()
+               * req.get_y_span()
+               * req.get_z_span()
+               * (req.get_time().stop - req.get_time().start)
+               * resource.get_bit_depth()
+               / 8
+               ) # Calculating the number of bytes
+
+        boss_config = bossutils.configuration.BossConfig()
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
+                                                            experiment,
+                                                            channel)},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        session = bossutils.aws.get_session()
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Cutout",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'IngressCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Count'
+            }]
+        )
 
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
