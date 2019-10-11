@@ -153,7 +153,7 @@ class Cutout(APIView):
                 'MetricName': 'EgressCost',
                 'Dimensions': dimensions,
                 'Value': cost,
-                'Unit': 'Count'
+                'Unit': 'Bytes'
             }]
         )
 
@@ -260,7 +260,7 @@ class Cutout(APIView):
                 'MetricName': 'IngressCost',
                 'Dimensions': dimensions,
                 'Value': cost,
-                'Unit': 'Count'
+                'Unit': 'Bytes'
             }]
         )
 

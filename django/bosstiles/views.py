@@ -123,7 +123,7 @@ class CutoutTile(APIView):
                 'MetricName': 'EgressCost',
                 'Dimensions': dimensions,
                 'Value': cost,
-                'Unit': 'Count'
+                'Unit': 'Bytes'
             }]
         )
 
@@ -252,7 +252,7 @@ class Tile(APIView):
                 'MetricName': 'EgressCost',
                 'Dimensions': dimensions,
                 'Value': cost,
-                'Unit': 'Count'
+                'Unit': 'Bytes'
             }]
         )
 
