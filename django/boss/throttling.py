@@ -78,7 +78,7 @@ class BossThrottle(object):
         self.check_api(api, cost)
         self.check_system(cost)
 
-    def check_user(self, user, cost)
+    def check_user(self, user, cost):
         current = self.data.get_metric(user)
         max = self.USER_DEFAULT_MAX
 
@@ -87,7 +87,7 @@ class BossThrottle(object):
 
         self.data.add_metric_cost(user, cost)
 
-    def check_api(self, api, cost)
+    def check_api(self, api, cost):
         current = self.data.get_metric(api)
         max = self.API_DEFAULT_MAX
 
@@ -96,7 +96,7 @@ class BossThrottle(object):
 
         self.data.add_metric_cost(api, cost)
 
-    def check_system(self, cost)
+    def check_system(self, cost):
         current = self.data.get_metric('system')
         max = self.SYSTEM_DEFAULT_MAX
 
