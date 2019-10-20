@@ -26,6 +26,7 @@ class PNGRenderer(renderers.BaseRenderer):
     render_style = 'binary'
 
     @check_for_403
+    @check_for_429
     def render(self, data, media_type=None, renderer_context=None):
         file_obj = io.BytesIO()
         data.save(file_obj, "PNG")
@@ -42,6 +43,7 @@ class JPEGRenderer(renderers.BaseRenderer):
     render_style = 'binary'
 
     @check_for_403
+    @check_for_429
     def render(self, data, media_type=None, renderer_context=None):
         file_obj = io.BytesIO()
         data.save(file_obj, "JPEG")
