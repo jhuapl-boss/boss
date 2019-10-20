@@ -43,6 +43,8 @@ class RedisMetrics(object):
         resp = self.conn.get(key)
         if resp is None:
             resp = 0
+        else:
+            resp = int(resp.decode('utf8'))
         return resp
 
     def add_metric_cost(self, obj, val):
@@ -50,7 +52,7 @@ class RedisMetrics(object):
             return
 
         key = "{}_metric".format(obj)
-        self.conn.incrby(key, val)
+        self.conn.incrby(key, int(val))
 
 class BossThrottle(object):
     user_error_detail = _("User is throttled. Expected available tomorrow.")
