@@ -14,7 +14,7 @@
 import io
 from rest_framework import renderers
 from rest_framework.renderers import JSONRenderer
-from bosscore.renderer_helper import check_for_403
+from bosscore.renderer_helper import check_for_403, check_for_429
 
 
 class PNGRenderer(renderers.BaseRenderer):

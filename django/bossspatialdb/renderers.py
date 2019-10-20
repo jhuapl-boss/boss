@@ -20,7 +20,7 @@ import zlib
 import io
 from PIL import Image
 
-from bosscore.renderer_helper import check_for_403
+from bosscore.renderer_helper import check_for_403, check_for_429
 
 class BloscPythonRenderer(renderers.BaseRenderer):
     """ A DRF renderer for a blosc encoded cube of data using the numpy interface
