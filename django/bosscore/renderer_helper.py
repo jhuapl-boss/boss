@@ -103,7 +103,7 @@ def check_for_429(fcn):
         # Have a response, check for 429.
         if renderer_context['response'].status_code == 429:
             renderer_context['response']['Content-Type'] = 'application/json'
-            err_msg = {"status": 429, "message": args[1],
+            err_msg = {"status": 429, "message": args[1]['detail'],
                        "code": ErrorCodes.ACCESS_DENIED_UNKNOWN}
             jr = JSONRenderer()
             return jr.render(err_msg, 'application/json', renderer_context)

@@ -17,9 +17,24 @@ from rest_framework.exceptions import Throttled
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
 
+import json
 import bossutils
-
 import redis
+
+def parse_limit(val):
+    if val is None:
+        return None
+
+    num, unit = val[:-1], val[-1]
+    val = float(num) * {
+        'K': 1024,
+        'M': 1024 * 1024,
+        'G': 1024 * 1024 * 1024,
+        'T': 1024 * 1024 * 1024 * 1024,
+        'P': 1024 * 1024 * 1024 * 1024 * 1024,
+    }[unit.upper()]
+
+    return int(val) # Returning an int, as redis works with ints
 
 class RedisMetrics(object):
     # NOTE: If there is no throttling redis instance the other methods don't do anything
@@ -54,23 +69,50 @@ class RedisMetrics(object):
         key = "{}_metric".format(obj)
         self.conn.incrby(key, int(val))
 
+class MetricLimits(object):
+    def __init__(self):
+        vault = bossutils.vault.Vault()
+        data = vault.read('secret/endpoint/throttle', 'config')
+        data = json.loads(data)
+
+        self.system = data.get('system')
+        self.apis = data.get('apis')
+        self.users = data.get('users')
+        self.groups = data.get('groups')
+
+    def lookup_system(self):
+        return parse_limit(self.system)
+
+    def lookup_api(self, api):
+        return parse_limit(self.apis.get(api))
+
+    def lookup_user(self, user):
+        # User specific settings will override any group based limits
+        if user.username in self.users:
+            return parse_limit(self.users[user.username])
+
+        # Find the largest limit for all groups the user is a member of
+        limits = [parse_limit(self.groups[group.name])
+                  for group in user.groups.all()
+                  if group.name in self.groups]
+
+        if None in limits:
+            return None
+        else:
+            return max(limits)
+
 class BossThrottle(object):
     user_error_detail = _("User is throttled. Expected available tomorrow.")
     api_error_detail = _("API is throttled. Expected available tomorrow.")
     system_error_detail = _("System is throttled. Expected available tomorrow.")
 
-    USER_DEFAULT_MAX = 100 * 1024 * 1024 # 100 MB / day
-    API_DEFAULT_MAX = 1 * 1024 * 1024 * 1024 # 1 GB / day
-    SYSTEM_DEFAULT_MAX = 10 * 1024 * 1024 * 1024 # 10 GB / day
-
     # NOTE: Check methods don't add the new cost before checking so as to
     #       still allow an API call that will exceed the limit, in case the
     #       limit would disallow most API calls
 
-    # TODO: Figure out how to have more dynamic rules
-
     def __init__(self):
         self.data = RedisMetrics()
+        self.limits = MetricLimits()
 
     def error(self, msg):
         raise Throttled(detail = msg)
@@ -81,17 +123,23 @@ class BossThrottle(object):
         self.check_system(cost)
 
     def check_user(self, user, cost):
-        current = self.data.get_metric(user)
-        max = self.USER_DEFAULT_MAX
+        current = self.data.get_metric(user.username)
+        max = self.limits.lookup_user(user)
+
+        if max is None:
+            return
 
         if current > max:
             self.error(self.user_error_detail)
 
-        self.data.add_metric_cost(user, cost)
+        self.data.add_metric_cost(user.username, cost)
 
     def check_api(self, api, cost):
         current = self.data.get_metric(api)
-        max = self.API_DEFAULT_MAX
+        max = self.limits.lookup_api(api)
+
+        if max is None:
+            return
 
         if current > max:
             self.error(self.api_error_detail)
@@ -100,7 +148,10 @@ class BossThrottle(object):
 
     def check_system(self, cost):
         current = self.data.get_metric('system')
-        max = self.SYSTEM_DEFAULT_MAX
+        max = self.limits.lookup_system()
+
+        if max is None:
+            return
 
         if current > max:
             self.error(self.system_error_detail)

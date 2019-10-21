@@ -133,7 +133,7 @@ class Cutout(APIView):
                ) # Calculating the number of bytes
 
         BossThrottle().check('cutout_egress',
-                             request.user.username,
+                             request.user,
                              cost)
 
         boss_config = bossutils.configuration.BossConfig()
@@ -244,7 +244,7 @@ class Cutout(APIView):
                ) # Calculating the number of bytes
 
         BossThrottle().check('cutout_ingress',
-                             request.user.username,
+                             request.user,
                              cost)
 
         boss_config = bossutils.configuration.BossConfig()
