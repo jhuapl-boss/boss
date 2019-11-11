@@ -100,20 +100,28 @@ class ChannelSerializer(serializers.ModelSerializer):
         # Get the experiment
         exp = data.get('experiment')
         num_time_samples = exp.num_time_samples
-        num_hierarchy_levels = exp.num_hierarchy_levels
+        #num_hierarchy_levels = exp.num_hierarchy_levels
 
         default_time_sample = data.get('default_time_sample', None)
-        base_resolution = data.get('base_resolution', None)
+        #base_resolution = data.get('base_resolution', None)
 
         # Validate that default_time_step is less than the num_time_samples
         if default_time_sample is not None and default_time_sample >= num_time_samples:
             errors['default_time_sample'] = 'Ensure this value is less that the experiments num_time_samples {}.'\
                 .format(num_time_samples)
 
-        # Validate that base_Resolution is less than the num_hierarchy_levels
+        # Validate that base_resolution is less than the num_hierarchy_levels
+        # We no longer check this because we may delete some resolutions to
+        # reduce storage costs.  When we do this, we change num_hierarchy_levels
+        # after the fact.  After doing this, it's possible that base resolution
+        # is greater than the num_hierarchy_levels.  When viewing with
+        # Neuroglancer, we allow it to request resolutions in
+        # range(base_resolution, base_resolution + num_hierarchy_levels).
+        """
         if base_resolution is not None and base_resolution >= num_hierarchy_levels:
             errors['base_resolution'] = 'Ensure this value is less that the experiments maximum number of ' \
                                         'hierarchy levels {}.'.format(num_hierarchy_levels)
+        """
 
         if len(errors):
             raise serializers.ValidationError(errors)
