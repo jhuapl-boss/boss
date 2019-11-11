@@ -27,6 +27,17 @@ from spdb.spatialdb.test.setup import AWSSetupLayer
 test_user = 'testuser'
 test_group = 'testuser-primary'
 
+# Used for testing proper handling of channel with non-zero base resolution.
+BASE_RESOLUTION = 2
+NUM_HIERARCHY_LEVELS = 7
+
+# Experiment names used by insert_test_data().
+EXP1 = 'exp1'
+EXP22 = 'exp22'
+EXP_BASE_RES = 'exp-base-res-test'
+TEST_DATA_EXPERIMENTS = [EXP1, EXP22, EXP_BASE_RES]
+
+CHAN_BASE_RES = 'chan-with-base-res'
 
 class SetupTestDB:
     def __init__(self):
@@ -96,13 +107,15 @@ class SetupTestDB:
 
         self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
         
-        self.add_experiment('col1', 'exp1', 'cf1', 10, 10, 1)
-        self.add_experiment('col1', 'exp22', 'cf1', 10, 500, 1)
+        self.add_experiment('col1', EXP1, 'cf1', NUM_HIERARCHY_LEVELS, 10, 1)
+        self.add_experiment('col1', EXP22, 'cf1', NUM_HIERARCHY_LEVELS, 500, 1)
+        self.add_experiment('col1', EXP_BASE_RES, 'cf1', NUM_HIERARCHY_LEVELS, 10, 1)
 
-        self.add_channel('col1', 'exp1', 'channel1', 0, 0, 'uint8', 'image')
-        self.add_channel('col1', 'exp1', 'channel2', 0, 0, 'uint8', 'image')
-        self.add_channel('col1', 'exp1', 'channel3', 0, 0, 'uint64', 'annotation', ['channel1'])
-        self.add_channel('col1', 'exp1', 'layer1', 0, 0, 'uint64', 'annotation', ['channel1'])
+        self.add_channel('col1', EXP1, 'channel1', 0, 0, 'uint8', 'image')
+        self.add_channel('col1', EXP1, 'channel2', 0, 0, 'uint8', 'image')
+        self.add_channel('col1', EXP1, 'channel3', 0, 0, 'uint64', 'annotation', ['channel1'])
+        self.add_channel('col1', EXP_BASE_RES, CHAN_BASE_RES, 0, BASE_RESOLUTION, 'uint8', 'image')
+        self.add_channel('col1', EXP1, 'layer1', 0, 0, 'uint64', 'annotation', ['channel1'])
 
     def insert_lookup_test_data(self):
         """

@@ -290,7 +290,7 @@ class BossRequest:
 
         # Bounding box is only valid for annotation channels
         if self.channel.type != 'annotation':
-            raise BossError("The channel in request has type {}. Can only reserve IDs for annotation channels"
+            raise BossError("The channel in request has type {}. Can only perform bounding box operations on annotation channels"
                             .format(self.channel.type), ErrorCodes.DATATYPE_NOT_SUPPORTED)
 
         # TODO : validate the object id
@@ -300,13 +300,25 @@ class BossRequest:
             raise BossError("The id of the object {} is not a valid int".format(self.bossrequest['id']),
                             ErrorCodes.TYPE_ERROR)
 
+        self.validate_resolution()
+
+    def validate_resolution(self):
+        """
+        Ensure requested resolution is between channel's base resolution and the base
+        resolution + the experiment's number of hierarchy levels
+
+        Raises:
+            (BossError): if resolution invalid
+        """
         try:
+            base_res = self.channel.base_resolution
             # validate the resolution
-            if int(self.bossrequest['resolution']) in range(0, self.experiment.num_hierarchy_levels):
+            if int(self.bossrequest['resolution']) in range(base_res, base_res + self.experiment.num_hierarchy_levels):
                 self.resolution = int(self.bossrequest['resolution'])
             else:
-                raise BossError("Invalid resolution {}. The resolution has to be within 0 and {}".
-                                format(self.bossrequest['resolution'],self.experiment.num_hierarchy_levels),
+                raise BossError("Invalid resolution {}. The resolution has to be within {} and {}".
+                                format(self.bossrequest['resolution'], base_res,
+                                base_res + self.experiment.num_hierarchy_levels),
                                 ErrorCodes.TYPE_ERROR)
         except (TypeError, ValueError):
             raise BossError("Type error in resolution {}".format(self.bossrequest['resolution']), ErrorCodes.TYPE_ERROR)
@@ -347,12 +359,7 @@ class BossRequest:
 
         """
         try:
-            # validate the resolution
-            if int(resolution) in range(0, self.experiment.num_hierarchy_levels):
-                self.resolution = int(resolution)
-            else:
-                raise BossError("Invalid resolution {} in cutout args. The resolution has to be between 0 and {}".
-                                format(resolution, self.experiment.num_hierarchy_levels), ErrorCodes.INVALID_CUTOUT_ARGS)
+            self.validate_resolution()
 
             # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG
 
@@ -397,8 +404,7 @@ class BossRequest:
 
         try:
 
-            if int(resolution) in range(0, self.experiment.num_hierarchy_levels):
-                self.resolution = int(resolution)
+            self.validate_resolution()
 
             # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG
 
@@ -468,8 +474,7 @@ class BossRequest:
             y_idx = int(y_idx)
             z_idx = int(z_idx)
 
-            if int(resolution) in range(0, self.experiment.num_hierarchy_levels):
-                self.resolution = int(resolution)
+            self.validate_resolution()
 
             # TODO --- Get offset for that resolution. Reading from  coordinate frame right now, This is WRONG
 

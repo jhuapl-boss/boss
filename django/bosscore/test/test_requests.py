@@ -16,14 +16,13 @@ from rest_framework.test import APITestCase
 from rest_framework.test import force_authenticate
 from rest_framework.test import APIRequestFactory
 
-from django.http import HttpRequest
 from django.conf import settings
 from django.contrib.auth.models import User
 import numpy as np
 
 from ..request import BossRequest
 from bosscore.error import BossError
-from .setup_db import SetupTestDB
+from .setup_db import SetupTestDB, NUM_HIERARCHY_LEVELS, BASE_RESOLUTION, EXP1, EXP_BASE_RES, CHAN_BASE_RES
 from bossspatialdb.views import Cutout
 
 version = settings.BOSS_VERSION
@@ -632,15 +631,14 @@ class CutoutInvalidRequestTests(APITestCase):
         with self.assertRaises(BossError):
             BossRequest(drfrequest, request_args)
 
-    def test_request_cutout_invalid_resolution(self):
+    def test_request_cutout_resolution_within_range(self):
         """
-        Test initialization of cutout requests for an invalid datamodel - experiment  does not exist for the collection
-        :return:
+        Test initialization of cutout requests with a valid resolution
         """
-        url = '/' + version + '/cutout/col2/exp1/channel1/92/0:5/0:6/0:2/'
         col = 'col1'
-        exp = 'exp1'
         channel = 'channel1'
+        res = NUM_HIERARCHY_LEVELS-1
+        url = '/{}/cutout/{}/{}/{}/{}/0:5/0:6/0:2/'.format(version, col, EXP1, channel, res)
 
         # Create the request
         request = self.rf.get(url)
@@ -653,9 +651,139 @@ class CutoutInvalidRequestTests(APITestCase):
             "service": "cutout",
             "version": version,
             "collection_name": col,
-            "experiment_name": exp,
+            "experiment_name": EXP1,
             "channel_name": channel,
-            "resolution": 92,
+            "resolution": res,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        # Should not raise BossError.
+        BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_invalid_resolution_past_upper_bound(self):
+        """
+        Test initialization of cutout requests with an invalid resolution
+        """
+        col = 'col1'
+        channel = 'channel1'
+        res = NUM_HIERARCHY_LEVELS
+        url = '/{}/cutout/{}/{}/{}/{}/0:5/0:6/0:2/'.format(version, col, EXP1, channel, res)
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": EXP1,
+            "channel_name": channel,
+            "resolution": res,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_valid_base_resolution(self):
+        """
+        Test cutout request when channel has a non-zero base resolution
+        """
+        col = 'col1'
+        channel = CHAN_BASE_RES
+        res = NUM_HIERARCHY_LEVELS + BASE_RESOLUTION - 1
+        url = '/{}/cutout/{}/{}/{}/{}/0:5/0:6/0:2/'.format(version, col, EXP_BASE_RES, channel, res)
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": EXP_BASE_RES,
+            "channel_name": channel,
+            "resolution": res,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        # No exception should be raised.
+        BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_invalid_base_resolution_below_lower_bound(self):
+        """
+        Test cutout request when channel has a non-zero base resolution - pass
+        resolution less than the base resolution
+        """
+        col = 'col1'
+        channel = CHAN_BASE_RES
+        res = BASE_RESOLUTION - 1
+        url = '/{}/cutout/{}/{}/{}/{}/0:5/0:6/0:2/'.format(version, col, EXP_BASE_RES, channel, res)
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": EXP_BASE_RES,
+            "channel_name": channel,
+            "resolution": res,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        with self.assertRaises(BossError):
+            BossRequest(drfrequest, request_args)
+
+    def test_request_cutout_invalid_base_resolution_above_upper_bound(self):
+        """
+        Test cutout request when channel has a non-zero base resolution - pass
+        resolution equal to the base resolution + num hierarchy levels
+        """
+        col = 'col1'
+        channel = CHAN_BASE_RES
+        res = BASE_RESOLUTION + NUM_HIERARCHY_LEVELS
+        url = '/{}/cutout/{}/{}/{}/{}/0:5/0:6/0:2/'.format(version, col, EXP_BASE_RES, channel, res)
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "version": version,
+            "collection_name": col,
+            "experiment_name": EXP_BASE_RES,
+            "channel_name": channel,
+            "resolution": res,
             "x_args": "0:5",
             "y_args": "0:6",
             "z_args": "0:2",
