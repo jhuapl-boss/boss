@@ -117,6 +117,7 @@ class BossThrottle(object):
 
         boss_config = bossutils.configuration.BossConfig()
         self.topic = boss_config['aws']['prod_mailing_list']
+        self.fqdn = boss_config['system']['fqdn']
 
     def error(self, user=None, api=None, system=None, details=None):
         if user:
@@ -137,7 +138,7 @@ class BossThrottle(object):
         raise Throttled(detail = ex_msg)
 
     def check(self, api, user, cost):
-        details = {'api': api, 'user': user, 'cost': cost}
+        details = {'api': api, 'user': user, 'cost': cost, 'fqdn': self.fqdn}
 
         self.check_user(user, cost, details)
         self.check_api(api, cost, details)
