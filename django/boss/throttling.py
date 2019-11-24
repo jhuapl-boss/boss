@@ -20,6 +20,7 @@ from django.conf import settings as django_settings
 import json
 import bossutils
 import redis
+import boto3
 
 def parse_limit(val):
     if val is None:
@@ -114,15 +115,35 @@ class BossThrottle(object):
         self.data = RedisMetrics()
         self.limits = MetricLimits()
 
-    def error(self, msg):
-        raise Throttled(detail = msg)
+        boss_config = bossutils.configuration.BossConfig()
+        self.topic = boss_config['aws']['prod_mailing_list']
+
+    def error(self, user=None, api=None, system=None, details=None):
+        if user:
+            ex_msg = self.user_error_detail
+            sns_msg = "Throttling user '{}': {}".format(user, json.dumps(details))
+        elif api:
+            ex_msg = self.api_error_detail
+            sns_msg = "Throttling API '{}': {}".format(api, json.dumps(details))
+        elif system:
+            ex_msg = self.system_error_detail
+            sns_msg = "Throttling system: {}".format(json.dumps(details))
+
+        client = boto3.client('sns')
+        client.publish(TopicArn = self.topic,
+                       Subject = 'Boss Request Throttled',
+                       Message = sns_msg)
+
+        raise Throttled(detail = ex_msg)
 
     def check(self, api, user, cost):
-        self.check_user(user, cost)
-        self.check_api(api, cost)
-        self.check_system(cost)
+        details = {'api': api, 'user': user, 'cost': cost}
 
-    def check_user(self, user, cost):
+        self.check_user(user, cost, details)
+        self.check_api(api, cost, details)
+        self.check_system(cost, details)
+
+    def check_user(self, user, cost, details):
         current = self.data.get_metric(user.username)
         max = self.limits.lookup_user(user)
 
@@ -130,11 +151,13 @@ class BossThrottle(object):
             return
 
         if current > max:
-            self.error(self.user_error_detail)
+            details['current_metric'] = current
+            details['max_metric'] = max
+            self.error(user = user, details = details)
 
         self.data.add_metric_cost(user.username, cost)
 
-    def check_api(self, api, cost):
+    def check_api(self, api, cost, details):
         current = self.data.get_metric(api)
         max = self.limits.lookup_api(api)
 
@@ -142,11 +165,13 @@ class BossThrottle(object):
             return
 
         if current > max:
-            self.error(self.api_error_detail)
+            details['current_metric'] = current
+            details['max_metric'] = max
+            self.error(api = api, details = details)
 
         self.data.add_metric_cost(api, cost)
 
-    def check_system(self, cost):
+    def check_system(self, cost, details):
         current = self.data.get_metric('system')
         max = self.limits.lookup_system()
 
@@ -154,6 +179,8 @@ class BossThrottle(object):
             return
 
         if current > max:
-            self.error(self.system_error_detail)
+            details['current_metric'] = current
+            details['max_metric'] = max
+            self.error(system = True, details = details)
 
         self.data.add_metric_cost('system', cost)
