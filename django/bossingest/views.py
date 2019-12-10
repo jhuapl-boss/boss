@@ -225,6 +225,46 @@ class IngestJobView(IngestServiceView):
 
         """
         ingest_config_data = request.data
+
+        # Add metrics to CloudWatch
+        extent = ingest_config_data['ingest_job']['extent']
+        tile_size = ingest_config_data['ingest_job']['tile_size']
+        database = ingest_config_data['database']
+
+        cost = ( ((extent['x'][1] - extent['x'][0]) / tile_size['x'])
+               * ((extent['y'][1] - extent['y'][0]) / tile_size['y'])
+               * ((extent['z'][1] - extent['z'][0]) / tile_size['z'])
+               * ((extent['t'][1] - extent['t'][0]) / tile_size['t'])
+               * 1.0625 # 1 lambda per tile + 1 lambda per 16 tiles (per cube)
+               * 1 # the cost per lambda
+               ) # Calculating the cost of the lambda invocations
+
+        boss_config = bossutils.configuration.BossConfig()
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(database['collection'],
+                                                            database['experiment'],
+                                                            database['channel'])},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        session = bossutils.aws.get_session()
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Ingest",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'ComputeCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Count'
+            }]
+        )
+
         try:
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.setup_ingest(self.request.user.id, ingest_config_data)
