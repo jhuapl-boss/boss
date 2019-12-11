@@ -16,7 +16,13 @@ from bosscore.error import ErrorCodes
 from rest_framework.renderers import JSONRenderer
 
 def extract_context(*args, **kwargs):
-    # renderer_context is the 4th argument if not specified by keyword.
+    """General method for extracting the renderer_context
+
+    Used by decorators to extract the renderer_context from the
+    arguments of the method they are wrapping.
+
+    The renderer_context is the 4th argument if not specified by keyword
+    """
     if len(args) < 4 and kwargs is None:
         return None
 
