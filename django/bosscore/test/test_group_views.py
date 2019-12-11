@@ -16,6 +16,7 @@ import json
 from rest_framework.test import APITestCase
 from django.conf import settings
 from .setup_db import SetupTestDB
+from ..constants import PUBLIC_GRP, ADMIN_GRP, ADMIN_USER
 
 version = settings.BOSS_VERSION
 
@@ -46,7 +47,7 @@ class GroupsTests(APITestCase):
         url = '/' + version + '/groups/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.data['groups']), set(['public', 'testuser-primary', 'unittest']))
+        self.assertEqual(set(response.data['groups']), set([PUBLIC_GRP, 'testuser-primary', 'unittest']))
 
     def test_get_groups_groupname(self):
         """ Get all groups for a user"""
@@ -107,7 +108,7 @@ class GroupsTests(APITestCase):
         url = '/' + version + '/groups/?filter=member'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(set(response.data['groups']), set(['public', 'testuser-primary', 'unittest']))
+        self.assertEqual(set(response.data['groups']), set([PUBLIC_GRP, 'testuser-primary', 'unittest']))
 
     def test_get_groups_filter_maintainers(self):
         """ Get all groups for a user is a member of """
@@ -236,12 +237,12 @@ class GroupMemberTests(APITestCase):
         """ Add a new member to admin or public group. This is invalid """
 
         # Add user to the group
-        url = '/' + version + '/groups/admin/members/testuser2555/'
+        url = '/' + version + '/groups/' + ADMIN_GRP + '/members/testuser2555/'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 400)
 
         # Add user to the group
-        url = '/' + version + '/groups/public/members/testuser2555/'
+        url = '/' + version + '/groups/' + PUBLIC_GRP + '/members/testuser2555/'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 400)
 
@@ -249,12 +250,12 @@ class GroupMemberTests(APITestCase):
         """ Remove a new member to admin or public group. This is invalid """
 
         # Add user to the group
-        url = '/' + version + '/groups/admin/members/testuser2555/'
+        url = '/' + version + '/groups/' + ADMIN_GRP + '/members/testuser2555/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 400)
 
         # Add user to the group
-        url = '/' + version + '/groups/public/members/testuser2555/'
+        url = '/' + version + '/groups/' + PUBLIC_GRP + '/members/testuser2555/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 400)
 
@@ -286,19 +287,19 @@ class GroupMemberTests(APITestCase):
     def test_remove_bossadmin_member_invalid(self):
 
         # Add user to the group
-        url = '/' + version + '/groups/unittest/members/bossadmin/'
+        url = '/' + version + '/groups/unittest/members/' + ADMIN_USER + '/'
         response = self.client.post(url)
         self.assertEqual(response.status_code, 204)
 
         """ Remove bossadmin member from a group. This is invalid"""
         # Check if user is a member of the group
-        url = '/' + version + '/groups/unittest/members/bossadmin/'
+        url = '/' + version + '/groups/unittest/members/' + ADMIN_USER + '/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['result'], True)
 
         # Remove user from the group
-        url = '/' + version + '/groups/unittest/members/bossadmin/'
+        url = '/' + version + '/groups/unittest/members/' + ADMIN_USER + '/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 400)
 
@@ -529,13 +530,13 @@ class GroupMaintainerTests(APITestCase):
         """ Test removal of bossadmin as a maintainer of a group fails"""
 
         # Check if bossadmin user is a member of the group
-        url = '/' + version + '/groups/unittest/maintainers/bossadmin/'
+        url = '/' + version + '/groups/unittest/maintainers/' + ADMIN_USER + '/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['result'], True)
 
         # Attempt removal of bossadmin from the group
-        url = '/' + version + '/groups/unittest/maintainers/bossadmin/'
+        url = '/' + version + '/groups/unittest/maintainers/' + ADMIN_USER + '/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 400)    
 

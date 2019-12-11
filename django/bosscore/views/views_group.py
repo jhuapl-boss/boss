@@ -87,7 +87,7 @@ class BossGroupMember(APIView):
 
         """
         try:
-            if group_name == 'public' or group_name == 'admin':
+            if group_name == PUBLIC_GRP or group_name == ADMIN_GRP:
                 return BossHTTPError('Cannot add a member to the group {}. This is an admin managed group'
                                      .format(group_name), ErrorCodes.BAD_REQUEST)
 
@@ -123,15 +123,15 @@ class BossGroupMember(APIView):
 
         """
         try:
-            if group_name == 'public' or group_name == 'admin':
+            if group_name == PUBLIC_GRP or group_name == ADMIN_GRP:
                 return BossHTTPError('Cannot remove a user from the group {}. This is an admin managed group'
                                      .format(group_name), ErrorCodes.BAD_REQUEST)
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
 
-            if user_name == 'bossadmin':
-                return BossHTTPError('Cannot remove bossadmin from any group'
-                                     .format(group_name), ErrorCodes.BAD_REQUEST)
+            if user_name == ADMIN_USER:
+                return BossHTTPError('Cannot remove {} from any group'
+                                     .format(ADMIN_USER), ErrorCodes.BAD_REQUEST)
 
             # Check the users permissions.
             if request.user.has_perm("maintain_group", bgroup):
@@ -209,7 +209,7 @@ class BossGroupMaintainer(APIView):
 
         """
         try:
-            if group_name == 'public' or group_name == 'admin':
+            if group_name == PUBLIC_GRP or group_name == ADMIN_GRP:
                 return BossHTTPError('Cannot add a maintainer to the group {}. This is an admin managed group'
                                      .format(group_name), ErrorCodes.BAD_REQUEST)
 
@@ -253,15 +253,15 @@ class BossGroupMaintainer(APIView):
 
         """
         try:
-            if group_name == 'public' or group_name == 'admin':
+            if group_name == PUBLIC_GRP or group_name == ADMIN_GRP:
                 return BossHTTPError('Cannot remove a maintainer from the group {}. This is an admin managed group'
                                      .format(group_name), ErrorCodes.BAD_REQUEST)
             if user_name is None:
                 return BossHTTPError('Missing username parameter in post.', ErrorCodes.INVALID_URL)
             
-            elif user_name == 'bossadmin':
-                return BossHTTPError('Cannot remove boassadmin maintainer from any group',
-                                     ErrorCodes.BAD_REQUEST)
+            elif user_name == ADMIN_USER:
+                return BossHTTPError('Cannot remove {} maintainer from any group'
+                                     .format(ADMIN_USER), ErrorCodes.BAD_REQUEST)
 
             group = Group.objects.get(name=group_name)
             bgroup = BossGroup.objects.get(group=group)
@@ -428,7 +428,7 @@ class BossUserGroup(APIView):
             bgroup = BossGroup.objects.get(group=group)
             bpm = BossPrivilegeManager(request.user)
             if request.user == bgroup.creator or bpm.has_role('admin'):
-                if group_name == 'admin' or group_name == 'public':
+                if group_name == ADMIN_GRP or group_name == PUBLIC_GRP:
                     return BossHTTPError('Admin and public groups cannot be deleted.',
                                         ErrorCodes.BAD_REQUEST)  
                 else:

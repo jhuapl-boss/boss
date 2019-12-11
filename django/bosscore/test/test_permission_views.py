@@ -14,6 +14,7 @@
 from rest_framework.test import APITestCase
 from django.conf import settings
 from .setup_db import SetupTestDB
+from ..constants import PUBLIC_GRP
 import json
 
 version = settings.BOSS_VERSION
@@ -720,7 +721,7 @@ class PermissionViewsChannelTests(APITestCase):
         url = '/' + version + '/permissions/'
 
         data = {
-            'group': 'public',
+            'group': PUBLIC_GRP,
             'collection': 'col1',
             'experiment': 'exp1',
             'permissions': ['read']
@@ -735,7 +736,7 @@ class PermissionViewsChannelTests(APITestCase):
         url = '/' + version + '/permissions/'
 
         data = {
-            'group': 'public',
+            'group': PUBLIC_GRP,
             'collection': 'col1',
             'experiment': 'exp1',
             'permissions': ['add']
@@ -744,7 +745,7 @@ class PermissionViewsChannelTests(APITestCase):
         self.assertEqual(response.status_code, 400)
 
         data = {
-            'group': 'public',
+            'group': PUBLIC_GRP,
             'collection': 'col1',
             'experiment': 'exp1',
             'permissions': ['read', 'add']
@@ -761,7 +762,7 @@ class PermissionViewsChannelTests(APITestCase):
         # patch permission on a group that the user is not a member or maintainer of.
         url = '/' + version + '/permissions/'
         data = {
-            'group': 'public',
+            'group': PUBLIC_GRP,
             'collection': 'col1',
             'experiment': 'exp1',
             'channel': 'channel1',

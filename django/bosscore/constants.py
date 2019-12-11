@@ -21,5 +21,5 @@ ADMIN_USER = 'bossadmin'
 ADMIN_GRP = 'admin'
 
 # Public group
-PUBLIC_GRP = 'bosspublic'
+PUBLIC_GRP = 'public'
 
