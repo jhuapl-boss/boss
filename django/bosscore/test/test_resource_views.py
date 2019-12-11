@@ -14,7 +14,7 @@
 
 from rest_framework.test import APITestCase
 from django.conf import settings
-from .setup_db import SetupTestDB
+from .setup_db import SetupTestDB, TEST_DATA_EXPERIMENTS
 
 version = settings.BOSS_VERSION
 
@@ -487,7 +487,7 @@ class ResourceViewsExperimentTests(APITestCase):
         # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['experiments'][0], 'exp1')
+        self.assertCountEqual(response.data['experiments'], TEST_DATA_EXPERIMENTS)
 
 
 class ResourceViewsCoordinateTests(APITestCase):
@@ -760,28 +760,6 @@ class ResourceViewsChannelTests(APITestCase):
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
         data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'default_time_sample': 15}
-        response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 400)
-
-    def test_post_channel_with_valid_base_resolution(self):
-        """
-        Post a new channel with the base_resolution
-
-        """
-        # Post a new channel
-        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
-        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'base_resolution': 5}
-        response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 201)
-
-    def test_post_channel_with_invalid_base_resolution(self):
-        """
-        Post a new channel with the an invalid base_resolution
-
-        """
-        # Post a new channel
-        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
-        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'base_resolution': 15}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
 
