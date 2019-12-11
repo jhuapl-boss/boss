@@ -13,6 +13,7 @@
 # limitations under the License.
 from django.contrib.auth.models import User, Group
 from functools import wraps
+from bosscore.constants import PUBLIC_GRP
 from bosscore.error import BossHTTPError, ErrorCodes
 from bosscore.serializers import BossRoleSerializer
 from .models import BossRole, BossGroup
@@ -53,7 +54,7 @@ def load_user_roles(user, roles):
                 return BossHTTPError("{}".format(serializer.errors), ErrorCodes.SERIALIZATION_ERROR)
 
     groups = user.groups.all()
-    to_assign = [user.username + '-primary', 'public']
+    to_assign = [user.username + '-primary', PUBLIC_GRP]
     if 'superuser' in roles:
         to_assign.append('admin')
     for name in to_assign:

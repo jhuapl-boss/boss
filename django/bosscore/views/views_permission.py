@@ -24,6 +24,7 @@ from guardian.shortcuts import get_perms_for_model, get_objects_for_group, get_p
 
 from bosscore.models import Collection, Experiment, Channel, BossGroup
 from bosscore.permissions import BossPermissionManager, check_is_member_or_maintainer
+from bosscore.constants import PUBLIC_GRP
 from bosscore.error import BossHTTPError, BossError, ErrorCodes, BossResourceNotFoundError,\
     BossGroupNotFoundError, BossPermissionError
 from bosscore.privileges import check_role
@@ -241,7 +242,7 @@ class ResourceUserPermission(APIView):
 
         try:
             # public group can only have read permission
-            if group_name == 'public' and not (set(perm_list).issubset({'read', 'read_volumetric_data'})):
+            if group_name == PUBLIC_GRP and not (set(perm_list).issubset({'read', 'read_volumetric_data'})):
                 return BossHTTPError("The public group can only have read permissions",
                                      ErrorCodes.INVALID_POST_ARGUMENT)
 
@@ -298,7 +299,7 @@ class ResourceUserPermission(APIView):
 
         try:
             # public group can only have read permission
-            if group_name == 'public' and (len(perm_list) != 1 or perm_list[0] != 'read'):
+            if group_name == PUBLIC_GRP and (len(perm_list) != 1 or perm_list[0] != 'read'):
                 return BossHTTPError("The public group can only have read permissions",
                                      ErrorCodes.INVALID_POST_ARGUMENT)
             # If the user is not a member or maintainer of the group, they cannot patch permissions

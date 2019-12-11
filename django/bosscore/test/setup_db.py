@@ -20,6 +20,7 @@ from guardian.shortcuts import assign_perm
 
 from ..models import Collection, Experiment, CoordinateFrame, Channel, BossLookup, BossRole, BossGroup
 from ..views.views_resource import ChannelDetail
+from ..constants import ADMIN_USER, ADMIN_GRP, PUBLIC_GRP
 
 from spdb.spatialdb.test.setup import AWSSetupLayer
 
@@ -44,7 +45,7 @@ class SetupTestDB:
         user_primary_group, created = Group.objects.get_or_create(name=username + '-primary')
 
         # add the user to the public group and primary group
-        public_group, created = Group.objects.get_or_create(name='public')
+        public_group, created = Group.objects.get_or_create(name=PUBLIC_GRP)
         self.user.groups.add(user_primary_group)
         public_group.user_set.add(self.user)
         return self.user
@@ -55,13 +56,13 @@ class SetupTestDB:
         BossRole.objects.create(user=user, role=role_name)
 
     def create_super_user(self):
-        self.user = User.objects.create_superuser(username='bossadmin', email='bossadmin@theboss.io',
-                                                  password='bossadmin')
-        user_primary_group, created = Group.objects.get_or_create(name='bossadmin' + '-primary')
+        self.user = User.objects.create_superuser(username=ADMIN_USER, email=ADMIN_USER+'@theboss.io',
+                                                  password=ADMIN_USER)
+        user_primary_group, created = Group.objects.get_or_create(name=ADMIN_USER+'-primary')
 
         # add the user to the public group and primary group and admin group
-        public_group, created = Group.objects.get_or_create(name='public')
-        admin_group, created = Group.objects.get_or_create(name='admin')
+        public_group, created = Group.objects.get_or_create(name=PUBLIC_GRP)
+        admin_group, created = Group.objects.get_or_create(name=ADMIN_GRP)
         self.user.groups.add(user_primary_group)
         self.user.groups.add(public_group)
         self.user.groups.add(admin_group)
