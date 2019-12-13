@@ -623,3 +623,117 @@ class Downsample(APIView):
         channel_obj.save()
 
         return HttpResponse(status=204)
+
+class CutoutToBlack(APIView):
+    """
+    View to handle spatial cutouts by providing all datamodel fields
+
+    * Requires authentication.
+    """
+    # Set Parser and Renderer
+    parser_classes = (BloscParser, BloscPythonParser, NpygzParser, BrowsableAPIRenderer)
+    renderer_classes = (BloscRenderer, BloscPythonRenderer, NpygzRenderer, JpegRenderer,
+                        JSONRenderer, BrowsableAPIRenderer)
+
+    def __init__(self):
+        super().__init__()
+        self.data_type = None
+        self.bit_depth = None
+    
+    def put(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, t_range=None):
+        """
+        View to handle PUT requests for a overwriting a cuboid to 0s 
+
+        Due to parser implementation, request.data should be a numpy array already.
+
+        :param request: DRF Request object
+        :type request: rest_framework.request.Request
+        :param collection: Unique Collection identifier, indicating which collection you want to access
+        :param experiment: Experiment identifier, indicating which experiment you want to access
+        :param channel: Channel identifier, indicating which dataset or annotation project you want to access
+        :param resolution: Integer indicating the level in the resolution hierarchy (0 = native)
+        :param x_range: Python style range indicating the X coordinates of where to post the cuboid (eg. 100:200)
+        :param y_range: Python style range indicating the Y coordinates of where to post the cuboid (eg. 100:200)
+        :param z_range: Python style range indicating the Z coordinates of where to post the cuboid (eg. 100:200)
+        :return:
+        """
+
+        # Check for optional iso flag
+        if "iso" in request.query_params:
+            if request.query_params["iso"].lower() == "true":
+                iso = True
+            else:
+                iso = False
+        else:
+            iso = False
+
+        try:
+            request_args = {
+                "service": "cutout",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "resolution": resolution,
+                "x_args": x_range,
+                "y_args": y_range,
+                "z_args": z_range,
+                "time_args": t_range,
+            }
+            req = BossRequest(request, request_args)
+        except BossError as err:
+            return err.to_http()
+
+        # Convert to Resource
+        resource = project.BossResourceDjango(req)   
+        
+        # Get data type
+        try:
+            self.bit_depth = resource.get_bit_depth()
+            expected_data_type = resource.get_numpy_data_type()
+        except ValueError:
+            return BossHTTPError("Unsupported data type: {}".format(resource.get_data_type()), ErrorCodes.TYPE_ERROR)
+    
+        # Set a limit of CUTOUT_MAX_SIZE 
+        if is_too_large(req, self.bit_depth):
+            return BossHTTPError("Cutout overwrite is over 500MB when uncompressed. Reduce overwrite dimensions.", ErrorCodes.REQUEST_TOO_LARGE)
+    
+        # Get the shape of the requested data clear
+        if len(req.get_time()) > 2:
+            expected_shape = (len(req.get_time()), req.get_z_span(), req.get_y_span(), req.get_x_span())
+        else:
+            expected_shape = (req.get_z_span(), req.get_y_span(), req.get_x_span())
+
+        # Create a binary numpy array for overwrite with specified shape and dtype
+        black_cuboid = np.ones(expected_shape, dtype=expected_data_type)
+
+        # Get interface to SPDB cache
+        cache = SpatialDB(settings.KVIO_SETTINGS,
+                          settings.STATEIO_CONFIG,
+                          settings.OBJECTIO_CONFIG)
+
+        # Write block to cache
+        corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
+
+        try:
+            if len(black_cuboid.shape) == 4:
+                cache.write_cuboid(resource, corner, req.get_resolution(), black_cuboid, req.get_time()[0], iso=iso)
+            else:
+                cache.write_cuboid(resource, corner, req.get_resolution(),
+                                   np.expand_dims(black_cuboid, axis=0), req.get_time()[0], iso=iso)
+        except Exception as e:
+            # TODO: Eventually remove as this level of detail should not be sent to the user
+            return BossHTTPError('Error during write_cuboid: {}'.format(e), ErrorCodes.BAD_REQUEST)
+
+        # If the channel status is DOWNSAMPLED change status to NOT_DOWNSAMPLED since you just wrote data
+        channel = resource.get_channel()
+        if channel.downsample_status.upper() == "DOWNSAMPLED":
+            # Get Channel object and update status
+            lookup_key = resource.get_lookup_key()
+            _, exp_id, _ = lookup_key.split("&")
+            channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
+            channel_obj.downsample_status = "NOT_DOWNSAMPLED"
+            channel_obj.downsample_arn = ""
+            channel_obj.save()
+
+        # Send data to renderer
+        return HttpResponse(status=200)

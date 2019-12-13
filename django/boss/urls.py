@@ -63,6 +63,7 @@ urlpatterns = [
     url(r'^v1/ingest/', include('bossingest.urls', namespace='v1')),
     url(r'^v1/collection/', include('bosscore.urls.resource_urls', namespace='v1')),
     url(r'^v1/coord/', include('bosscore.urls.coord_urls', namespace='v1')),
+    url(r'^v1/cutout/to_black/', include('bossspatialdb.urls_to_black', namespace='v1')),
 
     # SSO Urls
     url(r'^v1/sso/user/', include('sso.urls.user-urls', namespace='v1')),
