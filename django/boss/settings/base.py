@@ -151,6 +151,9 @@ BOSS_VERSION = 'v1'
 # Maximum number of bytes in an uncompressed matrix supported by the Cutout Service
 CUTOUT_MAX_SIZE = 520 * 1048576
 
+# Maximum number of pixels that non-privileged users can downsample (200 x 200 x 200 cubes)
+DOWNSAMPLE_MAX_SIZE = (200 * 512) * (200 * 512) * (200 * 16)
+
 # Allow all cross site origins
 CORS_ORIGIN_ALLOW_ALL = True
 
