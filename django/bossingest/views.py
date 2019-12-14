@@ -233,7 +233,6 @@ class IngestJobView(IngestServiceView):
         database = ingest_config_data['database']
 
         # Check that only permitted users are creating extra large ingests
-        large_ingest = 100000 * 100000 * 3000 # ~ 200 x 200 x 200 cubes
         try:
             group = Group.objects.get(name=INGEST_GRP)
             in_large_ingest_group = group.user_set.filter(id=request.user.id).exists()
@@ -244,7 +243,7 @@ class IngestJobView(IngestServiceView):
            ((extent['x'][1] - extent['x'][0]) * \
             (extent['y'][1] - extent['y'][0]) * \
             (extent['z'][1] - extent['z'][0]) * \
-            (extent['t'][1] - extent['t'][0]) > large_ingest):
+            (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
             return BossHTTPError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
 
         # Calculate the cost of the ingest
