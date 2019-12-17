@@ -14,7 +14,7 @@
 
 from django.shortcuts import render
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django.db.models import Q
 
 from rest_framework.views import APIView
@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
 
+from bosscore.constants import INGEST_GRP
 from bosscore.error import BossError, ErrorCodes, BossHTTPError
 from bossingest.ingest_manager import IngestManager, INGEST_BUCKET
 from bossingest.serializers import IngestJobListSerializer
@@ -231,6 +232,21 @@ class IngestJobView(IngestServiceView):
         tile_size = ingest_config_data['ingest_job']['tile_size']
         database = ingest_config_data['database']
 
+        # Check that only permitted users are creating extra large ingests
+        try:
+            group = Group.objects.get(name=INGEST_GRP)
+            in_large_ingest_group = group.user_set.filter(id=request.user.id).exists()
+        except Group.DoesNotExist:
+            # Just in case the group has not been created yet
+            in_large_ingest_group = False
+        if (not in_large_ingest_group) and \
+           ((extent['x'][1] - extent['x'][0]) * \
+            (extent['y'][1] - extent['y'][0]) * \
+            (extent['z'][1] - extent['z'][0]) * \
+            (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
+            return BossHTTPError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
+
+        # Calculate the cost of the ingest
         cost = ( ((extent['x'][1] - extent['x'][0]) / tile_size['x'])
                * ((extent['y'][1] - extent['y'][0]) / tile_size['y'])
                * ((extent['z'][1] - extent['z'][0]) / tile_size['z'])

@@ -20,7 +20,7 @@ import zlib
 import io
 from PIL import Image
 
-from bosscore.renderer_helper import check_for_403
+from bosscore.renderer_helper import check_for_403, check_for_429
 
 class BloscPythonRenderer(renderers.BaseRenderer):
     """ A DRF renderer for a blosc encoded cube of data using the numpy interface
@@ -33,6 +33,7 @@ class BloscPythonRenderer(renderers.BaseRenderer):
     render_style = 'binary'
 
     @check_for_403
+    @check_for_429
     def render(self, data, media_type=None, renderer_context=None):
 
         if not data["data"].data.flags['C_CONTIGUOUS']:
@@ -55,6 +56,7 @@ class BloscRenderer(renderers.BaseRenderer):
     render_style = 'binary'
 
     @check_for_403
+    @check_for_429
     def render(self, data, media_type=None, renderer_context=None):
 
         if renderer_context['response'].status_code == 403:
@@ -88,6 +90,7 @@ class NpygzRenderer(renderers.BaseRenderer):
     render_style = 'binary'
 
     @check_for_403
+    @check_for_429
     def render(self, data, media_type=None, renderer_context=None):
 
         if not data["data"].data.flags['C_CONTIGUOUS']:
@@ -120,6 +123,7 @@ class JpegRenderer(renderers.BaseRenderer):
     render_style = 'binary'
 
     @check_for_403
+    @check_for_429
     def render(self, data, media_type=None, renderer_context=None):
 
         # Return data, squeezing time dimension as this only works with 3D data

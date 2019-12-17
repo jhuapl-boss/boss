@@ -17,6 +17,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 
 from boss import utils
+from boss.throttling import BossThrottle
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, ErrorCodes
 
@@ -100,6 +101,10 @@ class CutoutTile(APIView):
                * self.bit_depth
                / 8
                ) # Calculating the number of bytes
+
+        BossThrottle().check('image_egress',
+                             request.user,
+                             cost)
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
@@ -229,6 +234,10 @@ class Tile(APIView):
                * self.bit_depth
                / 8
                ) # Calculating the number of bytes
+
+        BossThrottle().check('tile_egress',
+                             request.user,
+                             cost)
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [

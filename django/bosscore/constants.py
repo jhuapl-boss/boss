@@ -23,3 +23,5 @@ ADMIN_GRP = 'admin'
 # Public group
 PUBLIC_GRP = 'bosspublic'
 
+# Large ingest group
+INGEST_GRP = 'bossingest'

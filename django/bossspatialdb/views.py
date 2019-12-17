@@ -30,6 +30,7 @@ from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
 from bosscore.models import Channel
 
 from boss import utils
+from boss.throttling import BossThrottle
 
 from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb.spatialdb.rediskvio import RedisKVIO
@@ -130,6 +131,10 @@ class Cutout(APIView):
                * self.bit_depth
                / 8
                ) # Calculating the number of bytes
+
+        BossThrottle().check('cutout_egress',
+                             request.user,
+                             cost)
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
@@ -237,6 +242,10 @@ class Cutout(APIView):
                * resource.get_bit_depth()
                / 8
                ) # Calculating the number of bytes
+
+        BossThrottle().check('cutout_ingress',
+                             request.user,
+                             cost)
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
