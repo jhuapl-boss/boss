@@ -630,10 +630,8 @@ class CutoutToBlack(APIView):
 
     * Requires authentication.
     """
-    # Set Parser and Renderer
+    # Set Parser
     parser_classes = (BloscParser, BloscPythonParser, NpygzParser, BrowsableAPIRenderer)
-    renderer_classes = (BloscRenderer, BloscPythonRenderer, NpygzRenderer, JpegRenderer,
-                        JSONRenderer, BrowsableAPIRenderer)
 
     def __init__(self):
         super().__init__()
@@ -643,8 +641,6 @@ class CutoutToBlack(APIView):
     def put(self, request, collection, experiment, channel, resolution, x_range, y_range, z_range, t_range=None):
         """
         View to handle PUT requests for a overwriting a cuboid to 0s 
-
-        Due to parser implementation, request.data should be a numpy array already.
 
         :param request: DRF Request object
         :type request: rest_framework.request.Request
