@@ -17,10 +17,13 @@ from rest_framework.permissions import IsAuthenticated
 from django.conf import settings
 
 from boss import utils
+from boss.throttling import BossThrottle
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, ErrorCodes
 
 import spdb
+
+import bossutils
 
 from .renderers import PNGRenderer, JPEGRenderer
 
@@ -89,6 +92,45 @@ class CutoutTile(APIView):
         if total_bytes > settings.CUTOUT_MAX_SIZE:
             return BossHTTPError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
                                  ErrorCodes.REQUEST_TOO_LARGE)
+
+        # Add metrics to CloudWatch
+        cost = ( req.get_x_span()
+               * req.get_y_span()
+               * req.get_z_span()
+               * (req.get_time().stop - req.get_time().start)
+               * self.bit_depth
+               / 8
+               ) # Calculating the number of bytes
+
+        BossThrottle().check('image_egress',
+                             request.user,
+                             cost)
+
+        boss_config = bossutils.configuration.BossConfig()
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
+                                                            experiment,
+                                                            channel)},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        session = bossutils.aws.get_session()
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Image",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'EgressCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Bytes'
+            }]
+        )
 
         # Get interface to SPDB cache
         cache = spdb.spatialdb.SpatialDB(settings.KVIO_SETTINGS,
@@ -183,6 +225,45 @@ class Tile(APIView):
         if total_bytes > settings.CUTOUT_MAX_SIZE:
             return BossHTTPError("Cutout request is over 1GB when uncompressed. Reduce cutout dimensions.",
                                  ErrorCodes.REQUEST_TOO_LARGE)
+
+        # Add metrics to CloudWatch
+        cost = ( req.get_x_span()
+               * req.get_y_span()
+               * req.get_z_span()
+               * (req.get_time().stop - req.get_time().start)
+               * self.bit_depth
+               / 8
+               ) # Calculating the number of bytes
+
+        BossThrottle().check('tile_egress',
+                             request.user,
+                             cost)
+
+        boss_config = bossutils.configuration.BossConfig()
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
+                                                            experiment,
+                                                            channel)},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        session = bossutils.aws.get_session()
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Tile",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'EgressCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Bytes'
+            }]
+        )
 
         # Get interface to SPDB cache
         cache = spdb.spatialdb.SpatialDB(settings.KVIO_SETTINGS,

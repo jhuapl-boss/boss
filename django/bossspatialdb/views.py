@@ -30,6 +30,7 @@ from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
 from bosscore.models import Channel
 
 from boss import utils
+from boss.throttling import BossThrottle
 
 from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb.spatialdb.rediskvio import RedisKVIO
@@ -122,6 +123,45 @@ class Cutout(APIView):
             return BossHTTPError("Cutout request is over 500MB when uncompressed. Reduce cutout dimensions.",
                                  ErrorCodes.REQUEST_TOO_LARGE)
 
+        # Add metrics to CloudWatch
+        cost = ( req.get_x_span()
+               * req.get_y_span()
+               * req.get_z_span()
+               * (req.get_time().stop - req.get_time().start)
+               * self.bit_depth
+               / 8
+               ) # Calculating the number of bytes
+
+        BossThrottle().check('cutout_egress',
+                             request.user,
+                             cost)
+
+        boss_config = bossutils.configuration.BossConfig()
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
+                                                            experiment,
+                                                            channel)},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        session = bossutils.aws.get_session()
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Cutout",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'EgressCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Bytes'
+            }]
+        )
+
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
                           settings.STATEIO_CONFIG,
@@ -193,6 +233,45 @@ class Cutout(APIView):
         if expected_shape != request.data[2].shape:
             return BossHTTPError("Data dimensions in URL do not match POSTed data.",
                                  ErrorCodes.DATA_DIMENSION_MISMATCH)
+
+        # Add metrics to CloudWatch
+        cost = ( req.get_x_span()
+               * req.get_y_span()
+               * req.get_z_span()
+               * (req.get_time().stop - req.get_time().start)
+               * resource.get_bit_depth()
+               / 8
+               ) # Calculating the number of bytes
+
+        BossThrottle().check('cutout_ingress',
+                             request.user,
+                             cost)
+
+        boss_config = bossutils.configuration.BossConfig()
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
+                                                            experiment,
+                                                            channel)},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        session = bossutils.aws.get_session()
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Cutout",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'IngressCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Bytes'
+            }]
+        )
 
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
@@ -379,6 +458,16 @@ class Downsample(APIView):
              not request.user.is_staff:
             return BossHTTPError("Channel is already downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
 
+        session = bossutils.aws.get_session()
+
+        # Make sure only one Channel is downsampled at a time
+        channel_objs = Channel.objects.filter(downsample_status = 'IN_PROGRESS')
+        for channel_obj in channel_objs:
+            # Verify that the channel is still being downsampled
+            status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
+            if status == 'RUNNING':
+                return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
+
         if request.user.is_staff:
             # DP HACK: allow admin users to override the coordinate frame
             frame = request.data
@@ -427,7 +516,53 @@ class Downsample(APIView):
 
         }
 
-        session = bossutils.aws.get_session()
+        # Check that only administrators are triggering extra large downsamples
+        if (not request.user.is_staff) and \
+           ((args['x_stop'] - args['x_start']) * \
+            (args['y_stop'] - args['y_start']) * \
+            (args['z_stop'] - args['z_start']) > settings.DOWNSAMPLE_MAX_SIZE):
+            return BossHTTPError("Large downsamples require admin permissions to trigger. Invalid Request.", ErrorCodes.INVALID_STATE)
+
+        # Add metrics to CloudWatch
+        def get_cubes(axis, dim):
+            extent = args['{}_stop'.format(axis)] - args['{}_start'.format(axis)]
+            return -(-extent // dim) ## ceil div
+
+        cost = (  get_cubes('x', 512)
+                * get_cubes('y', 512)
+                * get_cubes('z', 16)
+                / 4 # Number of cubes for a downsampled volume
+                * 0.75 # Assume the frame is only 75% filled
+                * 2 # 1 for invoking a lambda
+                    # 1 for time it takes lambda to run
+                * 1.33 # Add 33% overhead for all other non-base resolution downsamples
+               )
+
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
+                                                            experiment.name,
+                                                            channel.name)},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Downsample",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'ComputeCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Count'
+            }]
+        )
+
+        # Start downsample
         downsample_sfn = boss_config['sfn']['downsample_sfn']
         arn = bossutils.aws.sfn_execute(session, downsample_sfn, dict(args))
 
