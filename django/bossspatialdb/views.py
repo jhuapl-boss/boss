@@ -712,10 +712,10 @@ class CutoutToBlack(APIView):
 
         try:
             if len(black_cuboid.shape) == 4:
-                cache.write_cuboid(resource, corner, req.get_resolution(), black_cuboid, req.get_time()[0], iso=iso)
+                cache.write_cuboid(resource, corner, req.get_resolution(), black_cuboid, req.get_time()[0], iso=iso, to_black=True)
             else:
                 cache.write_cuboid(resource, corner, req.get_resolution(),
-                                   np.expand_dims(black_cuboid, axis=0), req.get_time()[0], iso=iso)
+                                   np.expand_dims(black_cuboid, axis=0), req.get_time()[0], iso=iso, to_black=True)
         except Exception as e:
             # TODO: Eventually remove as this level of detail should not be sent to the user
             return BossHTTPError('Error during write_cuboid: {}'.format(e), ErrorCodes.BAD_REQUEST)
