@@ -29,7 +29,7 @@ from bosscore.test.setup_db import SetupTestDB
 import numpy as np
 
 from unittest.mock import patch
-from mockredis import mock_strict_redis_client
+from fakeredis import FakeStrictRedis
 
 
 version = settings.BOSS_VERSION
@@ -283,7 +283,7 @@ class BoundingBoxMixin(object):
         self.assertEqual(bb['z_range'], [0, 18])
 
 
-@patch('redis.StrictRedis', mock_strict_redis_client)
+@patch('redis.StrictRedis', FakeStrictRedis)
 class TestBoundingBoxView(BoundingBoxMixin, APITestCase):
 
     def setUp(self):

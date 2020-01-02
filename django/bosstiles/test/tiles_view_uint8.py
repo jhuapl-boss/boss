@@ -27,7 +27,7 @@ from bosscore.error import BossError
 import numpy as np
 
 from unittest.mock import patch
-from mockredis import mock_strict_redis_client
+from fakeredis import FakeStrictRedis
 
 import spdb
 import bossutils
@@ -56,7 +56,7 @@ class MockSpatialDB(spdb.spatialdb.SpatialDB):
     """mock for redis kvio so the actual server isn't used during unit testing, but a static mockredis-py instead"""
 
     @patch('bossutils.configuration.BossConfig', MockBossConfig)
-    @patch('redis.StrictRedis', mock_strict_redis_client)
+    @patch('redis.StrictRedis', FakeStrictRedis)
     def __init__(self):
         super().__init__()
 
@@ -130,7 +130,7 @@ class TestImageInterfaceView(ImageInterfaceViewTestMixin, APITestCase):
 
     @patch('bossutils.configuration.BossConfig', MockBossConfig)
     @patch('spdb.spatialdb.kvio.KVIO', MockSpatialDB)
-    @patch('redis.StrictRedis', mock_strict_redis_client)
+    @patch('redis.StrictRedis', FakeStrictRedis)
     def setUp(self):
         """
         Initialize the database
@@ -271,7 +271,7 @@ class TestTileInterfaceView(TileInterfaceViewTestMixin, APITestCase):
 
     @patch('bossutils.configuration.BossConfig', MockBossConfig)
     @patch('spdb.spatialdb.kvio.KVIO', MockSpatialDB)
-    @patch('redis.StrictRedis', mock_strict_redis_client)
+    @patch('redis.StrictRedis', FakeStrictRedis)
     def setUp(self):
         """
         Initialize the database

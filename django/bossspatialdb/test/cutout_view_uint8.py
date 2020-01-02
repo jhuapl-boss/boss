@@ -31,7 +31,7 @@ import time
 from PIL import Image
 
 from unittest.mock import patch
-from mockredis import mock_strict_redis_client
+from fakeredis import FakeStrictRedis
 
 import spdb
 import bossutils
@@ -75,7 +75,7 @@ _test_globals = {'cache': None,
 #        self.cache_state = _test_globals['state']
 
 
-@patch('redis.StrictRedis', mock_strict_redis_client)
+@patch('redis.StrictRedis', FakeStrictRedis)
 def mock_init_(self, kv_conf, state_conf, object_store_conf):
     print("init mocker")
     self.kv_config = kv_conf
@@ -1133,7 +1133,7 @@ class CutoutInterfaceViewUint8TestMixin(object):
 
 
 # @patch('bossutils.configuration.BossConfig', new=MockBossConfig)
-# @patch('redis.StrictRedis', new=mock_strict_redis_client)
+# @patch('redis.StrictRedis', new=FakeStrictRedis)
 # @patch('spdb.spatialdb.spatialdb.SpatialDB', MockSpatialDB)
 @patch('spdb.spatialdb.SpatialDB.__init__', mock_init_)
 class TestCutoutInterfaceView(CutoutInterfaceViewUint8TestMixin, APITestCase):

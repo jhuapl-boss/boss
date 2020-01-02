@@ -27,7 +27,7 @@ from bosscore.test.setup_db import SetupTestDB
 import numpy as np
 
 from unittest.mock import patch
-from mockredis import mock_strict_redis_client
+from fakeredis import FakeStrictRedis
 
 
 version = settings.BOSS_VERSION
@@ -92,7 +92,7 @@ class IdsMixin(object):
         self.assertEqual(response.data['ids'], ['1'])
 
 
-@patch('redis.StrictRedis', mock_strict_redis_client)
+@patch('redis.StrictRedis', FakeStrictRedis)
 class TestCutoutInterfaceView(IdsMixin, APITestCase):
 
     def setUp(self):

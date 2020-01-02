@@ -29,7 +29,7 @@ import zlib
 import io
 
 from unittest.mock import patch
-from mockredis import mock_strict_redis_client
+from fakeredis import FakeStrictRedis
 
 import spdb
 import bossutils
@@ -61,7 +61,7 @@ class MockSpatialDB(spdb.spatialdb.SpatialDB):
     """mock for redis kvio so the actual server isn't used during unit testing, but a static mockredis-py instead"""
 
     @patch('bossutils.configuration.BossConfig', MockBossConfig)
-    @patch('redis.StrictRedis', mock_strict_redis_client)
+    @patch('redis.StrictRedis', FakeStrictRedis)
     def __init__(self):
         super().__init__()
 
@@ -897,7 +897,7 @@ class CutoutInterfaceViewUint64TestMixin(object):
         np.testing.assert_array_equal(data_mat, test_mat)
 
 
-@patch('redis.StrictRedis', mock_strict_redis_client)
+@patch('redis.StrictRedis', FakeStrictRedis)
 @patch('bossutils.configuration.BossConfig', MockBossConfig)
 @patch('spdb.spatialdb.kvio.KVIO', MockSpatialDB)
 class TestCutoutInterfaceView(CutoutInterfaceViewUint64TestMixin, APITestCase):
