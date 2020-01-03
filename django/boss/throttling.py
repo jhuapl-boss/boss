@@ -124,6 +124,7 @@ class MetricLimits(object):
         self.apis = data.get('apis')
         self.users = data.get('users')
         self.groups = data.get('groups')
+        self.default_user = data.get('default_user')
 
     @cache(ttl=THROTTLE_VAULT_TIMEOUT)
     def read_vault(self):
@@ -175,8 +176,10 @@ class MetricLimits(object):
 
         if None in limits:
             return None
-        else:
+        elif len(limits) > 0:
             return max(limits)
+        else:
+            return parse_limit(self.default_user)
 
 class BossThrottle(object):
     """Object for checking if a given API call is throttled
