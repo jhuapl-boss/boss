@@ -21,7 +21,6 @@ from django.conf import settings as django_settings
 import json
 import bossutils
 import redis
-import boto3
 
 THROTTLE_VAULT_TIMEOUT = getattr(django_settings, 'THROTTLE_VAULT_TIMEOUT', 60 * 2) # 2 Minutes
 
@@ -223,7 +222,7 @@ class BossThrottle(object):
         """
         if user:
             ex_msg = self.user_error_detail
-            sns_msg = "Throttling user '{}': {}".format(user, json.dumps(details))
+            sns_msg = "Throttling user '{}': {}".format(user.username, json.dumps(details))
         elif api:
             ex_msg = self.api_error_detail
             sns_msg = "Throttling API '{}': {}".format(api, json.dumps(details))
@@ -231,7 +230,7 @@ class BossThrottle(object):
             ex_msg = self.system_error_detail
             sns_msg = "Throttling system: {}".format(json.dumps(details))
 
-        client = boto3.client('sns')
+        client = bossutils.aws.get_session().client('sns')
         client.publish(TopicArn = self.topic,
                        Subject = 'Boss Request Throttled',
                        Message = sns_msg)
@@ -251,7 +250,7 @@ class BossThrottle(object):
         Raises:
             Throttle: If the call is throttled
         """
-        details = {'api': api, 'user': user, 'cost': cost, 'fqdn': self.fqdn}
+        details = {'api': api, 'user': user.username, 'cost': cost, 'fqdn': self.fqdn}
 
         self.check_user(user, cost, details)
         self.check_api(api, cost, details)
