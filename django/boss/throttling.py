@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from rest_framework.exceptions import Throttled
+from oidc_auth.util import cache
 
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
@@ -21,6 +22,8 @@ import json
 import bossutils
 import redis
 import boto3
+
+THROTTLE_VAULT_TIMEOUT = getattr(django_settings, 'THROTTLE_VAULT_TIMEOUT', 60 * 2) # 2 Minutes
 
 def parse_limit(val):
     """Convert a textual representation of a number of bytes into an integer
@@ -115,14 +118,19 @@ class MetricLimits(object):
     NOTE: Values are read once from Vault on initialization
     """
     def __init__(self):
-        vault = bossutils.vault.Vault()
-        data = vault.read('secret/endpoint/throttle', 'config')
-        data = json.loads(data)
+        data = self.read_vault()
 
         self.system = data.get('system')
         self.apis = data.get('apis')
         self.users = data.get('users')
         self.groups = data.get('groups')
+
+    @cache(ttl=THROTTLE_VAULT_TIMEOUT)
+    def read_vault(self):
+        vault = bossutils.vault.Vault()
+        data = vault.read('secret/endpoint/throttle', 'config')
+        data = json.loads(data)
+        return data
 
     def lookup_system(self):
         """Return the current metric limit for the entire system
