@@ -28,7 +28,7 @@ from bossingest.ingest_manager import IngestManager, INGEST_BUCKET
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
-from bossutils.logger import BossLogger
+from bossutils.logger import bossLogger
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
@@ -310,7 +310,7 @@ class IngestJobView(IngestServiceView):
                                      ErrorCodes.INGEST_NOT_CREATOR)
 
             ingest_mgmr.cleanup_ingest_job(ingest_job, IngestJob.DELETED)
-            blog = BossLogger().logger
+            blog = bossLogger()
             blog.info("Deleted Ingest Job {}".format(ingest_job_id))
             return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -336,7 +336,7 @@ class IngestJobCompleteView(IngestServiceView):
 
         """
         try:
-            blog = BossLogger().logger
+            blog = bossLogger()
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
 

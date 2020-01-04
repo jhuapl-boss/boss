@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from django.http import JsonResponse
-from bossutils.logger import BossLogger
+from bossutils.logger import bossLogger
 from enum import IntEnum
 import sys
 import json
@@ -217,7 +217,7 @@ class BossHTTPError(JsonResponse):
         self.status_code = RESP_CODES[code]
 
         # Log
-        blog = BossLogger().logger
+        blog = bossLogger()
         blog.info("BossHTTPError - Status: {0} - Code: {1} - Message: {2}".format(self.status_code, code, message))
 
         # Return
@@ -256,7 +256,7 @@ class BossKeycloakError(JsonResponse):
         for k in data:
             msg += " - {}: {}".format(k.capitalize(), data[k])
 
-        log = BossLogger().logger
+        log = bossLogger()
         log.info(msg)
 
         super(BossKeycloakError, self).__init__(data)

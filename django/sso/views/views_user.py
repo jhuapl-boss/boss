@@ -24,9 +24,9 @@ from bosscore.serializers import UserSerializer, BossRoleSerializer
 from bosscore.privileges import check_role, BossPrivilegeManager
 
 from bossutils.keycloak import KeyCloakClient, KeyCloakError
-from bossutils.logger import BossLogger
+from bossutils.logger import bossLogger
 
-LOG = BossLogger().logger
+LOG = bossLogger()
 
 ####
 ## Should there be a hard coded list of valid roles, or shoulda all methods defer
