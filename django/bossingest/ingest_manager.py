@@ -23,7 +23,7 @@ from ingestclient.core.backend import BossBackend
 
 from bossingest.serializers import IngestJobCreateSerializer
 from bossingest.models import IngestJob
-from bossingest.utils import query_tile_index, patch_upload_queue
+from bossingest.utils import get_sqs_num_msgs
 
 from bosscore.error import BossError, ErrorCodes
 from bosscore.models import Collection, Experiment, Channel
@@ -47,11 +47,22 @@ INGEST_BUCKET = config["aws"]["ingest_bucket"]
 INGEST_LAMBDA = config["lambda"]["ingest_function"]
 TILE_UPLOADED_LAMBDA = config["lambda"]["tile_uploaded_function"]
 TILE_INDEX = config["aws"]["tile-index-table"]
+ENDPOINT_DB = config["aws"]["db"]
+
 
 CONNECTOR = '&'
 MAX_NUM_MSG_PER_FILE = 10000
 MAX_SQS_BATCH_SIZE = 10
 
+WAIT_FOR_QUEUES_SECS = 180
+
+UPLOAD_QUEUE_NOT_EMPTY_ERR_MSG = "Upload queue is not empty"
+INGEST_QUEUE_NOT_EMPTY_ERR_MSG = "Ingest queue is not empty"
+TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG = "Tile ingest queue is not empty"
+TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG = "Tile error queue is not empty"
+NOT_IN_UPLOADING_STATE_ERR_MSG = 'Ingest job must be in UPLOADING state moving to WAIT_ON_QUEUES state'
+NOT_IN_WAIT_ON_QUEUES_STATE_ERR_MSG = 'Ingest job must be in WAIT_ON_QUEUES state moving to Completing state'
+ALREADY_COMPLETING_ERR_MSG = "Ingest job already completing"
 
 class IngestManager:
     """
@@ -359,6 +370,7 @@ class IngestManager:
     def get_ingest_job_ingest_queue(self, ingest_job):
         """
         Return the ingest queue for an ingest job
+
         Args:
             ingest_job: Ingest job model
 
@@ -371,31 +383,193 @@ class IngestManager:
         queue = IngestQueue(self.nd_proj, endpoint_url=None)
         return queue
 
-    def verify_ingest_job(self, ingest_job):
+    def calculate_remaining_queue_wait(self, ingest_job):
         """
-        Verify that all tiles ingested successfully
+        Return how many seconds remain while waiting for queues to clear.
+        
+        Once the wait period elapses, it might be safe to transition from
+        WAIT_ON_QUEUES to the COMPLETING state.
+
         Args:
-            ingest_job (IngestJob):
+            ingest_job: Ingest job model
 
         Returns:
-            (bool): True == verified
+            (int): Seconds.
         """
-        if ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
-            # ToDo: check lambda deadletter queue.
-            return True
+        if ingest_job.wait_on_queues_ts is None:
+            return WAIT_FOR_QUEUES_SECS
+
+        elapsed_secs = timezone.now() - ingest_job.wait_on_queues_ts
+        secs_remaining = WAIT_FOR_QUEUES_SECS - elapsed_secs.total_seconds()
+        if secs_remaining < 0:
+            return 0
+        return secs_remaining
+
+    def try_enter_wait_on_queue_state(self, ingest_job):
+        """
+        Try to move the ingest job to the WAIT_ON_QUEUES state.
+
+        Args:
+            ingest_job: Ingest job model
+
+        Returns:
+            (dict): { status: (job status str), wait_secs: (int) - # seconds client should wait }
+
+        Raises:
+            (BossError): If job not in UPLOADING state.
+        """
+        if ingest_job.status == IngestJob.WAIT_ON_QUEUES:
+            return {
+                'job_status': IngestJob.WAIT_ON_QUEUES,
+                'wait_secs': self.calculate_remaining_queue_wait(ingest_job)
+            }
+        elif ingest_job.status != IngestJob.UPLOADING:
+            raise BossError(NOT_IN_UPLOADING_STATE_ERR_MSG, ErrorCodes.BAD_REQUEST)
+
+        self.ensure_queues_empty(ingest_job)
+
+        rows_updated = (IngestJob.objects
+            .filter(id=ingest_job.id, status=IngestJob.UPLOADING)
+            .update(status=IngestJob.WAIT_ON_QUEUES, wait_on_queues_ts=timezone.now())
+            )
+        
+        # No update occurred, check if job status already WAIT_ON_QUEUES.
+        if rows_updated == 0:
+            refresh_job = self.get_ingest_job(ingest_job.id)
+            if refresh_job.status != IngestJob.WAIT_ON_QUEUES:
+                raise BossError(NOT_IN_UPLOADING_STATE_ERR_MSG, ErrorCodes.BAD_REQUEST)
+
+        return {
+            'job_status': IngestJob.WAIT_ON_QUEUES,
+            'wait_secs': self.calculate_remaining_queue_wait(ingest_job)
+        }
+
+    def try_start_completing(self, ingest_job):
+        """
+        Tries to start completion process.
+
+        It is assumed that the ingest job status is currently WAIT_ON_QUEUES.
+
+        If ingest_job status can be set to COMPLETING, then this process "wins"
+        and starts the completion process.
+
+        Args:
+            ingest_job: Ingest job model
+
+        Returns:
+            (dict): { status: (job status str), wait_secs: (int) - # seconds client should wait }
+
+        Raises:
+            (BossError): If completion process cannot be started or is already
+            in process.
+        """
+        completing_success = {
+            'job_status': IngestJob.COMPLETING,
+            'wait_secs': 0
+        }
+
+        if ingest_job.status == IngestJob.COMPLETING:
+            return completing_success
 
         try:
-            csv_file = query_tile_index(ingest_job.id, TILE_INDEX, bossutils.aws.get_region())
-            if csv_file is not None:
-                upload_queue = self.get_ingest_job_upload_queue(ingest_job)
-                args = self._generate_upload_queue_args(ingest_job)
-                patch_upload_queue(upload_queue.queue, args, csv_file)
-                return False
+            self.ensure_queues_empty(ingest_job)
+        except BossError as be:
+            # Ensure state goes back to UPLOADING if the upload queue isn't
+            # empty.
+            if be.message == UPLOAD_QUEUE_NOT_EMPTY_ERR_MSG:
+                ingest_job.status = IngestJob.UPLOADING
+                ingest_job.save()
+            raise
 
-            # success
-            return True
-        except Exception as e:
-            raise BossError("Unable to verify ingest job: {}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
+        if ingest_job.status != IngestJob.WAIT_ON_QUEUES:
+            raise BossError(NOT_IN_WAIT_ON_QUEUES_STATE_ERR_MSG, ErrorCodes.BAD_REQUEST)
+
+        wait_remaining = self.calculate_remaining_queue_wait(ingest_job)
+        if wait_remaining > 0:
+            return {
+                'job_status': IngestJob.WAIT_ON_QUEUES,
+                'wait_secs': wait_remaining
+            }
+
+        rows_updated = (IngestJob.objects
+            .exclude(status=IngestJob.COMPLETING)
+            .filter(id=ingest_job.id)
+            .update(status=IngestJob.COMPLETING)
+            )
+        
+        # If successfully set status to COMPLETING, kick off the completion
+        # process.  Otherwise, completion already started.
+        if rows_updated > 0:
+            self._start_completion_activity(ingest_job)
+
+        return completing_success
+
+    def _start_completion_activity(self, ingest_job):
+        """
+        Start the step function activity that checks a tile ingest job for
+        missing tiles.
+
+        This method SHOULD NOT be called by anyone but this class.  We do not
+        any more than 1 completion activity running for an ingest job.
+        
+        Args:
+            ingest_job: Ingest job model
+
+        Returns:
+            (str|None): Arn of step function if successful
+
+        Raises:
+        """
+        if ingest_job.ingest_type != IngestJob.TILE_INGEST:
+            return None
+        args = {
+            'tile_index_table': config['aws']['tile-index-table'],
+            'status': 'complete',
+            'region': bossutils.aws.get_region(),
+            'db_host': ENDPOINT_DB,
+            'job': {
+                'collection': ingest_job.collection_id,
+                'experiment': ingest_job.experiment_id,
+                'channel': ingest_job.channel_id,
+                'task_id': ingest_job.id,
+                'resolution': ingest_job.resolution,
+                'z_chunk_size': ingest_job.tile_size_z, 
+                'upload_queue': ingest_job.upload_queue,
+                'ingest_queue': ingest_job.ingest_queue,
+                'ingest_type': ingest_job.ingest_type
+            }
+        }
+
+        session = bossutils.aws.get_session()
+        scan_sfn = config['sfn']['complete_ingest_sfn']
+        return bossutils.aws.sfn_execute(session, scan_sfn, args)
+
+    def ensure_queues_empty(self, ingest_job):
+        """
+        As part of verifying that an ingest job is ready to complete, check
+        each SQS queue associated with the ingest job.
+
+        Args:
+            ingest_job: Ingest job model
+
+        Raises:
+            (BossError): If a queue is not empty.
+        """
+        upload_queue = self.get_ingest_job_upload_queue(ingest_job)
+        if get_sqs_num_msgs(upload_queue.url, upload_queue.region_name) > 0:
+            raise BossError(UPLOAD_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
+
+        ingest_queue = self.get_ingest_job_ingest_queue(ingest_job)
+        if get_sqs_num_msgs(ingest_queue.url, ingest_queue.region_name) > 0:
+            raise BossError(INGEST_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
+
+        tile_index_queue = self.get_ingest_job_tile_index_queue(ingest_job)
+        if get_sqs_num_msgs(tile_index_queue.url, tile_index_queue.region_name) > 0:
+            raise BossError(TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
+
+        tile_error_queue = self.get_ingest_job_tile_error_queue(ingest_job)
+        if get_sqs_num_msgs(tile_error_queue.url, tile_error_queue.region_name) > 0:
+            raise BossError(TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
     def cleanup_ingest_job(self, ingest_job, job_status):
         """
@@ -425,10 +599,6 @@ class IngestManager:
                 self.delete_tile_index_queue()
                 self.delete_tile_error_queue()
 
-            # delete any pending entries in the tile index database and tile bucket
-            # Commented out due to removal of tile index's GSI.
-            # self.delete_tiles(ingest_job)
-
             ingest_job.status = job_status
             ingest_job.ingest_queue = None
             ingest_job.upload_queue = None
@@ -439,7 +609,7 @@ class IngestManager:
             self.remove_ingest_credentials(ingest_job.id)
 
         except Exception as e:
-            raise BossError("Unable to cleanup the upload queue.{}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
+            raise BossError("Unable to complete cleanup {}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
         except IngestJob.DoesNotExist:
             raise BossError("Ingest job with id {} does not exist".format(ingest_job.id), ErrorCodes.OBJECT_NOT_FOUND)
         return ingest_job.id
@@ -686,40 +856,6 @@ class IngestManager:
             lambda_client.invoke(FunctionName=INGEST_LAMBDA,
                                  InvocationType='Event',
                                  Payload=json.dumps(event).encode())
-
-    def delete_tiles(self, ingest_job):
-        """
-        Delete all remaining tiles from the tile index database and tile bucket
-
-        5/24/2018 - This code depends on a GSI for the tile index.  The GSI was
-        removed because its key didn't shard well.  Cleanup will now be handled
-        by TTL policies applied to the tile bucket and the tile index.  This
-        method will be removed once that code is merged.
-
-        Args:
-            ingest_job: Ingest job model
-
-        Returns:
-            None
-        Raises:
-            BossError : For exceptions that happen while deleting the tiles and index
-
-        """
-        try:
-            # Get all the chunks for a job
-            tiledb = BossTileIndexDB(ingest_job.collection + '&' + ingest_job.experiment)
-            tilebucket = TileBucket(ingest_job.collection + '&' + ingest_job.experiment)
-            chunks = list(tiledb.getTaskItems(ingest_job.id))
-
-            for chunk in chunks:
-                # delete each tile in the chunk
-                for key in chunk['tile_uploaded_map']:
-                    response = tilebucket.deleteObject(key)
-                tiledb.deleteCuboid(chunk['chunk_key'], ingest_job.id)
-
-        except Exception as e:
-            raise BossError("Exception while deleteing tiles for the ingest job {}. {}".format(ingest_job.id, e),
-                            ErrorCodes.BOSS_SYSTEM_ERROR)
 
     def generate_ingest_credentials(self, ingest_job):
         """
