@@ -217,19 +217,22 @@ class IngestJobView(IngestServiceView):
         except Exception as err:
             return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
 
-    def post(self, request):
+    def track_usage_data(self, ingest_config_data):
         """
-        Post a new config job and create a new ingest job
+        Set up usage tracking of this ingest.
 
         Args:
-            request: Django Rest framework Request object
-            ingest_config_data: COnfiguration data for the ingest job
+            ingest_config_data (dict): Ingest job config.
 
-        Returns:
-
-
+        Raises:
+            (BossError): if user doesn't have permission for a large ingest.
         """
-        ingest_config_data = request.data
+
+        # ToDo: handle volumetric ingests.  Likely that first version of ingest
+        # schema doesn't have ingest type so check for tile-size to confirm 
+        # job is a tile ingest.
+        if 'tile-size' not in ingest_config_data['ingest_job']:
+            return
 
         # Add metrics to CloudWatch
         extent = ingest_config_data['ingest_job']['extent']
@@ -248,7 +251,7 @@ class IngestJobView(IngestServiceView):
             (extent['y'][1] - extent['y'][0]) * \
             (extent['z'][1] - extent['z'][0]) * \
             (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
-            return BossHTTPError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
+            raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
 
         # Calculate the cost of the ingest
         cost = ( ((extent['x'][1] - extent['x'][0]) / tile_size['x'])
@@ -285,7 +288,23 @@ class IngestJobView(IngestServiceView):
             }]
         )
 
+    def post(self, request):
+        """
+        Post a new config job and create a new ingest job
+
+        Args:
+            request: Django Rest framework Request object
+            ingest_config_data: COnfiguration data for the ingest job
+
+        Returns:
+
+
+        """
+        ingest_config_data = request.data
+
         try:
+            self.track_usage_data(ingest_config_data)
+
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.setup_ingest(self.request.user.id, ingest_config_data)
             serializer = IngestJobListSerializer(ingest_job)
