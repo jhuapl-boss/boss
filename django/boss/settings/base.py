@@ -69,16 +69,19 @@ INSTALLED_APPS = [
     'bootstrapform', # style management console
     'bossingest',
     'bossobject',
-    'rest_framework_swagger',
+    #'rest_framework_swagger',
+    'drf_yasg',
     'guardian'
 ]
 
-MIDDLEWARE_CLASSES = (
+#MIDDLEWARE_CLASSES = (
+MIDDLEWARE = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    # This one is now a pass-thru
+    #'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.security.SecurityMiddleware',

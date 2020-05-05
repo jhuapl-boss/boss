@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
 from django.http import HttpResponse
@@ -722,16 +723,18 @@ class ChannelDetail(APIView):
 
             if request.user.has_perm("update", channel_obj):
 
+                data = copy.deepcopy(request.data)
+
                 # The source and related channels are names and need to be removed from the dict before serialization
-                source_channels = request.data.pop('sources', [])
-                related_channels = request.data.pop('related', [])
+                source_channels = data.pop('sources', [])
+                related_channels = data.pop('related', [])
 
                 # Validate the source and related channels if they are incuded
                 channels = self.validate_source_related_channels(experiment_obj, source_channels, related_channels)
                 source_channels_objs = channels[0]
                 related_channels_objs = channels[1]
 
-                serializer = ChannelUpdateSerializer(channel_obj, data=request.data, partial=True)
+                serializer = ChannelUpdateSerializer(channel_obj, data=data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
 
@@ -741,12 +744,12 @@ class ChannelDetail(APIView):
                                                                       related_channels_objs)
 
                     # update the lookup key if you update the name
-                    if 'name' in request.data and request.data['name'] != channel:
+                    if 'name' in data and data['name'] != channel:
                         lookup_key = str(collection_obj.pk) + '&' + str(experiment_obj.pk) + '&' \
                                      + str(channel_obj.pk)
-                        boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + request.data['name']
+                        boss_key = collection_obj.name + '&' + experiment_obj.name + '&' + data['name']
                         LookUpKey.update_lookup(lookup_key, boss_key, collection_obj.name,  experiment_obj.name,
-                                                request.data['name'])
+                                                data['name'])
 
                     # return the object back to the user
                     channel = serializer.data['name']

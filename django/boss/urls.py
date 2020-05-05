@@ -32,13 +32,26 @@ from django.conf.urls import url
 from django.contrib import admin
 from django.conf.urls import include
 from django.views.generic import RedirectView
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
 
 from . import views
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title='BOSS API',
+        default_version='v1',
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,)
+)
 
 urlpatterns = [
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', include(admin.site.urls)),
-    url(r'^docs/', include('rest_framework_swagger.urls')),
+    #url(r'^docs/', include('rest_framework_swagger.urls')),
+    url(r'^docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     url(r'^ping/', views.Ping.as_view()),
     url(r'^token/', views.Token.as_view()),
 

@@ -1,11 +1,12 @@
 boto3>=1.4.0
-Django==1.9.1
+Django==1.11.28
+# This might not be used anymore.
 django-filter==0.11.0
-djangorestframework==3.3.1
-django-rest-swagger==0.3.5
+djangorestframework==3.8.2
+drf-yasg==1.17.1
 Markdown==2.6.5
-mysqlclient==1.3.7
-numpy==1.11.1
+mysqlclient==1.4.6
+numpy==1.18.1
 wheel==0.24.0
 uWSGI==2.0.12
 -e git+http://github.com/jhuapl-boss/drf-oidc-auth.git#egg=drf-oidc-auth
@@ -19,10 +20,7 @@ uWSGI==2.0.12
 # Pinning at 1.4.9 for now.
 django-guardian==1.4.9
 
-# django-cors-headers 2.5.0 has removed support for django 1.8, 1.9 and 1.10.
-#    Using it causes: ImportError: cannot import name 'MiddlewareMixin' in
-#    uwsgi logs and fails to work properly.
-django-cors-headers==2.4.1
+django-cors-headers==2.5.0
 django-bootstrap-form
 django-redis
 git+https://github.com/jhuapl-boss/django-nose2.git

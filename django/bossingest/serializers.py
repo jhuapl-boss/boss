@@ -22,6 +22,7 @@ class IngestJobCreateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = IngestJob
+        fields = '__all__'
 
 
 class IngestJobListSerializer(serializers.ModelSerializer):
