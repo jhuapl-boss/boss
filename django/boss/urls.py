@@ -93,3 +93,6 @@ urlpatterns = [
 
 if 'djangooidc' in settings.INSTALLED_APPS:
     urlpatterns.append(url(r'^openid/', include('djangooidc.urls')))
+
+if 'mozilla_django_oidc' in settings.INSTALLED_APPS:
+    urlpatterns.append(url(r'^openid/', include('mozilla_django_oidc.urls')))
