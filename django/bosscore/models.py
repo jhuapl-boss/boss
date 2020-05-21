@@ -313,7 +313,7 @@ class BossGroup(models.Model):
     """
     Store group information
     """
-    group = models.OneToOneField(Group)
+    group = models.OneToOneField(Group, on_delete=models.CASCADE)
     creator = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='Bossgroup')
 
     class Meta:
