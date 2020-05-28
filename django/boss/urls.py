@@ -49,7 +49,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', admin.site.urls),
     #url(r'^docs/', include('rest_framework_swagger.urls')),
     url(r'^docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     url(r'^ping/', views.Ping.as_view()),

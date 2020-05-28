@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from sso.views import views_user
 
+app_name = 'sso'
 urlpatterns = [
 
     # URLS to add role

@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from bosscore.views import views_group
 
+app_name = 'bosscore'
 urlpatterns = [
 
     # urls to manage adding and removing users from groups
@@ -29,6 +30,5 @@ urlpatterns = [
 
     # URLS to manage groups
     url(r'^', views_group.BossUserGroup.as_view()),
-
 
 ]

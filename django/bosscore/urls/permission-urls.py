@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from bosscore.views import views_permission
 
+app_name = 'bosscore'
 urlpatterns = [
 
     # URLS for permissions - Group to resource

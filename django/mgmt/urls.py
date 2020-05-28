@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from . import views
 
+app_name = 'mgmt'
 urlpatterns = [
     url(r'users/?', views.Users.as_view(), name='users'),
     url(r'user/(?P<username>[\w_-]+)/?', views.User.as_view(), name='user'),

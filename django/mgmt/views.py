@@ -3,7 +3,7 @@ from django.views.generic import View
 from django.template.loader import render_to_string
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from bosscore.privileges import BossPrivilegeManager, check_role
 from bosscore.error import BossError

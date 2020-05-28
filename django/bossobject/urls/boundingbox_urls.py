@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from bossobject import views
 
+app_name = 'bossobject'
 urlpatterns = [
 
     # Url to get the bouding box for an object

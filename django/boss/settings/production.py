@@ -57,8 +57,8 @@ if config['aws']['cache-session'] != '':
     SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
     SESSION_CACHE_ALIAS = 'default'
 
+INSTALLED_APPS.append("bossoidc")
 INSTALLED_APPS.append("mozilla_django_oidc")
-INSTALLED_APPS.append("keycloak_oidc")
 INSTALLED_APPS.append("rest_framework.authtoken")
 
 REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
@@ -68,8 +68,8 @@ REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
     'oidc_auth.authentication.BearerTokenAuthentication',
 )
 
-AUTHENTICATION_BACKENDS.insert(0, 'keycloak_oidc.auth.OIDCAuthenticationBackend') 
-AUTHENTICATION_BACKENDS.insert(0, 'mozilla_django_oidc.auth.OIDCAuthenticationBackend') 
+AUTHENTICATION_BACKENDS.insert(1, 'mozilla_django_oidc.auth.OIDCAuthenticationBackend') 
+AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend') 
 
 auth_uri = vault.read('secret/endpoint/auth', 'url')
 client_id = vault.read('secret/endpoint/auth', 'client_id')
@@ -84,8 +84,9 @@ OIDC_RP_CLIENT_ID = client_id
 OIDC_VERIFY_SSL = not (config['auth']['OIDC_VERIFY_SSL'] in ['False', 'false'])
 
 LOAD_USER_ROLES = 'bosscore.privileges.load_user_roles'
-#from bossoidc.settings import *
-#configure_oidc(auth_uri, client_id, public_uri)
+
+from bossoidc.settings import configure_oidc
+configure_oidc(auth_uri, client_id, public_uri)
 
 # Load params for spatialDB once during settings.py
 # kvio settings
