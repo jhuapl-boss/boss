@@ -105,7 +105,13 @@
             </a>
             <ul class="dropdown-menu">
               <li id="token_dropdown"><a id="token" href="{% url 'mgmt:token' %}">API Token</a></li>
-              <li><a id="logout" href="{% url 'logout' %}">Logout</a></li>
+              <li>
+                <form action="{% url 'oidc_logout' %}" method="post">
+                  {% csrf_token %}
+                  <input id="logout" type="submit" value="logout">
+                </form>
+              </li>
+              <!-- <li><a id="logout" href="{% url 'oidc_logout' %}">Logout</a></li> -->
             </ul>
           </li>
         </ul>
