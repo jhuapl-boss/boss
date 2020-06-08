@@ -19,6 +19,14 @@ from bossoidc.settings import BOSSOIDC_LOGIN_URL, BOSSOIDC_LOGOUT_URL
 Run Boss with a local Keycloak instance for testing.
 """
 
+# These are variables used for testing.  Don't copy these to production.py!
+LOCAL_KEYCLOAK_TESTING = True
+KEYCLOAK_ADMIN_USER = 'bossadmin'
+KEYCLOAK_ADMIN_PASSWORD = 'bossadmin'
+
+
+
+
 # Set this here so it's not overriden by any other settings files.
 LOGIN_URL = BOSSOIDC_LOGIN_URL
 LOGOUT_URL = BOSSOIDC_LOGOUT_URL
@@ -36,6 +44,8 @@ REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
 
 #AUTHENTICATION_BACKENDS.insert(1, 'mozilla_django_oidc.auth.OIDCAuthenticationBackend') 
 AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend') 
+
+LOAD_USER_ROLES = 'bosscore.privileges.load_user_roles'
 
 auth_uri = 'http://localhost:8080/auth/realms/BOSS'
 client_id = 'endpoint'

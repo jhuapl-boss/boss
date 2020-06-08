@@ -15,6 +15,8 @@
 import json
 from functools import wraps
 
+from django.conf import settings as django_settings
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -27,6 +29,10 @@ from bossutils.keycloak import KeyCloakClient, KeyCloakError
 from bossutils.logger import BossLogger
 
 LOG = BossLogger().logger
+
+LOCAL_KEYCLOAK_TESTING = getattr(django_settings, 'LOCAL_KEYCLOAK_TESTING', False)
+KEYCLOAK_ADMIN_USER = getattr(django_settings, 'KEYCLOAK_ADMIN_USER', '')
+KEYCLOAK_ADMIN_PASSWORD = getattr(django_settings, 'KEYCLOAK_ADMIN_PASSWORD', '')
 
 ####
 ## Should there be a hard coded list of valid roles, or shoulda all methods defer
@@ -62,10 +68,40 @@ def check_for_admin(user):
     else:
         return None
 
-class BossUser(APIView):
+class KeyCloakClientMixin:
+    """
+    Mixin for that returns a logged in KeyCloakClient if LOCAL_KEYCLOAK_TESTING
+    set in the Django settings.
+    """
+
+    def get_keycloak_client(self):
+        """
+        Get the KeyCloak client.
+
+        If LOCAL_KEYCLOAK_TESTING set in the Django settings, logs in using to the
+        local test KeyCloak server.
+
+        Returns:
+            (KeyCloakClient)
+        """
+        if LOCAL_KEYCLOAK_TESTING:
+            kc = KeyCloakClient('BOSS', url_base='http://localhost:8080/auth', https=False)
+            kc.login(
+                username=KEYCLOAK_ADMIN_USER,
+                password=KEYCLOAK_ADMIN_PASSWORD,
+                client_id='admin-cli',
+                login_realm='master')
+        else:
+            kc = KeyCloakClient('BOSS')
+
+        return kc
+
+
+class BossUser(APIView, KeyCloakClientMixin):
     """
     View to manage users
     """
+
     def get(self, request, user_name=None):
         """
         Get information about a user
@@ -78,7 +114,7 @@ class BossUser(APIView):
             JSON dictionary of user data
         """
         try:
-            with KeyCloakClient('BOSS') as kc:
+            with self.get_keycloak_client() as kc:
                 if user_name is None: # Get all users
                     search = request.GET.get('search')
                     response = kc.get_all_users(search)
@@ -113,7 +149,7 @@ class BossUser(APIView):
         user_created = False
 
         try:
-            with KeyCloakClient('BOSS') as kc:
+            with self.get_keycloak_client() as kc:
                 # DP NOTE: email also has to be unique, in the current configuration of Keycloak
                 data = {
                     "username": user_name,
@@ -138,7 +174,7 @@ class BossUser(APIView):
             # cleanup created objects
             if True in [user_created]:
                 try:
-                    with KeyCloakClient('BOSS') as kc:
+                    with self.get_keycloak_client() as kc:
                         try:
                             if user_created:
                                 kc.delete_user(user_name)
@@ -168,7 +204,7 @@ class BossUser(APIView):
             return BossKeycloakError(msg)
         else:
             try:
-                with KeyCloakClient('BOSS') as kc:
+                with self.get_keycloak_client() as kc:
                     kc.delete_user(user_name)
 
                 return Response(status=204)
@@ -176,7 +212,7 @@ class BossUser(APIView):
                 msg = "Error deleting user '{}' from Keycloak".format(user_name)
                 return BossKeycloakError(msg)
 
-class BossUserRole(APIView):
+class BossUserRole(APIView, KeyCloakClientMixin):
     """
     View to assign role to users
     """
@@ -199,7 +235,7 @@ class BossUserRole(APIView):
             True if the user has the role or a list of all assigned roles
         """
         try:
-            with KeyCloakClient('BOSS') as kc:
+            with self.get_keycloak_client() as kc:
                 resp = kc.get_realm_roles(user_name)
                 roles = [r['name'] for r in resp]
                 roles = filter_roles(roles)
@@ -239,7 +275,7 @@ class BossUserRole(APIView):
                 return resp
 
         try:
-            with KeyCloakClient('BOSS') as kc:
+            with self.get_keycloak_client() as kc:
                 response = kc.map_role_to_user(user_name, role_name)
                 return Response(status=201)
 
@@ -272,7 +308,7 @@ class BossUserRole(APIView):
                 return resp
 
         try:
-            with KeyCloakClient('BOSS') as kc:
+            with self.get_keycloak_client() as kc:
                 response = kc.remove_role_from_user(user_name, role_name)
                 return Response(status=204)
 
