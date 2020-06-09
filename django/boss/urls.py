@@ -83,7 +83,7 @@ urlpatterns = [
 
     # Management Console Urls
     url(r'^v1/mgmt/', include('mgmt.urls', namespace='mgmt')),
-    url(r'^/?$', RedirectView.as_view(pattern_name='mgmt:home')),
+    url(r'^$', RedirectView.as_view(pattern_name='mgmt:home')),
 
     #Object urls
     url(r'^v1/reserve/', include('bossobject.urls.reserve_urls', namespace='v1')),
