@@ -21,3 +21,6 @@ django-cors-headers==3.2.1
 django-bootstrap-form
 django-redis
 git+https://github.com/jhuapl-boss/django-nose2.git
+
+# Intern 1.0.0 uses Python language features incompatible with Python 3.5.
+intern<1.0
