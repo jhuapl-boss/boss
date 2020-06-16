@@ -67,6 +67,11 @@
         $("#contentTab a[href='#" + pane + "']").tab("show");
         err.parents(".modal").modal("show");
       }
+
+      // Make the <a> element submit the logout form.
+      $("#logout_link").on("click", evt => {
+        $("#logout_form").submit();
+      });
     });
 
 
@@ -106,9 +111,10 @@
             <ul class="dropdown-menu">
               <li id="token_dropdown"><a id="token" href="{% url 'mgmt:token' %}">API Token</a></li>
               <li>
-                <form action="{% url 'oidc_logout' %}" method="post">
+                <a id="logout_link">Logout</a>
+                <form id="logout_form" style="display: none;" action="{% url 'oidc_logout' %}" method="post">
                   {% csrf_token %}
-                  <input id="logout" type="submit" value="logout">
+                  <input type="submit" value="logout">
                 </form>
               </li>
               <!-- <li><a id="logout" href="{% url 'oidc_logout' %}">Logout</a></li> -->
