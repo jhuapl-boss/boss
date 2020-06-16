@@ -83,7 +83,7 @@ OIDC_OP_AUTHORIZATION_ENDPOINT = auth_uri + '/protocol/openid-connect/auth'
 OIDC_OP_TOKEN_ENDPOINT = auth_uri + '/protocol/openid-connect/token'
 OIDC_OP_USER_ENDPOINT = auth_uri + '/protocol/openid-connect/userinfo'
 LOGIN_REDIRECT_URL = public_uri + 'v1/mgmt'
-LOGOUT_REDIRECT_URL = auth_uri + '/protocol/openid-connect/logout'
+LOGOUT_REDIRECT_URL = auth_uri + '/protocol/openid-connect/logout?redirect_uri=' + public_uri
 OIDC_RP_CLIENT_ID = client_id
 OIDC_RP_CLIENT_SECRET = ''
 OIDC_RP_SCOPES = 'sub preferred_username'
