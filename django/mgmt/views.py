@@ -4,6 +4,7 @@ from django.template.loader import render_to_string
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils import timezone
 
 from bosscore.privileges import BossPrivilegeManager, check_role
 from bosscore.error import BossError
@@ -16,7 +17,6 @@ from .forms import ResourcePermissionsForm, GroupPermissionsForm
 from . import api
 from . import utils
 from .models import SystemNotice, BlogPost
-import datetime
 
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
@@ -41,7 +41,7 @@ def get_roles(request):
 class Home(LoginRequiredMixin, View):
     def get(self, request):
         # Get System Notices
-        now_datetime = datetime.datetime.now()
+        now_datetime = timezone.now()
         notices = SystemNotice.objects.filter(show_on__lte=now_datetime, hide_on__gte=now_datetime)
         notice_data = []
         for n in notices:
