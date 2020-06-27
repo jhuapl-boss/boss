@@ -39,13 +39,17 @@ class IngestJob(models.Model):
     COMPLETE = 2
     DELETED = 3
     FAILED = 4
+    COMPLETING = 5
+    WAIT_ON_QUEUES = 6
 
     INGEST_STATUS_OPTIONS = (
             (PREPARING, 'Preparing'),
             (UPLOADING, 'Uploading'),
             (COMPLETE, 'Complete'),
             (DELETED, 'Deleted'),
-            (FAILED, 'Failed')
+            (FAILED, 'Failed'),
+            (COMPLETING, 'Completing'),
+            (WAIT_ON_QUEUES, 'Wait on queues')
         )
 
     ingest_type = models.IntegerField(choices=INGEST_TYPE_OPTIONS, default=TILE_INGEST)
@@ -83,8 +87,25 @@ class IngestJob(models.Model):
     # Total number of tiles for this ingest job
     tile_count = models.IntegerField(default=0)
 
+    # This timestamp is first set when the ingest job status is set to
+    # WAIT_ON_QUEUES.
+    wait_on_queues_ts = models.DateTimeField(null=True)
+
     class Meta:
         db_table = u"ingest_job"
 
     def __str__(self):
         return "{}".format(self.id)
+
+    @staticmethod
+    def get_ingest_status_str(status):
+        """
+        Get the string representation of an ingest status.
+
+        Args:
+            status (int): One of the status constants.
+
+        Returns:
+            (str)
+        """
+        return IngestJob.INGEST_STATUS_OPTIONS[status][1]

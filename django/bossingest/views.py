@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.shortcuts import render
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from django.db.models import Q
@@ -20,11 +19,19 @@ from django.db.models import Q
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework import generics
 
-from bosscore.constants import INGEST_GRP
+from bosscore.constants import ADMIN_USER, INGEST_GRP
 from bosscore.error import BossError, ErrorCodes, BossHTTPError
-from bossingest.ingest_manager import IngestManager, INGEST_BUCKET
+from bossingest.ingest_manager import (
+    IngestManager, INGEST_BUCKET,
+    WAIT_FOR_QUEUES_SECS,
+    NOT_IN_WAIT_ON_QUEUES_STATE_ERR_MSG,
+    UPLOAD_QUEUE_NOT_EMPTY_ERR_MSG,
+    INGEST_QUEUE_NOT_EMPTY_ERR_MSG,
+    TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG,
+    TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG,
+    ALREADY_COMPLETING_ERR_MSG
+)
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
@@ -56,7 +63,7 @@ class IngestServiceView(APIView):
 
     def get_admin_user(self):
         """Return the admin user"""
-        return User.objects.get(username='bossadmin')
+        return User.objects.get(username=ADMIN_USER)
 
 
 class IngestJobView(IngestServiceView):
@@ -126,16 +133,13 @@ class IngestJobView(IngestServiceView):
             if ingest_job.ingest_type == IngestJob.TILE_INGEST:
                 data['ingest_job']['tile_index_queue'] = ingest_mgmr.get_ingest_job_tile_index_queue(ingest_job).url
 
-            if ingest_job.status == 3:
-                # The job has been deleted
+            if ingest_job.status == IngestJob.DELETED:
                 raise BossError("The job with id {} has been deleted".format(ingest_job_id),
                                 ErrorCodes.INVALID_REQUEST)
-            elif ingest_job.status == 2 or ingest_job.status == 4:
-                # Failed job or completed job
+            elif ingest_job.status == IngestJob.COMPLETE or ingest_job.status == IngestJob.FAILED:
                 return Response(data, status=status.HTTP_200_OK)
 
-            elif ingest_job.status == 0:
-                # Job is still in progress
+            elif ingest_job.status == IngestJob.PREPARING:
                 # check status of the step function
                 session = bossutils.aws.get_session()
                 if bossutils.aws.sfn_status(session, ingest_job.step_function_arn) == 'SUCCEEDED':
@@ -149,8 +153,8 @@ class IngestJobView(IngestServiceView):
                                     " Delete the ingest job with id {} and try again.".format(ingest_job_id),
                                     ErrorCodes.BOSS_SYSTEM_ERROR)
 
-            if ingest_job.status == 1:
-                data['ingest_job']['status'] = 1
+            if ingest_job.status in [IngestJob.UPLOADING, IngestJob.WAIT_ON_QUEUES, IngestJob.COMPLETING]:
+                data['ingest_job']['status'] = ingest_job.status
                 ingest_creds = IngestCredentials()
                 data['credentials'] = ingest_creds.get_credentials(ingest_job.id)
             else:
@@ -213,6 +217,78 @@ class IngestJobView(IngestServiceView):
         except Exception as err:
             return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
 
+    def track_usage_data(self, ingest_config_data):
+        """
+        Set up usage tracking of this ingest.
+
+        Args:
+            ingest_config_data (dict): Ingest job config.
+
+        Raises:
+            (BossError): if user doesn't have permission for a large ingest.
+        """
+
+        # ToDo: handle volumetric ingests.  Likely that first version of ingest
+        # schema doesn't have ingest type so check for tile-size to confirm 
+        # job is a tile ingest.
+        if 'tile-size' not in ingest_config_data['ingest_job']:
+            return
+
+        # Add metrics to CloudWatch
+        extent = ingest_config_data['ingest_job']['extent']
+        tile_size = ingest_config_data['ingest_job']['tile_size']
+        database = ingest_config_data['database']
+
+        # Check that only permitted users are creating extra large ingests
+        try:
+            group = Group.objects.get(name=INGEST_GRP)
+            in_large_ingest_group = group.user_set.filter(id=request.user.id).exists()
+        except Group.DoesNotExist:
+            # Just in case the group has not been created yet
+            in_large_ingest_group = False
+        if (not in_large_ingest_group) and \
+           ((extent['x'][1] - extent['x'][0]) * \
+            (extent['y'][1] - extent['y'][0]) * \
+            (extent['z'][1] - extent['z'][0]) * \
+            (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
+            raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
+
+        # Calculate the cost of the ingest
+        cost = ( ((extent['x'][1] - extent['x'][0]) / tile_size['x'])
+               * ((extent['y'][1] - extent['y'][0]) / tile_size['y'])
+               * ((extent['z'][1] - extent['z'][0]) / tile_size['z'])
+               * ((extent['t'][1] - extent['t'][0]) / tile_size['t'])
+               * 1.0625 # 1 lambda per tile + 1 lambda per 16 tiles (per cube)
+               * 1 # the cost per lambda
+               ) # Calculating the cost of the lambda invocations
+
+        boss_config = bossutils.configuration.BossConfig()
+        dimensions = [
+            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(database['collection'],
+                                                            database['experiment'],
+                                                            database['channel'])},
+            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+        ]
+
+        session = bossutils.aws.get_session()
+        client = session.client('cloudwatch')
+        client.put_metric_data(
+            Namespace = "BOSS/Ingest",
+            MetricData = [{
+                'MetricName': 'InvokeCount',
+                'Dimensions': dimensions,
+                'Value': 1.0,
+                'Unit': 'Count'
+            }, {
+                'MetricName': 'ComputeCost',
+                'Dimensions': dimensions,
+                'Value': cost,
+                'Unit': 'Count'
+            }]
+        )
+
+
     def post(self, request):
         """
         Post a new config job and create a new ingest job
@@ -226,64 +302,10 @@ class IngestJobView(IngestServiceView):
 
         """
         ingest_config_data = request.data
-        # TODO SH Removed metrics code for ingest as it does take into account Volumetric Solution.
-        #      Volumetric doesn't have a tile_size which caused the code below to fail.
-        #
-        # # Add metrics to CloudWatch
-        # extent = ingest_config_data['ingest_job']['extent']
-        # tile_size = ingest_config_data['ingest_job']['tile_size']
-        # database = ingest_config_data['database']
-        #
-        # # Check that only permitted users are creating extra large ingests
-        # try:
-        #     group = Group.objects.get(name=INGEST_GRP)
-        #     in_large_ingest_group = group.user_set.filter(id=request.user.id).exists()
-        # except Group.DoesNotExist:
-        #     # Just in case the group has not been created yet
-        #     in_large_ingest_group = False
-        # if (not in_large_ingest_group) and \
-        #    ((extent['x'][1] - extent['x'][0]) * \
-        #     (extent['y'][1] - extent['y'][0]) * \
-        #     (extent['z'][1] - extent['z'][0]) * \
-        #     (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
-        #     return BossHTTPError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
-        #
-        # # Calculate the cost of the ingest
-        # cost = ( ((extent['x'][1] - extent['x'][0]) / tile_size['x'])
-        #        * ((extent['y'][1] - extent['y'][0]) / tile_size['y'])
-        #        * ((extent['z'][1] - extent['z'][0]) / tile_size['z'])
-        #        * ((extent['t'][1] - extent['t'][0]) / tile_size['t'])
-        #        * 1.0625 # 1 lambda per tile + 1 lambda per 16 tiles (per cube)
-        #        * 1 # the cost per lambda
-        #        ) # Calculating the cost of the lambda invocations
-        #
-        # boss_config = bossutils.configuration.BossConfig()
-        # dimensions = [
-        #     {'Name': 'User', 'Value': request.user.username},
-        #     {'Name': 'Resource', 'Value': '{}/{}/{}'.format(database['collection'],
-        #                                                     database['experiment'],
-        #                                                     database['channel'])},
-        #     {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
-        # ]
-        #
-        # session = bossutils.aws.get_session()
-        # client = session.client('cloudwatch')
-        # client.put_metric_data(
-        #     Namespace = "BOSS/Ingest",
-        #     MetricData = [{
-        #         'MetricName': 'InvokeCount',
-        #         'Dimensions': dimensions,
-        #         'Value': 1.0,
-        #         'Unit': 'Count'
-        #     }, {
-        #         'MetricName': 'ComputeCost',
-        #         'Dimensions': dimensions,
-        #         'Value': cost,
-        #         'Unit': 'Count'
-        #     }]
-        # )
 
         try:
+            self.track_usage_data(ingest_config_data)
+
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.setup_ingest(self.request.user.id, ingest_config_data)
             serializer = IngestJobListSerializer(ingest_job)
@@ -342,35 +364,24 @@ class IngestJobCompleteView(IngestServiceView):
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.get_ingest_job(ingest_job_id)
 
+            # Check if user is the ingest job creator or the sys admin
+            if not self.is_user_or_admin(request, ingest_job):
+                return BossHTTPError("Only the creator or admin can complete an ingest job",
+                                     ErrorCodes.INGEST_NOT_CREATOR)
+
             if ingest_job.status == IngestJob.PREPARING:
                 # If status is Preparing. Deny
                 return BossHTTPError("You cannot complete a job that is still preparing. You must cancel instead.",
                                      ErrorCodes.BAD_REQUEST)
             elif ingest_job.status == IngestJob.UPLOADING:
-                # Check if user is the ingest job creator or the sys admin
-                if not self.is_user_or_admin(request, ingest_job):
-                    return BossHTTPError("Only the creator or admin can start verification of an ingest job",
-                                         ErrorCodes.INGEST_NOT_CREATOR)
-
-                # Disable verification until it is reworked and always return
-                # success for now.
-                blog.info('Telling client job complete - completion/verificcation to be fixed later.')
-                return Response(status=status.HTTP_204_NO_CONTENT)
-
-                """
-                blog.info('Verifying ingest job {}'.format(ingest_job_id))
-
-                # Start verification process
-                if not ingest_mgmr.verify_ingest_job(ingest_job):
-                    # Ingest not finished
-                    return Response(status=status.HTTP_202_ACCEPTED)
-                """
-
-                # Verification successful, fall through to the complete process.
-
+                data = ingest_mgmr.try_enter_wait_on_queue_state(ingest_job)
+                return Response(data=data, status=status.HTTP_202_ACCEPTED)
+            elif ingest_job.status == IngestJob.WAIT_ON_QUEUES:
+                pass
+                # Continue below.
             elif ingest_job.status == IngestJob.COMPLETE:
                 # If status is already Complete, just return another 204
-                return Response(status=status.HTTP_204_NO_CONTENT)
+                return Response(data={'job_status': ingest_job.status}, status=status.HTTP_204_NO_CONTENT)
             elif ingest_job.status == IngestJob.DELETED:
                 # Job had already been cancelled
                 return BossHTTPError("Ingest job has already been cancelled.",
@@ -379,14 +390,32 @@ class IngestJobCompleteView(IngestServiceView):
                 # Job had failed
                 return BossHTTPError("Ingest job has failed during creation. You must Cancel instead.",
                                      ErrorCodes.BAD_REQUEST)
-
-            # Complete the job.
-            blog.info("Completing Ingest Job {}".format(ingest_job_id))
+            elif ingest_job.status == IngestJob.COMPLETING:
+                return Response(data={'job_status': ingest_job.status}, status=status.HTTP_202_ACCEPTED)
 
             # Check if user is the ingest job creator or the sys admin
             if not self.is_user_or_admin(request, ingest_job):
                 return BossHTTPError("Only the creator or admin can complete an ingest job",
                                      ErrorCodes.INGEST_NOT_CREATOR)
+
+            # Try to start completing.
+            try:
+                data = ingest_mgmr.try_start_completing(ingest_job)
+                if data['job_status'] == IngestJob.WAIT_ON_QUEUES:
+                    # Refuse complete requests until wait period expires.
+                    return Response(data=data, status=status.HTTP_400_BAD_REQUEST)
+            except BossError as be:
+                if (be.message == INGEST_QUEUE_NOT_EMPTY_ERR_MSG or
+                        be.message == TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG or
+                        be.message == TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG):
+                    return Response(
+                        data={ 'wait_secs': WAIT_FOR_QUEUES_SECS, 'info': 'Internal queues not empty yet' },
+                        status=status.HTTP_400_BAD_REQUEST)
+                raise
+
+            blog.info("Completion process started for ingest Job {}".format(ingest_job_id))
+            return Response(data=data, status=status.HTTP_202_ACCEPTED)
+
 
             # TODO SH This is a quick fix to make sure the ingest-client does not run close option.
             #      the clean up code commented out below, because it is not working correctly.
@@ -458,12 +487,20 @@ class IngestJobStatusView(IngestServiceView):
                     # Job is Complete so queues are gone
                     num_messages_in_queue = 0
                 else:
-                    upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
-                    num_messages_in_queue = int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
-                    if num_messages_in_queue < ingest_job.tile_count:
-                        for n in range(9):
-                            num_messages_in_queue += int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
-                        num_messages_in_queue /= 10
+                    try:
+                        upload_queue = ingest_mgmr.get_ingest_job_upload_queue(ingest_job)
+                        num_messages_in_queue = int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
+                        if num_messages_in_queue < ingest_job.tile_count:
+                            for n in range(9):
+                                num_messages_in_queue += int(upload_queue.queue.attributes['ApproximateNumberOfMessages'])
+                            num_messages_in_queue /= 10
+                    except Exception:
+                        if ingest_job.status != IngestJob.COMPLETING:
+                            raise
+
+                        # Probably threw because queues were deleted while
+                        # completing ingest.
+                        num_messages_in_queue = 0
 
                 data = {"id": ingest_job.id,
                         "status": ingest_job.status,

@@ -291,30 +291,6 @@ class BossIngestViewTestMixin(object):
         response = self.client.delete(url)
         self.assertEqual(204, response.status_code)
 
-        # Add a job that will be completed
-        url = '/' + version + '/ingest/'
-        response = self.client.post(url, data=config_data, format='json')
-        assert (response.status_code == 201)
-        ingest_job_completed = response.json()
-
-        # Wait for job to "complete"
-        for cnt in range(0, 30):
-            # Try joining to kick the status
-            url = '/' + version + '/ingest/{}/'.format(ingest_job_completed['id'])
-            self.client.get(url)
-
-            url = '/' + version + '/ingest/{}/status'.format(ingest_job_completed['id'])
-            response = self.client.get(url)
-            if response.json()["status"] == IngestJob.UPLOADING:
-                break
-
-            time.sleep(10)
-
-        # Complete the job
-        url = '/' + version + '/ingest/{}/complete'.format(ingest_job_completed['id'])
-        response = self.client.post(url)
-        self.assertEqual(204, response.status_code)
-
         # Log in as the admin and create a job
         self.client.force_login(self.superuser)
         url = '/' + version + '/ingest/'
@@ -328,134 +304,11 @@ class BossIngestViewTestMixin(object):
         url = '/' + version + '/ingest/'
         response = self.client.get(url, format='json')
         result = response.json()
-        self.assertEqual(3, len(result["ingest_jobs"]))
+        self.assertEqual(2, len(result["ingest_jobs"]))
         self.assertEqual(result["ingest_jobs"][0]['id'], ingest_job_2['id'])
         self.assertEqual(result["ingest_jobs"][0]['status'], IngestJob.PREPARING)
-        self.assertEqual(result["ingest_jobs"][1]['id'], ingest_job_completed['id'])
-        # TODO: LMR - Ingest clean up won't be executed which means the status will not be succefully changed.
-        # self.assertEqual(result["ingest_jobs"][1]['status'], IngestJob.COMPLETE)
-        self.assertEqual(result["ingest_jobs"][2]['id'], admin_ingest_job['id'])
-        self.assertEqual(result["ingest_jobs"][2]['status'], IngestJob.PREPARING)
-
-    def test_complete_ingest_job(self):
-        """ Test view to create a new ingest job """
-        config_data = self.setup_helper.get_ingest_config_data_dict()
-        config_data = json.loads(json.dumps(config_data))
-
-        # # Post the data
-        url = '/' + version + '/ingest/'
-        response = self.client.post(url, data=config_data, format='json')
-        self.assertEqual(response.status_code, 201)
-
-        # Check if the queues exist
-        ingest_job = response.json()
-        proj_class = BossIngestProj.load()
-        nd_proj = proj_class(ingest_job['collection'], ingest_job['experiment'], ingest_job['channel'],
-                             0, ingest_job['id'])
-        self.nd_proj = nd_proj
-        upload_queue = UploadQueue(nd_proj, endpoint_url=None)
-        self.assertIsNotNone(upload_queue)
-        ingest_queue = IngestQueue(nd_proj, endpoint_url=None)
-        self.assertIsNotNone(ingest_queue)
-
-        # Test joining the job
-        url = '/' + version + '/ingest/{}/'.format(ingest_job['id'])
-        response = self.client.get(url)
-        self.assertEqual(response.json()['ingest_job']['id'], ingest_job['id'])
-        self.assertIn("credentials", response.json())
-
-        # Complete the job
-        url = '/' + version + '/ingest/{}/complete'.format(ingest_job['id'])
-        response = self.client.post(url)
-
-        # Can't complete until it is done
-        self.assertEqual(400, response.status_code)
-
-        # Wait for job to complete
-        print('trying to join job')
-        for cnt in range(0, 30):
-            # Try joining to kick the status
-            url = '/' + version + '/ingest/{}/'.format(ingest_job['id'])
-            self.client.get(url)
-
-            url = '/' + version + '/ingest/{}/status'.format(ingest_job['id'])
-            response = self.client.get(url)
-            if response.json()["status"] == IngestJob.UPLOADING:
-                break
-
-            time.sleep(10)
-
-        print('completing')
-        # Complete the job
-        url = '/' + version + '/ingest/{}/complete'.format(ingest_job['id'])
-        response = self.client.post(url)
-        self.assertEqual(204, response.status_code)
-
-        #TODO: LMR - Currently we are not cleaning up queues after the ingest has been completed
-        # Re-enable this assertion once the clean up has been re-enabled.
-        # # Verify Queues are removed
-        # with self.assertRaises(ClientError):
-        #     UploadQueue(nd_proj, endpoint_url=None)
-        # with self.assertRaises(ClientError):
-        #     IngestQueue(nd_proj, endpoint_url=None)
-
-        # # Verify status has changed
-        # url = '/' + version + '/ingest/{}/status'.format(ingest_job['id'])
-        # response = self.client.get(url)
-        # self.assertEqual(200, response.status_code)
-        # self.assertEqual(response.json()["status"], 2)
-
-    # TODO: This test should be re-enabled once the verfication step is re-enabled
-    @unittest.skip("Skipping test_verify_ingest_job_not_done until verification is re-enabled")
-    def test_verify_ingest_job_not_done(self):
-        """ Test view to create a new ingest job """
-        config_data = self.setup_helper.get_ingest_config_data_dict()
-        config_data = json.loads(json.dumps(config_data))
-
-        # # Post the data
-        url = '/' + version + '/ingest/'
-        response = self.client.post(url, data=config_data, format='json')
-        self.assertEqual(response.status_code, 201)
-
-        # Check if the queue's exist
-        ingest_job = response.json()
-        proj_class = BossIngestProj.load()
-        nd_proj = proj_class(ingest_job['collection'], ingest_job['experiment'], ingest_job['channel'],
-                             0, ingest_job['id'])
-        self.nd_proj = nd_proj
-        upload_queue = UploadQueue(nd_proj, endpoint_url=None)
-        self.assertIsNotNone(upload_queue)
-        ingest_queue = IngestQueue(nd_proj, endpoint_url=None)
-        self.assertIsNotNone(ingest_queue)
-
-        # Test joining the job
-        url = '/' + version + '/ingest/{}/'.format(ingest_job['id'])
-        response = self.client.get(url)
-        self.assertEqual(response.json()['ingest_job']['id'], ingest_job['id'])
-        self.assertIn("credentials", response.json())
-
-        # Wait for job to complete
-        print('trying to join job')
-        for cnt in range(0, 30):
-            # Try joining to kick the status
-            url = '/' + version + '/ingest/{}/'.format(ingest_job['id'])
-            self.client.get(url)
-
-            url = '/' + version + '/ingest/{}/status'.format(ingest_job['id'])
-            response = self.client.get(url)
-            if response.json()["status"] == IngestJob.UPLOADING:
-                break
-
-            time.sleep(10)
-
-        print('faking ingest')
-        # Leave one chunk in the index to fake not being done.
-        with add_tile_entry(ingest_job):
-            print('trying to complete')
-            url = '/' + version + '/ingest/{}/complete'.format(ingest_job['id'])
-            response = self.client.post(url)
-            # Still have chunks in tile index
-            self.assertEqual(202, response.status_code)
+        self.assertEqual(result["ingest_jobs"][1]['id'], admin_ingest_job['id'])
+        self.assertEqual(result["ingest_jobs"][1]['status'], IngestJob.PREPARING)
 
     def test_job_status(self):
         """ Test status, waiting for a queue to actually populate """
