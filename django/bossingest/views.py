@@ -288,6 +288,7 @@ class IngestJobView(IngestServiceView):
             }]
         )
 
+
     def post(self, request):
         """
         Post a new config job and create a new ingest job
