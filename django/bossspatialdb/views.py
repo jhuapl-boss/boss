@@ -719,7 +719,7 @@ class CutoutToBlack(APIView):
         except Exception as e:
             # TODO: Eventually remove as this level of detail should not be sent to the user
             log = BossLogger().logger
-            log.exception(e)
+            log.exception('Error during write_cuboid: {}'.format(e))
             return BossHTTPError('Error during write_cuboid: {}'.format(e), ErrorCodes.BAD_REQUEST)
 
         # If the channel status is DOWNSAMPLED change status to NOT_DOWNSAMPLED since you just wrote data
