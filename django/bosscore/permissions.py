@@ -234,7 +234,7 @@ class BossPermissionManager:
         """
         if method_type == 'GET':
             permission = 'read_volumetric_data'
-        elif method_type == 'POST':
+        elif method_type == 'POST' or method_type == 'PUT':
             permission = 'add_volumetric_data'
         elif method_type == 'DELETE':
             permission = 'delete_volumetric_data'
