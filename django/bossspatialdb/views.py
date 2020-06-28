@@ -718,6 +718,8 @@ class CutoutToBlack(APIView):
                                    np.expand_dims(black_cuboid, axis=0), req.get_time()[0], iso=iso, to_black=True)
         except Exception as e:
             # TODO: Eventually remove as this level of detail should not be sent to the user
+            log = BossLogger().logger
+            log.exception(e)
             return BossHTTPError('Error during write_cuboid: {}'.format(e), ErrorCodes.BAD_REQUEST)
 
         # If the channel status is DOWNSAMPLED change status to NOT_DOWNSAMPLED since you just wrote data
