@@ -37,7 +37,7 @@ from spdb.spatialdb.rediskvio import RedisKVIO
 from spdb import project
 import bossutils
 from bossutils.aws import get_region
-from bossutils.logger import BossLogger
+from bossutils.logger import bossLogger
 
 
 class Cutout(APIView):
@@ -377,7 +377,7 @@ class Downsample(APIView):
                 # DP NOTE: Clear the cache of any cubes for the channel
                 #          This is to prevent serving stale data after
                 #          (re)downsampling
-                log = BossLogger().logger
+                log = bossLogger()
                 for pattern in ("CACHED-CUBOID&"+lookup_key+"&*",
                                 "CACHED-CUBOID&ISO&"+lookup_key+"&*"):
                     log.debug("Clearing cache of {} cubes".format(pattern))

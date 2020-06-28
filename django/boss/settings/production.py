@@ -19,6 +19,7 @@ Run the boss in production.
 """
 
 import bossutils
+bossutils.logger.configure()
 
 vault = bossutils.vault.Vault()
 config = bossutils.configuration.BossConfig()
