@@ -8,7 +8,7 @@ Markdown==2.6.5
 mysqlclient==1.4.6
 numpy==1.18.1
 wheel==0.24.0
-uWSGI==2.0.12
+uWSGI==2.0.19.1
 
 drf-oidc-auth==0.10.0
 -e git+https://github.com/jhuapl-boss/boss-oidc.git@mozilla#egg=boss-oidc
