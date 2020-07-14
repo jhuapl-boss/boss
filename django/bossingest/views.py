@@ -228,15 +228,28 @@ class IngestJobView(IngestServiceView):
             (BossError): if user doesn't have permission for a large ingest.
         """
 
-        # ToDo: handle volumetric ingests.  Likely that first version of ingest
-        # schema doesn't have ingest type so check for tile-size to confirm 
-        # job is a tile ingest.
-        if 'tile-size' not in ingest_config_data['ingest_job']:
-            return
+        # calculation will depend slightly on the type
+        size_x = None
+        size_y = None
+        size_z = None
+        size_t = None
+        if ingest_config_data['type'] == 'volumetric':
+            if 'chunk_size' not in ingest_config_data['ingest_job']:
+                return
+            size_x = ingest_config_data['ingest_job']['chunk_size']['x']
+            size_y = ingest_config_data['ingest_job']['chunk_size']['y']
+            size_z = ingest_config_data['ingest_job']['chunk_size']['z']
+            size_t = 1
+        else: # assume tile
+            if 'tile_size' not in ingest_config_data['ingest_job']:
+                return
+            size_x = ingest_config_data['ingest_job']['tile_size']['x']
+            size_y = ingest_config_data['ingest_job']['tile_size']['y']
+            size_z = ingest_config_data['ingest_job']['tile_size']['z']
+            size_t = ingest_config_data['ingest_job']['tile_size']['t']
 
         # Add metrics to CloudWatch
         extent = ingest_config_data['ingest_job']['extent']
-        tile_size = ingest_config_data['ingest_job']['tile_size']
         database = ingest_config_data['database']
 
         # Check that only permitted users are creating extra large ingests
@@ -254,10 +267,10 @@ class IngestJobView(IngestServiceView):
             raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
 
         # Calculate the cost of the ingest
-        cost = ( ((extent['x'][1] - extent['x'][0]) / tile_size['x'])
-               * ((extent['y'][1] - extent['y'][0]) / tile_size['y'])
-               * ((extent['z'][1] - extent['z'][0]) / tile_size['z'])
-               * ((extent['t'][1] - extent['t'][0]) / tile_size['t'])
+        cost = ( ((extent['x'][1] - extent['x'][0]) / size_x)
+               * ((extent['y'][1] - extent['y'][0]) / size_y)
+               * ((extent['z'][1] - extent['z'][0]) / size_z)
+               * ((extent['t'][1] - extent['t'][0]) / size_t)
                * 1.0625 # 1 lambda per tile + 1 lambda per 16 tiles (per cube)
                * 1 # the cost per lambda
                ) # Calculating the cost of the lambda invocations
