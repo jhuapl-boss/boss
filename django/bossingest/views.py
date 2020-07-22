@@ -217,7 +217,7 @@ class IngestJobView(IngestServiceView):
         except Exception as err:
             return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
 
-    def track_usage_data(self, ingest_config_data):
+    def track_usage_data(self, ingest_config_data, request):
         """
         Set up usage tracking of this ingest.
 
@@ -233,23 +233,24 @@ class IngestJobView(IngestServiceView):
         size_y = None
         size_z = None
         size_t = None
-        if ingest_config_data['type'] == 'volumetric':
+        ingest_job = ingest_config_data['ingest_job']
+        if 'data_type' in ingest_job and ingest_job['data_type'] == 'volumetric':
             if 'chunk_size' not in ingest_config_data['ingest_job']:
                 return
-            size_x = ingest_config_data['ingest_job']['chunk_size']['x']
-            size_y = ingest_config_data['ingest_job']['chunk_size']['y']
-            size_z = ingest_config_data['ingest_job']['chunk_size']['z']
+            size_x = ingest_job['chunk_size']['x']
+            size_y = ingest_job['chunk_size']['y']
+            size_z = ingest_job['chunk_size']['z']
             size_t = 1
         else: # assume tile
-            if 'tile_size' not in ingest_config_data['ingest_job']:
+            if 'tile_size' not in ingest_job:
                 return
-            size_x = ingest_config_data['ingest_job']['tile_size']['x']
-            size_y = ingest_config_data['ingest_job']['tile_size']['y']
-            size_z = ingest_config_data['ingest_job']['tile_size']['z']
-            size_t = ingest_config_data['ingest_job']['tile_size']['t']
+            size_x = ingest_job['tile_size']['x']
+            size_y = ingest_job['tile_size']['y']
+            size_z = ingest_job['tile_size']['z']
+            size_t = ingest_job['tile_size']['t']
 
         # Add metrics to CloudWatch
-        extent = ingest_config_data['ingest_job']['extent']
+        extent = ingest_job['extent']
         database = ingest_config_data['database']
 
         # Check that only permitted users are creating extra large ingests
@@ -317,7 +318,7 @@ class IngestJobView(IngestServiceView):
         ingest_config_data = request.data
 
         try:
-            self.track_usage_data(ingest_config_data)
+            self.track_usage_data(ingest_config_data, request)
 
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.setup_ingest(self.request.user.id, ingest_config_data)
@@ -432,7 +433,7 @@ class IngestJobCompleteView(IngestServiceView):
 
             # TODO SH This is a quick fix to make sure the ingest-client does not run close option.
             #      the clean up code commented out below, because it is not working correctly.
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            # return Response(status=status.HTTP_204_NO_CONTENT)
 
             # if ingest_job.ingest_type == IngestJob.TILE_INGEST:
             #     # Check if any messages remain in the ingest queue

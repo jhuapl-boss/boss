@@ -146,15 +146,15 @@ class SetupTests(object):
         data['ingest_job'] = {}
         data['ingest_job']['resolution'] = 0
         data['ingest_job']['extent'] = {}
-        data['ingest_job']['extent']['x'] = [0, 2048]
-        data['ingest_job']['extent']['y'] = [0, 2048]
-        data['ingest_job']['extent']['z'] = [0, 40]
+        data['ingest_job']['extent']['x'] = [0, 4096]
+        data['ingest_job']['extent']['y'] = [0, 4096]
+        data['ingest_job']['extent']['z'] = [0, 64]
         data['ingest_job']['extent']['t'] = [0, 1]
 
         data['ingest_job']['chunk_size'] = {}
-        data['ingest_job']['chunk_size']['x'] = 1024
-        data['ingest_job']['chunk_size']['y'] = 1024
-        data['ingest_job']['chunk_size']['z'] = 64
+        data['ingest_job']['chunk_size']['x'] = 512
+        data['ingest_job']['chunk_size']['y'] = 512
+        data['ingest_job']['chunk_size']['z'] = 16
 
         data['ingest_job']['ingest_type'] = 'volumetric'
 
