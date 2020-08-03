@@ -22,6 +22,9 @@ import json
 import bossutils
 import redis
 
+# we now stamp each metric with the date so we can aggregate over N days
+from datetime import datetime
+
 THROTTLE_VAULT_TIMEOUT = getattr(django_settings, 'THROTTLE_VAULT_TIMEOUT', 60 * 2) # 2 Minutes
 
 def parse_limit(val):
@@ -75,7 +78,7 @@ class RedisMetrics(object):
         else:
             self.conn = None
 
-    def get_metric(self, obj):
+    def get_metric(self, obj, theDate):
         """Get the current metric value for the given object
 
         Args:
@@ -87,7 +90,7 @@ class RedisMetrics(object):
         if self.conn is None:
             return 0
 
-        key = "{}_metric".format(obj)
+        key = "{}_{}_metric".format(obj,theDate)
         resp = self.conn.get(key)
         if resp is None:
             resp = 0
@@ -95,7 +98,7 @@ class RedisMetrics(object):
             resp = int(resp.decode('utf8'))
         return resp
 
-    def add_metric_cost(self, obj, val):
+    def add_metric_cost(self, obj, val, theDate):
         """Increment the current metric value by the given value for the given object
 
         NOTE: If there is no Redis instance this method doesn't do anything
@@ -108,7 +111,7 @@ class RedisMetrics(object):
         if self.conn is None:
             return
 
-        key = "{}_metric".format(obj)
+        key = "{}_{}_metric".format(obj,theDate)
         self.conn.incrby(key, int(val))
 
 class MetricLimits(object):
@@ -252,11 +255,12 @@ class BossThrottle(object):
         """
         details = {'api': api, 'user': user.username, 'cost': cost, 'fqdn': self.fqdn}
 
-        self.check_user(user, cost, details)
-        self.check_api(api, cost, details)
-        self.check_system(cost, details)
+        today = datetime.date(datetime.today())
+        self.check_user(user, cost, details, today)
+        self.check_api(api, cost, details, today)
+        self.check_system(cost, details, today)
 
-    def check_user(self, user, cost, details):
+    def check_user(self, user, cost, details, theDate):
         """Check to see if the user is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -271,7 +275,7 @@ class BossThrottle(object):
         Raises:
             Throttle: If the user is throttled
         """
-        current = self.data.get_metric(user.username)
+        current = self.data.get_metric(user.username, theDate)
         max = self.limits.lookup_user(user)
 
         if max is None:
@@ -282,9 +286,9 @@ class BossThrottle(object):
             details['max_metric'] = max
             self.error(user = user, details = details)
 
-        self.data.add_metric_cost(user.username, cost)
+        self.data.add_metric_cost(user.username, cost, theDate)
 
-    def check_api(self, api, cost, details):
+    def check_api(self, api, cost, details, theDate):
         """Check to see if the API is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -299,20 +303,18 @@ class BossThrottle(object):
         Raises:
             Throttle: If the API is throttled
         """
-        current = self.data.get_metric(api)
+        current = self.data.get_metric(api, theDate)
         max = self.limits.lookup_api(api)
 
-        if max is None:
-            return
 
-        if current > max:
+        if max and current > max:
             details['current_metric'] = current
             details['max_metric'] = max
             self.error(api = api, details = details)
 
-        self.data.add_metric_cost(api, cost)
+        self.data.add_metric_cost(api, cost, theDate)
 
-    def check_system(self, cost, details):
+    def check_system(self, cost, details, theDate):
         """Check to see if the System is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -329,12 +331,9 @@ class BossThrottle(object):
         current = self.data.get_metric('system')
         max = self.limits.lookup_system()
 
-        if max is None:
-            return
-
-        if current > max:
+        if max and current > max:
             details['current_metric'] = current
             details['max_metric'] = max
             self.error(system = True, details = details)
 
-        self.data.add_metric_cost('system', cost)
+        self.data.add_metric_cost('system', cost, theDate)
