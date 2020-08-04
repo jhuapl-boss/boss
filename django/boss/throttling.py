@@ -328,7 +328,7 @@ class BossThrottle(object):
         Raises:
             Throttle: If the system is throttled
         """
-        current = self.data.get_metric('system')
+        current = self.data.get_metric('system', theDate)
         max = self.limits.lookup_system()
 
         if max and current > max:
