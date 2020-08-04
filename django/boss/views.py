@@ -20,6 +20,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from bosscore.error import BossHTTPError, ErrorCodes
 from django.conf import settings
+from bossutils.logger import bossLogger
 
 import socket
 
@@ -139,3 +140,44 @@ class Token(LoginRequiredMixin, View):
         </html>
         """.format(request.path_info, content, button)
         return HttpResponse(html)
+
+from boss.throttling import RedisMetrics
+from bosscore.constants import ADMIN_USER
+from django.contrib.auth.models import User
+
+class Metric(LoginRequiredMixin, APIView):
+
+    renderer_classes = (JSONRenderer, )
+
+    def __init__(self):
+        self.blog = bossLogger()
+        self.metrics = RedisMetrics()
+
+    def get_admin_user(self):
+        return User.objects.get(username=ADMIN_USER)
+
+    def getMetrics(self,metric):
+        keys = [k.decode('utf8') for k in self.metrics.conn.keys(pattern="*{}*".format(metric))]
+        dates = { k.split("_")[-2] : self.metrics.conn.get(k).decode('utf8') for k in keys }
+        total = sum([int(v) for v in dates.values()])
+        return {'metric': metric, 'dates':str(dates) , 'total': total}
+
+    def get(self, request):
+        if self.metrics.conn == None:
+            return Response("No redis connection")
+        paths = request.path_info.split("/")
+        metric = request.GET.get('metric')
+        user = request.GET.get('user',str(request.user))
+        # show all metrics
+        if paths[-1] == 'list':
+            keys = [k.decode('utf8') for k in self.metrics.conn.keys()]
+            metrics = set(["_".join(k.split("_")[:-2]) for k in keys])
+            return Response(metrics)
+        else:
+            if not metric:
+                metric = user
+            metricIsUser = metric == str(request.user)
+            userIsAdmin = request.user == self.get_admin_user()
+            if metricIsUser or userIsAdmin:
+                return Response(self.getMetrics(metric))
+            return Response("Unauthorized request")
