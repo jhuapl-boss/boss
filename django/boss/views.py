@@ -157,8 +157,8 @@ class Metric(LoginRequiredMixin, APIView):
         return User.objects.get(username=ADMIN_USER)
 
     def getValues(self,keys):
-        dates = { k.split("_")[-2] : self.metrics.conn.get(k).decode('utf8') for k in keys }
-        total = sum([int(v) for v in dates.values()])
+        dates = { k.split("_")[-2] : int(self.metrics.conn.get(k).decode('utf8')) for k in keys }
+        total = sum([v for v in dates.values()])
         return { 'dates':dates, 'total':total }
         
     def getMetrics(self,metric):
