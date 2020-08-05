@@ -159,13 +159,15 @@ class Metric(LoginRequiredMixin, APIView):
     def getValues(self,keys):
         dates = { k.split("_")[-2] : int(self.metrics.conn.get(k).decode('utf8')) for k in keys }
         total = sum([v for v in dates.values()])
-        return { 'dates':dates, 'total':total }
+        return { 'dates':dates, 'total':total, 'units': keys[0].split("_")[-1] }
         
     def getMetrics(self,metric):
         keys = [k.decode('utf8') for k in self.metrics.conn.keys(pattern="{}*".format(metric))]
-        ingress = [k for k in keys if '_ingress' in k]
-        egress = [k for k in keys if '_egress' in k]
-        return {'metric': metric, 'egress':self.getValues(egress) , 'ingress': self.getValues(ingress)}
+        types = set([k.split("_")[-3] for k in keys])
+        result = {'metric':metric}
+        for t in types:
+            result[t] = self.getValues([k for k in keys if t in k])
+        return result
 
     def get(self, request):
         if self.metrics.conn == None:

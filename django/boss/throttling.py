@@ -29,7 +29,7 @@ from datetime import datetime
 
 THROTTLE_VAULT_TIMEOUT = getattr(django_settings, 'THROTTLE_VAULT_TIMEOUT', 60 * 2) # 2 Minutes
 
-def parse_limit(limit,direction):
+def parse_limit(metric,mtype):
     """Convert a textual representation of a number of bytes into an integer
 
     NOTE: If val is None then None is returned
@@ -45,8 +45,8 @@ def parse_limit(limit,direction):
         int: Number of bytes
     """
     val = None
-    if direction in limit:
-        val = limit[direction]
+    if metric and mtype in metric:
+        val = metric[mtype]
     if val is None:
         return None
 
@@ -84,7 +84,7 @@ class RedisMetrics(object):
         else:
             self.conn = None
 
-    def get_metric(self, obj, theDate, direction):
+    def get_metric(self, obj, theDate, mtype, units):
         """Get the current metric value for the given object
 
         Args:
@@ -96,7 +96,7 @@ class RedisMetrics(object):
         if self.conn is None:
             return 0
 
-        key = "{}_{}_{}_metric".format(obj,direction,theDate)
+        key = "{}_{}_{}_{}".format(obj,mtype,theDate,units)
         resp = self.conn.get(key)
         if resp is None:
             resp = 0
@@ -104,7 +104,7 @@ class RedisMetrics(object):
             resp = int(resp.decode('utf8'))
         return resp
 
-    def add_metric_cost(self, obj, val, theDate, direction):
+    def add_metric_cost(self, obj, val, theDate, mtype, units):
         """Increment the current metric value by the given value for the given object
 
         NOTE: If there is no Redis instance this method doesn't do anything
@@ -117,7 +117,7 @@ class RedisMetrics(object):
         if self.conn is None:
             return
 
-        key = "{}_{}_{}_metric".format(obj,direction,theDate)
+        key = "{}_{}_{}_{}".format(obj,mtype,theDate,units)
         self.conn.incrby(key, int(val))
 
 class MetricLimits(object):
@@ -127,16 +127,13 @@ class MetricLimits(object):
     """
     def __init__(self):
         self.blog = bossLogger()
-        self.blog.info("Reading data from vault")
         data = self.read_vault()
 
-        self.blog.info("Read data from vault")
         self.system = data.get('system')
         self.apis = data.get('apis')
         self.users = data.get('users')
         self.groups = data.get('groups')
         self.default_user = data.get('default_user')
-        self.blog.info("Default user: {}".format(self.default_user))
 
     @cache(ttl=THROTTLE_VAULT_TIMEOUT)
     def read_vault(self):
@@ -145,15 +142,15 @@ class MetricLimits(object):
         data = json.loads(data)
         return data
 
-    def lookup_system(self, direction='egress'):
+    def lookup_system(self, mtype):
         """Return the current metric limit for the entire system
 
         Returns:
             int or None
         """
-        return parse_limit(self.system, direction)
+        return parse_limit(self.system, mtype)
 
-    def lookup_api(self, api, direction='egress'):
+    def lookup_api(self, api, mtype):
         """Return the current metric limit for the given API
 
         Args:
@@ -162,9 +159,9 @@ class MetricLimits(object):
         Returns:
             int or None
         """
-        return parse_limit(self.apis.get(api),direction)
+        return parse_limit(self.apis.get(api),mtype)
 
-    def lookup_user(self, user, direction='egress'):
+    def lookup_user(self, user, mtype):
         """Return the current metric limit for the given user
 
         A user's metric limit can either be the value given specifically
@@ -179,10 +176,10 @@ class MetricLimits(object):
         """
         # User specific settings will override any group based limits
         if user.username in self.users:
-            return parse_limit(self.users[user.username],direction)
+            return parse_limit(self.users[user.username],mtype)
 
         # Find the largest limit for all groups the user is a member of
-        limits = [parse_limit(self.groups[group.name],direction)
+        limits = [parse_limit(self.groups[group.name],mtype)
                   for group in user.groups.all()
                   if group.name in self.groups]
 
@@ -191,7 +188,7 @@ class MetricLimits(object):
         elif len(limits) > 0:
             return max(limits)
         else:
-            return parse_limit(self.default_user)
+            return parse_limit(self.default_user,mtype)
 
 class BossThrottle(object):
     """Object for checking if a given API call is throttled
@@ -251,16 +248,7 @@ class BossThrottle(object):
 
         raise Throttled(detail = ex_msg)
 
-    # determine if egress or ingress
-    def get_api_name(self,api):
-        return "_".join(api.split("_")[:-1])
-
-    def get_direction(self,api):
-        if 'ingress' in api:
-            return 'ingress'
-        return 'egress'
-
-    def check(self, api, user, cost):
+    def check(self, api, mtype, user, cost, units):
         """Check to see if the given API call is throttled
 
         This is the main BossThrottle method and will call the other check_* methods
@@ -274,15 +262,14 @@ class BossThrottle(object):
             Throttle: If the call is throttled
         """
         details = {'api': api, 'user': user.username, 'cost': cost, 'fqdn': self.fqdn}
-        self.blog.info("Checking for throttling: {},{},{},{}".format(api,user.username,cost,self.fqdn))
+        self.blog.info("Checking for throttling: {},{},{},{},{},{}".format(api,mtype,user.username,cost,units,self.fqdn))
 
         today = datetime.date(datetime.today())
-        direction = self.get_direction(api)
-        self.check_user(user, cost, details, today, direction)
-        self.check_api(self.get_api_name(api), cost, details, today, direction)
-        self.check_system(cost, details, today, direction)
+        self.check_user(user, mtype, cost, details, today, units)
+        self.check_api(api, mtype, cost, details, today, units)
+        self.check_system(mtype, cost, details, today, units)
 
-    def check_user(self, user, cost, details, theDate, direction):
+    def check_user(self, user, mtype, cost, details, theDate, units):
         """Check to see if the user is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -298,8 +285,8 @@ class BossThrottle(object):
             Throttle: If the user is throttled
         """
         self.blog.info("Checking limits for user: {}".format(user.username))
-        current = self.data.get_metric(user.username, theDate, direction)
-        limit = self.limits.lookup_user(user,direction)
+        current = self.data.get_metric(user.username, theDate, mtype, units)
+        limit = self.limits.lookup_user(user,mtype)
 
         if limit and current > limit:
             self.blog.info("Current use of {} exceeds threshold {}".format(current,limit))
@@ -308,9 +295,9 @@ class BossThrottle(object):
             self.error(user = user, details = details)
 
         self.blog.info("Incrementing cost by {}".format(cost))
-        self.data.add_metric_cost(user.username, cost, theDate, direction)
+        self.data.add_metric_cost(user.username, cost, theDate, mtype, units)
 
-    def check_api(self, api, cost, details, theDate, direction):
+    def check_api(self, api, mtype, cost, details, theDate, units):
         """Check to see if the API is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -325,8 +312,10 @@ class BossThrottle(object):
         Raises:
             Throttle: If the API is throttled
         """
-        current = self.data.get_metric(api, theDate, direction)
-        max = self.limits.lookup_api(api, direction)
+        self.blog.info("Getting current usage for api: {}".format(api))
+        current = self.data.get_metric(api, theDate, mtype, units)
+        self.blog.info("Getting limit for api: {}".format(api))
+        max = self.limits.lookup_api(api, mtype)
 
 
         if max and current > max:
@@ -335,9 +324,9 @@ class BossThrottle(object):
             self.error(api = api, details = details)
 
         self.blog.info("Incrementing {} cost by {}".format(api, cost))
-        self.data.add_metric_cost(api, cost, theDate, direction)
+        self.data.add_metric_cost(api, cost, theDate, mtype, units)
 
-    def check_system(self, cost, details, theDate, direction):
+    def check_system(self, mtype, cost, details, theDate, units):
         """Check to see if the System is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -352,8 +341,8 @@ class BossThrottle(object):
             Throttle: If the system is throttled
         """
         self.blog.info("Checking limits for system")
-        current = self.data.get_metric('system',theDate, direction)
-        max = self.limits.lookup_system(direction)
+        current = self.data.get_metric('system', mtype, theDate, units)
+        max = self.limits.lookup_system(mtype)
 
         if max and current > max:
             details['current_metric'] = current
@@ -361,4 +350,4 @@ class BossThrottle(object):
             self.error(system = True, details = details)
 
         self.blog.info("Incrementing system cost by {}".format(cost))
-        self.data.add_metric_cost('system', cost, theDate, direction)
+        self.data.add_metric_cost('system', cost, theDate, mtype, units)

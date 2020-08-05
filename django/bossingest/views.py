@@ -276,6 +276,8 @@ class IngestJobView(IngestServiceView):
                * 1 # the cost per lambda
                ) # Calculating the cost of the lambda invocations
 
+        BossThrottle().check('ingest','compute',request.user,cost,'lambdas')
+
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
             {'Name': 'User', 'Value': request.user.username},
@@ -526,4 +528,3 @@ class IngestJobStatusView(IngestServiceView):
                 return err.to_http()
         except Exception as err:
             return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
-

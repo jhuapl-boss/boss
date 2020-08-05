@@ -102,9 +102,9 @@ class CutoutTile(APIView):
                / 8
                ) # Calculating the number of bytes
 
-        BossThrottle().check('image_egress',
+        BossThrottle().check('image','egress',
                              request.user,
-                             cost)
+                             cost,'bytes')
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
@@ -235,9 +235,9 @@ class Tile(APIView):
                / 8
                ) # Calculating the number of bytes
 
-        BossThrottle().check('tile_egress',
+        BossThrottle().check('tile','egress',
                              request.user,
-                             cost)
+                             cost,'bytes')
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
