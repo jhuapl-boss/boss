@@ -156,11 +156,16 @@ class Metric(LoginRequiredMixin, APIView):
     def get_admin_user(self):
         return User.objects.get(username=ADMIN_USER)
 
-    def getMetrics(self,metric):
-        keys = [k.decode('utf8') for k in self.metrics.conn.keys(pattern="*{}*".format(metric))]
+    def getValues(self,keys):
         dates = { k.split("_")[-2] : self.metrics.conn.get(k).decode('utf8') for k in keys }
         total = sum([int(v) for v in dates.values()])
-        return {'metric': metric, 'dates':str(dates) , 'total': total}
+        return { 'dates':dates, 'total':total }
+        
+    def getMetrics(self,metric):
+        keys = [k.decode('utf8') for k in self.metrics.conn.keys(pattern="{}*".format(metric))]
+        ingress = [k for k in keys if '_ingress' in k]
+        egress = [k for k in keys if '_egress' in k]
+        return {'metric': metric, 'egress':self.getValues(egress) , 'ingress': self.getValues(ingress)}
 
     def get(self, request):
         if self.metrics.conn == None:
@@ -171,7 +176,7 @@ class Metric(LoginRequiredMixin, APIView):
         # show all metrics
         if paths[-1] == 'list':
             keys = [k.decode('utf8') for k in self.metrics.conn.keys()]
-            metrics = set(["_".join(k.split("_")[:-2]) for k in keys])
+            metrics = set(["_".join(k.split("_")[:-3]) for k in keys])
             return Response(metrics)
         else:
             if not metric:
