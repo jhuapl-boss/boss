@@ -1,5 +1,5 @@
 function collection_handler(response) {
-    var detail_base_url = window.location.href + "/";
+    var detail_base_url = API_ROOT + "mgmt/resources/";
     var delete_function = "delete_collection";
     var delete_base_url = API_ROOT + "collection/";
 
@@ -17,7 +17,7 @@ function coord_handler(response) {
 
 function experiment_handler(response) {
     var resources = get_resource_names();
-    var detail_base_url = window.location.href + "/";
+    var detail_base_url = API_ROOT + "mgmt/resources/" + resources[0] + "/";
     var delete_function = "delete_experiment";
     var delete_base_url = API_ROOT + "collection/" + resources[0] + "/experiment/";
 
