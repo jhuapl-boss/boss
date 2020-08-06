@@ -13,10 +13,11 @@
 # limitations under the License.
 
 from unittest import mock
-from sso.views.views_user import *
-import json
 
+# This must be imported before the views class so check_role() can be properly
+# mocked.
 from .test_base import TestBase, raise_error
+import json
 
 from sso.views.views_user import BossUser
 
