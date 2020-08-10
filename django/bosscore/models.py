@@ -31,7 +31,7 @@ class Collection(models.Model):
     name = models.CharField(max_length=255, verbose_name="Name of the Collection",
                             validators=[NameValidator()], unique=True)
     description = models.CharField(max_length=4096, blank=True)
-    creator = models.ForeignKey('auth.User', related_name='collections')
+    creator = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='collections')
     to_be_deleted = models.DateTimeField(null=True, blank=True)
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
@@ -67,7 +67,7 @@ class CoordinateFrame(models.Model):
     name = models.CharField(max_length=255, verbose_name="Name of the Coordinate reference frame",
                             validators=[NameValidator()], unique=True)
     description = models.CharField(max_length=4096, blank=True)
-    creator = models.ForeignKey('auth.User', related_name='coordinateframes')
+    creator = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='coordinateframes')
 
     x_start = models.IntegerField()
     x_stop = models.IntegerField()
@@ -130,7 +130,7 @@ class Experiment(models.Model):
     collection = models.ForeignKey(Collection, related_name='experiments', on_delete=models.PROTECT)
     name = models.CharField(max_length=255, verbose_name="Name of the Experiment", validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
-    creator = models.ForeignKey('auth.User', related_name='experiment')
+    creator = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='experiment')
 
     coord_frame = models.ForeignKey(CoordinateFrame, related_name='exps', on_delete=models.PROTECT)
     num_hierarchy_levels = models.IntegerField(default=1)
@@ -181,7 +181,7 @@ class Channel(models.Model):
     """
     name = models.CharField(max_length=255, verbose_name="Name of the Channel", validators=[NameValidator()])
     description = models.CharField(max_length=4096, blank=True)
-    creator = models.ForeignKey('auth.User', related_name='Channel')
+    creator = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='Channel')
 
     experiment = models.ForeignKey(Experiment, related_name='channels', on_delete=models.PROTECT)
     base_resolution = models.IntegerField(default=0)
@@ -264,7 +264,7 @@ class Channel(models.Model):
 
 
 class Source(models.Model):
-    derived_channel = models.ForeignKey(Channel, related_name='derived_channel')
+    derived_channel = models.ForeignKey(Channel, on_delete=models.CASCADE, related_name='derived_channel')
     source_channel = models.ForeignKey(Channel, related_name='source_channel', on_delete=models.PROTECT)
 
 
@@ -313,8 +313,8 @@ class BossGroup(models.Model):
     """
     Store group information
     """
-    group = models.OneToOneField(Group)
-    creator = models.ForeignKey('auth.User', related_name='Bossgroup')
+    group = models.OneToOneField(Group, on_delete=models.CASCADE)
+    creator = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='Bossgroup')
 
     class Meta:
         db_table = u"bossgroup"

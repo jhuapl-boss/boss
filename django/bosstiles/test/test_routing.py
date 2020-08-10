@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.core.urlresolvers import resolve
+from django.urls import resolve
 from bosstiles.views import Tile, CutoutTile
 
 from rest_framework.test import APITestCase

@@ -39,7 +39,7 @@ def error_response(request, resp, category, category_name=None):
         'message': error_message(resp),
     }
 
-    page = render_to_string('error.html', args, RequestContext(request))
+    page = render_to_string('error.html', args, request)
     return HttpResponse(page, status=resp.status_code)
 
 

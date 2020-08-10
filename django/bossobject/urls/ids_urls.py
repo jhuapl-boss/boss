@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from bossobject import views
 
+app_name = 'bossobject'
 urlpatterns = [
 
     # Url to handle cutout with a collection, experiment, channel/annotation project and  range time

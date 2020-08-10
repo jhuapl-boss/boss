@@ -21,6 +21,9 @@ from bossoidc.models import Keycloak as KeycloakModel
 from bossutils.keycloak import KeyCloakClient
 
 DRF_KC_TIMEOUT = getattr(django_settings, 'DRF_KC_TIMEOUT', 60 * 5) # 5 Minutes
+LOCAL_KEYCLOAK_TESTING = getattr(django_settings, 'LOCAL_KEYCLOAK_TESTING', False)
+KEYCLOAK_ADMIN_USER = getattr(django_settings, 'KEYCLOAK_ADMIN_USER', '')
+KEYCLOAK_ADMIN_PASSWORD = getattr(django_settings, 'KEYCLOAK_ADMIN_PASSWORD', '')
 
 class TokenAuthentication(DRFTokenAuthentication):
     """Add an extra check to DRF Authentication to make sure the user account is active in keycloak."""
@@ -46,5 +49,14 @@ class TokenAuthentication(DRFTokenAuthentication):
     @cache(ttl=DRF_KC_TIMEOUT)
     def user_exist(self, uid):
         """Cache the results of looking up the user in Keycloak"""
-        with KeyCloakClient('BOSS') as kc:
+        if not LOCAL_KEYCLOAK_TESTING:
+            with KeyCloakClient('BOSS') as kc:
+                return kc.user_exist(uid)
+
+        # Code for local testing with KeyCloak.
+        try:
+            kc = KeyCloakClient('BOSS', url_base='http://localhost:8080/auth', https=False)
+            kc.login(username=KEYCLOAK_ADMIN_USER, password=KEYCLOAK_ADMIN_PASSWORD, client_id='admin-cli', login_realm='master')
             return kc.user_exist(uid)
+        finally:
+            kc.logout()

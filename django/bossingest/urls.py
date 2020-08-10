@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from bossingest import views
 
+app_name = 'bossingest'
 urlpatterns = [
     url(r'(?P<ingest_job_id>[\d]+)/status/?$', views.IngestJobStatusView.as_view()),
     url(r'(?P<ingest_job_id>[\d]+)/complete/?$', views.IngestJobCompleteView.as_view()),

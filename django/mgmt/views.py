@@ -1,10 +1,10 @@
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic import View
 from django.template.loader import render_to_string
-from django.template import RequestContext
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
-from django.core.urlresolvers import reverse
+from django.urls import reverse
+from django.utils import timezone
 
 from bosscore.privileges import BossPrivilegeManager, check_role
 from bosscore.error import BossError
@@ -17,7 +17,6 @@ from .forms import ResourcePermissionsForm, GroupPermissionsForm
 from . import api
 from . import utils
 from .models import SystemNotice, BlogPost
-import datetime
 
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
@@ -42,7 +41,7 @@ def get_roles(request):
 class Home(LoginRequiredMixin, View):
     def get(self, request):
         # Get System Notices
-        now_datetime = datetime.datetime.now()
+        now_datetime = timezone.now()
         notices = SystemNotice.objects.filter(show_on__lte=now_datetime, hide_on__gte=now_datetime)
         notice_data = []
         for n in notices:
@@ -62,7 +61,7 @@ class Home(LoginRequiredMixin, View):
             'alerts': notice_data,
             'blog_posts': blog_data
         }
-        return HttpResponse(render_to_string('home.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('home.html', args, request=request))
 
 
 class Users(LoginRequiredMixin, View):
@@ -110,7 +109,7 @@ class Users(LoginRequiredMixin, View):
             'user_form': user_form if user_form else UserForm(),
             'user_error': "error" if user_form else "",
         }
-        return HttpResponse(render_to_string('users.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('users.html', args, request=request))
 
     def post(self, request):
         form = UserForm(request.POST)
@@ -178,7 +177,7 @@ class User(LoginRequiredMixin, View):
             'role_form': role_form if role_form else RoleForm(),
             'role_error': "error" if role_form else "",
         }
-        return HttpResponse(render_to_string('user.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('user.html', args, request=request))
 
     def post(self, request, username):
         form = RoleForm(request.POST)
@@ -208,7 +207,7 @@ class Token(LoginRequiredMixin, View):
             'token': token,
             'button': button,
         }
-        return HttpResponse(render_to_string('token.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('token.html', args, request=request))
 
     def post(self, request):
         try:
@@ -230,7 +229,7 @@ class Groups(LoginRequiredMixin, View):
             'group_form': group_form if group_form else GroupForm(),
             'group_error': "error" if group_form else ""
         }
-        return HttpResponse(render_to_string('groups.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('groups.html', args, request=request))
 
     def post(self, request):
         form = GroupForm(request.POST)
@@ -329,7 +328,7 @@ class Group(LoginRequiredMixin, View):
             'perms_form': perms_form if perms_form else GroupPermissionsForm(),
             'perms_error': "error" if perms_form else "",
         }
-        return HttpResponse(render_to_string('group.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('group.html', args, request=request))
 
     def post(self, request, group_name):
         action = request.GET.get('action')  # URL parameter
@@ -382,7 +381,7 @@ class Resources(LoginRequiredMixin, View):
                                                                                                      "z_start": 0}),
             'coord_error': "error" if coord_form else "",
         }
-        return HttpResponse(render_to_string('collections.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('collections.html', args, request=request))
 
     def post(self, request):
         print(request.POST)
@@ -434,7 +433,7 @@ class CoordinateFrame(LoginRequiredMixin, View):
             'coord_form': coord_form,
             'coord_error': coord_error,
         }
-        return HttpResponse(render_to_string('coordinate_frame.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('coordinate_frame.html', args, request=request))
 
     @check_role("resource-manager")
     def post(self, request, coord_name):
@@ -499,7 +498,7 @@ class Collection(LoginRequiredMixin, View):
             'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
         }
-        return HttpResponse(render_to_string('collection.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('collection.html', args, request=request))
 
     def post(self, request, collection_name):
         action = request.GET.get('action')  # URL parameter
@@ -602,7 +601,7 @@ class Experiment(LoginRequiredMixin, View):
             'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
         }
-        return HttpResponse(render_to_string('experiment.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('experiment.html', args, request=request))
 
     def post(self, request, collection_name, experiment_name):
         action = request.GET.get('action')  # URL parameter
@@ -703,7 +702,7 @@ class Channel(LoginRequiredMixin, View):
             'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
         }
-        return HttpResponse(render_to_string('channel.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('channel.html', args, request=request))
 
     def post(self, request, collection_name, experiment_name, channel_name):
         action = request.GET.get('action')  # URL parameter
@@ -786,7 +785,7 @@ class Meta(LoginRequiredMixin, View):
             'meta_error': meta_error,
             'back_url': back_url
         }
-        return HttpResponse(render_to_string('meta.html', args, RequestContext(request)))
+        return HttpResponse(render_to_string('meta.html', args, request=request))
 
     @check_role("resource-manager")
     def post(self, request, collection, experiment=None, channel=None):
@@ -817,9 +816,9 @@ class IngestJob(LoginRequiredMixin, View):
 
         if not ingest_job_id:
             # This is just the main ingest job listing
-            return HttpResponse(render_to_string('ingest_jobs.html', args, RequestContext(request)))
+            return HttpResponse(render_to_string('ingest_jobs.html', args, request=request))
 
         else:
             # This is a single ingest job
-            return HttpResponse(render_to_string('ingest_job.html', args, RequestContext(request)))
+            return HttpResponse(render_to_string('ingest_job.html', args, request=request))
 

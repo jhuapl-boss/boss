@@ -16,6 +16,7 @@ from django.conf.urls import url
 from django.contrib.auth.decorators import login_required
 from . import views
 
+app_name = 'bossspatialdb'
 urlpatterns = [
     # Url to handle cutout with a collection, experiment, channel
     url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/?$', views.Downsample.as_view()),

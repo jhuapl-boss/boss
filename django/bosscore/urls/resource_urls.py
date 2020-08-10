@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from bosscore.views import views_resource
 
+app_name = 'bosscore'
 urlpatterns = [
 
     # # An instance of channel

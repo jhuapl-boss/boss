@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from rest_framework.test import APITestCase
-from django.core.urlresolvers import resolve
+from django.urls import resolve
 from django.conf import settings
 
 from bossobject.views import Reserve, Ids, BoundingBox

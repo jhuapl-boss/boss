@@ -15,6 +15,7 @@
 from rest_framework.test import APITestCase, APIRequestFactory, force_authenticate
 from django.contrib.auth.models import User
 from django.conf import settings
+from functools import wraps
 from unittest import mock
 import sys
 
@@ -23,8 +24,18 @@ def patch_check_role():
     #          before importing any of the sso code
 
     # After the checks for bossutils, as it will import bosscore
-    # DP TODO: mock this up, so that we can check that the calls are correctly protected
-    mock.patch('bosscore.privileges.check_role', lambda x: lambda y: y).start() # apply right now
+
+    def fake_check_role(role):
+        def check_role_decorator(func):
+            @wraps(func)
+            def wrapped(self, *args, **kwargs):
+                # Just pass through for the fake.
+                return func(self, *args, **kwargs)
+
+            return wrapped
+        return check_role_decorator
+
+    mock.patch('bosscore.privileges.check_role', fake_check_role).start() # apply right now
 
 # If bossutils is not currently installed, stubb out the library
 try:

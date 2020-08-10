@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from bosscore.views import views_resource
 
+app_name = 'bosscore'
 urlpatterns = [
     # Specific coordinate frame
      url(r'(?P<coordframe>[\w_-]+)/?$', views_resource.CoordinateFrameDetail.as_view()),

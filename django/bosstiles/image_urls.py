@@ -15,6 +15,7 @@
 from django.conf.urls import url
 from bosstiles import views
 
+app_name = 'bosstiles'
 urlpatterns = [
     # Url to handle cutout with a collection, experiment, channel/annotation project
     url(r'^(?P<collection>[\w_-]+)/(?P<experiment>[\w_-]+)/(?P<channel>[\w_-]+)/(?P<orientation>(xy|xz|yz))/(?P<resolution>\d)/(?P<x_args>\d+(:\d+)?)/(?P<y_args>\d+(:\d+)?)/(?P<z_args>\d+(:\d+)?)/?(?P<t_args>\d+)?/?.*$',
