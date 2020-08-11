@@ -115,6 +115,10 @@ function downsample_ajax(collection, experiment, channel, type, data){
                 raise_ajax_error(response);
                 $("#downsample-btn").removeClass('disabled');
             },
+            409: function (response) {
+                raise_ajax_error(response);
+                $("#downsample-btn").removeClass('disabled');
+            },
             500: function (response) {
                 raise_ajax_error(response);
                 $("#downsample-btn").removeClass('disabled');
