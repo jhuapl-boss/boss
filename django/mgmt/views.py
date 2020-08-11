@@ -21,6 +21,8 @@ from .models import SystemNotice, BlogPost
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
 
+# User name used for anonymous logins.
+PUBLIC_ACCESS_USERNAME = 'public-access'
 
 # DP NOTE: If a form fails validation in the post() method, then
 #          the populated form is passed to the get() method to
@@ -211,6 +213,8 @@ class Token(LoginRequiredMixin, View):
 
     def post(self, request):
         try:
+            if request.user.username == PUBLIC_ACCESS_USERNAME:
+                return HttpResponse(status=403, reason=f"Changing {PUBLIC_ACCESS_USERNAME}'s token forbidden")
             token = TokenModel.objects.get(user=request.user)
             token.delete()
         except:
