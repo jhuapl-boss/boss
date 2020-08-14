@@ -11,7 +11,9 @@ wheel==0.24.0
 uWSGI==2.0.19.1
 
 drf-oidc-auth==0.10.0
--e git+https://github.com/jhuapl-boss/boss-oidc.git@mozilla#egg=boss-oidc
+
+# ToDo: update this to point at new repo for boss-oidc.
+-e git+https://github.com/jhuapl-boss/boss-oidc.git@keycloak-11.0.0#egg=boss-oidc
 
 mozilla-django-oidc==1.2.3
 

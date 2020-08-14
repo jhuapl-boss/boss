@@ -21,7 +21,6 @@ Run Boss with a local Keycloak instance for testing.
 
 # These are variables used for testing.  Don't copy these to production.py!
 LOCAL_KEYCLOAK_TESTING = True
-KEYCLOAK_ADMIN_USER = 'bossadmin'
 KEYCLOAK_ADMIN_PASSWORD = 'bossadmin'
 
 
@@ -55,9 +54,16 @@ LOGIN_REDIRECT_URL = public_uri + 'v1/mgmt'
 LOGOUT_REDIRECT_URL = auth_uri + '/protocol/openid-connect/logout?redirect_uri=' + public_uri
 OIDC_RP_CLIENT_ID = client_id
 OIDC_RP_CLIENT_SECRET = ''
-OIDC_RP_SCOPES = 'sub preferred_username'
+OIDC_RP_SCOPES = 'email openid profile'
 OIDC_RP_SIGN_ALGO = 'RS256'
 OIDC_OP_JWKS_ENDPOINT = auth_uri + '/protocol/openid-connect/certs'
+
+# Fields to look for in the userinfo returned from Keycloak
+OIDC_CLAIMS_VERIFICATION = 'preferred_username sub email'
+
+# Allow this user to not have an email address during OIDC claims verification.
+KEYCLOAK_ADMIN_USER = 'bossadmin'
+
 # No SSL when running locally during development.
 OIDC_VERIFY_SSL = False
 
