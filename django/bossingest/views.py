@@ -36,6 +36,7 @@ from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
 from bossutils.logger import bossLogger
+from boss.throttling import BossThrottle
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
@@ -227,27 +228,14 @@ class IngestJobView(IngestServiceView):
         Raises:
             (BossError): if user doesn't have permission for a large ingest.
         """
-
-        # calculation will depend slightly on the type
-        size_x = None
-        size_y = None
-        size_z = None
-        size_t = None
+        blog = bossLogger()
+        
+        # need to get bytes per pixel to caculate ingest in total bytes
         ingest_job = ingest_config_data['ingest_job']
-        if 'data_type' in ingest_job and ingest_job['data_type'] == 'volumetric':
-            if 'chunk_size' not in ingest_config_data['ingest_job']:
-                return
-            size_x = ingest_job['chunk_size']['x']
-            size_y = ingest_job['chunk_size']['y']
-            size_z = ingest_job['chunk_size']['z']
-            size_t = 1
-        else: # assume tile
-            if 'tile_size' not in ingest_job:
-                return
-            size_x = ingest_job['tile_size']['x']
-            size_y = ingest_job['tile_size']['y']
-            size_z = ingest_job['tile_size']['z']
-            size_t = ingest_job['tile_size']['t']
+        theCollection = Collection.objects.get(name=ingest_config_data['database']['collection'])
+        theExperiment = Experiment.objects.get(name=ingest_config_data['database']['experiment'])
+        theChannel = Channel.objects.get(name=ingest_config_data['database']['channel'])
+        bytesPerPixel = int(theChannel.datatype.replace("uint",""))/8
 
         # Add metrics to CloudWatch
         extent = ingest_job['extent']
@@ -266,17 +254,14 @@ class IngestJobView(IngestServiceView):
             (extent['z'][1] - extent['z'][0]) * \
             (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
             raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
-
-        # Calculate the cost of the ingest
-        cost = ( ((extent['x'][1] - extent['x'][0]) / size_x)
-               * ((extent['y'][1] - extent['y'][0]) / size_y)
-               * ((extent['z'][1] - extent['z'][0]) / size_z)
-               * ((extent['t'][1] - extent['t'][0]) / size_t)
-               * 1.0625 # 1 lambda per tile + 1 lambda per 16 tiles (per cube)
-               * 1 # the cost per lambda
-               ) # Calculating the cost of the lambda invocations
-
-        BossThrottle().check('ingest','compute',request.user,cost,'lambdas')
+        blog.info("ingest_job: {}", ingest_job.keys())
+        # Calculate the cost of the ingest in pixels
+        costInPixels = ( (extent['x'][1] - extent['x'][0]) 
+               * (extent['y'][1] - extent['y'][0]) 
+               * (extent['z'][1] - extent['z'][0]) 
+               * (extent['t'][1] - extent['t'][0]) 
+               )
+        BossThrottle().check('ingest','compute',request.user,costInPixels * bytesPerPixel,'bytes')
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
