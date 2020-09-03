@@ -64,7 +64,14 @@ def parse_limit(metric,mtype):
 
     return int(val) # Returning an int, as redis works with ints
 
-def _redisKeyNamePattern(metricName)
+def _redisKeyNamePattern(metricName):
+    """Get a redis search pattern to match metrics by name
+
+    Args: 
+        metricName (str): The name of the metric
+    
+    Returns: format string that can be used as a search pattern
+    """
     return "{}*".format(metricName)
 
 class RedisMetricKey(object):
@@ -120,7 +127,7 @@ class RedisMetrics(object):
                                           boss_config['aws']['cache-throttle-db'])
         else:
             self.conn = None
-   def getMetrics(self, metricName):
+    def get_metrics(self, metricName):
         """Get the metrics that match name
         Args: 
            metricName(str): name of metric
@@ -129,9 +136,9 @@ class RedisMetrics(object):
         """
         if self.conn in None:
            return None
-        return k.decode('utf8') for k in self.metrics.conn.keys(pattern=_redisKeyNamePattern(metricName))]
+        return [k.decode('utf8') for k in self.metrics.conn.keys(pattern=_redisKeyNamePattern(metricName))]
 
-   def get_metric(self, metricKey):
+    def get_metric(self, metricKey):
         """Get the current metric value for the given object
 
         Args:
