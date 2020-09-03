@@ -141,50 +141,88 @@ class Token(LoginRequiredMixin, View):
         """.format(request.path_info, content, button)
         return HttpResponse(html)
 
-from boss.throttling import RedisMetrics
+from boss.throttling import RedisMetrics, RedisMetricKey
 from bosscore.constants import ADMIN_USER
 from django.contrib.auth.models import User
 
 class Metric(LoginRequiredMixin, APIView):
+    """
+    View to handle Metric API requests
 
+    Auth is Required
+    """
     renderer_classes = (JSONRenderer, )
 
     def __init__(self):
+        """
+        Initialize the view with RedisMetrics object
+        """
         self.blog = bossLogger()
         self.metrics = RedisMetrics()
 
-    def get_admin_user(self):
+    def _get_admin_user(self):
+        """
+        Lookup the admin user
+
+        Returns: the User object for the Admin user
+        """
         return User.objects.get(username=ADMIN_USER)
 
-    def getValues(self,keys):
-        dates = { k.split("_")[-2] : int(self.metrics.conn.get(k).decode('utf8')) for k in keys }
-        total = sum([v for v in dates.values()])
-        return { 'dates':dates, 'total':total, 'units': keys[0].split("_")[-1] }
+    def _getValues(self,metricKeys):
+        """
+        Get the values for the list of metrics
+
+        Args: 
+            metricKeys (list): list of RedisMetricKey objects 
+
+        Returns: list of value objects for each key
+        """
+        return [{ 'value':RedisMetrics.get_metric(mk), 'units': mk.units } for mk in metricKeys]
         
-    def getMetrics(self,metric):
-        keys = [k.decode('utf8') for k in self.metrics.conn.keys(pattern="{}*".format(metric))]
-        types = set([k.split("_")[-3] for k in keys])
-        result = {'metric':metric}
+    def _getMetrics(self,metricName):
+        """
+        Get metrics that match metric name
+
+        Args: 
+            metricName (str): name of metric
+        
+        Returns: result object containing selected metrics
+        """
+        keys = RedisMetrics.get_metrics(metricName)
+        metricKeys = [RedisMetricKey(key=k) for k in keys]
+        types = set([mk.type for mk in metricKeys])
+        result = {'metric':metricName}
         for t in types:
-            result[t] = self.getValues([k for k in keys if t in k])
+            result[t] = self._getValues([mk for mk in metricKeys if mk.type == t])
         return result
 
     def get(self, request):
+        """
+        Handles the get request for metrics
+        /metrics/list will list all metric names
+        /metrics will return user metrics for the logged in user
+            options:
+            metric=<name> will return metrics for provided name
+            user=<username> will return metrics for provided user
+
+        """
         if self.metrics.conn == None:
             return Response("No redis connection")
         paths = request.path_info.split("/")
         metric = request.GET.get('metric')
         user = request.GET.get('user',str(request.user))
-        # show all metrics
+        # determine response
         if paths[-1] == 'list':
+            # list all metrics names
             keys = [k.decode('utf8') for k in self.metrics.conn.keys()]
-            metrics = set(["_".join(k.split("_")[:-3]) for k in keys])
+            metrics = set([RedisMetricKey(key=k).name for k in keys])
             return Response(metrics)
         else:
+            # show specific metric values 
             if not metric:
                 metric = user
             metricIsUser = metric == str(request.user)
-            userIsAdmin = request.user == self.get_admin_user()
+            userIsAdmin = request.user == self._get_admin_user()
             if metricIsUser or userIsAdmin:
-                return Response(self.getMetrics(metric))
+                return Response(self._getMetrics(metric))
             return Response("Unauthorized request")

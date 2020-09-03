@@ -231,63 +231,69 @@ class IngestJobView(IngestServiceView):
         blog = bossLogger()
         
         # need to get bytes per pixel to caculate ingest in total bytes
-        ingest_job = ingest_config_data['ingest_job']
-        theCollection = Collection.objects.get(name=ingest_config_data['database']['collection'])
-        theExperiment = Experiment.objects.get(name=ingest_config_data['database']['experiment'])
-        theChannel = Channel.objects.get(name=ingest_config_data['database']['channel'])
-        bytesPerPixel = int(theChannel.datatype.replace("uint",""))/8
-
-        # Add metrics to CloudWatch
-        extent = ingest_job['extent']
-        database = ingest_config_data['database']
-
-        # Check that only permitted users are creating extra large ingests
         try:
-            group = Group.objects.get(name=INGEST_GRP)
-            in_large_ingest_group = group.user_set.filter(id=request.user.id).exists()
-        except Group.DoesNotExist:
-            # Just in case the group has not been created yet
-            in_large_ingest_group = False
-        if (not in_large_ingest_group) and \
-           ((extent['x'][1] - extent['x'][0]) * \
-            (extent['y'][1] - extent['y'][0]) * \
-            (extent['z'][1] - extent['z'][0]) * \
-            (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
-            raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
-        blog.info("ingest_job: {}", ingest_job.keys())
-        # Calculate the cost of the ingest in pixels
-        costInPixels = ( (extent['x'][1] - extent['x'][0]) 
-               * (extent['y'][1] - extent['y'][0]) 
-               * (extent['z'][1] - extent['z'][0]) 
-               * (extent['t'][1] - extent['t'][0]) 
-               )
-        BossThrottle().check('ingest','compute',request.user,costInPixels * bytesPerPixel,'bytes')
+            ingest_job = ingest_config_data['ingest_job']
+            theCollection = Collection.objects.get(name=ingest_config_data['database']['collection'])
+            theExperiment = Experiment.objects.get(name=ingest_config_data['database']['experiment'])
+            theChannel = Channel.objects.get(name=ingest_config_data['database']['channel'])
+            bytesPerPixel = int(theChannel.datatype.replace("uint",""))/8
 
-        boss_config = bossutils.configuration.BossConfig()
-        dimensions = [
-            {'Name': 'User', 'Value': request.user.username},
-            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(database['collection'],
-                                                            database['experiment'],
-                                                            database['channel'])},
-            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
-        ]
+            # Add metrics to CloudWatch
+            extent = ingest_job['extent']
+            database = ingest_config_data['database']
 
-        session = bossutils.aws.get_session()
-        client = session.client('cloudwatch')
-        client.put_metric_data(
-            Namespace = "BOSS/Ingest",
-            MetricData = [{
-                'MetricName': 'InvokeCount',
-                'Dimensions': dimensions,
-                'Value': 1.0,
-                'Unit': 'Count'
-            }, {
-                'MetricName': 'ComputeCost',
-                'Dimensions': dimensions,
-                'Value': cost,
-                'Unit': 'Count'
-            }]
-        )
+            # Check that only permitted users are creating extra large ingests
+            try:
+                group = Group.objects.get(name=INGEST_GRP)
+                in_large_ingest_group = group.user_set.filter(id=request.user.id).exists()
+            except Group.DoesNotExist:
+                # Just in case the group has not been created yet
+                in_large_ingest_group = False
+            if (not in_large_ingest_group) and \
+            ((extent['x'][1] - extent['x'][0]) * \
+                (extent['y'][1] - extent['y'][0]) * \
+                (extent['z'][1] - extent['z'][0]) * \
+                (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
+                raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
+            blog.info("ingest_job: {}", ingest_job.keys())
+            # Calculate the cost of the ingest in pixels
+            costInPixels = ( (extent['x'][1] - extent['x'][0]) 
+                * (extent['y'][1] - extent['y'][0]) 
+                * (extent['z'][1] - extent['z'][0]) 
+                * (extent['t'][1] - extent['t'][0]) 
+                )
+            cost = costInPixels * bytesPerPixel
+            BossThrottle().check('ingest','ingress',request.user,cost,'bytes')
+
+            boss_config = bossutils.configuration.BossConfig()
+            dimensions = [
+                {'Name': 'User', 'Value': request.user.username},
+                {'Name': 'Resource', 'Value': '{}/{}/{}'.format(database['collection'],
+                                                                database['experiment'],
+                                                                database['channel'])},
+                {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+            ]
+
+            session = bossutils.aws.get_session()
+            client = session.client('cloudwatch')
+            client.put_metric_data(
+                Namespace = "BOSS/Ingest",
+                MetricData = [{
+                    'MetricName': 'InvokeCount',
+                    'Dimensions': dimensions,
+                    'Value': 1.0,
+                    'Unit': 'Count'
+                }, {
+                    'MetricName': 'IngressCost',
+                    'Dimensions': dimensions,
+                    'Value': cost,
+                    'Unit': 'Bytes'
+                }]
+            )
+        except BossError as err:
+            return err.to_http()
+        except Exception as err:
+            return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()  
 
 
     def post(self, request):

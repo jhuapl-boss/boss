@@ -35,11 +35,14 @@ def parse_limit(metric,mtype):
     NOTE: If val is None then None is returned
 
     Args:
-        val (str): number of bytes
-                   Format: <num><unit> where
-                           <num> - is a float
-                           <unit> is one of K, M, G, T, P for
-                           kilobytes, megabytes, gigabytes, terabytes, petabytes
+        metric (dict): maps metric types to metric limits
+        mtype (str) 
+
+        metric[mtype] has format:
+                    <num><scalar> where
+                    <num> - is a float
+                    <scalar> is one of K, M, G, T, P for
+                        kilobytes, megabytes, gigabytes, terabytes, petabytes
 
     Returns:
         int: Number of bytes
@@ -61,6 +64,40 @@ def parse_limit(metric,mtype):
 
     return int(val) # Returning an int, as redis works with ints
 
+def _redisKeyNamePattern(metricName)
+    return "{}*".format(metricName)
+
+class RedisMetricKey(object):
+    # redis key for metric encoded with type and units
+    def __init__(self, name="system", mtype="ingress", units="bytes", key=None):
+        """Initialize key with name, type, and units or from a key
+           Args:
+            name (str): The name of the metric (system, <api>, or <username>)
+            mtype (str): The type of metric e.g. ingress, egress, compute
+            units (str): The units of the cost e.g. bytes, cuboids
+            key (str): an encoded key
+        """
+        if key:
+            self.fromKey(key)
+        else:
+            self.name = name
+            self.type = mtype
+            self.units = units
+    def fromKey(self, key):
+        """Read encoded key
+           Args:
+               key (str): encoded key
+        """
+        parts = key.split("_")
+        self.name, self.type, self.units = parts
+        return self
+    def toKey(self):
+        """Encode metric parts
+           
+           Returns key (str)
+        """
+        return "_".join([self.name,self.type,self.units])
+    
 class RedisMetrics(object):
     # NOTE: If there is no throttling redis instance the other methods don't do anything
     # NOTE: External process will reset values to zero when the window expires
@@ -83,12 +120,23 @@ class RedisMetrics(object):
                                           boss_config['aws']['cache-throttle-db'])
         else:
             self.conn = None
+   def getMetrics(self, metricName):
+        """Get the metrics that match name
+        Args: 
+           metricName(str): name of metric
 
-    def get_metric(self, obj, theDate, mtype, units):
+        Returns: list of metricKey objects
+        """
+        if self.conn in None:
+           return None
+        return k.decode('utf8') for k in self.metrics.conn.keys(pattern=_redisKeyNamePattern(metricName))]
+
+   def get_metric(self, metricKey):
         """Get the current metric value for the given object
 
         Args:
-            obj (str): Name of the object for which to get the current metric value
+            metricKey (RedisMetricKey): The metric key object
+            
 
         Returns:
             int: Current metric value or zero if there is no Redis instance or no Redis key
@@ -96,7 +144,7 @@ class RedisMetrics(object):
         if self.conn is None:
             return 0
 
-        key = "{}_{}_{}_{}".format(obj,mtype,theDate,units)
+        key = metricKey.toKey()
         resp = self.conn.get(key)
         if resp is None:
             resp = 0
@@ -104,20 +152,20 @@ class RedisMetrics(object):
             resp = int(resp.decode('utf8'))
         return resp
 
-    def add_metric_cost(self, obj, val, theDate, mtype, units):
+    def add_metric_cost(self, metricKey, val):
         """Increment the current metric value by the given value for the given object
 
         NOTE: If there is no Redis instance this method doesn't do anything
 
         Args:
-            obj (str): Name of the object for which to increment the current metric value
+            metricKey (RedisMetricKey): The metric key object 
             val (float|int): Value by which to increase the current metric value
-                             NOTE: Value will be convered into an integer
+                             NOTE: Value will be converted into an integer
         """
         if self.conn is None:
             return
 
-        key = "{}_{}_{}_{}".format(obj,mtype,theDate,units)
+        key = metricKey.toKey()
         self.conn.incrby(key, int(val))
 
 class MetricLimits(object):
@@ -143,7 +191,10 @@ class MetricLimits(object):
         return data
 
     def lookup_system(self, mtype):
-        """Return the current metric limit for the entire system
+        """Return the current metric limit for the entire system by type
+        
+        Args:
+            mtype (str) : The metric type
 
         Returns:
             int or None
@@ -155,6 +206,7 @@ class MetricLimits(object):
 
         Args:
             api (str): Name of the API to get the metric limit for
+            mtype (str) : The metric type
 
         Returns:
             int or None
@@ -170,6 +222,7 @@ class MetricLimits(object):
 
         Args:
             user (User): Django user object to get the metric limit for
+            mtype (str) : The metric type
 
         Returns:
             int or None
@@ -264,12 +317,12 @@ class BossThrottle(object):
         details = {'api': api, 'user': user.username, 'cost': cost, 'fqdn': self.fqdn}
         self.blog.info("Checking for throttling: {},{},{},{},{},{}".format(api,mtype,user.username,cost,units,self.fqdn))
 
-        today = datetime.date(datetime.today())
-        self.check_user(user, mtype, cost, details, today, units)
-        self.check_api(api, mtype, cost, details, today, units)
-        self.check_system(mtype, cost, details, today, units)
+        #today = datetime.date(datetime.today())
+        self.check_user(user, RedisMetricKey(user.username, mtype, units), cost, details)
+        self.check_api(api, RedisMetricKey(api, mtype, units), cost, details)
+        self.check_system(RedisMetricKey("system",mtype, units), cost, details)
 
-    def check_user(self, user, mtype, cost, details, theDate, units):
+    def check_user(self, user, metricKey, cost, details):
         """Check to see if the user is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -277,6 +330,7 @@ class BossThrottle(object):
 
         Args:
             user (User): Django user making the request
+            metricKey (RedisMetricKey): encoded metric
             cost (float|int): Cost of the API call being made
             details (dict): General information about the call to be
                             used when notifying administrators
@@ -285,8 +339,8 @@ class BossThrottle(object):
             Throttle: If the user is throttled
         """
         self.blog.info("Checking limits for user: {}".format(user.username))
-        current = self.data.get_metric(user.username, theDate, mtype, units)
-        limit = self.limits.lookup_user(user,mtype)
+        current = self.data.get_metric(metricKey)
+        limit = self.limits.lookup_user(user,metricKey.type)
 
         if limit and current > limit:
             self.blog.info("Current use of {} exceeds threshold {}".format(current,limit))
@@ -295,9 +349,9 @@ class BossThrottle(object):
             self.error(user = user, details = details)
 
         self.blog.info("Incrementing cost by {}".format(cost))
-        self.data.add_metric_cost(user.username, cost, theDate, mtype, units)
+        self.data.add_metric_cost(metricKey, cost)
 
-    def check_api(self, api, mtype, cost, details, theDate, units):
+    def check_api(self, api, metricKey, cost, details):
         """Check to see if the API is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -305,6 +359,7 @@ class BossThrottle(object):
 
         Args:
             api (str): Name of the API call being made
+            metricKey (RedisMetricKey): encoded metric key
             cost (float|int): Cost of the API call being made
             details (dict): General information about the call to be
                             used when notifying administrators
@@ -313,9 +368,9 @@ class BossThrottle(object):
             Throttle: If the API is throttled
         """
         self.blog.info("Getting current usage for api: {}".format(api))
-        current = self.data.get_metric(api, theDate, mtype, units)
+        current = self.data.get_metric(metricKey)
         self.blog.info("Getting limit for api: {}".format(api))
-        max = self.limits.lookup_api(api, mtype)
+        max = self.limits.lookup_api(api, metricKey.type)
 
 
         if max and current > max:
@@ -324,15 +379,16 @@ class BossThrottle(object):
             self.error(api = api, details = details)
 
         self.blog.info("Incrementing {} cost by {}".format(api, cost))
-        self.data.add_metric_cost(api, cost, theDate, mtype, units)
+        self.data.add_metric_cost(metricKey, cost)
 
-    def check_system(self, mtype, cost, details, theDate, units):
+    def check_system(self, metricKey, cost, details):
         """Check to see if the System is currently throttled
 
         NOTE: This method will increment the current metric value by cost
               if not throttled
 
         Args:
+            metricKey (RedisMetricKey): encoded metric key
             cost (float|int): Cost of the API call being made
             details (dict): General information about the call to be
                             used when notifying administrators
@@ -341,8 +397,8 @@ class BossThrottle(object):
             Throttle: If the system is throttled
         """
         self.blog.info("Checking limits for system")
-        current = self.data.get_metric('system', mtype, theDate, units)
-        max = self.limits.lookup_system(mtype)
+        current = self.data.get_metric(metricKey)
+        max = self.limits.lookup_system(metricKey.type)
 
         if max and current > max:
             details['current_metric'] = current
@@ -350,4 +406,4 @@ class BossThrottle(object):
             self.error(system = True, details = details)
 
         self.blog.info("Incrementing system cost by {}".format(cost))
-        self.data.add_metric_cost('system', cost, theDate, mtype, units)
+        self.data.add_metric_cost(metricKey, cost)
