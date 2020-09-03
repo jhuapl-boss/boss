@@ -134,9 +134,9 @@ class RedisMetrics(object):
 
         Returns: list of metricKey objects
         """
-        if self.conn in None:
+        if not self.conn:
            return None
-        return [k.decode('utf8') for k in self.metrics.conn.keys(pattern=_redisKeyNamePattern(metricName))]
+        return [k.decode('utf8') for k in self.conn.keys(pattern=_redisKeyNamePattern(metricName))]
 
     def get_metric(self, metricKey):
         """Get the current metric value for the given object

@@ -167,17 +167,6 @@ class Metric(LoginRequiredMixin, APIView):
         Returns: the User object for the Admin user
         """
         return User.objects.get(username=ADMIN_USER)
-
-    def _getValues(self,metricKeys):
-        """
-        Get the values for the list of metrics
-
-        Args: 
-            metricKeys (list): list of RedisMetricKey objects 
-
-        Returns: list of value objects for each key
-        """
-        return [{ 'value':RedisMetrics.get_metric(mk), 'units': mk.units } for mk in metricKeys]
         
     def _getMetrics(self,metricName):
         """
@@ -188,12 +177,11 @@ class Metric(LoginRequiredMixin, APIView):
         
         Returns: result object containing selected metrics
         """
-        keys = RedisMetrics.get_metrics(metricName)
+        keys = self.metrics.get_metrics(metricName)
+        result = {'metric':metricName, 'values':[]}
         metricKeys = [RedisMetricKey(key=k) for k in keys]
-        types = set([mk.type for mk in metricKeys])
-        result = {'metric':metricName}
-        for t in types:
-            result[t] = self._getValues([mk for mk in metricKeys if mk.type == t])
+        if metricKeys:
+            result = [{ 'name':mk.name, 'value':self.metrics.get_metric(mk), 'units': mk.units, 'type':mk.type } for mk in metricKeys]
         return result
 
     def get(self, request):
@@ -217,12 +205,16 @@ class Metric(LoginRequiredMixin, APIView):
             keys = [k.decode('utf8') for k in self.metrics.conn.keys()]
             metrics = set([RedisMetricKey(key=k).name for k in keys])
             return Response(metrics)
-        else:
-            # show specific metric values 
-            if not metric:
-                metric = user
-            metricIsUser = metric == str(request.user)
-            userIsAdmin = request.user == self._get_admin_user()
-            if metricIsUser or userIsAdmin:
-                return Response(self._getMetrics(metric))
-            return Response("Unauthorized request")
+        
+        if paths[-1] == 'all':
+            metric = "*"
+
+        # show specific metric values 
+        if not metric:
+            metric = user
+        metricIsUser = metric == str(request.user)
+        userIsAdmin = request.user == self._get_admin_user()
+        # make sure only admin user can see other metrics
+        if metricIsUser or userIsAdmin:
+            return Response(self._getMetrics(metric))
+        return Response("Unauthorized request")
