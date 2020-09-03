@@ -1,6 +1,6 @@
 function channel_handler(response) {
     var resources = get_resource_names();
-    var detail_base_url = window.location.href + "/";
+    var detail_base_url = API_ROOT + "mgmt/resources/" + resources[0] + "/" + resources[1] + "/";
     var delete_function = "delete_channel";
     var delete_base_url = API_ROOT + "collection/" + resources[0] + "/experiment/" + resources[1] + "/channel/";
     var neuroglancer_url = "https://neuroglancer.theboss.io/#!{'layers':{'" + resources[1] + "':{'source':'boss://https://" + window.location.host + "/" + resources[0] + "/" + resources[1] + "/";
