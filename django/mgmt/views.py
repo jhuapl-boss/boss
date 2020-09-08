@@ -208,6 +208,7 @@ class Token(LoginRequiredMixin, View):
             'username': request.user,
             'token': token,
             'button': button,
+            'public_access_username': PUBLIC_ACCESS_USERNAME
         }
         return HttpResponse(render_to_string('token.html', args, request=request))
 

@@ -17,12 +17,14 @@
             {% endif %}
         </div>
     </div>
+    {% if user.username != public_access_username %}
     <div class="form-group">
         <div class="col-sm-2 col-lg-2"></div>
         <div class="col-sm-10 col-lg-10">
             <button id="gen_token_btn" type="submit" class="btn btn-primary">{{ button }}</button>
         </div>
     </div>
+    {% endif %}
 </form>
 {% endblock %}
 
