@@ -132,9 +132,10 @@ class Cutout(APIView):
                / 8
                ) # Calculating the number of bytes
 
-        BossThrottle().check('cutout_egress',
+        # seprate direction of movement from api and provide units of metric
+        BossThrottle().check('cutout','egress',
                              request.user,
-                             cost)
+                             cost,'bytes')
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
@@ -243,9 +244,9 @@ class Cutout(APIView):
                / 8
                ) # Calculating the number of bytes
 
-        BossThrottle().check('cutout_ingress',
+        BossThrottle().check('cutout','ingress',
                              request.user,
-                             cost)
+                             cost,'bytes')
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
@@ -532,11 +533,17 @@ class Downsample(APIView):
                 * get_cubes('y', 512)
                 * get_cubes('z', 16)
                 / 4 # Number of cubes for a downsampled volume
-                * 0.75 # Assume the frame is only 75% filled
-                * 2 # 1 for invoking a lambda
-                    # 1 for time it takes lambda to run
-                * 1.33 # Add 33% overhead for all other non-base resolution downsamples
+ #               * 0.75 # Assume the frame is only 75% filled
+#                * 2 # 1 for invoking a lambda
+#                    # 1 for time it takes lambda to run
+#                * 1.33 # Add 33% overhead for all other non-base resolution downsamples
                )
+
+        log = bossLogger()
+        log.info("Checking for throttling")
+        BossThrottle().check('downsample','compute',
+                             request.user,
+                             cost,'cuboids')
 
         dimensions = [
             {'Name': 'User', 'Value': request.user.username},

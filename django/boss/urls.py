@@ -54,6 +54,7 @@ urlpatterns = [
     url(r'^docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     url(r'^ping/', views.Ping.as_view()),
     url(r'^token/', views.Token.as_view()),
+    url(r'^metric/', views.Metric.as_view()),
 
     # deprecated urls
     url(r'^v0.1/', views.Unsupported.as_view()),

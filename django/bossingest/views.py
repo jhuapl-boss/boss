@@ -36,6 +36,7 @@ from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
 from bossutils.logger import bossLogger
+from boss.throttling import BossThrottle
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
@@ -217,7 +218,7 @@ class IngestJobView(IngestServiceView):
         except Exception as err:
             return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
 
-    def track_usage_data(self, ingest_config_data):
+    def track_usage_data(self, ingest_config_data, request):
         """
         Set up usage tracking of this ingest.
 
@@ -227,66 +228,72 @@ class IngestJobView(IngestServiceView):
         Raises:
             (BossError): if user doesn't have permission for a large ingest.
         """
-
-        # ToDo: handle volumetric ingests.  Likely that first version of ingest
-        # schema doesn't have ingest type so check for tile-size to confirm 
-        # job is a tile ingest.
-        if 'tile-size' not in ingest_config_data['ingest_job']:
-            return
-
-        # Add metrics to CloudWatch
-        extent = ingest_config_data['ingest_job']['extent']
-        tile_size = ingest_config_data['ingest_job']['tile_size']
-        database = ingest_config_data['database']
-
-        # Check that only permitted users are creating extra large ingests
+        blog = bossLogger()
+        
+        # need to get bytes per pixel to caculate ingest in total bytes
         try:
-            group = Group.objects.get(name=INGEST_GRP)
-            in_large_ingest_group = group.user_set.filter(id=request.user.id).exists()
-        except Group.DoesNotExist:
-            # Just in case the group has not been created yet
-            in_large_ingest_group = False
-        if (not in_large_ingest_group) and \
-           ((extent['x'][1] - extent['x'][0]) * \
-            (extent['y'][1] - extent['y'][0]) * \
-            (extent['z'][1] - extent['z'][0]) * \
-            (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
-            raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
+            ingest_job = ingest_config_data['ingest_job']
+            theCollection = Collection.objects.get(name=ingest_config_data['database']['collection'])
+            theExperiment = Experiment.objects.get(name=ingest_config_data['database']['experiment'])
+            theChannel = Channel.objects.get(name=ingest_config_data['database']['channel'])
+            bytesPerPixel = int(theChannel.datatype.replace("uint",""))/8
 
-        # Calculate the cost of the ingest
-        cost = ( ((extent['x'][1] - extent['x'][0]) / tile_size['x'])
-               * ((extent['y'][1] - extent['y'][0]) / tile_size['y'])
-               * ((extent['z'][1] - extent['z'][0]) / tile_size['z'])
-               * ((extent['t'][1] - extent['t'][0]) / tile_size['t'])
-               * 1.0625 # 1 lambda per tile + 1 lambda per 16 tiles (per cube)
-               * 1 # the cost per lambda
-               ) # Calculating the cost of the lambda invocations
+            # Add metrics to CloudWatch
+            extent = ingest_job['extent']
+            database = ingest_config_data['database']
 
-        boss_config = bossutils.configuration.BossConfig()
-        dimensions = [
-            {'Name': 'User', 'Value': request.user.username},
-            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(database['collection'],
-                                                            database['experiment'],
-                                                            database['channel'])},
-            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
-        ]
+            # Check that only permitted users are creating extra large ingests
+            try:
+                group = Group.objects.get(name=INGEST_GRP)
+                in_large_ingest_group = group.user_set.filter(id=request.user.id).exists()
+            except Group.DoesNotExist:
+                # Just in case the group has not been created yet
+                in_large_ingest_group = False
+            if (not in_large_ingest_group) and \
+            ((extent['x'][1] - extent['x'][0]) * \
+                (extent['y'][1] - extent['y'][0]) * \
+                (extent['z'][1] - extent['z'][0]) * \
+                (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
+                raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
+            blog.info("ingest_job: {}", ingest_job.keys())
+            # Calculate the cost of the ingest in pixels
+            costInPixels = ( (extent['x'][1] - extent['x'][0]) 
+                * (extent['y'][1] - extent['y'][0]) 
+                * (extent['z'][1] - extent['z'][0]) 
+                * (extent['t'][1] - extent['t'][0]) 
+                )
+            cost = costInPixels * bytesPerPixel
+            BossThrottle().check('ingest','ingress',request.user,cost,'bytes')
 
-        session = bossutils.aws.get_session()
-        client = session.client('cloudwatch')
-        client.put_metric_data(
-            Namespace = "BOSS/Ingest",
-            MetricData = [{
-                'MetricName': 'InvokeCount',
-                'Dimensions': dimensions,
-                'Value': 1.0,
-                'Unit': 'Count'
-            }, {
-                'MetricName': 'ComputeCost',
-                'Dimensions': dimensions,
-                'Value': cost,
-                'Unit': 'Count'
-            }]
-        )
+            boss_config = bossutils.configuration.BossConfig()
+            dimensions = [
+                {'Name': 'User', 'Value': request.user.username},
+                {'Name': 'Resource', 'Value': '{}/{}/{}'.format(database['collection'],
+                                                                database['experiment'],
+                                                                database['channel'])},
+                {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
+            ]
+
+            session = bossutils.aws.get_session()
+            client = session.client('cloudwatch')
+            client.put_metric_data(
+                Namespace = "BOSS/Ingest",
+                MetricData = [{
+                    'MetricName': 'InvokeCount',
+                    'Dimensions': dimensions,
+                    'Value': 1.0,
+                    'Unit': 'Count'
+                }, {
+                    'MetricName': 'IngressCost',
+                    'Dimensions': dimensions,
+                    'Value': cost,
+                    'Unit': 'Bytes'
+                }]
+            )
+        except BossError as err:
+            return err.to_http()
+        except Exception as err:
+            return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()  
 
 
     def post(self, request):
@@ -304,7 +311,7 @@ class IngestJobView(IngestServiceView):
         ingest_config_data = request.data
 
         try:
-            self.track_usage_data(ingest_config_data)
+            self.track_usage_data(ingest_config_data, request)
 
             ingest_mgmr = IngestManager()
             ingest_job = ingest_mgmr.setup_ingest(self.request.user.id, ingest_config_data)
@@ -419,7 +426,7 @@ class IngestJobCompleteView(IngestServiceView):
 
             # TODO SH This is a quick fix to make sure the ingest-client does not run close option.
             #      the clean up code commented out below, because it is not working correctly.
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            # return Response(status=status.HTTP_204_NO_CONTENT)
 
             # if ingest_job.ingest_type == IngestJob.TILE_INGEST:
             #     # Check if any messages remain in the ingest queue
@@ -512,4 +519,3 @@ class IngestJobStatusView(IngestServiceView):
                 return err.to_http()
         except Exception as err:
             return BossError("{}".format(err), ErrorCodes.BOSS_SYSTEM_ERROR).to_http()
-
