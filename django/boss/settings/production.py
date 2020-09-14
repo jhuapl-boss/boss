@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from .base import *
-from bossoidc.settings import BOSSOIDC_LOGIN_URL, BOSSOIDC_LOGOUT_URL
+from bossoidc2.settings import BOSSOIDC_LOGIN_URL, BOSSOIDC_LOGOUT_URL
 
 """
 Run the boss in production.
@@ -63,7 +63,7 @@ if config['aws']['cache-session'] != '':
 LOGIN_URL = BOSSOIDC_LOGIN_URL
 LOGOUT_URL = BOSSOIDC_LOGOUT_URL
 
-INSTALLED_APPS.append("bossoidc")
+INSTALLED_APPS.append("bossoidc2")
 INSTALLED_APPS.append("mozilla_django_oidc")
 INSTALLED_APPS.append("rest_framework.authtoken")
 
@@ -74,7 +74,7 @@ REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = (
     'oidc_auth.authentication.BearerTokenAuthentication',
 )
 
-AUTHENTICATION_BACKENDS.insert(1, 'bossoidc.backend.OpenIdConnectBackend') 
+AUTHENTICATION_BACKENDS.insert(1, 'bossoidc2.backend.OpenIdConnectBackend') 
 
 auth_uri = vault.read('secret/endpoint/auth', 'url')
 client_id = vault.read('secret/endpoint/auth', 'client_id')
@@ -99,7 +99,7 @@ KEYCLOAK_ADMIN_USER = 'bossadmin'
 
 LOAD_USER_ROLES = 'bosscore.privileges.load_user_roles'
 
-from bossoidc.settings import configure_oidc
+from bossoidc2.settings import configure_oidc
 configure_oidc(auth_uri, client_id, public_uri)
 
 # Load params for spatialDB once during settings.py

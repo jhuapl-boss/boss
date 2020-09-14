@@ -1,7 +1,7 @@
 boto3>=1.4.0
-Django==2.2.13
+Django==2.2.16
 # This might not be used anymore.
-django-filter==0.11.0
+#django-filter==0.11.0
 djangorestframework==3.11.0
 drf-yasg==1.17.1
 Markdown==2.6.5
@@ -12,8 +12,8 @@ uWSGI==2.0.19.1
 
 drf-oidc-auth==0.10.0
 
-# ToDo: update this to point at new repo for boss-oidc.
--e git+https://github.com/jhuapl-boss/boss-oidc.git@keycloak-11.0.0#egg=boss-oidc
+# bossoidc2 on v2.0.0.
+git+https://github.com/jhuapl-boss/boss-oidc2.git@v2.0.0#egg=boss-oidc2
 
 mozilla-django-oidc==1.2.3
 
@@ -24,5 +24,4 @@ django-bootstrap-form
 django-redis
 git+https://github.com/jhuapl-boss/django-nose2.git
 
-# Intern 1.0.0 uses Python language features incompatible with Python 3.5.
-intern<1.0
+intern
