@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import numpy as np
+import boto3
+import botocore.exceptions
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -357,7 +359,7 @@ class Downsample(APIView):
         to_renderer = {"status": channel.downsample_status}
 
         # Check Step Function if status is in-progress and update
-        if channel.downsample_status == "IN_PROGRESS":
+        if channel.downsample_status == Channel.DownsampleStatus.IN_PROGRESS:
             lookup_key = resource.get_lookup_key()
             _, exp_id, _ = lookup_key.split("&")
             # Get channel object
@@ -367,9 +369,9 @@ class Downsample(APIView):
             status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
             if status == "SUCCEEDED":
                 # Change to DOWNSAMPLED
-                channel_obj.downsample_status = "DOWNSAMPLED"
+                channel_obj.downsample_status = Channel.DownsampleStatus.DOWNSAMPLED
                 channel_obj.save()
-                to_renderer["status"] = "DOWNSAMPLED"
+                to_renderer["status"] = Channel.DownsampleStatus.DOWNSAMPLED
 
                 # DP NOTE: This code should be moved to spdb when change
                 #          tracking is added to automatically calculate
@@ -393,9 +395,9 @@ class Downsample(APIView):
             elif status == "FAILED" or status == "TIMED_OUT":
                 # Change status to FAILED
                 channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
-                channel_obj.downsample_status = "FAILED"
+                channel_obj.downsample_status = Channel.DownsampleStatus.FAILED
                 channel_obj.save()
-                to_renderer["status"] = "FAILED"
+                to_renderer["status"] = Channel.DownsampleStatus.FAILED
 
         # Get hierarchy levels
         to_renderer["num_hierarchy_levels"] = experiment.num_hierarchy_levels
@@ -452,21 +454,35 @@ class Downsample(APIView):
         resource = project.BossResourceDjango(req)
 
         channel = resource.get_channel()
-        if channel.downsample_status.upper() == "IN_PROGRESS":
+        if channel.downsample_status.upper() == Channel.DownsampleStatus.IN_PROGRESS:
             return BossHTTPError("Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
-        elif channel.downsample_status.upper() == "DOWNSAMPLED" and \
+        elif channel.downsample_status.upper() == Channel.DownsampleStatus.DOWNSAMPLED and \
              not request.user.is_staff:
             return BossHTTPError("Channel is already downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
 
         session = bossutils.aws.get_session()
 
         # Make sure only one Channel is downsampled at a time
-        channel_objs = Channel.objects.filter(downsample_status = 'IN_PROGRESS')
+        channel_objs = Channel.objects.filter(downsample_status=Channel.DownsampleStatus.IN_PROGRESS)
         for channel_obj in channel_objs:
             # Verify that the channel is still being downsampled
-            status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
-            if status == 'RUNNING':
-                return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
+            try:
+                status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
+                if status == 'RUNNING':
+                    return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
+            except botocore.exceptions.ClientError as ex:
+                # If the execution no longer exists, that means the downsample
+                # execution stored in the DB is no longer valid.  Should be ok
+                # to proceed with a new downsample.  Otherwise, let the
+                # exception bubble up.
+                if ex.response['Error']['Code'] != 'ExecutionDoesNotExist':
+                    raise
+
+                # Delete SFN arn since it no longer exists.
+                channel_obj.downsample_status = Channel.DownsampleStatus.FAILED
+                channel_obj.downsample_arn = None
+                channel_obj.save()
+
 
         if request.user.is_staff:
             # DP HACK: allow admin users to override the coordinate frame
@@ -568,7 +584,7 @@ class Downsample(APIView):
 
         # Change Status and Save ARN
         channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
-        channel_obj.downsample_status = "IN_PROGRESS"
+        channel_obj.downsample_status = Channel.DownsampleStatus.IN_PROGRESS
         channel_obj.downsample_arn = arn
         channel_obj.save()
 
@@ -602,7 +618,7 @@ class Downsample(APIView):
         resource = project.BossResourceDjango(req)
 
         channel = resource.get_channel()
-        if channel.downsample_status.upper() != "IN_PROGRESS":
+        if channel.downsample_status.upper() != Channel.DownsampleStatus.IN_PROGRESS:
             return BossHTTPError("You can only cancel and in-progress downsample operation.", ErrorCodes.INVALID_STATE)
 
         # Get Channel object
@@ -619,7 +635,7 @@ class Downsample(APIView):
         channel_obj.downsample_arn = ""
 
         # Change Status
-        channel_obj.downsample_status = "NOT_DOWNSAMPLED"
+        channel_obj.downsample_status = Channel.DownsampleStatus.NOT_DOWNSAMPLED
         channel_obj.save()
 
         return HttpResponse(status=204)

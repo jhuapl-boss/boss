@@ -19,6 +19,7 @@ from rest_framework.test import force_authenticate
 from rest_framework import status
 
 from bossspatialdb.views import Downsample
+from bosscore.models import Channel
 
 from bosscore.test.setup_db import SetupTestDB
 from bosscore.error import BossError
@@ -56,7 +57,7 @@ class DownsampleInterfaceViewMixin(object):
         response = Downsample.as_view()(request, collection='col1', experiment='exp_iso', channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 8)
-        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.NOT_DOWNSAMPLED)
         self.assertEqual(response.data["voxel_size"]['0'], [6.0, 6.0, 6.0])
         self.assertEqual(response.data["voxel_size"]['3'], [48.0, 48.0, 48.0])
         self.assertEqual(response.data["voxel_size"]['5'], [192.0, 192.0, 192.0])
@@ -80,7 +81,7 @@ class DownsampleInterfaceViewMixin(object):
         response = Downsample.as_view()(request, collection='col1', experiment='exp_iso', channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 8)
-        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.NOT_DOWNSAMPLED)
         self.assertEqual(response.data["voxel_size"]['0'], [6.0, 6.0, 6.0])
         self.assertEqual(response.data["voxel_size"]['3'], [48.0, 48.0, 48.0])
         self.assertEqual(response.data["voxel_size"]['5'], [192.0, 192.0, 192.0])
@@ -104,7 +105,7 @@ class DownsampleInterfaceViewMixin(object):
         response = Downsample.as_view()(request, collection='col1', experiment='exp_iso', channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 8)
-        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.NOT_DOWNSAMPLED)
         self.assertEqual(response.data["voxel_size"]['0'], [6.0, 6.0, 6.0])
         self.assertEqual(response.data["voxel_size"]['3'], [48.0, 48.0, 48.0])
         self.assertEqual(response.data["voxel_size"]['5'], [192.0, 192.0, 192.0])
@@ -128,7 +129,7 @@ class DownsampleInterfaceViewMixin(object):
         response = Downsample.as_view()(request, collection='col1', experiment='exp_aniso', channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 8)
-        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.NOT_DOWNSAMPLED)
         self.assertEqual(response.data["voxel_size"]['0'], [4.0, 4.0, 35.0])
         self.assertEqual(response.data["voxel_size"]['3'], [32.0, 32.0, 35.0])
         self.assertEqual(response.data["voxel_size"]['5'], [128.0, 128.0, 35.0])
@@ -152,7 +153,7 @@ class DownsampleInterfaceViewMixin(object):
         response = Downsample.as_view()(request, collection='col1', experiment='exp_aniso', channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 8)
-        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.NOT_DOWNSAMPLED)
         self.assertEqual(response.data["voxel_size"]['0'], [4.0, 4.0, 35.0])
         self.assertEqual(response.data["voxel_size"]['3'], [32.0, 32.0, 35.0])
         self.assertEqual(response.data["voxel_size"]['5'], [128.0, 128.0, 35.0])
@@ -176,7 +177,7 @@ class DownsampleInterfaceViewMixin(object):
         response = Downsample.as_view()(request, collection='col1', experiment='exp_aniso', channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 8)
-        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.NOT_DOWNSAMPLED)
         self.assertEqual(response.data["voxel_size"]['0'], [4.0, 4.0, 35.0])
         self.assertEqual(response.data["voxel_size"]['3'], [32.0, 32.0, 35.0])
         self.assertEqual(response.data["voxel_size"]['5'], [128.0, 128.0, 140])
@@ -213,7 +214,7 @@ class DownsampleInterfaceViewMixin(object):
                                         channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 5)
-        self.assertEqual(response.data["status"], "IN_PROGRESS")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.IN_PROGRESS)
 
         # Cancel the downsample job
         request = factory.delete('/' + version + '/downsample/col1/exp_ds_aniso/channel1/',
@@ -237,7 +238,7 @@ class DownsampleInterfaceViewMixin(object):
         response = Downsample.as_view()(request, collection='col1', experiment='exp_ds_aniso',
                                         channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.NOT_DOWNSAMPLED)
 
         # Try to cancel the downsample job again, but it won't because in NOT_DOWNSAMPLED state
         request = factory.delete('/' + version + '/downsample/col1/exp_ds_aniso/channel1/',
