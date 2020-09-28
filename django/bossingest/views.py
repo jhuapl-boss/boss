@@ -228,7 +228,6 @@ class IngestJobView(IngestServiceView):
         Raises:
             (BossError): if user doesn't have permission for a large ingest.
         """
-        blog = bossLogger()
         
         # need to get bytes per pixel to caculate ingest in total bytes
         try:
@@ -255,7 +254,6 @@ class IngestJobView(IngestServiceView):
                 (extent['z'][1] - extent['z'][0]) * \
                 (extent['t'][1] - extent['t'][0]) > settings.INGEST_MAX_SIZE):
                 raise BossError("Large ingests require special permission to create. Contact system administrator.", ErrorCodes.INVALID_STATE)
-            blog.info("ingest_job: {}", ingest_job.keys())
             # Calculate the cost of the ingest in pixels
             costInPixels = ( (extent['x'][1] - extent['x'][0]) 
                 * (extent['y'][1] - extent['y'][0]) 
