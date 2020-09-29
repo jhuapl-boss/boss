@@ -1,4 +1,4 @@
-# Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
+# Copyright 2020 The Johns Hopkins University Applied Physics Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,6 +33,8 @@ class Collection(models.Model):
     description = models.CharField(max_length=4096, blank=True)
     creator = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='collections')
     to_be_deleted = models.DateTimeField(null=True, blank=True)
+
+    # ToDo: replace with constants.
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
         ('finished', 'FINISHED'),
@@ -80,6 +82,7 @@ class CoordinateFrame(models.Model):
     y_voxel_size = models.FloatField()
     z_voxel_size = models.FloatField()
 
+    # ToDo: replace with constants.
     VOXEL_UNIT_CHOICES = (
         ('nanometers', 'NANOMETERS'),
         ('micrometers', 'MICROMETERS'),
@@ -96,6 +99,7 @@ class CoordinateFrame(models.Model):
     # )
     # time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100, blank=True, null=True)
     to_be_deleted = models.DateTimeField(null=True, blank=True)
+    # ToDo: replace with constants.
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
         ('finished', 'FINISHED'),
@@ -135,6 +139,7 @@ class Experiment(models.Model):
     coord_frame = models.ForeignKey(CoordinateFrame, related_name='exps', on_delete=models.PROTECT)
     num_hierarchy_levels = models.IntegerField(default=1)
 
+    # ToDo: replace with constants.
     HIERARCHY_METHOD_CHOICES = (
         ('anisotropic', 'ANISOTROPIC'),
         ('isotropic', 'ISOTROPIC'),
@@ -142,6 +147,7 @@ class Experiment(models.Model):
     hierarchy_method = models.CharField(choices=HIERARCHY_METHOD_CHOICES, max_length=100, default='anisotropic')
     num_time_samples = models.IntegerField(default=1)
     time_step = models.IntegerField(blank=True, null=True)
+    # ToDo: replace with constants.
     TIMESTEP_UNIT_CHOICES = (
         ('nanoseconds', 'NANOSECONDS'),
         ('microseconds', 'MICROSECONDS'),
@@ -150,6 +156,7 @@ class Experiment(models.Model):
     )
     time_step_unit = models.CharField(choices=TIMESTEP_UNIT_CHOICES, max_length=100, blank=True, null=True)
     to_be_deleted = models.DateTimeField(null=True, blank=True)
+    # ToDo: replace with constants.
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
         ('finished', 'FINISHED'),
@@ -193,6 +200,7 @@ class Channel(models.Model):
     )
     type = models.CharField(choices=TYPE_CHOICES, max_length=100)
 
+    # ToDo: replace with constants.
     DATATYPE_CHOICES = (
         ('uint8', 'UINT8'),
         ('uint16', 'UINT16'),
@@ -203,6 +211,7 @@ class Channel(models.Model):
     sources = models.ManyToManyField('self', through='Source', symmetrical=False, related_name='derived', blank=True)
     related = models.ManyToManyField('self', related_name='related', blank=True)
     to_be_deleted = models.DateTimeField(null=True, blank=True)
+    # ToDo: replace with constants.
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
         ('finished', 'FINISHED'),
@@ -210,13 +219,20 @@ class Channel(models.Model):
     )
     deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True, blank=True)
 
-    DOWNSAMPLE_METHOD_CHOICES = (
-        ('NOT_DOWNSAMPLED', 'Not Downsampled'),
-        ('IN_PROGRESS', 'In Progress'),
-        ('DOWNSAMPLED', 'Downsampled'),
-        ('FAILED', 'Failed'),
+    class DownsampleStatus:
+        """String values are actual values stored in DB."""
+        NOT_DOWNSAMPLED = 'NOT_DOWNSAMPLED'
+        IN_PROGRESS = 'IN_PROGRESS'
+        DOWNSAMPLED = 'DOWNSAMPLED'
+        FAILED = 'FAILED'
+
+    DOWNSAMPLE_STATUS_CHOICES = (
+        (DownsampleStatus.NOT_DOWNSAMPLED, 'Not Downsampled'),
+        (DownsampleStatus.IN_PROGRESS, 'In Progress'),
+        (DownsampleStatus.DOWNSAMPLED, 'Downsampled'),
+        (DownsampleStatus.FAILED, 'Failed'),
     )
-    downsample_status = models.CharField(choices=DOWNSAMPLE_METHOD_CHOICES, default="NOT_DOWNSAMPLED", max_length=100)
+    downsample_status = models.CharField(choices=DOWNSAMPLE_STATUS_CHOICES, default=DownsampleStatus.NOT_DOWNSAMPLED, max_length=100)
     downsample_arn = models.CharField(max_length=4096, blank=True, null=True)
 
     class Meta:
@@ -293,6 +309,7 @@ class BossRole(models.Model):
     Map user's to roles.
     """
     user = models.ForeignKey('auth.User', related_name='Role', on_delete=models.CASCADE)
+    # ToDo: replace with constants.
     DATATYPE_CHOICES = (
         ('admin', 'ADMIN'),
         ('user-manager', 'USER-MANAGER'),

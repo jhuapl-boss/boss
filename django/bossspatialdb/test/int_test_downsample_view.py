@@ -21,6 +21,7 @@ from rest_framework import status
 from bossspatialdb.views import Downsample
 from bossspatialdb.test import DownsampleInterfaceViewMixin
 from bossspatialdb.views import Cutout
+from bosscore.models import Channel
 
 from bosscore.test.setup_db import DjangoSetupLayer
 
@@ -110,7 +111,7 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
                                         channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 5)
-        self.assertEqual(response.data["status"], "IN_PROGRESS")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.IN_PROGRESS)
 
         for _ in range(0, 30):
             # Make request
@@ -118,7 +119,7 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
                                             channel='channel1').render()
             self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-            if response.data["status"] != "IN_PROGRESS":
+            if response.data["status"] != Channel.DownsampleStatus.IN_PROGRESS:
                 break
 
             time.sleep(2)
@@ -128,7 +129,7 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
                                         channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 5)
-        self.assertEqual(response.data["status"], "DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.DOWNSAMPLED)
 
         # Get data at res 1 and verify it's non-zero
         request = factory.get('/' + version + '/cutout/col1/exp_ds_aniso/channel1/1/0:512/0:512/0:16/',
@@ -228,7 +229,7 @@ class TestIntegrationDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITe
                                         channel='channel1').render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["num_hierarchy_levels"], 5)
-        self.assertEqual(response.data["status"], "NOT_DOWNSAMPLED")
+        self.assertEqual(response.data["status"], Channel.DownsampleStatus.NOT_DOWNSAMPLED)
 
     def setUp(self):
         """ Copy params from the Layer setUpClass
