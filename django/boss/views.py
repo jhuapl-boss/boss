@@ -141,9 +141,10 @@ class Token(LoginRequiredMixin, View):
         """.format(request.path_info, content, button)
         return HttpResponse(html)
 
-from boss.throttling import RedisMetrics, RedisMetricKey
+from boss.throttling import RedisMetrics, RedisMetricKey, MetricLimits
 from bosscore.constants import ADMIN_USER
 from django.contrib.auth.models import User
+from bosscore.models import ThrottleThreshold
 
 class Metric(LoginRequiredMixin, APIView):
     """
@@ -184,6 +185,23 @@ class Metric(LoginRequiredMixin, APIView):
             result = [{ 'name':mk.name, 'value':self.metrics.get_metric(mk), 'units': mk.units, 'type':mk.type } for mk in metricKeys]
         return result
 
+    def _synchLimits(self):
+        limits = MetricLimits()
+        # convert limits to json
+        for t in limits.system:
+            units = ThrottleThreshold.METRIC_UNITS_BYTES
+            if t == ThrottleThreshold.METRIC_TYPE_COMPUTE:
+                units = ThrottleThreshold.METRIC_UNITS_VOXELS
+            limit = limits.system[t]
+            if not limit:
+                limit = -1
+            ThrottleThreshold.objects.get_or_create(metric_name='system',metric_type=t,metric_units = units,metric_limit = limit)
+        return [limits.system,limits.apis, limits.users]
+    
+    def _getLimits(self):
+        limitObjects = ThrottleThreshold.objects.get()
+        return limitObjects
+
     def get(self, request):
         """
         Handles the get request for metrics
@@ -200,6 +218,10 @@ class Metric(LoginRequiredMixin, APIView):
         metric = request.GET.get('metric')
         user = request.GET.get('user',str(request.user))
         # determine response
+        userIsAdmin = request.user == self._get_admin_user()
+        if paths[-1] == 'synch':
+            if userIsAdmin:
+                return Response(self._synchLimits())
         if paths[-1] == 'list':
             # list all metrics names
             keys = [k.decode('utf8') for k in self.metrics.conn.keys()]

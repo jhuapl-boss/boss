@@ -19,6 +19,32 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 
+class ThrottleThreshold(models.Model):
+    METRIC_UNITS_BYTES = 'byte_count'
+    METRIC_UNITS_VOXELS = 'voxel_count'
+    METRIC_UNITS = (
+        (METRIC_UNITS_BYTES,'Threshold in bytes'),
+        (METRIC_UNITS_VOXELS,'Threshold in voxels')
+    )
+    METRIC_TYPE_EGRESS = 'egress'
+    METRIC_TYPE_INGRESS = 'ingress'
+    METRIC_TYPE_COMPUTE = 'compute'
+    METRIC_TYPES = (
+        (METRIC_TYPE_EGRESS,'Egress level'),
+        (METRIC_TYPE_INGRESS,'Engress level'),
+        (METRIC_TYPE_COMPUTE,'Computation level')
+    )
+    metric_name = models.CharField(max_length=255)
+    metric_type = models.CharField(choices=METRIC_TYPES,max_length=20)
+    metric_units = models.CharField(choices=METRIC_UNITS,max_length=20)
+    metric_limit = models.BigIntegerField(default=-1)
+
+class ThrottleMetric(models.Model):
+    metric_name = models.CharField(max_length=255)
+    metric_type = models.CharField(choices=ThrottleThreshold.METRIC_TYPES,max_length=20)
+    metric_units = models.CharField(choices=ThrottleThreshold.METRIC_UNITS, max_length=20)
+    metric_value = models.BigIntegerField()
+
 class NameValidator(RegexValidator):
     regex = "^[a-zA-Z0-9_-]*$"
     message = u'Invalid Name.'
