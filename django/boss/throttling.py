@@ -1,4 +1,4 @@
-# Copyright 2019 The Johns Hopkins University Applied Physics Laboratory
+# Copyright 2020 The Johns Hopkins University Applied Physics Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Redesigned to use ORM for limits. This approach allows for adjustment of the limits without 
+# having to 
 
 from rest_framework.exceptions import Throttled
 from oidc_auth.util import cache
@@ -176,7 +179,7 @@ class RedisMetrics(object):
         self.conn.incrby(key, int(val))
 
 class MetricLimits(object):
-    """Object for reading metric limits from Vault
+    """Object for reading metric limits
 
     NOTE: Values are read once from Vault on initialization
     """

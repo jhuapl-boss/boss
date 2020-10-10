@@ -18,8 +18,7 @@ from django.core.validators import RegexValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-
-class ThrottleThreshold(models.Model):
+class ThrottleMetric(models.Model):
     METRIC_UNITS_BYTES = 'byte_count'
     METRIC_UNITS_VOXELS = 'voxel_count'
     METRIC_UNITS = (
@@ -34,16 +33,20 @@ class ThrottleThreshold(models.Model):
         (METRIC_TYPE_INGRESS,'Engress level'),
         (METRIC_TYPE_COMPUTE,'Computation level')
     )
-    metric_name = models.CharField(max_length=255)
-    metric_type = models.CharField(choices=METRIC_TYPES,max_length=20)
-    metric_units = models.CharField(choices=METRIC_UNITS,max_length=20)
-    metric_limit = models.BigIntegerField(default=-1)
+    mtype = models.CharField(choices=METRIC_TYPES,max_length=20)
+    units = models.CharField(choices=METRIC_UNITS, max_length=20)
+    def_system_limit = models.BigIntegerField(default=-1)
+    def_api_limit = models.BigIntegerField(default=-1)
+    def_user_limit = models.BigIntegerField(default=-1)
 
-class ThrottleMetric(models.Model):
-    metric_name = models.CharField(max_length=255)
-    metric_type = models.CharField(choices=ThrottleThreshold.METRIC_TYPES,max_length=20)
-    metric_units = models.CharField(choices=ThrottleThreshold.METRIC_UNITS, max_length=20)
-    metric_value = models.BigIntegerField()
+class ThrottleThreshold(models.Model):
+    name = models.CharField(max_length=255)
+    metric = models.ForeignKey(ThrottleMetric, on_delete=models.CASCADE)
+    limit = models.BigIntegerField(default=-1)
+
+class ThrottleUsage(models.Model):
+    threshold = models.OneToOneField(ThrottleThreshold, on_delete=models.CASCADE)
+    value = models.BigIntegerField(default=0)
 
 class NameValidator(RegexValidator):
     regex = "^[a-zA-Z0-9_-]*$"

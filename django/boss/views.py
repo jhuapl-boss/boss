@@ -144,7 +144,7 @@ class Token(LoginRequiredMixin, View):
 from boss.throttling import RedisMetrics, RedisMetricKey, MetricLimits
 from bosscore.constants import ADMIN_USER
 from django.contrib.auth.models import User
-from bosscore.models import ThrottleThreshold
+from bosscore.models import ThrottleMetric, ThrottleThreshold, ThrottleUsage
 
 class Metric(LoginRequiredMixin, APIView):
     """
@@ -185,21 +185,32 @@ class Metric(LoginRequiredMixin, APIView):
             result = [{ 'name':mk.name, 'value':self.metrics.get_metric(mk), 'units': mk.units, 'type':mk.type } for mk in metricKeys]
         return result
 
+    def _synchLimit(self, name, mtype, limit):
+        units = ThrottleMetric.METRIC_UNITS_BYTES
+        if mtype == ThrottleMetric.METRIC_TYPE_COMPUTE:
+            units = ThrottleMetric.METRIC_UNITS_VOXELS
+        metric = ThrottleMetric.objects.get_or_create(mtype=mtype,units=units)
+        threshold = ThrottleThreshold.objects.get(name=name, metric=metric)
+        if not threshold:
+            if name == 'system':
+                threshold = ThrottleThreshold.objects.create(name=name, metric=metric, limit=metric.def_system_limit)
+            elif name.startswith('api:'):
+                threshold = ThrottleThreshold.objects.create(name=name, metric=metric, limit=metric.def_api_limit)
+            elif name.startswith('user:'):
+                threshold = ThrottleThreshold.objects.create(name=name, metric=metric, limit=metric.def_user_limit)
+    
     def _synchLimits(self):
         limits = MetricLimits()
         # convert limits to json
         for t in limits.system:
-            units = ThrottleThreshold.METRIC_UNITS_BYTES
-            if t == ThrottleThreshold.METRIC_TYPE_COMPUTE:
-                units = ThrottleThreshold.METRIC_UNITS_VOXELS
             limit = limits.system[t]
             if not limit:
                 limit = -1
-            ThrottleThreshold.objects.get_or_create(metric_name='system',metric_type=t,metric_units = units,metric_limit = limit)
+            self._synchLimit('system',t,limit)
         return [limits.system,limits.apis, limits.users]
     
     def _getLimits(self):
-        limitObjects = ThrottleThreshold.objects.get()
+        limitObjects = ThrottleThreshold.objects.filter()
         return limitObjects
 
     def get(self, request):
@@ -222,6 +233,9 @@ class Metric(LoginRequiredMixin, APIView):
         if paths[-1] == 'synch':
             if userIsAdmin:
                 return Response(self._synchLimits())
+        if paths[-1] == 'limits':
+            if userIsAdmin:
+                return Response(self._getLimits())
         if paths[-1] == 'list':
             # list all metrics names
             keys = [k.decode('utf8') for k in self.metrics.conn.keys()]
