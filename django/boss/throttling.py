@@ -360,7 +360,7 @@ class BossThrottle(object):
         current = usage.value
         limit = threshold.limit
 
-        if limit and current > limit:
+        if limit > 0 and current > limit:
             self.blog.info("Current use of {} exceeds threshold {}".format(current,limit))
             details['current_metric'] = current
             details['max_metric'] = limit
@@ -394,7 +394,7 @@ class BossThrottle(object):
             threshold.save()
 
         self.blog.info("Getting current usage for api: {}".format(api))
-        usage = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        usage, created = ThrottleUsage.objects.get_or_create(threshold=threshold)
         current = usage.value
         limit = threshold.limit
 
@@ -429,7 +429,7 @@ class BossThrottle(object):
             threshold.save()
 
         self.blog.info("Getting current usage for system")
-        usage = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        usage, created = ThrottleUsage.objects.get_or_create(threshold=threshold)
         current = usage.value
         limit = threshold.limit
 

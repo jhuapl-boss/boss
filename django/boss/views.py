@@ -173,9 +173,9 @@ class Metric(LoginRequiredMixin, APIView):
         units = ThrottleMetric.METRIC_UNITS_BYTES
         if mtype == ThrottleMetric.METRIC_TYPE_COMPUTE:
             units = ThrottleMetric.METRIC_UNITS_VOXELS
-        metric = ThrottleMetric.objects.get_or_create(mtype=mtype,units=units)
+        metric,created = ThrottleMetric.objects.get_or_create(mtype=mtype,units=units)
         # find threshold by name and metric only
-        threshold = ThrottleThreshold.objects.get_or_create(name=name, metric=metric)
+        threshold, created = ThrottleThreshold.objects.get_or_create(name=name, metric=metric)
         if not limit:
             limit = -1
         threshold.limit = limit
