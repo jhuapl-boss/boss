@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Redesigned to use ORM for limits. This approach allows for adjustment of the limits without 
-# having to 
+# Redesigned to use ORM for limits. 
+# This approach allows for programmatic adjustment of the limits
+# 
 
 from rest_framework.exceptions import Throttled
 from oidc_auth.util import cache
@@ -25,13 +26,12 @@ import json
 import bossutils
 import redis
 
+from bosscore.models import ThrottleMetric, ThrottleThreshold, ThrottleUsage
 from bossutils.logger import bossLogger
-
-# we now stamp each metric with the date so we can aggregate over N days
-from datetime import datetime
 
 THROTTLE_VAULT_TIMEOUT = getattr(django_settings, 'THROTTLE_VAULT_TIMEOUT', 60 * 2) # 2 Minutes
 
+# this method is called repeatedly and requires all limits to have a scalar
 def parse_limit(metric,mtype):
     """Convert a textual representation of a number of bytes into an integer
 
@@ -55,7 +55,7 @@ def parse_limit(metric,mtype):
         val = metric[mtype]
     if val is None:
         return None
-
+    # this approach requires a scalar
     num, unit = val[:-1], val[-1]
     val = float(num) * {
         'K': 1024,
@@ -272,8 +272,8 @@ class BossThrottle(object):
 
     def __init__(self):
         self.blog = bossLogger()
-        self.data = RedisMetrics()
-        self.limits = MetricLimits()
+        #self.data = RedisMetrics()
+        #self.limits = MetricLimits()
 
         boss_config = bossutils.configuration.BossConfig()
         self.topic = boss_config['aws']['prod_mailing_list']
@@ -328,11 +328,13 @@ class BossThrottle(object):
         self.blog.info("Checking for throttling: {},{},{},{},{},{}".format(api,mtype,user.username,cost,units,self.fqdn))
 
         #today = datetime.date(datetime.today())
-        self.check_user(user, RedisMetricKey(user.username, mtype, units), cost, details)
-        self.check_api(api, RedisMetricKey(api, mtype, units), cost, details)
-        self.check_system(RedisMetricKey("system",mtype, units), cost, details)
+        metric, created = ThrottleMetric.objects.get_or_create(mtype=mtype, units=units)
 
-    def check_user(self, user, metricKey, cost, details):
+        self.check_user(user, metric, cost, details)
+        self.check_api(api, metric, cost, details)
+        self.check_system(metric, cost, details)
+
+    def check_user(self, user, metric, cost, details):
         """Check to see if the user is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -349,8 +351,14 @@ class BossThrottle(object):
             Throttle: If the user is throttled
         """
         self.blog.info("Checking limits for user: {}".format(user.username))
-        current = self.data.get_metric(metricKey)
-        limit = self.limits.lookup_user(user,metricKey.type)
+        userMetric = "user:{}".format(user.username)
+        threshold, created = ThrottleThreshold.objects.get_or_create(name=userMetric, metric=metric)
+        if created:
+            threshold.limit = metric.def_user_limit
+            threshold.save()
+        usage, created = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        current = usage.value
+        limit = threshold.limit
 
         if limit and current > limit:
             self.blog.info("Current use of {} exceeds threshold {}".format(current,limit))
@@ -358,10 +366,11 @@ class BossThrottle(object):
             details['max_metric'] = limit
             self.error(user = user, details = details)
 
-        self.blog.info("Incrementing cost by {}".format(cost))
-        self.data.add_metric_cost(metricKey, cost)
+        self.blog.info("Incrementing cost of {} by {}".format(threshold.name, cost))
+        usage.value += cost
+        usage.save()
 
-    def check_api(self, api, metricKey, cost, details):
+    def check_api(self, api, metric, cost, details):
         """Check to see if the API is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -377,21 +386,28 @@ class BossThrottle(object):
         Raises:
             Throttle: If the API is throttled
         """
+        self.blog.info("Getting threshold for api: {}".format(api))
+        apiMetric = "api:{}".format(api)
+        threshold, created = ThrottleThreshold.objects.get_or_create(name=apiMetric, metric=metric)
+        if created:
+            threshold.limit = metric.def_api_limit
+            threshold.save()
+
         self.blog.info("Getting current usage for api: {}".format(api))
-        current = self.data.get_metric(metricKey)
-        self.blog.info("Getting limit for api: {}".format(api))
-        max = self.limits.lookup_api(api, metricKey.type)
+        usage = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        current = usage.value
+        limit = threshold.limit
 
-
-        if max and current > max:
+        if limit > 0 and current > limit:
             details['current_metric'] = current
-            details['max_metric'] = max
+            details['max_metric'] = limit
             self.error(api = api, details = details)
 
-        self.blog.info("Incrementing {} cost by {}".format(api, cost))
-        self.data.add_metric_cost(metricKey, cost)
+        self.blog.info("Incrementing {} cost by {}".format(threshold.name, cost))
+        usage.value += cost
+        usage.save()
 
-    def check_system(self, metricKey, cost, details):
+    def check_system(self, metric, cost, details):
         """Check to see if the System is currently throttled
 
         NOTE: This method will increment the current metric value by cost
@@ -407,13 +423,22 @@ class BossThrottle(object):
             Throttle: If the system is throttled
         """
         self.blog.info("Checking limits for system")
-        current = self.data.get_metric(metricKey)
-        max = self.limits.lookup_system(metricKey.type)
+        threshold, created = ThrottleThreshold.objects.get_or_create(name="system", metric=metric)
+        if created:
+            threshold.limit = metric.def_system_limit
+            threshold.save()
 
-        if max and current > max:
+        self.blog.info("Getting current usage for system")
+        usage = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        current = usage.value
+        limit = threshold.limit
+
+        if limit > 0 and current > limit:
             details['current_metric'] = current
-            details['max_metric'] = max
-            self.error(system = True, details = details)
+            details['max_metric'] = limit
+            self.error(api = api, details = details)
 
-        self.blog.info("Incrementing system cost by {}".format(cost))
-        self.data.add_metric_cost(metricKey, cost)
+        self.blog.info("Incrementing {} cost by {}".format(threshold.name, cost))
+        usage.value += cost
+        usage.save()
+

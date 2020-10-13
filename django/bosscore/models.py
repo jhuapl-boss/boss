@@ -21,8 +21,10 @@ from django.dispatch import receiver
 class ThrottleMetric(models.Model):
     METRIC_UNITS_BYTES = 'byte_count'
     METRIC_UNITS_VOXELS = 'voxel_count'
+    METRIC_UNITS_CUBOIDS = 'cuboid_count'
     METRIC_UNITS = (
         (METRIC_UNITS_BYTES,'Threshold in bytes'),
+        (METRIC_UNITS_CUBOIDS, 'Threshold in cuboids'),
         (METRIC_UNITS_VOXELS,'Threshold in voxels')
     )
     METRIC_TYPE_EGRESS = 'egress'

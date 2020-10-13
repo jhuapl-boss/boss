@@ -33,6 +33,7 @@ from bosscore.models import Channel
 
 from boss import utils
 from boss.throttling import BossThrottle
+from bosscore.models import ThrottleMetric
 
 from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb.spatialdb.rediskvio import RedisKVIO
@@ -135,9 +136,9 @@ class Cutout(APIView):
                ) # Calculating the number of bytes
 
         # seprate direction of movement from api and provide units of metric
-        BossThrottle().check('cutout','egress',
+        BossThrottle().check('cutout',ThrottleMetric.METRIC_TYPE_EGRESS,
                              request.user,
-                             cost,'bytes')
+                             cost,ThrottleMetric.METRIC_UNITS_BYTES)
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
@@ -254,9 +255,9 @@ class Cutout(APIView):
                / 8
                ) # Calculating the number of bytes
 
-        BossThrottle().check('cutout','ingress',
+        BossThrottle().check('cutout',ThrottleMetric.METRIC_TYPE_INGRESS,
                              request.user,
-                             cost,'bytes')
+                             cost,ThrottleMetric.METRIC_UNITS_BYTES)
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [

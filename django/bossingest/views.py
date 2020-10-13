@@ -37,6 +37,7 @@ from bosscore.models import Collection, Experiment, Channel
 from bossingest.models import IngestJob
 from bossutils.logger import bossLogger
 from boss.throttling import BossThrottle
+from bosscore.models import ThrottleMetric
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
@@ -261,7 +262,7 @@ class IngestJobView(IngestServiceView):
                 * (extent['t'][1] - extent['t'][0]) 
                 )
             cost = costInPixels * bytesPerPixel
-            BossThrottle().check('ingest','ingress',request.user,cost,'bytes')
+            BossThrottle().check('ingest',ThrottleMetric.METRIC_TYPE_INGRESS,request.user,cost,ThrottleMetric.METRIC_UNITS_BYTES)
 
             boss_config = bossutils.configuration.BossConfig()
             dimensions = [

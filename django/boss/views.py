@@ -169,49 +169,52 @@ class Metric(LoginRequiredMixin, APIView):
         """
         return User.objects.get(username=ADMIN_USER)
         
-    def _getMetrics(self,metricName):
-        """
-        Get metrics that match metric name
-
-        Args: 
-            metricName (str): name of metric
-        
-        Returns: result object containing selected metrics
-        """
-        keys = self.metrics.get_metrics(metricName)
-        result = {'metric':metricName, 'values':[]}
-        metricKeys = [RedisMetricKey(key=k) for k in keys]
-        if metricKeys:
-            result = [{ 'name':mk.name, 'value':self.metrics.get_metric(mk), 'units': mk.units, 'type':mk.type } for mk in metricKeys]
-        return result
-
     def _synchLimit(self, name, mtype, limit):
         units = ThrottleMetric.METRIC_UNITS_BYTES
         if mtype == ThrottleMetric.METRIC_TYPE_COMPUTE:
             units = ThrottleMetric.METRIC_UNITS_VOXELS
         metric = ThrottleMetric.objects.get_or_create(mtype=mtype,units=units)
-        threshold = ThrottleThreshold.objects.get(name=name, metric=metric)
-        if not threshold:
-            if name == 'system':
-                threshold = ThrottleThreshold.objects.create(name=name, metric=metric, limit=metric.def_system_limit)
-            elif name.startswith('api:'):
-                threshold = ThrottleThreshold.objects.create(name=name, metric=metric, limit=metric.def_api_limit)
-            elif name.startswith('user:'):
-                threshold = ThrottleThreshold.objects.create(name=name, metric=metric, limit=metric.def_user_limit)
-    
+        # find threshold by name and metric only
+        threshold = ThrottleThreshold.objects.get_or_create(name=name, metric=metric)
+        if not limit:
+            limit = -1
+        threshold.limit = limit
+        threshold.save()
+
     def _synchLimits(self):
         limits = MetricLimits()
         # convert limits to json
         for t in limits.system:
-            limit = limits.system[t]
-            if not limit:
-                limit = -1
-            self._synchLimit('system',t,limit)
-        return [limits.system,limits.apis, limits.users]
-    
+            self._synchLimit('system',t,limits.system[t])
+        for api in limits.apis:
+            for t in limits.apis[api]:
+                self._synchLimit("api:%s"%api,t,limits.apis[api][t])
+        for user in limits.users:
+            for t in limits.users[user]:
+                self._synchLimit("user:%s"%user,t,limits.users[user][t])
+        return self._getLimits()
+
     def _getLimits(self):
         limitObjects = ThrottleThreshold.objects.filter()
-        return limitObjects
+        limits = []
+        for limit in limitObjects:
+            limits.append({ 'name': limit.name, 'type':limit.metric.mtype, 'units':limit.metric.units, 'limit':limit.limit})
+        return limits
+    
+    def _getUsage(self, name):
+        usageObjects = None
+        usageList = []
+        if name == '*':
+            usageObjects = ThrottleUsage.objects.filter()
+        else:
+            usageObjects = ThrottleUsage.objects.filter(name=name)
+        for usage in usageObjects:
+            usageList.append({'name':usage.threshold.name, 
+                              'type':usage.threshold.metric.mtype,
+                              'units':usage.threshold.metric.units,
+                              'limit':usage.threshold.limit,
+                              'usage':usage.value})
+        return usageList
 
     def get(self, request):
         """
@@ -223,8 +226,6 @@ class Metric(LoginRequiredMixin, APIView):
             user=<username> will return metrics for provided user
 
         """
-        if self.metrics.conn == None:
-            return Response("No redis connection")
         paths = request.path_info.split("/")
         metric = request.GET.get('metric')
         user = request.GET.get('user',str(request.user))
@@ -238,8 +239,10 @@ class Metric(LoginRequiredMixin, APIView):
                 return Response(self._getLimits())
         if paths[-1] == 'list':
             # list all metrics names
-            keys = [k.decode('utf8') for k in self.metrics.conn.keys()]
-            metrics = set([RedisMetricKey(key=k).name for k in keys])
+            metricNames = []
+            for usage in ThrottleUsage.objects.filter():
+                metricNames.append(usage.threshold.name)
+            metrics = set(metricNames)
             return Response(metrics)
         
         if paths[-1] == 'all':
