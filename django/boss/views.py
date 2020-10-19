@@ -141,7 +141,7 @@ class Token(LoginRequiredMixin, View):
         """.format(request.path_info, content, button)
         return HttpResponse(html)
 
-from boss.throttling import RedisMetrics, RedisMetricKey, MetricLimits
+from boss.throttling import MetricDatabase
 from bosscore.constants import ADMIN_USER
 from django.contrib.auth.models import User
 from bosscore.models import ThrottleMetric, ThrottleThreshold, ThrottleUsage
@@ -159,7 +159,7 @@ class Metric(LoginRequiredMixin, APIView):
         Initialize the view with RedisMetrics object
         """
         self.blog = bossLogger()
-        self.metrics = RedisMetrics()
+        self.metricdb = MetricDatabase()
 
     def _get_admin_user(self):
         """
@@ -169,106 +169,13 @@ class Metric(LoginRequiredMixin, APIView):
         """
         return User.objects.get(username=ADMIN_USER)
         
-    def _synchLimit(self, name, mtype, limit):
-        units = ThrottleMetric.METRIC_UNITS_BYTES
-        if mtype == ThrottleMetric.METRIC_TYPE_COMPUTE:
-            units = ThrottleMetric.METRIC_UNITS_VOXELS
-        metric,created = ThrottleMetric.objects.get_or_create(mtype=mtype,units=units)
-        # find threshold by name and metric only
-        threshold, created = ThrottleThreshold.objects.get_or_create(name=name, metric=metric)
-        if not limit:
-            limit = -1
-        threshold.limit = limit
-        threshold.save()
-
-    def _synchLimits(self):
-        limits = MetricLimits()
-        # convert limits to json
-        for t in limits.system:
-            self._synchLimit('system',t,limits.system[t])
-        for api in limits.apis:
-            for t in limits.apis[api]:
-                self._synchLimit("api:%s"%api,t,limits.apis[api][t])
-        for user in limits.users:
-            for t in limits.users[user]:
-                self._synchLimit("user:%s"%user,t,limits.users[user][t])
-        return self._getLimits()
-
-    def _getLimits(self):
-        limitObjects = ThrottleThreshold.objects.filter()
-        limits = []
-        for limit in limitObjects:
-            limits.append({ 'name': limit.name, 'type':limit.metric.mtype, 'units':limit.metric.units, 'limit':limit.limit})
-        return limits
-        
-    def _getUsage(self, name):
-        usageObjects = []
-        usageList = []
-        if name == '*':
-            usageObjects = ThrottleUsage.objects.filter()
-        else:
-            thresholds = ThrottleThreshold.objects.filter(name=name)
-            for threshold in thresholds:
-                usages = ThrottleUsage.objects.filter(threshold=threshold)
-                for usageObject in usages:
-                    usageObjects.append(usageObject)
-        for usage in usageObjects:
-            usageList.append({'name':usage.threshold.name,
-                              'type':usage.threshold.metric.mtype,
-                              'units':usage.threshold.metric.units,
-                              'limit':usage.threshold.limit,
-                              'usage':usage.value})
-        return usageList
-    
-    def _parseLimit(self, limit):
-        parts = re.split(r'\s',limit)
-        limit = int(parts[0])
-        mult = 1
-        if len(parts) > 1:
-            suffix = parts[1].upper()
-            if suffix == 'K':
-                mult = 1024
-            if suffix == 'M':
-                mult = 1024 * 1024
-            if suffix == 'G':
-                mult = 1024 * 1024 * 1024
-        return limit * mult
-
-    def _updateMetric(self, metric):
-        mtype = metric['mtype']
-        metricObject,created = ThrottleMetric.objects.get_or_create(mtype=mtype)
-        if mtype == 'compute':
-            metricObject.units = ThrottleMetric.METRIC_UNITS_CUBOIDS
-        else:
-            metricObject.units = ThrottleMetric.METRIC_UNITS_BYTES
-        if 'def_system_limit' in metric:
-            metricObject.def_system_limit = self._parseLimit(metric['def_system_limit'])
-        if 'def_api_limit' in metric:
-            metricObject.def_api_limit = self._parseLimit(metric['def_api_limit'])
-        if 'def_user_limit' in metric:
-            metricObject.def_user_limit = self._parseLimit(metric['def_user_limit'])
-        metricObject.save()
-
-    def _updateThreshold(self, threshold):
-        name = threshold['name']
-        mtype = threshold['mtype']
-        limit = self._parseLimit(threshold['limit'])
-        metrics = ThrottleMetric.objects.filter(mtype=mtype)
-        thresholdObject,created = ThrottleThreshold.objects.get_or_create(name=name,metric=metrics[0])
-        thresholdObject.limit = limit
-        thresholdObject.save()
-
     def put(self, request):
         self.blog.info("received request data: %s"%request.data)
         paths = request.path_info.split("/")
         if paths[-1] == 'metrics':
-            metrics = request.data
-            for m in metrics:
-                self._updateMetric(m)
+            self.metricdb.updateMetrics(request.data)
         if paths[-1] == 'thresholds':
-            thresholds = request.data
-            for t in thresholds:
-                self._updateThreshold(t)
+            self.metricdb.updateThresholds(request.data)
         return HttpResponse(status=201)
 
     def get(self, request):
@@ -286,29 +193,31 @@ class Metric(LoginRequiredMixin, APIView):
         user = request.GET.get('user',str(request.user))
         # determine response
         userIsAdmin = request.user == self._get_admin_user()
-        if paths[-1] == 'synch':
-            if userIsAdmin:
-                return Response(self._synchLimits())
         if paths[-1] == 'limits':
             if userIsAdmin:
-                return Response(self._getLimits())
+                return Response(self.metricdb.getLimitsAsJson())
         if paths[-1] == 'list':
-            # list all metrics names
+            # list all usage metric names
             metricNames = []
-            for usage in ThrottleUsage.objects.filter():
+            for usage in self.metricdb.getAllUsage():
                 metricNames.append(usage.threshold.name)
             metrics = set(metricNames)
             return Response(metrics)
         
         if paths[-1] == 'all':
-            metric = "*"
+            metric = '*'
 
         # show specific metric values 
         if not metric:
-            metric = "user:%s"%user
-        metricIsUser = metric.endswith(str(request.user))
+            metric = self.metricdb.encodeMetric(MetricDatabase.USER_LEVEL_METRIC, user)
+        metricIsUser = metric.endswith(user)
         userIsAdmin = request.user == self._get_admin_user()
         # make sure only admin user can see other metrics
         if metricIsUser or userIsAdmin:
-            return Response(self._getUsage(metric))
+            usages = []
+            if metric == '*':
+                usages = self.metricdb.getAllUsage()
+            else:
+                usages = self.metricdb.getUsages(metric)
+            return Response(self.metricdb.getUsageAsJson(usages))
         return Response("Unauthorized request")

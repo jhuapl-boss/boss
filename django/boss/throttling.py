@@ -29,227 +29,123 @@ import redis
 from bosscore.models import ThrottleMetric, ThrottleThreshold, ThrottleUsage
 from bossutils.logger import bossLogger
 
-# this method is called repeatedly and requires all limits to have a scalar
-def parse_limit(metric,mtype):
-    """Convert a textual representation of a number of bytes into an integer
 
-    NOTE: If val is None then None is returned
-
-    Args:
-        metric (dict): maps metric types to metric limits
-        mtype (str) 
-
-        metric[mtype] has format:
-                    <num><scalar> where
-                    <num> - is a float
-                    <scalar> is one of K, M, G, T, P for
-                        kilobytes, megabytes, gigabytes, terabytes, petabytes
-
-    Returns:
-        int: Number of bytes
+class MetricDatabase(object):
+    """Object wrapper for metric tables
     """
-    val = None
-    if metric and mtype in metric:
-        val = metric[mtype]
-    if val is None:
-        return None
-    # this approach requires a scalar
-    num, unit = val[:-1], val[-1]
-    val = float(num) * {
-        'K': 1024,
-        'M': 1024 * 1024,
-        'G': 1024 * 1024 * 1024,
-        'T': 1024 * 1024 * 1024 * 1024,
-        'P': 1024 * 1024 * 1024 * 1024 * 1024,
-    }[unit.upper()]
-
-    return int(val) # Returning an int, as redis works with ints
-
-def _redisKeyNamePattern(metricName):
-    """Get a redis search pattern to match metrics by name
-
-    Args: 
-        metricName (str): The name of the metric
-    
-    Returns: format string that can be used as a search pattern
-    """
-    return "{}*".format(metricName)
-
-class RedisMetricKey(object):
-    # redis key for metric encoded with type and units
-    def __init__(self, name="system", mtype="ingress", units="bytes", key=None):
-        """Initialize key with name, type, and units or from a key
-           Args:
-            name (str): The name of the metric (system, <api>, or <username>)
-            mtype (str): The type of metric e.g. ingress, egress, compute
-            units (str): The units of the cost e.g. bytes, cuboids
-            key (str): an encoded key
-        """
-        if key:
-            self.fromKey(key)
-        else:
-            self.name = name
-            self.type = mtype
-            self.units = units
-    def fromKey(self, key):
-        """Read encoded key
-           Args:
-               key (str): encoded key
-        """
-        parts = key.split("_")
-        self.name, self.type, self.units = parts
-        return self
-    def toKey(self):
-        """Encode metric parts
-           
-           Returns key (str)
-        """
-        return "_".join([self.name,self.type,self.units])
-    
-class RedisMetrics(object):
-    # NOTE: If there is no throttling redis instance the other methods don't do anything
-    # NOTE: External process will reset values to zero when the window expires
-    # {obj}_metric = current_cost_in_window
-    """
-    Object for interacting with a Redis instance storing metric data
-
-    NOTE: If there is no throttling Redis instance the methods don't do anything
-    NOTE: An external process will reset the metrics to zero when the time window expires
-
-    Redis data format: {obj}_metric = current_usage_in_window
-    """
-
+    SYSTEM_LEVEL_METRIC = 'system'
+    API_LEVEL_METRIC = 'api'
+    USER_LEVEL_METRIC = 'user'
     def __init__(self):
         self.blog = bossLogger()
-        boss_config = bossutils.configuration.BossConfig()
-        if len(boss_config['aws']['cache-throttle']) > 0:
-            self.conn = redis.StrictRedis(boss_config['aws']['cache-throttle'],
-                                          6379,
-                                          boss_config['aws']['cache-throttle-db'])
-        else:
-            self.conn = None
-    def get_metrics(self, metricName):
-        """Get the metrics that match name
-        Args: 
-           metricName(str): name of metric
+        self.blog.info("MetricDatabase object created")
 
-        Returns: list of metricKey objects
-        """
-        if not self.conn:
-           return None
-        return [k.decode('utf8') for k in self.conn.keys(pattern=_redisKeyNamePattern(metricName))]
-
-    def get_metric(self, metricKey):
-        """Get the current metric value for the given object
-
-        Args:
-            metricKey (RedisMetricKey): The metric key object
-            
-
-        Returns:
-            int: Current metric value or zero if there is no Redis instance or no Redis key
-        """
-        if self.conn is None:
-            return 0
-
-        key = metricKey.toKey()
-        resp = self.conn.get(key)
-        if resp is None:
-            resp = 0
-        else:
-            resp = int(resp.decode('utf8'))
-        return resp
-
-    def add_metric_cost(self, metricKey, val):
-        """Increment the current metric value by the given value for the given object
-
-        NOTE: If there is no Redis instance this method doesn't do anything
-
-        Args:
-            metricKey (RedisMetricKey): The metric key object 
-            val (float|int): Value by which to increase the current metric value
-                             NOTE: Value will be converted into an integer
-        """
-        if self.conn is None:
-            return
-
-        key = metricKey.toKey()
-        self.conn.incrby(key, int(val))
-
-class MetricLimits(object):
-    """Object for reading metric limits
-
-    NOTE: Values are read once from Vault on initialization
-    """
-    def __init__(self):
-        self.blog = bossLogger()
-        data = self.read_vault()
-
-        self.system = data.get('system')
-        self.apis = data.get('apis')
-        self.users = data.get('users')
-        self.groups = data.get('groups')
-        self.default_user = data.get('default_user')
-
-    @cache(ttl=THROTTLE_VAULT_TIMEOUT)
-    def read_vault(self):
-        vault = bossutils.vault.Vault()
-        data = vault.read('secret/endpoint/throttle', 'config')
-        data = json.loads(data)
-        return data
-
-    def lookup_system(self, mtype):
-        """Return the current metric limit for the entire system by type
+    def getLimitsAsJson(self):
+        limitObjects = ThrottleThreshold.objects.filter()
+        return [{ 'metric': limit.name, 
+                  'mtype':limit.metric.mtype, 
+                  'units':limit.metric.units, 
+                  'limit':limit.limit} for limit in limitObjects]
         
-        Args:
-            mtype (str) : The metric type
+    def getAllUsage(self):
+        return ThrottleUsage.objects.filter()
+    
+    def getUsages(self, name):
+        usages = []
+        thresholds = ThrottleThreshold.objects.filter(name=name)
+        for t in thresholds:
+            usageObjects = ThrottleUsage.objects.filter(threshold=t)
+            for u in usageObjects:
+                usages.append(u)
+        return usages
 
-        Returns:
-            int or None
-        """
-        return parse_limit(self.system, mtype)
+    def encodeMetric(self, level, name=None):
+        if level == MetricDatabase.SYSTEM_LEVEL_METRIC:
+            return level
+        return "{}:{}".format(level,name)
+    
+    def decodeMetric(self, metricName):
+        parts = metricName.split(":")
+        if len(parts) > 1:
+            return parts[0],parts[1]
+        return parts[0], None
 
-    def lookup_api(self, api, mtype):
-        """Return the current metric limit for the given API
+    def mapUnits(self, mtype):
+        if mtype == ThrottleMetric.METRIC_TYPE_COMPUTE:
+            return ThrottleMetric.METRIC_UNITS_CUBOIDS
+        return ThrottleMetric.METRIC_UNITS_BYTES
 
-        Args:
-            api (str): Name of the API to get the metric limit for
-            mtype (str) : The metric type
+    def getMetric(self, mtype, units=None):
+        if not units:
+            units = self.mapUnits(mtype)
+        metric,created = ThrottleMetric.objects.get_or_create(mtype=mtype, units=units)
+        if created:
+            self.blog.info("Created metric {} with units {}".format(metric.mtype, metric.units))
+        return metric
+    
+    def getThreshold(self, name, metric):
+        threshold, created = ThrottleThreshold.objects.get_or_create(name=name, metric=metric)
+        if created:
+            if name.startswith(MetricDatabase.USER_LEVEL_METRIC):
+                threshold.limit = metric.def_user_limit
+            elif name.startswith(MetricDatabase.API_LEVEL_METRIC):
+                threshold.limit = metric.def_api_limit
+            else:
+                threshold.limit = metric.def_system_limit
+            threshold.save()
+        return threshold
 
-        Returns:
-            int or None
-        """
-        return parse_limit(self.apis.get(api),mtype)
+    def getUsage(self, name, metric):
+        threshold = self.getThreshold(name, metric)
+        usage,_ = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        return usage
+    
+    def getUsageAsJson(self, usageObjects):
+        return [{"metric":u.threshold.name,
+                 "mtype":u.threshold.metric.mtype,
+                 "units":u.threshold.metric.units,
+                 "limit":u.threshold.limit,
+                 "value":u.value} for u in usageObjects]
+    
+    def updateMetrics(self, metricUpdates):
+        for m in metricUpdates:
+            mtype = m['mtype']
+            metric = self.getMetric(mtype=mtype)
+            if 'def_user_limit' in m:
+                metric.def_user_limit = m['def_user_limit']
+            if 'def_api_limit' in m:
+                metric.def_api_limit = m['def_api_limit']
+            if 'def_system_limit':
+                metric.def_system_limit = m['def_system_limit']
+            metric.save()
 
-    def lookup_user(self, user, mtype):
-        """Return the current metric limit for the given user
+    def updateThreshold(self, name, mtype, limit):
+        metric = self.getMetric(mtype)
+        threshold = self.getThreshold(name, metric)
+        threshold.limit = limit
+        threshold.save()
 
-        A user's metric limit can either be the value given specifically
-        to the user or it can be the maximum metric limit for all of the
-        groups that the user is a part of.
-
-        Args:
-            user (User): Django user object to get the metric limit for
-            mtype (str) : The metric type
-
-        Returns:
-            int or None
-        """
-        # User specific settings will override any group based limits
-        if user.username in self.users:
-            return parse_limit(self.users[user.username],mtype)
-
-        # Find the largest limit for all groups the user is a member of
-        limits = [parse_limit(self.groups[group.name],mtype)
-                  for group in user.groups.all()
-                  if group.name in self.groups]
-
-        if None in limits:
-            return None
-        elif len(limits) > 0:
-            return max(limits)
-        else:
-            return parse_limit(self.default_user,mtype)
+    def parseLimit(self, limitStr):
+        scalar = 1
+        if not limitStr.isdigit():
+            symbol = limitStr[-1:].upper()
+            if symbol == 'K':
+                scalar = 1024
+            elif symbol == 'M':
+                scalar = 1024*1024
+            elif symbol == 'G':
+                scalar = 1024*1024*1024
+            elif symbol == 'T':
+                scalar = 1024*1024*1024*1024
+            limitStr=limitStr[:-1].strip()
+        return int(limitStr)*scalar
+    
+    def updateThresholds(self, thresholdUpdates):
+        for t in thresholdUpdates:
+            name = t['metric']
+            mtype = t['mtype']
+            limit = self.parseLimit(t['limit'])
+            self.updateThreshold(name, mtype, limit)
 
 class BossThrottle(object):
     """Object for checking if a given API call is throttled
@@ -270,9 +166,7 @@ class BossThrottle(object):
 
     def __init__(self):
         self.blog = bossLogger()
-        #self.data = RedisMetrics()
-        #self.limits = MetricLimits()
-
+        self.metricdb = MetricDatabase()
         boss_config = bossutils.configuration.BossConfig()
         self.topic = boss_config['aws']['prod_mailing_list']
         self.fqdn = boss_config['system']['fqdn']
@@ -325,8 +219,7 @@ class BossThrottle(object):
         details = {'api': api, 'user': user.username, 'cost': cost, 'fqdn': self.fqdn}
         self.blog.info("Checking for throttling: {},{},{},{},{},{}".format(api,mtype,user.username,cost,units,self.fqdn))
 
-        #today = datetime.date(datetime.today())
-        metric,_ = ThrottleMetric.objects.get_or_create(mtype=mtype, units=units)
+        metric = self.metricdb.getMetric(mtype, units)
 
         self.check_user(user, metric, cost, details)
         self.check_api(api, metric, cost, details)
@@ -348,15 +241,11 @@ class BossThrottle(object):
         Raises:
             Throttle: If the user is throttled
         """
-        self.blog.info("Checking limits for user: {}".format(user.username))
-        userMetric = "user:{}".format(user.username)
-        threshold, created = ThrottleThreshold.objects.get_or_create(name=userMetric, metric=metric)
-        if created:
-            threshold.limit = metric.def_user_limit
-            threshold.save()
-        usage, created = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        userMetric = self.metricdb.encodeMetric(MetricDatabase.USER_LEVEL_METRIC, user.name)
+        self.blog.info("Checking limits for user: {}".format(userMetric))
+        usage = self.metricdb.getUsage(userMetric, metric)
         current = usage.value
-        limit = threshold.limit
+        limit = usage.threshold.limit
 
         if limit > 0 and current > limit:
             self.blog.info("Current use of {} exceeds threshold {}".format(current,limit))
@@ -364,7 +253,7 @@ class BossThrottle(object):
             details['max_metric'] = limit
             self.error(user = user, details = details)
 
-        self.blog.info("Incrementing cost of {} by {}".format(threshold.name, cost))
+        self.blog.info("Incrementing cost of {} by {}".format(usage.threshold.name, cost))
         usage.value += cost
         usage.save()
 
@@ -384,24 +273,17 @@ class BossThrottle(object):
         Raises:
             Throttle: If the API is throttled
         """
-        apiMetric = "api:{}".format(api)
-        self.blog.info("Getting threshold for {}".format(apiMetric))
-        threshold, created = ThrottleThreshold.objects.get_or_create(name=apiMetric, metric=metric)
-        if created:
-            threshold.limit = metric.def_api_limit
-            threshold.save()
-
-        self.blog.info("Getting current usage for {}".format(apiMetric))
-        usage, created = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        apiMetric = self.metricdb.encodeMetric(MetricDatabase.API_LEVEL_METRIC, api)
+        usage = self.metricdb.getUsage(apiMetric, metric)
         current = usage.value
-        limit = threshold.limit
+        limit = usage.threshold.limit
 
         if limit > 0 and current > limit:
             details['current_metric'] = current
             details['max_metric'] = limit
             self.error(api = api, details = details)
 
-        self.blog.info("Incrementing {} cost by {}".format(threshold.name, cost))
+        self.blog.info("Incrementing {} cost by {}".format(usage.threshold.name, cost))
         usage.value += cost
         usage.save()
 
@@ -412,8 +294,8 @@ class BossThrottle(object):
               if not throttled
 
         Args:
-            metricKey (RedisMetricKey): encoded metric key
-            cost (float|int): Cost of the API call being made
+            metric (ThrottleMetric): metric object
+            cost (int): Cost of the API call being made
             details (dict): General information about the call to be
                             used when notifying administrators
 
@@ -421,22 +303,17 @@ class BossThrottle(object):
             Throttle: If the system is throttled
         """
         self.blog.info("Checking limits for system")
-        threshold, created = ThrottleThreshold.objects.get_or_create(name="system", metric=metric)
-        if created:
-            threshold.limit = metric.def_system_limit
-            threshold.save()
-
-        self.blog.info("Getting current usage for system")
-        usage, created = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        systemMetric = self.metricdb.encodeMetric(MetricDatabase.SYSTEM_LEVEL_METRIC)
+        usage = self.metricdb.getUsage(systemMetric, metric)
         current = usage.value
-        limit = threshold.limit
+        limit = usage.threshold.limit
 
         if limit > 0 and current > limit:
             details['current_metric'] = current
             details['max_metric'] = limit
-            self.error(api = api, details = details)
+            self.error(system = MetricDatabase.SYSTEM_LEVEL_METRIC, details = details)
 
-        self.blog.info("Incrementing {} cost by {}".format(threshold.name, cost))
+        self.blog.info("Incrementing {} cost by {}".format(usage.threshold.name, cost))
         usage.value += cost
         usage.save()
 
