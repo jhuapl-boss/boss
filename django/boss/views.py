@@ -200,21 +200,76 @@ class Metric(LoginRequiredMixin, APIView):
         for limit in limitObjects:
             limits.append({ 'name': limit.name, 'type':limit.metric.mtype, 'units':limit.metric.units, 'limit':limit.limit})
         return limits
-    
+        
     def _getUsage(self, name):
-        usageObjects = None
+        usageObjects = []
         usageList = []
         if name == '*':
             usageObjects = ThrottleUsage.objects.filter()
         else:
-            usageObjects = ThrottleUsage.objects.filter(name=name)
+            thresholds = ThrottleThreshold.objects.filter(name=name)
+            for threshold in thresholds:
+                usages = ThrottleUsage.objects.filter(threshold=threshold)
+                for usageObject in usages:
+                    usageObjects.append(usageObject)
         for usage in usageObjects:
-            usageList.append({'name':usage.threshold.name, 
+            usageList.append({'name':usage.threshold.name,
                               'type':usage.threshold.metric.mtype,
                               'units':usage.threshold.metric.units,
                               'limit':usage.threshold.limit,
                               'usage':usage.value})
         return usageList
+    
+    def _parseLimit(self, limit):
+        parts = re.split(r'\s',limit)
+        limit = int(parts[0])
+        mult = 1
+        if len(parts) > 1:
+            suffix = parts[1].upper()
+            if suffix == 'K':
+                mult = 1024
+            if suffix == 'M':
+                mult = 1024 * 1024
+            if suffix == 'G':
+                mult = 1024 * 1024 * 1024
+        return limit * mult
+
+    def _updateMetric(self, metric):
+        mtype = metric['mtype']
+        metricObject,created = ThrottleMetric.objects.get_or_create(mtype=mtype)
+        if mtype == 'compute':
+            metricObject.units = ThrottleMetric.METRIC_UNITS_CUBOIDS
+        else:
+            metricObject.units = ThrottleMetric.METRIC_UNITS_BYTES
+        if 'def_system_limit' in metric:
+            metricObject.def_system_limit = self._parseLimit(metric['def_system_limit'])
+        if 'def_api_limit' in metric:
+            metricObject.def_api_limit = self._parseLimit(metric['def_api_limit'])
+        if 'def_user_limit' in metric:
+            metricObject.def_user_limit = self._parseLimit(metric['def_user_limit'])
+        metricObject.save()
+
+    def _updateThreshold(self, threshold):
+        name = threshold['name']
+        mtype = threshold['mtype']
+        limit = self._parseLimit(threshold['limit'])
+        metrics = ThrottleMetric.objects.filter(mtype=mtype)
+        thresholdObject,created = ThrottleThreshold.objects.get_or_create(name=name,metric=metrics[0])
+        thresholdObject.limit = limit
+        thresholdObject.save()
+
+    def put(self, request):
+        self.blog.info("received request data: %s"%request.data)
+        paths = request.path_info.split("/")
+        if paths[-1] == 'metrics':
+            metrics = request.data
+            for m in metrics:
+                self._updateMetric(m)
+        if paths[-1] == 'thresholds':
+            thresholds = request.data
+            for t in thresholds:
+                self._updateThreshold(t)
+        return HttpResponse(status=201)
 
     def get(self, request):
         """
@@ -250,10 +305,10 @@ class Metric(LoginRequiredMixin, APIView):
 
         # show specific metric values 
         if not metric:
-            metric = user
-        metricIsUser = metric == str(request.user)
+            metric = "user:%s"%user
+        metricIsUser = metric.endswith(str(request.user))
         userIsAdmin = request.user == self._get_admin_user()
         # make sure only admin user can see other metrics
         if metricIsUser or userIsAdmin:
-            return Response(self._getMetrics(metric))
+            return Response(self._getUsage(metric))
         return Response("Unauthorized request")

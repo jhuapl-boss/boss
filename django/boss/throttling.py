@@ -29,8 +29,6 @@ import redis
 from bosscore.models import ThrottleMetric, ThrottleThreshold, ThrottleUsage
 from bossutils.logger import bossLogger
 
-THROTTLE_VAULT_TIMEOUT = getattr(django_settings, 'THROTTLE_VAULT_TIMEOUT', 60 * 2) # 2 Minutes
-
 # this method is called repeatedly and requires all limits to have a scalar
 def parse_limit(metric,mtype):
     """Convert a textual representation of a number of bytes into an integer
@@ -328,7 +326,7 @@ class BossThrottle(object):
         self.blog.info("Checking for throttling: {},{},{},{},{},{}".format(api,mtype,user.username,cost,units,self.fqdn))
 
         #today = datetime.date(datetime.today())
-        metric, created = ThrottleMetric.objects.get_or_create(mtype=mtype, units=units)
+        metric,_ = ThrottleMetric.objects.get_or_create(mtype=mtype, units=units)
 
         self.check_user(user, metric, cost, details)
         self.check_api(api, metric, cost, details)
@@ -386,14 +384,14 @@ class BossThrottle(object):
         Raises:
             Throttle: If the API is throttled
         """
-        self.blog.info("Getting threshold for api: {}".format(api))
         apiMetric = "api:{}".format(api)
+        self.blog.info("Getting threshold for {}".format(apiMetric))
         threshold, created = ThrottleThreshold.objects.get_or_create(name=apiMetric, metric=metric)
         if created:
             threshold.limit = metric.def_api_limit
             threshold.save()
 
-        self.blog.info("Getting current usage for api: {}".format(api))
+        self.blog.info("Getting current usage for {}".format(apiMetric))
         usage, created = ThrottleUsage.objects.get_or_create(threshold=threshold)
         current = usage.value
         limit = threshold.limit
