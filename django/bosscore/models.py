@@ -17,6 +17,7 @@ from django.contrib.auth.models import Group
 from django.core.validators import RegexValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from datetime import date
 
 class ThrottleMetric(models.Model):
     METRIC_UNITS_BYTES = 'byte_count'
@@ -49,6 +50,7 @@ class ThrottleThreshold(models.Model):
 class ThrottleUsage(models.Model):
     threshold = models.OneToOneField(ThrottleThreshold, on_delete=models.CASCADE)
     value = models.BigIntegerField(default=0)
+    since = models.DateField(default=date.today)
 
 class NameValidator(RegexValidator):
     regex = "^[a-zA-Z0-9_-]*$"

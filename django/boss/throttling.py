@@ -28,10 +28,12 @@ import redis
 
 from bosscore.models import ThrottleMetric, ThrottleThreshold, ThrottleUsage
 from bossutils.logger import bossLogger
-
+from datetime import date
 
 class MetricDatabase(object):
     """Object wrapper for metric tables
+       Provides json object methods for rest API support
+       
     """
     SYSTEM_LEVEL_METRIC = 'system'
     API_LEVEL_METRIC = 'api'
@@ -98,6 +100,12 @@ class MetricDatabase(object):
     def getUsage(self, name, metric):
         threshold = self.getThreshold(name, metric)
         usage,_ = ThrottleUsage.objects.get_or_create(threshold=threshold)
+        today = date.today()
+        if today.month > usage.since.month:
+            usage.value = 0
+            usage.since = today
+            usage.save()
+
         return usage
     
     def getUsageAsJson(self, usageObjects):
@@ -145,7 +153,7 @@ class MetricDatabase(object):
             name = t['metric']
             mtype = t['mtype']
             limit = self.parseLimit(t['limit'])
-            self.updateThreshold(name, mtype, limit)
+            self.updateThreshold(name, mtype, limit)    
 
 class BossThrottle(object):
     """Object for checking if a given API call is throttled
@@ -316,4 +324,3 @@ class BossThrottle(object):
         self.blog.info("Incrementing {} cost by {}".format(usage.threshold.name, cost))
         usage.value += cost
         usage.save()
-
