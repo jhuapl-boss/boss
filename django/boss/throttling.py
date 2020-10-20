@@ -42,7 +42,7 @@ class MetricDatabase(object):
         self.blog = bossLogger()
         self.blog.info("MetricDatabase object created")
 
-    def getLimitsAsJson(self):
+    def getThresholdsAsJson(self):
         limitObjects = ThrottleThreshold.objects.filter()
         return [{ 'metric': limit.name, 
                   'mtype':limit.metric.mtype, 
@@ -52,14 +52,21 @@ class MetricDatabase(object):
     def getAllUsage(self):
         return ThrottleUsage.objects.filter()
     
-    def getUsages(self, name):
-        usages = []
-        thresholds = ThrottleThreshold.objects.filter(name=name)
+    def getUsageAsJson(self, name=None):
+        usage = []
+        if name:
+            thresholds = ThrottleThreshold.objects.filter(name=name)
+        else:
+            thresholds = ThrottleThreshold.objects.filter()
         for t in thresholds:
             usageObjects = ThrottleUsage.objects.filter(threshold=t)
             for u in usageObjects:
-                usages.append(u)
-        return usages
+                usage.append(u)
+        return [{"metric":u.threshold.name,
+                 "mtype":u.threshold.metric.mtype,
+                 "units":u.threshold.metric.units,
+                 "limit":u.threshold.limit,
+                 "value":u.value} for u in usage]
 
     def encodeMetric(self, level, name=None):
         if level == MetricDatabase.SYSTEM_LEVEL_METRIC:
@@ -76,6 +83,14 @@ class MetricDatabase(object):
         if mtype == ThrottleMetric.METRIC_TYPE_COMPUTE:
             return ThrottleMetric.METRIC_UNITS_CUBOIDS
         return ThrottleMetric.METRIC_UNITS_BYTES
+
+    def getMetricsAsJson(self):
+        metricObjects = ThrottleMetric.objects.filter()
+        return [{"mtype":m.mtype,
+                 "units":m.units,
+                 "def_user_limit":m.def_user_limit,
+                 "def_api_limit":m.def_api_limit,
+                 "def_system_limit":m.def_system_limit} for m in metricObjects]
 
     def getMetric(self, mtype, units=None):
         if not units:
@@ -107,13 +122,6 @@ class MetricDatabase(object):
             usage.save()
 
         return usage
-    
-    def getUsageAsJson(self, usageObjects):
-        return [{"metric":u.threshold.name,
-                 "mtype":u.threshold.metric.mtype,
-                 "units":u.threshold.metric.units,
-                 "limit":u.threshold.limit,
-                 "value":u.value} for u in usageObjects]
     
     def updateMetrics(self, metricUpdates):
         for m in metricUpdates:

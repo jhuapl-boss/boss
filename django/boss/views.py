@@ -170,7 +170,14 @@ class Metric(LoginRequiredMixin, APIView):
         return User.objects.get(username=ADMIN_USER)
         
     def put(self, request):
-        self.blog.info("received request data: %s"%request.data)
+        """
+        Handle PUT requests
+        """
+        user = request.GET.get('user',str(request.user))
+        if not request.user == self._get_admin_user():
+             user = request.GET.get('user',str(request.user))
+            return BossHTTPError(" User {} is not authorized ".format(user),
+                             ErrorCodes.ACCESS_DENIED_UNKNOWN)
         paths = request.path_info.split("/")
         if paths[-1] == 'metrics':
             self.metricdb.updateMetrics(request.data)
@@ -181,43 +188,30 @@ class Metric(LoginRequiredMixin, APIView):
     def get(self, request):
         """
         Handles the get request for metrics
-        /metrics/list will list all metric names
-        /metrics will return user metrics for the logged in user
-            options:
-            metric=<name> will return metrics for provided name
-            user=<username> will return metrics for provided user
-
         """
         paths = request.path_info.split("/")
         metric = request.GET.get('metric')
         user = request.GET.get('user',str(request.user))
-        # determine response
         userIsAdmin = request.user == self._get_admin_user()
-        if paths[-1] == 'limits':
+        # determine response
+        if paths[-1] == 'thresholds':
             if userIsAdmin:
-                return Response(self.metricdb.getLimitsAsJson())
-        if paths[-1] == 'list':
-            # list all usage metric names
-            metricNames = []
-            for usage in self.metricdb.getAllUsage():
-                metricNames.append(usage.threshold.name)
-            metrics = set(metricNames)
-            return Response(metrics)
-        
-        if paths[-1] == 'all':
-            metric = '*'
+                return Response(self.metricdb.getThesholdsAsJson())
+        if paths[-1] == 'metrics':
+            if userIsAdmin:
+                return Response(self.metricdb.getMetricsAsJson())
+        if paths[-1] == 'usage':
+            if userIsAdmin:
+                return Response(self.metricdb.getUsageAsJson())
 
         # show specific metric values 
         if not metric:
             metric = self.metricdb.encodeMetric(MetricDatabase.USER_LEVEL_METRIC, user)
-        metricIsUser = metric.endswith(user)
-        userIsAdmin = request.user == self._get_admin_user()
+        mtype,name = self.metricdb.decodeMetric(metric)
+        usersUsage = name == user
         # make sure only admin user can see other metrics
-        if metricIsUser or userIsAdmin:
-            usages = []
-            if metric == '*':
-                usages = self.metricdb.getAllUsage()
-            else:
-                usages = self.metricdb.getUsages(metric)
-            return Response(self.metricdb.getUsageAsJson(usages))
-        return Response("Unauthorized request")
+        if usersUsage or userIsAdmin:
+            return Response(self.metricdb.getUsageAsJson(metric))
+        return BossHTTPError(" User {} is not authorized ".format(user),
+                             ErrorCodes.ACCESS_DENIED_UNKNOWN)
+
