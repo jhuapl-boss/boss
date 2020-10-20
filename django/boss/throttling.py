@@ -129,11 +129,11 @@ class MetricDatabase(object):
             mtype = m['mtype']
             metric = self.getMetric(mtype=mtype)
             if 'def_user_limit' in m:
-                metric.def_user_limit = m['def_user_limit']
+                metric.def_user_limit = self.parseLimit(m['def_user_limit'])
             if 'def_api_limit' in m:
-                metric.def_api_limit = m['def_api_limit']
-            if 'def_system_limit':
-                metric.def_system_limit = m['def_system_limit']
+                metric.def_api_limit = self.parseLimit(m['def_api_limit'])
+            if 'def_system_limit' in m:
+                metric.def_system_limit = self.parseLimit(m['def_system_limit'])
             metric.save()
 
     def updateThreshold(self, name, mtype, limit):
@@ -142,21 +142,23 @@ class MetricDatabase(object):
         threshold.limit = limit
         threshold.save()
 
-    def parseLimit(self, limitStr):
+    def parseLimit(self, limit):
         scalar = 1
-        if not limitStr.isdigit():
-            symbol = limitStr[-1:].upper()
-            if symbol == 'K':
-                scalar = 1024
-            elif symbol == 'M':
-                scalar = 1024*1024
-            elif symbol == 'G':
-                scalar = 1024*1024*1024
-            elif symbol == 'T':
-                scalar = 1024*1024*1024*1024
-            limitStr=limitStr[:-1].strip()
-        return int(limitStr)*scalar
-    
+        if type(limit) is str:
+            if not limit.isdigit():
+                symbol = limit[-1:].upper()
+                if symbol == 'K':
+                    scalar = 1024
+                elif symbol == 'M':
+                    scalar = 1024*1024
+                elif symbol == 'G':
+                    scalar = 1024*1024*1024
+                elif symbol == 'T':
+                    scalar = 1024*1024*1024*1024
+                limit=limit[:-1].strip()
+            limit = int(limit)*scalar
+        return limit
+
     def updateThresholds(self, thresholdUpdates):
         for t in thresholdUpdates:
             name = t['metric']
