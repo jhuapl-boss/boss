@@ -66,6 +66,7 @@ class MetricDatabase(object):
                  "mtype":u.threshold.metric.mtype,
                  "units":u.threshold.metric.units,
                  "limit":u.threshold.limit,
+                 "since":u.since,
                  "value":u.value} for u in usage]
 
     def encodeMetric(self, level, name=None):
@@ -257,7 +258,7 @@ class BossThrottle(object):
         Raises:
             Throttle: If the user is throttled
         """
-        userMetric = self.metricdb.encodeMetric(MetricDatabase.USER_LEVEL_METRIC, user.name)
+        userMetric = self.metricdb.encodeMetric(MetricDatabase.USER_LEVEL_METRIC, user.username)
         self.blog.info("Checking limits for user: {}".format(userMetric))
         usage = self.metricdb.getUsage(userMetric, metric)
         current = usage.value

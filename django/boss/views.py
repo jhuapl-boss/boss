@@ -175,7 +175,7 @@ class Metric(LoginRequiredMixin, APIView):
         """
         user = request.GET.get('user',str(request.user))
         if not request.user == self._get_admin_user():
-             user = request.GET.get('user',str(request.user))
+            user = request.GET.get('user',str(request.user))
             return BossHTTPError(" User {} is not authorized ".format(user),
                              ErrorCodes.ACCESS_DENIED_UNKNOWN)
         paths = request.path_info.split("/")
@@ -196,7 +196,7 @@ class Metric(LoginRequiredMixin, APIView):
         # determine response
         if paths[-1] == 'thresholds':
             if userIsAdmin:
-                return Response(self.metricdb.getThesholdsAsJson())
+                return Response(self.metricdb.getThresholdsAsJson())
         if paths[-1] == 'metrics':
             if userIsAdmin:
                 return Response(self.metricdb.getMetricsAsJson())
@@ -207,7 +207,7 @@ class Metric(LoginRequiredMixin, APIView):
         # show specific metric values 
         if not metric:
             metric = self.metricdb.encodeMetric(MetricDatabase.USER_LEVEL_METRIC, user)
-        mtype,name = self.metricdb.decodeMetric(metric)
+        level,name = self.metricdb.decodeMetric(metric)
         usersUsage = name == user
         # make sure only admin user can see other metrics
         if usersUsage or userIsAdmin:
