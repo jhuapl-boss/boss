@@ -17,7 +17,7 @@ from rest_framework.authentication import TokenAuthentication as DRFTokenAuthent
 from oidc_auth.util import cache
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings as django_settings
-from bossoidc.models import Keycloak as KeycloakModel
+from bossoidc2.models import Keycloak as KeycloakModel
 from bossutils.keycloak import KeyCloakClient
 
 DRF_KC_TIMEOUT = getattr(django_settings, 'DRF_KC_TIMEOUT', 60 * 5) # 5 Minutes
