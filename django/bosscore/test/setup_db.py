@@ -169,14 +169,19 @@ class SetupTestDB:
         self.add_channel('col1', 'exp_iso', 'channel1', 0, 0, 'uint8', 'image')
 
     def insert_downsample_data(self):
-        """Some resources for small downsample tests"""
+        """Some resources for small downsample tests
+
+        Returns:
+            (Tuple[Channel, Channel]): The channels created for the downsample test.
+        """
         self.add_coordinate_frame('cf_ds_aniso', 'Description for cf2', 0, 4096, 0, 4096, 0, 128, 4, 4, 35)
         self.add_experiment('col1', 'exp_ds_aniso', 'cf_ds_aniso', 5, 500, 1)
-        self.add_channel('col1', 'exp_ds_aniso', 'channel1', 0, 0, 'uint8', 'image')
+        aniso_chan = self.add_channel('col1', 'exp_ds_aniso', 'channel1', 0, 0, 'uint8', 'image')
 
         self.add_coordinate_frame('cf_ds_iso', 'Description for cf2', 0, 4096, 0, 4096, 0, 128, 6, 6, 6)
         self.add_experiment('col1', 'exp_ds_iso', 'cf_ds_iso', 3, 500, 1, hierarchy_method="isotropic")
-        self.add_channel('col1', 'exp_ds_iso', 'channel1', 0, 0, 'uint8', 'image')
+        iso_chan = self.add_channel('col1', 'exp_ds_iso', 'channel1', 0, 0, 'uint8', 'image')
+        return (aniso_chan, iso_chan)
 
     def insert_downsample_write_data(self):
         """Some resources for writing to an off 0 base res (tests write at 4)"""

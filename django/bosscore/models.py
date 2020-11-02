@@ -220,14 +220,23 @@ class Channel(models.Model):
     deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True, blank=True)
 
     class DownsampleStatus:
-        """String values are actual values stored in DB."""
+        """
+        String values are actual values stored in DB.
+
+        This class is duplicated in boss-tools.git/activities/resolution_hierarchy.py.
+
+        ToDo: consider making a separate shared repo with constants that the
+        Django repo, step functions, and lambdas can all import.
+        """
         NOT_DOWNSAMPLED = 'NOT_DOWNSAMPLED'
         IN_PROGRESS = 'IN_PROGRESS'
         DOWNSAMPLED = 'DOWNSAMPLED'
         FAILED = 'FAILED'
+        QUEUED = 'QUEUED'
 
     DOWNSAMPLE_STATUS_CHOICES = (
         (DownsampleStatus.NOT_DOWNSAMPLED, 'Not Downsampled'),
+        (DownsampleStatus.QUEUED, 'In Queue'),
         (DownsampleStatus.IN_PROGRESS, 'In Progress'),
         (DownsampleStatus.DOWNSAMPLED, 'Downsampled'),
         (DownsampleStatus.FAILED, 'Failed'),
