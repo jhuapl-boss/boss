@@ -25,3 +25,6 @@ django-redis
 git+https://github.com/jhuapl-boss/django-nose2.git
 
 intern
+
+# For test of boss-tools.git/activities/boss_db.py
+pymysql
