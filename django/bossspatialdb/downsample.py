@@ -23,6 +23,8 @@ import bossutils
 from bossutils.aws import get_region, get_session
 from bossutils.configuration import BossConfig
 
+DOWNSAMPLE_CANNOT_BE_QUEUED_ERR_MSG = 'Downsample already queued or in progress'
+
 def start(request, resource):
     """Main code to start a downsample
 
@@ -135,7 +137,9 @@ def enqueue_job(session, args, downsample_sqs):
         (BossError): If failed to enqueue job.
     """
     rows_updated = (Channel.objects
-        .filter(id=args['channel_id'], downsample_status=Channel.DownsampleStatus.NOT_DOWNSAMPLED)
+        .filter(id=args['channel_id'])
+        .exclude(downsample_status=Channel.DownsampleStatus.IN_PROGRESS)
+        .exclude(downsample_status=Channel.DownsampleStatus.QUEUED)
         .update(downsample_status=Channel.DownsampleStatus.QUEUED)
         )
     if rows_updated == 0:
@@ -202,9 +206,9 @@ def compute_usage_metrics(session, args, fqdn, user,
            )
 
     dimensions = [
-        {'name': 'user', 'value': user},
-        {'name': 'resource', 'value': '{}/{}/{}'.format(collection, experiment, channel)},
-        {'name': 'stack', 'value': fqdn},
+        {'Name': 'user', 'Value': user},
+        {'Name': 'resource', 'Value': '{}/{}/{}'.format(collection, experiment, channel)},
+        {'Name': 'stack', 'Value': fqdn},
     ]
 
     try:
@@ -296,8 +300,9 @@ def _return_messages_to_queue(session, batch):
 
     Raises:
     """
-    client = session.client('sqs')
+    boss_config = BossConfig()
     downsample_sqs = boss_config['aws']['downsample-queue']
+    client = session.client('sqs')
     # Don't check for failures because all messages will eventually be returned
     # automatically.
     client.change_message_visibility_batch(QueueUrl=downsample_sqs, Entries=batch)
@@ -313,8 +318,9 @@ def _delete_message_from_queue(session, msg_handle):
 
     Raises:
     """
-    client = session.client('sqs')
+    boss_config = BossConfig()
     downsample_sqs = boss_config['aws']['downsample-queue']
+    client = session.client('sqs')
     client.delete_message(QueueUrl=downsample_sqs, ReceiptHandle=msg_handle)
 
 def _get_messages_from_queue(session):
@@ -326,8 +332,9 @@ def _get_messages_from_queue(session):
     Returns:
         (List[dict]): List of messages from the queue.
     """
-    client = session.client('sqs')
+    boss_config = BossConfig()
     downsample_sqs = boss_config['aws']['downsample-queue']
+    client = session.client('sqs')
     resp = client.receive_message(QueueUrl=downsample_sqs, WaitTimeSeconds=2, MaxNumberOfMessages=10)
     if 'Messages' in resp:
         return resp['Messages']

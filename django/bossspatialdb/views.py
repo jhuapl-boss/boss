@@ -41,8 +41,6 @@ import bossutils
 from bossutils.logger import bossLogger
 from bossspatialdb.downsample import delete_queued_job, start
 
-DOWNSAMPLE_CANNOT_BE_QUEUED_ERR_MSG = 'Downsample already queued or in progress'
-
 
 class Cutout(APIView):
     """
