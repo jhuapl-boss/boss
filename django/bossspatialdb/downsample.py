@@ -20,7 +20,7 @@ import json
 from bosscore.error import BossError, BossHTTPError, BossParserError, ErrorCodes
 from bosscore.models import Channel
 import bossutils
-from bossutils.aws import get_region, get_session
+from bossutils.aws import get_account_id, get_region, get_session
 from bossutils.configuration import BossConfig
 
 DOWNSAMPLE_CANNOT_BE_QUEUED_ERR_MSG = 'Downsample already queued or in progress'
@@ -117,11 +117,18 @@ def start(request, resource):
         return BossHTTPError(be.message, be.error_code)
 
     compute_usage_metrics(session, args, boss_config['system']['fqdn'],
-                               request.user.username,
-                               collection.name, experiment.name, channel.name)
+                          request.user.username,
+                          collection.name, experiment.name, channel.name)
 
-    if not check_for_running_sfn(session, downsample_sfn):
-        arn = bossutils.aws.sfn_execute(session, downsample_sfn, { 'queue_url', downsample_sqs })
+    region = get_region()
+    account_id = get_account_id()
+    downsample_sfn_arn = f'arn:aws:states:{region}:{account_id}:stateMachine:{downsample_sfn}'
+    if not check_for_running_sfn(session, downsample_sfn_arn):
+        bossutils.aws.sfn_run(session, downsample_sfn_arn,
+                              {
+                                  'queue_url': downsample_sqs,
+                                  'sfn_arn': downsample_sfn_arn,
+                              })
 
     return HttpResponse(status=201)
 
@@ -244,7 +251,7 @@ def delete_queued_job(session, chan_id):
     """
     done = False
     ok = True
-    
+
     # Put these messages back on the queue.
     msgs_to_return = []
 
