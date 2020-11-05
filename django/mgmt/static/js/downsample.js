@@ -6,7 +6,7 @@ function set_status_str(val){
     if (val == "NOT_DOWNSAMPLED") {
         status = "Not Downsampled";
         ds_label.addClass('label-default');
-    if (val == "QUEUED") {
+    } else if (val == "QUEUED") {
         status = "In Queue";
         ds_label.addClass('label-info');
     } else if (val == "IN_PROGRESS") {
