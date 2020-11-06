@@ -34,25 +34,34 @@ def mock_sfn_status(a, b):
     return "RUNNING"
 
 
-def mock_sfn_execute(a, b, c):
+def mock_sfn_run(a, b, c):
     return "ARN:abc123"
 
 
 def mock_sfn_cancel(session, arn, error="Error", cause="Unknown Cause"):
     pass
 
+
+def mock_get_account_id():
+    return '184319448511'
+
+
 def mock_get_region():
     return 'us-east-1'
+
 
 def mock_get_session():
     return None
 
+
 def mock_check_for_running_sfn(session, arn):
     return False
+
 
 def mock_compute_usage_metrics(session, args, fqdn, user,
                                collection, experiment, channel):
     pass
+
 
 def mock_sqs_enqueue(session, args, downsample_sqs):
     pass
@@ -303,9 +312,10 @@ class DownsampleInterfaceViewMixin(object):
 @patch('bossspatialdb.downsample.check_for_running_sfn', mock_check_for_running_sfn)
 @patch('bossspatialdb.downsample.get_session', mock_get_session)
 @patch('bossspatialdb.downsample.get_region', mock_get_region)
+@patch('bossspatialdb.downsample.get_account_id', mock_get_account_id)
 @patch('bossutils.aws.get_session', mock_get_session)
 @patch('bossutils.aws.sfn_status', mock_sfn_status)
-@patch('bossutils.aws.sfn_execute', mock_sfn_execute)
+@patch('bossutils.aws.sfn_run', mock_sfn_run)
 @patch('bossutils.aws.sfn_cancel', mock_sfn_cancel)
 class TestDownsampleInterfaceView(DownsampleInterfaceViewMixin, APITestCase):
 

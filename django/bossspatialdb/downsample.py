@@ -65,6 +65,7 @@ def start(request, resource):
     db_host = boss_config['aws']['db']
 
     args = {
+        'lookup_key': lookup_key,
         'collection_id': int(col_id),
         'experiment_id': int(exp_id),
         'channel_id': int(ch_id),
