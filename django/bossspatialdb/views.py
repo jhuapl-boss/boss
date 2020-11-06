@@ -359,47 +359,6 @@ class Downsample(APIView):
         experiment = resource.get_experiment()
         to_renderer = {"status": channel.downsample_status}
 
-        # Check Step Function if status is in-progress and update
-        if channel.downsample_status == Channel.DownsampleStatus.IN_PROGRESS:
-            lookup_key = resource.get_lookup_key()
-            _, exp_id, _ = lookup_key.split("&")
-            # Get channel object
-            channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
-            # Update the status from the step function
-            session = bossutils.aws.get_session()
-            status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
-            if status == "SUCCEEDED":
-                # Change to DOWNSAMPLED
-                channel_obj.downsample_status = Channel.DownsampleStatus.DOWNSAMPLED
-                channel_obj.save()
-                to_renderer["status"] = Channel.DownsampleStatus.DOWNSAMPLED
-
-                # DP NOTE: This code should be moved to spdb when change
-                #          tracking is added to automatically calculate
-                #          frame extents for the user
-                # DP NOTE: Clear the cache of any cubes for the channel
-                #          This is to prevent serving stale data after
-                #          (re)downsampling
-                log = bossLogger()
-                for pattern in ("CACHED-CUBOID&"+lookup_key+"&*",
-                                "CACHED-CUBOID&ISO&"+lookup_key+"&*"):
-                    log.debug("Clearing cache of {} cubes".format(pattern))
-                    try:
-                        cache = RedisKVIO(settings.KVIO_SETTINGS)
-                        pipe = cache.cache_client.pipeline()
-                        for key in cache.cache_client.scan_iter(match=pattern):
-                            pipe.delete(key)
-                        pipe.execute()
-                    except Exception as ex:
-                        log.exception("Problem clearing cache after downsample finished")
-
-            elif status == "FAILED" or status == "TIMED_OUT":
-                # Change status to FAILED
-                channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
-                channel_obj.downsample_status = Channel.DownsampleStatus.FAILED
-                channel_obj.save()
-                to_renderer["status"] = Channel.DownsampleStatus.FAILED
-
         # Get hierarchy levels
         to_renderer["num_hierarchy_levels"] = experiment.num_hierarchy_levels
 
