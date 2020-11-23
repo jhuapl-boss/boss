@@ -19,6 +19,8 @@ from guardian.shortcuts import assign_perm, get_perms, remove_perm, get_perms_fo
 from .error import BossHTTPError, ErrorCodes, BossError
 from bosscore.models import BossGroup
 
+PUBLIC_ACCESS_USERNAME = 'public-access'
+
 def check_is_member_or_maintainer(user, group_name):
     """
     Check if a user is a member or maintainer of the a group
@@ -38,6 +40,22 @@ def check_is_member_or_maintainer(user, group_name):
             return False
     except (Group.DoesNotExist , BossGroup.DoesNotExist) as e:
         return BossError("{} does not exist".format(group_name), ErrorCodes.RESOURCE_NOT_FOUND)
+
+def is_public(permission, obj):
+    """
+    Check if an object is public. 
+    
+    Args:
+        permission (str): permission to check
+        obj (???): Object that we are getting permission for
+    Returns:
+        (bool) True if public access account has access. False otherwise.
+    """
+
+    if permission in get_perms(PUBLIC_ACCESS_USERNAME, obj):
+        return True
+    else:
+        return False
 
 
 class BossPermissionManager:
@@ -214,7 +232,7 @@ class BossPermissionManager:
         else:
             raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
 
-        if permission in get_perms(user, obj):
+        if permission in get_perms(user, obj) or is_public(permission, obj):
             return True
         else:
             return False
@@ -241,7 +259,7 @@ class BossPermissionManager:
         else:
             raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
 
-        if permission in get_perms(user, obj):
+        if permission in get_perms(user, obj) or is_public(permission, obj):
             return True
         else:
             return False
