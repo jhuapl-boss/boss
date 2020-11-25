@@ -167,7 +167,7 @@ class Cutout(APIView):
                 }]
             )
         except Exception as e:
-            log = BossLogger().logger
+            log = bossLogger()
             log.exception('Error during put_metric_data: {}'.format(e))
             log.exception('Allowing bossDB to continue after logging')
 
@@ -286,7 +286,7 @@ class Cutout(APIView):
                 }]
             )
         except Exception as e:
-            log = BossLogger().logger
+            log = bossLogger()
             log.exception('Error during put_metric_data: {}'.format(e))
             log.exception('Allowing bossDB to continue after logging')
 
@@ -602,7 +602,7 @@ class Downsample(APIView):
                 }]
             )
         except Exception as e:
-            log = BossLogger().logger
+            log = bossLogger()
             log.exception('Error during put_metric_data: {}'.format(e))
             log.exception('Allowing bossDB to continue after logging')
 

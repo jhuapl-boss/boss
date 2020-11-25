@@ -20,6 +20,7 @@ from boss import utils
 from boss.throttling import BossThrottle
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, ErrorCodes
+from bossutils.logger import bossLogger
 
 import spdb
 
@@ -134,7 +135,7 @@ class CutoutTile(APIView):
                 }]
             )
         except Exception as e:
-            log = BossLogger().logger
+            log = bossLogger()
             log.exception('Error during put_metric_data: {}'.format(e))
             log.exception('Allowing bossDB to continue after logging')
 
@@ -275,7 +276,7 @@ class Tile(APIView):
                 }]
             )
         except Exception as e:
-            log = BossLogger().logger
+            log = bossLogger()
             log.exception('Error during put_metric_data: {}'.format(e))
             log.exception('Allowing bossDB to continue after logging')
 
