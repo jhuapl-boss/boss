@@ -117,20 +117,28 @@ class CutoutTile(APIView):
 
         session = bossutils.aws.get_session()
         client = session.client('cloudwatch')
-        client.put_metric_data(
-            Namespace = "BOSS/Image",
-            MetricData = [{
-                'MetricName': 'InvokeCount',
-                'Dimensions': dimensions,
-                'Value': 1.0,
-                'Unit': 'Count'
-            }, {
-                'MetricName': 'EgressCost',
-                'Dimensions': dimensions,
-                'Value': cost,
-                'Unit': 'Bytes'
-            }]
-        )
+
+        try:
+            client.put_metric_data(
+                Namespace="BOSS/Image",
+                MetricData=[{
+                    'MetricName': 'InvokeCount',
+                    'Dimensions': dimensions,
+                    'Value': 1.0,
+                    'Unit': 'Count'
+                }, {
+                    'MetricName': 'EgressCost',
+                    'Dimensions': dimensions,
+                    'Value': cost,
+                    'Unit': 'Bytes'
+                }]
+            )
+        except Exception as e:
+            log = BossLogger().logger
+            log.exception('Error during put_metric_data: {}'.format(e))
+            log.exception('Allowing bossDB to continue after logging')
+
+
 
         # Get interface to SPDB cache
         cache = spdb.spatialdb.SpatialDB(settings.KVIO_SETTINGS,
@@ -250,20 +258,28 @@ class Tile(APIView):
 
         session = bossutils.aws.get_session()
         client = session.client('cloudwatch')
-        client.put_metric_data(
-            Namespace = "BOSS/Tile",
-            MetricData = [{
-                'MetricName': 'InvokeCount',
-                'Dimensions': dimensions,
-                'Value': 1.0,
-                'Unit': 'Count'
-            }, {
-                'MetricName': 'EgressCost',
-                'Dimensions': dimensions,
-                'Value': cost,
-                'Unit': 'Bytes'
-            }]
-        )
+
+        try:
+            client.put_metric_data(
+                Namespace="BOSS/Tile",
+                MetricData=[{
+                    'MetricName': 'InvokeCount',
+                    'Dimensions': dimensions,
+                    'Value': 1.0,
+                    'Unit': 'Count'
+                }, {
+                    'MetricName': 'EgressCost',
+                    'Dimensions': dimensions,
+                    'Value': cost,
+                    'Unit': 'Bytes'
+                }]
+            )
+        except Exception as e:
+            log = BossLogger().logger
+            log.exception('Error during put_metric_data: {}'.format(e))
+            log.exception('Allowing bossDB to continue after logging')
+
+
 
         # Get interface to SPDB cache
         cache = spdb.spatialdb.SpatialDB(settings.KVIO_SETTINGS,
