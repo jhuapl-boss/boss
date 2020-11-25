@@ -150,20 +150,28 @@ class Cutout(APIView):
 
         session = bossutils.aws.get_session()
         client = session.client('cloudwatch')
-        client.put_metric_data(
-            Namespace = "BOSS/Cutout",
-            MetricData = [{
-                'MetricName': 'InvokeCount',
-                'Dimensions': dimensions,
-                'Value': 1.0,
-                'Unit': 'Count'
-            }, {
-                'MetricName': 'EgressCost',
-                'Dimensions': dimensions,
-                'Value': cost,
-                'Unit': 'Bytes'
-            }]
-        )
+
+        try:
+            client.put_metric_data(
+                Namespace="BOSS/Cutout",
+                MetricData=[{
+                    'MetricName': 'InvokeCount',
+                    'Dimensions': dimensions,
+                    'Value': 1.0,
+                    'Unit': 'Count'
+                }, {
+                    'MetricName': 'EgressCost',
+                    'Dimensions': dimensions,
+                    'Value': cost,
+                    'Unit': 'Bytes'
+                }]
+            )
+        except Exception as e:
+            log = bossLogger()
+            log.exception('Error during put_metric_data: {}'.format(e))
+            log.exception('Allowing bossDB to continue after logging')
+
+
 
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
@@ -261,20 +269,28 @@ class Cutout(APIView):
 
         session = bossutils.aws.get_session()
         client = session.client('cloudwatch')
-        client.put_metric_data(
-            Namespace = "BOSS/Cutout",
-            MetricData = [{
-                'MetricName': 'InvokeCount',
-                'Dimensions': dimensions,
-                'Value': 1.0,
-                'Unit': 'Count'
-            }, {
-                'MetricName': 'IngressCost',
-                'Dimensions': dimensions,
-                'Value': cost,
-                'Unit': 'Bytes'
-            }]
-        )
+
+        try:
+            client.put_metric_data(
+                Namespace="BOSS/Cutout",
+                MetricData=[{
+                    'MetricName': 'InvokeCount',
+                    'Dimensions': dimensions,
+                    'Value': 1.0,
+                    'Unit': 'Count'
+                }, {
+                    'MetricName': 'IngressCost',
+                    'Dimensions': dimensions,
+                    'Value': cost,
+                    'Unit': 'Bytes'
+                }]
+            )
+        except Exception as e:
+            log = bossLogger()
+            log.exception('Error during put_metric_data: {}'.format(e))
+            log.exception('Allowing bossDB to continue after logging')
+
+
 
         # Get interface to SPDB cache
         cache = SpatialDB(settings.KVIO_SETTINGS,
@@ -570,20 +586,27 @@ class Downsample(APIView):
         ]
 
         client = session.client('cloudwatch')
-        client.put_metric_data(
-            Namespace = "BOSS/Downsample",
-            MetricData = [{
-                'MetricName': 'InvokeCount',
-                'Dimensions': dimensions,
-                'Value': 1.0,
-                'Unit': 'Count'
-            }, {
-                'MetricName': 'ComputeCost',
-                'Dimensions': dimensions,
-                'Value': cost,
-                'Unit': 'Count'
-            }]
-        )
+        try:
+            client.put_metric_data(
+                Namespace="BOSS/Downsample",
+                MetricData=[{
+                    'MetricName': 'InvokeCount',
+                    'Dimensions': dimensions,
+                    'Value': 1.0,
+                    'Unit': 'Count'
+                }, {
+                    'MetricName': 'ComputeCost',
+                    'Dimensions': dimensions,
+                    'Value': cost,
+                    'Unit': 'Count'
+                }]
+            )
+        except Exception as e:
+            log = bossLogger()
+            log.exception('Error during put_metric_data: {}'.format(e))
+            log.exception('Allowing bossDB to continue after logging')
+
+
 
         # Start downsample
         downsample_sfn = boss_config['sfn']['downsample_sfn']

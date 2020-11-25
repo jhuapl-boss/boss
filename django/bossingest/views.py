@@ -274,20 +274,27 @@ class IngestJobView(IngestServiceView):
 
             session = bossutils.aws.get_session()
             client = session.client('cloudwatch')
-            client.put_metric_data(
-                Namespace = "BOSS/Ingest",
-                MetricData = [{
-                    'MetricName': 'InvokeCount',
-                    'Dimensions': dimensions,
-                    'Value': 1.0,
-                    'Unit': 'Count'
-                }, {
-                    'MetricName': 'IngressCost',
-                    'Dimensions': dimensions,
-                    'Value': cost,
-                    'Unit': 'Bytes'
-                }]
-            )
+
+            try:
+                client.put_metric_data(
+                    Namespace="BOSS/Ingest",
+                    MetricData=[{
+                        'MetricName': 'InvokeCount',
+                        'Dimensions': dimensions,
+                        'Value': 1.0,
+                        'Unit': 'Count'
+                    }, {
+                        'MetricName': 'IngressCost',
+                        'Dimensions': dimensions,
+                        'Value': cost,
+                        'Unit': 'Bytes'
+                    }]
+                )
+            except Exception as e:
+                log = bossLogger()
+                log.exception('Error during put_metric_data: {}'.format(e))
+                log.exception('Allowing bossDB to continue after logging')
+
         except BossError as err:
             return err.to_http()
         except Exception as err:
