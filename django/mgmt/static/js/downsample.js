@@ -6,6 +6,9 @@ function set_status_str(val){
     if (val == "NOT_DOWNSAMPLED") {
         status = "Not Downsampled";
         ds_label.addClass('label-default');
+    } else if (val == "QUEUED") {
+        status = "In Queue";
+        ds_label.addClass('label-info');
     } else if (val == "IN_PROGRESS") {
         status = "In Progress";
         ds_label.addClass('label-info');
@@ -34,8 +37,12 @@ function set_button_modes(val) {
     if (val == "NOT_DOWNSAMPLED") {
         $("#downsample-btn").removeClass('disabled');
         $("#cancel-btn").addClass('disabled');
+    } else if (val == "QUEUED") {
+        // Waiting in queue
+        $("#downsample-btn").addClass('disabled');
+        $("#cancel-btn").removeClass('disabled');
     } else if (val == "IN_PROGRESS") {
-        // Uploading
+        // Downsampling
         $("#downsample-btn").addClass('disabled');
         $("#cancel-btn").removeClass('disabled');
     } else if (val == "DOWNSAMPLED") {

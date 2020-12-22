@@ -38,8 +38,8 @@ from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb.spatialdb.rediskvio import RedisKVIO
 from spdb import project
 import bossutils
-from bossutils.aws import get_region
 from bossutils.logger import bossLogger
+from bossspatialdb.downsample import delete_queued_job, start
 
 
 class Cutout(APIView):
@@ -375,47 +375,6 @@ class Downsample(APIView):
         experiment = resource.get_experiment()
         to_renderer = {"status": channel.downsample_status}
 
-        # Check Step Function if status is in-progress and update
-        if channel.downsample_status == Channel.DownsampleStatus.IN_PROGRESS:
-            lookup_key = resource.get_lookup_key()
-            _, exp_id, _ = lookup_key.split("&")
-            # Get channel object
-            channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
-            # Update the status from the step function
-            session = bossutils.aws.get_session()
-            status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
-            if status == "SUCCEEDED":
-                # Change to DOWNSAMPLED
-                channel_obj.downsample_status = Channel.DownsampleStatus.DOWNSAMPLED
-                channel_obj.save()
-                to_renderer["status"] = Channel.DownsampleStatus.DOWNSAMPLED
-
-                # DP NOTE: This code should be moved to spdb when change
-                #          tracking is added to automatically calculate
-                #          frame extents for the user
-                # DP NOTE: Clear the cache of any cubes for the channel
-                #          This is to prevent serving stale data after
-                #          (re)downsampling
-                log = bossLogger()
-                for pattern in ("CACHED-CUBOID&"+lookup_key+"&*",
-                                "CACHED-CUBOID&ISO&"+lookup_key+"&*"):
-                    log.debug("Clearing cache of {} cubes".format(pattern))
-                    try:
-                        cache = RedisKVIO(settings.KVIO_SETTINGS)
-                        pipe = cache.cache_client.pipeline()
-                        for key in cache.cache_client.scan_iter(match=pattern):
-                            pipe.delete(key)
-                        pipe.execute()
-                    except Exception as ex:
-                        log.exception("Problem clearing cache after downsample finished")
-
-            elif status == "FAILED" or status == "TIMED_OUT":
-                # Change status to FAILED
-                channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
-                channel_obj.downsample_status = Channel.DownsampleStatus.FAILED
-                channel_obj.save()
-                to_renderer["status"] = Channel.DownsampleStatus.FAILED
-
         # Get hierarchy levels
         to_renderer["num_hierarchy_levels"] = experiment.num_hierarchy_levels
 
@@ -469,156 +428,7 @@ class Downsample(APIView):
 
         # Convert to Resource
         resource = project.BossResourceDjango(req)
-
-        channel = resource.get_channel()
-        if channel.downsample_status.upper() == Channel.DownsampleStatus.IN_PROGRESS:
-            return BossHTTPError("Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
-        elif channel.downsample_status.upper() == Channel.DownsampleStatus.DOWNSAMPLED and \
-             not request.user.is_staff:
-            return BossHTTPError("Channel is already downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
-
-        session = bossutils.aws.get_session()
-
-        # Make sure only one Channel is downsampled at a time
-        channel_objs = Channel.objects.filter(downsample_status=Channel.DownsampleStatus.IN_PROGRESS)
-        for channel_obj in channel_objs:
-            # Verify that the channel is still being downsampled
-            try:
-                status = bossutils.aws.sfn_status(session, channel_obj.downsample_arn)
-                if status == 'RUNNING':
-                    return BossHTTPError("Another Channel is currently being downsampled. Invalid Request.", ErrorCodes.INVALID_STATE)
-            except botocore.exceptions.ClientError as ex:
-                # If the execution no longer exists, that means the downsample
-                # execution stored in the DB is no longer valid.  Should be ok
-                # to proceed with a new downsample.  Otherwise, let the
-                # exception bubble up.
-                if ex.response['Error']['Code'] != 'ExecutionDoesNotExist':
-                    raise
-
-                # Delete SFN arn since it no longer exists.
-                channel_obj.downsample_status = Channel.DownsampleStatus.FAILED
-                channel_obj.downsample_arn = None
-                channel_obj.save()
-
-
-        if request.user.is_staff:
-            # DP HACK: allow admin users to override the coordinate frame
-            frame = request.data
-        else:
-            frame = {}
-
-        # Call Step Function
-        boss_config = bossutils.configuration.BossConfig()
-        experiment = resource.get_experiment()
-        coord_frame = resource.get_coord_frame()
-        lookup_key = resource.get_lookup_key()
-        col_id, exp_id, ch_id = lookup_key.split("&")
-
-        def get_frame(idx):
-            return int(frame.get(idx, getattr(coord_frame, idx)))
-
-        args = {
-            'collection_id': int(col_id),
-            'experiment_id': int(exp_id),
-            'channel_id': int(ch_id),
-            'annotation_channel': not channel.is_image(),
-            'data_type': resource.get_data_type(),
-
-            's3_bucket': boss_config["aws"]["cuboid_bucket"],
-            's3_index': boss_config["aws"]["s3-index-table"],
-
-            'x_start': get_frame('x_start'),
-            'y_start': get_frame('y_start'),
-            'z_start': get_frame('z_start'),
-
-            'x_stop': get_frame('x_stop'),
-            'y_stop': get_frame('y_stop'),
-            'z_stop': get_frame('z_stop'),
-
-            'resolution': int(channel.base_resolution),
-            'resolution_max': int(experiment.num_hierarchy_levels),
-            'res_lt_max': int(channel.base_resolution) + 1 < int(experiment.num_hierarchy_levels),
-
-            'type': experiment.hierarchy_method,
-            'iso_resolution': int(resource.get_isotropic_level()),
-
-            # This step function executes: boss-tools/activities/resolution_hierarchy.py
-            'downsample_volume_lambda': boss_config['lambda']['downsample_volume'],
-
-            'aws_region': get_region(),
-
-        }
-
-        # Check that only administrators are triggering extra large downsamples
-        if (not request.user.is_staff) and \
-           ((args['x_stop'] - args['x_start']) * \
-            (args['y_stop'] - args['y_start']) * \
-            (args['z_stop'] - args['z_start']) > settings.DOWNSAMPLE_MAX_SIZE):
-            return BossHTTPError("Large downsamples require admin permissions to trigger. Invalid Request.", ErrorCodes.INVALID_STATE)
-
-        # Add metrics to CloudWatch
-        def get_cubes(axis, dim):
-            extent = args['{}_stop'.format(axis)] - args['{}_start'.format(axis)]
-            return -(-extent // dim) ## ceil div
-
-        cost = (  get_cubes('x', 512)
-                * get_cubes('y', 512)
-                * get_cubes('z', 16)
-                / 4 # Number of cubes for a downsampled volume
- #               * 0.75 # Assume the frame is only 75% filled
-#                * 2 # 1 for invoking a lambda
-#                    # 1 for time it takes lambda to run
-#                * 1.33 # Add 33% overhead for all other non-base resolution downsamples
-               )
-
-        log = bossLogger()
-        log.info("Checking for throttling")
-        BossThrottle().check('downsample','compute',
-                             request.user,
-                             cost,'cuboids')
-
-        dimensions = [
-            {'Name': 'User', 'Value': request.user.username},
-            {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
-                                                            experiment.name,
-                                                            channel.name)},
-            {'Name': 'Stack', 'Value': boss_config['system']['fqdn']},
-        ]
-
-        client = session.client('cloudwatch')
-        try:
-            client.put_metric_data(
-                Namespace="BOSS/Downsample",
-                MetricData=[{
-                    'MetricName': 'InvokeCount',
-                    'Dimensions': dimensions,
-                    'Value': 1.0,
-                    'Unit': 'Count'
-                }, {
-                    'MetricName': 'ComputeCost',
-                    'Dimensions': dimensions,
-                    'Value': cost,
-                    'Unit': 'Count'
-                }]
-            )
-        except Exception as e:
-            log = bossLogger()
-            log.exception('Error during put_metric_data: {}'.format(e))
-            log.exception('Allowing bossDB to continue after logging')
-
-
-
-        # Start downsample
-        downsample_sfn = boss_config['sfn']['downsample_sfn']
-        arn = bossutils.aws.sfn_execute(session, downsample_sfn, dict(args))
-
-        # Change Status and Save ARN
-        channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
-        channel_obj.downsample_status = Channel.DownsampleStatus.IN_PROGRESS
-        channel_obj.downsample_arn = arn
-        channel_obj.save()
-
-        return HttpResponse(status=201)
+        return start(request, resource)
 
     def delete(self, request, collection, experiment, channel):
         """View to cancel an in-progress downsample operation
@@ -648,18 +458,23 @@ class Downsample(APIView):
         resource = project.BossResourceDjango(req)
 
         channel = resource.get_channel()
-        if channel.downsample_status.upper() != Channel.DownsampleStatus.IN_PROGRESS:
-            return BossHTTPError("You can only cancel and in-progress downsample operation.", ErrorCodes.INVALID_STATE)
+        status = channel.downsample_status.upper()
+        if status != Channel.DownsampleStatus.IN_PROGRESS and status != Channel.DownsampleStatus.QUEUED:
+            return BossHTTPError("You can only cancel a queued or in-progress downsample operation.", ErrorCodes.INVALID_STATE)
 
         # Get Channel object
         lookup_key = resource.get_lookup_key()
-        _, exp_id, _ = lookup_key.split("&")
+        _, exp_id, chan_id = lookup_key.split("&")
         channel_obj = Channel.objects.get(name=channel.name, experiment=int(exp_id))
 
-        # Call cancel on the Step Function
         session = bossutils.aws.get_session()
-        bossutils.aws.sfn_cancel(session, channel_obj.downsample_arn, error="User Cancel",
-                                 cause="User has requested the downsample operation to stop.")
+        if status == Channel.DownsampleStatus.IN_PROGRESS:
+            # Call cancel on the Step Function
+            bossutils.aws.sfn_cancel(session, channel_obj.downsample_arn, error="User Cancel",
+                                     cause="User has requested the downsample operation to stop.")
+        elif status == Channel.DownsampleStatus.QUEUED:
+            if not delete_queued_job(session, int(chan_id)):
+                return HttpResponse(status=500, reason='Could not remove job from queue')
 
         # Clear ARN
         channel_obj.downsample_arn = ""
