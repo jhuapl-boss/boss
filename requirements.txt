@@ -12,8 +12,8 @@ uWSGI==2.0.19.1
 
 drf-oidc-auth==0.10.0
 
-# bossoidc2 on v2.0.0.
-git+https://github.com/jhuapl-boss/boss-oidc2.git@v2.0.0#egg=boss-oidc2
+# bossoidc2 on v2.0.1.
+git+https://github.com/jhuapl-boss/boss-oidc2.git@v2.0.1#egg=boss-oidc2
 
 mozilla-django-oidc==1.2.3
 
