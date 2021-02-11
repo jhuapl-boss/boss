@@ -42,15 +42,26 @@ class ThrottleMetric(models.Model):
     def_api_limit = models.BigIntegerField(default=-1)
     def_user_limit = models.BigIntegerField(default=-1)
 
+    class Meta:
+        db_table = u"throttle_metric"
+        unique_together = ('mtype', 'units')
+
 class ThrottleThreshold(models.Model):
     name = models.CharField(max_length=255)
     metric = models.ForeignKey(ThrottleMetric, on_delete=models.CASCADE)
     limit = models.BigIntegerField(default=-1)
 
+    class Meta:
+        db_table = u"throttle_threshold"
+        unique_together = ('name', 'metric')
+
 class ThrottleUsage(models.Model):
     threshold = models.OneToOneField(ThrottleThreshold, on_delete=models.CASCADE)
     value = models.BigIntegerField(default=0)
     since = models.DateField(default=date.today)
+
+    class Meta:
+        db_table = u"throttle_usage"
 
 class NameValidator(RegexValidator):
     regex = "^[a-zA-Z0-9_-]*$"
