@@ -795,6 +795,7 @@ class BossRequest:
         if self.service == 'cutout' or self.service == 'image' or self.service == 'tile'\
                 or self.service == 'boundingbox':
             # TODO SH Hack added to allow us to quickly make channels public without logging in.
+            # These are bossdb IDs.
             if self.channel.id in [1080, 1081, 1082, 1083]:
                 return
             perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
