@@ -226,7 +226,7 @@ class BossPermissionManager:
         Args:
             user: User name
             obj: resource
-            method_type: Mothod type specified in the post
+            method_type: Method type specified in the post
 
         Returns:
             bool. True if the user has the permission on the resource
