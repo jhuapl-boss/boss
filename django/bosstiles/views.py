@@ -18,6 +18,7 @@ from django.conf import settings
 
 from boss import utils
 from boss.throttling import BossThrottle
+from bosscore.models import ThrottleMetric
 from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, ErrorCodes
 from bossutils.logger import bossLogger
@@ -103,9 +104,9 @@ class CutoutTile(APIView):
                / 8
                ) # Calculating the number of bytes
 
-        BossThrottle().check('image','egress',
+        BossThrottle().check('image',ThrottleMetric.METRIC_TYPE_EGRESS,
                              request.user,
-                             cost,'bytes')
+                             cost,ThrottleMetric.METRIC_UNITS_BYTES)
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
@@ -244,9 +245,9 @@ class Tile(APIView):
                / 8
                ) # Calculating the number of bytes
 
-        BossThrottle().check('tile','egress',
+        BossThrottle().check('tile',ThrottleMetric.METRIC_TYPE_EGRESS,
                              request.user,
-                             cost,'bytes')
+                             cost,ThrottleMetric.METRIC_UNITS_BYTES)
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [

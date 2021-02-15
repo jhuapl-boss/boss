@@ -141,9 +141,10 @@ class Token(LoginRequiredMixin, View):
         """.format(request.path_info, content, button)
         return HttpResponse(html)
 
-from boss.throttling import RedisMetrics, RedisMetricKey
+from boss.throttling import MetricDatabase
 from bosscore.constants import ADMIN_USER
 from django.contrib.auth.models import User
+from bosscore.models import ThrottleMetric, ThrottleThreshold, ThrottleUsage
 
 class Metric(LoginRequiredMixin, APIView):
     """
@@ -158,7 +159,7 @@ class Metric(LoginRequiredMixin, APIView):
         Initialize the view with RedisMetrics object
         """
         self.blog = bossLogger()
-        self.metrics = RedisMetrics()
+        self.metricdb = MetricDatabase()
 
     def _get_admin_user(self):
         """
@@ -168,53 +169,49 @@ class Metric(LoginRequiredMixin, APIView):
         """
         return User.objects.get(username=ADMIN_USER)
         
-    def _getMetrics(self,metricName):
+    def put(self, request):
         """
-        Get metrics that match metric name
-
-        Args: 
-            metricName (str): name of metric
-        
-        Returns: result object containing selected metrics
+        Handle PUT requests
         """
-        keys = self.metrics.get_metrics(metricName)
-        result = {'metric':metricName, 'values':[]}
-        metricKeys = [RedisMetricKey(key=k) for k in keys]
-        if metricKeys:
-            result = [{ 'name':mk.name, 'value':self.metrics.get_metric(mk), 'units': mk.units, 'type':mk.type } for mk in metricKeys]
-        return result
+        user = request.GET.get('user',str(request.user))
+        if not request.user == self._get_admin_user():
+            user = request.GET.get('user',str(request.user))
+            return BossHTTPError(" User {} is not authorized ".format(user),
+                             ErrorCodes.ACCESS_DENIED_UNKNOWN)
+        paths = request.path_info.split("/")
+        if paths[-1] == 'metrics':
+            self.metricdb.updateMetrics(request.data)
+        if paths[-1] == 'thresholds':
+            self.metricdb.updateThresholds(request.data)
+        return HttpResponse(status=201)
 
     def get(self, request):
         """
         Handles the get request for metrics
-        /metrics/list will list all metric names
-        /metrics will return user metrics for the logged in user
-            options:
-            metric=<name> will return metrics for provided name
-            user=<username> will return metrics for provided user
-
         """
-        if self.metrics.conn == None:
-            return Response("No redis connection")
         paths = request.path_info.split("/")
         metric = request.GET.get('metric')
         user = request.GET.get('user',str(request.user))
+        userIsAdmin = request.user == self._get_admin_user()
         # determine response
-        if paths[-1] == 'list':
-            # list all metrics names
-            keys = [k.decode('utf8') for k in self.metrics.conn.keys()]
-            metrics = set([RedisMetricKey(key=k).name for k in keys])
-            return Response(metrics)
-        
-        if paths[-1] == 'all':
-            metric = "*"
+        if paths[-1] == 'thresholds':
+            if userIsAdmin:
+                return Response(self.metricdb.getThresholdsAsJson())
+        if paths[-1] == 'metrics':
+            if userIsAdmin:
+                return Response(self.metricdb.getMetricsAsJson())
+        if paths[-1] == 'usage':
+            if userIsAdmin:
+                return Response(self.metricdb.getUsageAsJson())
 
         # show specific metric values 
         if not metric:
-            metric = user
-        metricIsUser = metric == str(request.user)
-        userIsAdmin = request.user == self._get_admin_user()
+            metric = self.metricdb.encodeMetric(MetricDatabase.USER_LEVEL_METRIC, user)
+        level,name = self.metricdb.decodeMetric(metric)
+        usersUsage = name == user
         # make sure only admin user can see other metrics
-        if metricIsUser or userIsAdmin:
-            return Response(self._getMetrics(metric))
-        return Response("Unauthorized request")
+        if usersUsage or userIsAdmin:
+            return Response(self.metricdb.getUsageAsJson(metric))
+        return BossHTTPError(" User {} is not authorized ".format(user),
+                             ErrorCodes.ACCESS_DENIED_UNKNOWN)
+

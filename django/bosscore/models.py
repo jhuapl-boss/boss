@@ -17,7 +17,51 @@ from django.contrib.auth.models import Group
 from django.core.validators import RegexValidator
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from datetime import date
 
+class ThrottleMetric(models.Model):
+    METRIC_UNITS_BYTES = 'byte_count'
+    METRIC_UNITS_VOXELS = 'voxel_count'
+    METRIC_UNITS_CUBOIDS = 'cuboid_count'
+    METRIC_UNITS = (
+        (METRIC_UNITS_BYTES,'Threshold in bytes'),
+        (METRIC_UNITS_CUBOIDS, 'Threshold in cuboids'),
+        (METRIC_UNITS_VOXELS,'Threshold in voxels')
+    )
+    METRIC_TYPE_EGRESS = 'egress'
+    METRIC_TYPE_INGRESS = 'ingress'
+    METRIC_TYPE_COMPUTE = 'compute'
+    METRIC_TYPES = (
+        (METRIC_TYPE_EGRESS,'Egress level'),
+        (METRIC_TYPE_INGRESS,'Engress level'),
+        (METRIC_TYPE_COMPUTE,'Computation level')
+    )
+    mtype = models.CharField(choices=METRIC_TYPES,max_length=20)
+    units = models.CharField(choices=METRIC_UNITS, max_length=20)
+    def_system_limit = models.BigIntegerField(default=-1)
+    def_api_limit = models.BigIntegerField(default=-1)
+    def_user_limit = models.BigIntegerField(default=-1)
+
+    class Meta:
+        db_table = u"throttle_metric"
+        unique_together = ('mtype', 'units')
+
+class ThrottleThreshold(models.Model):
+    name = models.CharField(max_length=255)
+    metric = models.ForeignKey(ThrottleMetric, on_delete=models.CASCADE)
+    limit = models.BigIntegerField(default=-1)
+
+    class Meta:
+        db_table = u"throttle_threshold"
+        unique_together = ('name', 'metric')
+
+class ThrottleUsage(models.Model):
+    threshold = models.OneToOneField(ThrottleThreshold, on_delete=models.CASCADE)
+    value = models.BigIntegerField(default=0)
+    since = models.DateField(default=date.today)
+
+    class Meta:
+        db_table = u"throttle_usage"
 
 class NameValidator(RegexValidator):
     regex = "^[a-zA-Z0-9_-]*$"
