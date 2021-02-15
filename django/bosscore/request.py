@@ -792,10 +792,14 @@ class BossRequest:
         Returns:
             self.bosskey(str) : String that represents the boss key for the current request
         """
-        if self.service == 'cutout' or self.service == 'image' or self.service == 'tile' or self.service == 'ids'\
-                or self.service == 'boundingbox' or self.service == 'downsample':
+        if self.service == 'cutout' or self.service == 'image' or self.service == 'tile'\
+                or self.service == 'boundingbox':
+            # TODO SH Hack added to allow us to quickly make channels public without logging in.
+            if self.channel.id in [1080, 1081, 1082, 1083]:
+                return
             perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
-
+        elif self.service == 'downsample' or  self.service == 'ids':
+            perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
         elif self.service == 'meta':
             if self.collection and self.experiment and self.channel:
                 obj = self.channel
