@@ -73,3 +73,8 @@ target/
 
 .idea
 .vscode
+
+# ignore certificate symlinks
+*.crt 
+*.key
+*.pem
