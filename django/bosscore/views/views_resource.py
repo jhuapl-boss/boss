@@ -330,6 +330,8 @@ class ExperimentDetail(APIView):
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
                 serializer = ExperimentReadSerializer(experiment_obj)
                 data = serializer.data
+                import logging
+                logging.Logger('boss').debug("request.user: " + str(type(request.user)))
                 data['channels'] = serializer.get_channels_permissions(collection_obj,experiment_obj,request.user)
                 return Response(data)
             else:
@@ -611,7 +613,7 @@ class ChannelDetail(APIView):
             # TODO SH Hack added to allow us to quickly make channels detail public without logging in.
             if channel_obj is None:
                 return BossResourceNotFoundError(channel)
-            if channel_obj.id in [1080, 1083] or request.user.has_perm("read", channel_obj):
+            if channel_obj.id in [1080, 1081, 1082, 1083] or request.user.has_perm("read", channel_obj):
                 if channel_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
