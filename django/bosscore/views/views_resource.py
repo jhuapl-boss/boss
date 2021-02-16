@@ -57,6 +57,8 @@ class CollectionDetail(APIView):
 
             # Check for permissions
             # TODO SH Hack added to allow us to quickly make collection detail public without logging in.
+            if collection_obj is None:
+                return BossResourceNotFoundError(collection)
             if collection_obj.id in [108] or request.user.has_perm("read", collection_obj):
                 if collection_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
@@ -320,6 +322,8 @@ class ExperimentDetail(APIView):
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for permissions
             # TODO SH Hack added to allow us to quickly make experiment detail public without logging in.
+            if experiment_obj is None:
+                return BossResourceNotFoundError(experiment)
             if experiment_obj.id in [176, 177] or request.user.has_perm("read", experiment_obj):
                 if experiment_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
@@ -605,6 +609,8 @@ class ChannelDetail(APIView):
 
             # Check for permissions
             # TODO SH Hack added to allow us to quickly make channels detail public without logging in.
+            if channel_obj is None:
+                return BossResourceNotFoundError(channel)
             if channel_obj.id in [1080, 1083] or request.user.has_perm("read", channel_obj):
                 if channel_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
