@@ -118,7 +118,7 @@ def start(request, resource):
         return BossHTTPError(be.message, be.error_code)
 
     compute_usage_metrics(session, args, boss_config['system']['fqdn'],
-                          request.user.username,
+                          request.user.username or "public",
                           collection.name, experiment.name, channel.name)
 
     region = get_region()

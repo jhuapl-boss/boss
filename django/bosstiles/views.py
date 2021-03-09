@@ -110,7 +110,7 @@ class CutoutTile(APIView):
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
-            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'User', 'Value': request.user.username or "public"},
             {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
                                                             experiment,
                                                             channel)},
@@ -251,7 +251,7 @@ class Tile(APIView):
 
         boss_config = bossutils.configuration.BossConfig()
         dimensions = [
-            {'Name': 'User', 'Value': request.user.username},
+            {'Name': 'User', 'Value': request.user.username or "public"},
             {'Name': 'Resource', 'Value': '{}/{}/{}'.format(collection,
                                                             experiment,
                                                             channel)},

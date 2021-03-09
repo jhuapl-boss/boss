@@ -266,7 +266,7 @@ class IngestJobView(IngestServiceView):
 
             boss_config = bossutils.configuration.BossConfig()
             dimensions = [
-                {'Name': 'User', 'Value': request.user.username},
+                {'Name': 'User', 'Value': request.user.username or "public"},
                 {'Name': 'Resource', 'Value': '{}/{}/{}'.format(database['collection'],
                                                                 database['experiment'],
                                                                 database['channel'])},
