@@ -533,7 +533,7 @@ class IngestManager:
                 'channel': ingest_job.channel_id,
                 'task_id': ingest_job.id,
                 'resolution': ingest_job.resolution,
-                'z_chunk_size': ingest_job.tile_size_z, 
+                'z_chunk_size': 16, # Number of z slices in a cuboid. 
                 'upload_queue': ingest_job.upload_queue,
                 'ingest_queue': ingest_job.ingest_queue,
                 'ingest_type': ingest_job.ingest_type
