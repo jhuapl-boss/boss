@@ -28,7 +28,7 @@ from bosscore.error import BossError, BossHTTPError, BossPermissionError, BossRe
 from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
-from bosscore.error import PUBLIC_CHANNELS
+from bosscore.public_channels import PUBLIC_CHANNELS
 
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, \
     CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer, ChannelReadSerializer, \

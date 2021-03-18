@@ -19,7 +19,7 @@ from .models import Collection, Experiment, Channel
 from .lookup import LookUpKey
 from .error import BossHTTPError, BossError, ErrorCodes, BossRestArgsError
 from .permissions import BossPermissionManager
-from .error import PUBLIC_CHANNELS
+from .public_channels import PUBLIC_CHANNELS
 
 META_CONNECTOR = "&"
 
