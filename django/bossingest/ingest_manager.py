@@ -34,11 +34,11 @@ from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndqueue.tileindexqueue import TileIndexQueue
 from ndingest.ndqueue.tileerrorqueue import TileErrorQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
-from ndingest.nddynamo.boss_tileindexdb import BossTileIndexDB
 from ndingest.ndbucket.tilebucket import TileBucket
 from ndingest.util.bossutil import BossUtil
 
 import bossutils
+from bossutils.logger import bossLogger
 from bossutils.ingestcreds import IngestCredentials
 
 # Get the ingest bucket name from boss.config
@@ -194,7 +194,7 @@ class IngestManager:
                     ingest_queue = self.create_ingest_queue()
                     self.job.ingest_queue = ingest_queue.url
                     tile_index_queue = self.create_tile_index_queue()
-                    self.add_trigger_tile_uploaded_lambda_from_queue(tile_index_queue.arn)
+                    self.lambda_connect_sqs(tile_index_queue.arn, TILE_UPLOADED_LAMBDA)
                     self.create_tile_error_queue()
                 elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
                     # Will the management console be ok with ingest_queue being null?
@@ -547,7 +547,8 @@ class IngestManager:
     def ensure_queues_empty(self, ingest_job):
         """
         As part of verifying that an ingest job is ready to complete, check
-        each SQS queue associated with the ingest job.
+        each SQS queue associated with the ingest job.  If the ingest queue is
+        not empty, connect the ingest queue to the ingest lambda.
 
         Args:
             ingest_job: Ingest job model
@@ -561,6 +562,7 @@ class IngestManager:
 
         ingest_queue = self.get_ingest_job_ingest_queue(ingest_job)
         if get_sqs_num_msgs(ingest_queue.url, ingest_queue.region_name) > 0:
+            self.lambda_connect_sqs(ingest_queue.arn, INGEST_LAMBDA)
             raise BossError(INGEST_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
         tile_index_queue = self.get_ingest_job_tile_index_queue(ingest_job)
@@ -676,8 +678,9 @@ class IngestManager:
             None
 
         """
-        # self.remove_trigger_tile_uploaded_lambda_from_queue(queue.arn)
-        TileIndexQueue.deleteQueue(self.nd_proj, endpoint_url=None, delete_deadletter_queue=True)
+        queue = TileIndexQueue(self.nd_proj)
+        self.remove_sqs_event_source_from_lambda(queue.arn)
+        TileIndexQueue.deleteQueue(self.nd_proj, delete_deadletter_queue=True)
 
     def delete_tile_error_queue(self):
         """
@@ -690,46 +693,65 @@ class IngestManager:
 
     def delete_ingest_queue(self):
         """
-        Delete the current ingest queue
+        Delete the current ingest queue and removes it as an event source of
+        the ingest lambda if it's connected.
+
         Returns:
             None
-
         """
-        IngestQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+        queue = IngestQueue(self.nd_proj)
+        self.remove_sqs_event_source_from_lambda(queue.arn)
+        IngestQueue.deleteQueue(self.nd_proj)
 
-    def add_trigger_tile_uploaded_lambda_from_queue(self, queue_arn, num_msgs=1):
+    def lambda_connect_sqs(self, queue_arn, lambda_name, num_msgs=1):
         """
-        Adds an SQS event trigger to the tile uploaded lambda.
+        Adds an SQS event trigger to the given lambda.
 
         Args:
             queue_arn (str): Arn of SQS queue that will be the trigger source.
+            lambda_name (str): Lambda function name.
             num_msgs (optional[int]): Number of messages to send to the lambda.  Defaults to 1, max 10.
 
         Raises:
             (ValueError): if num_msgs is greater than the SQS max batch size.
         """
         if num_msgs < 1 or num_msgs > MAX_SQS_BATCH_SIZE:
-            raise ValueError('trigger_tile_uploaded_lambda_from_queue(): Bad num_msgs: {}'.format(num_msgs))
+            raise ValueError('lambda_connect_sqs(): Bad num_msgs: {}'.format(num_msgs))
 
         client = boto3.client('lambda', region_name=bossutils.aws.get_region())
-        client.create_event_source_mapping(
-            EventSourceArn=queue_arn,
-            FunctionName=TILE_UPLOADED_LAMBDA,
-            BatchSize=num_msgs)
+        try:
+            client.create_event_source_mapping(
+                EventSourceArn=queue_arn,
+                FunctionName=lambda_name,
+                BatchSize=num_msgs)
+        except client.exceptions.ResourceConflictException:
+            log = bossLogger()
+            log.warning(f'ResourceConflictException caught trying to connect {queue_arn} to {lambda_name}.  This should be harmless because this happens when the queue has already been connected.')
 
-    def remove_trigger_tile_uploaded_lambda_from_queue(self, queue_arn):
+    def remove_sqs_event_source_from_lambda(self, queue_arn, lambda_name):
         """
-        Removes an SQS event triggger from the tile uploaded lambda.
+        Removes an SQS event triggger from the given lambda.
 
         Args:
             queue_arn (str): Arn of SQS queue that will be the trigger source.
+            lambda_name (str): Lambda function name.
         """
+        log = bossLogger()
         client = boto3.client('lambda', region_name=bossutils.aws.get_region())
-        resp = client.list_event_source_mappings(
-            EventSourceArn=queue_arn,
-            FunctionName=TILE_UPLOADED_LAMBDA)
+        try:
+            resp = client.list_event_source_mappings(
+                EventSourceArn=queue_arn,
+                FunctionName=lambda_name)
+        except Exception as ex:
+            log.error(f"Couldn't list event source mappings for {lambda_name}: {ex}")
+            return
         for evt in resp['EventSourceMappings']:
-            client.delete_event_source_mapping(UUID=evt['UUID'])
+            try:
+                client.delete_event_source_mapping(UUID=evt['UUID'])
+            except client.exceptions.ResourceNotFoundException:
+                pass
+            except Exception as ex:
+                log.error(f"Couldn't remove event source mapping {queue_arn} from {lambda_name}: {ex}")
 
     def get_tile_bucket(self):
         """

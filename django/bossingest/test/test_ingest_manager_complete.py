@@ -16,7 +16,7 @@
 This module tests the ingest completion process of IngestManager.
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import ANY, call, patch, MagicMock
 from datetime import datetime, timedelta, timezone
 
 from bossingest.ingest_manager import (
@@ -27,14 +27,14 @@ from bossingest.ingest_manager import (
     TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG,
     TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG,
     ALREADY_COMPLETING_ERR_MSG,
-    WAIT_FOR_QUEUES_SECS
+    WAIT_FOR_QUEUES_SECS,
+    INGEST_LAMBDA,
 )
 from bossingest.models import IngestJob
 from bossingest.test.setup import SetupTests
 from bosscore.test.setup_db import SetupTestDB
 from bosscore.error import BossError, ErrorCodes
 from django.contrib.auth.models import User
-import django.utils.timezone
 from ndingest.ndqueue.uploadqueue import UploadQueue
 from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndqueue.tileindexqueue import TileIndexQueue
@@ -357,6 +357,7 @@ class BossIngestManagerCompleteTest(APITestCase):
 
         fake_get_sqs_num_msgs.side_effect = make_fake_get_sqs_num_msgs([(INGEST_QUEUE_URL, 1)])
         self.make_fake_sqs_queues()
+        self.patch_ingest_mgr('lambda_connect_sqs')
 
         with self.assertRaises(BossError) as be:
             self.ingest_mgr.ensure_queues_empty(job);
@@ -365,6 +366,19 @@ class BossIngestManagerCompleteTest(APITestCase):
         self.assertEqual(400, actual.status_code)
         self.assertEqual(ErrorCodes.BAD_REQUEST, actual.error_code)
         self.assertEqual(INGEST_QUEUE_NOT_EMPTY_ERR_MSG, actual.message)
+
+    @patch('bossingest.ingest_manager.get_sqs_num_msgs', autospec=True)
+    def test_ensure_queues_empty_should_attach_ingest_lambda_if_ingest_queue_not_empty(self, fake_get_sqs_num_msgs):
+        """Should fail if the ingest queue isn't empty."""
+        job = self.make_ingest_job(status=IngestJob.UPLOADING)
+
+        fake_get_sqs_num_msgs.side_effect = make_fake_get_sqs_num_msgs([(INGEST_QUEUE_URL, 1)])
+        self.make_fake_sqs_queues()
+        fake_lambda_connect = self.patch_ingest_mgr('lambda_connect_sqs')
+
+        with self.assertRaises(BossError):
+            self.ingest_mgr.ensure_queues_empty(job);
+        self.assertEquals(fake_lambda_connect.call_args_list, [call(ANY, INGEST_LAMBDA)])
 
     @patch('bossingest.ingest_manager.get_sqs_num_msgs', autospec=True)
     def test_ensure_queues_empty_should_fail_if_tile_index_queue_not_empty(self, fake_get_sqs_num_msgs):
