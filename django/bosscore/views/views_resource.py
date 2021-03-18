@@ -36,8 +36,6 @@ from bosscore.serializers import CollectionSerializer, ExperimentSerializer, Cha
 
 from bosscore.models import Collection, Experiment, Channel, CoordinateFrame, Source
 
-public_channel_frozen_set
-
 
 class CollectionDetail(APIView):
 
