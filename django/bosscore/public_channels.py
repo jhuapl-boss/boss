@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO SH Hack added frozenset to load the list of channels that should be made public.
+
 import os
 
-os.chdir(os.path.abspath(os.path.dirname(__file__)))
+channels_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'public_channels.txt')
 
 pub_ch_list = []
-with open('public_channels.txt', 'r') as f:
+with open(channels_path, 'r') as f:
     pub_ch_list = [int(line) for line in f]
 
 PUBLIC_CHANNELS = frozenset(pub_ch_list)
