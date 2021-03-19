@@ -91,6 +91,7 @@ urlpatterns = [
     url(r'^v1/reserve/', include('bossobject.urls.reserve_urls', namespace='v1')),
     url(r'^v1/ids/', include('bossobject.urls.ids_urls', namespace='v1')),
     url(r'^v1/boundingbox/', include('bossobject.urls.boundingbox_urls', namespace='v1')),
+    url(r'^v1/cuboidsfromid/', include('bossobject.urls.cuboidsfromid_urls', namespace='v1'))
 ]
 
 if 'djangooidc' in settings.INSTALLED_APPS:
