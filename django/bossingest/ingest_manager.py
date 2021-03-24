@@ -194,7 +194,7 @@ class IngestManager:
                     ingest_queue = self.create_ingest_queue()
                     self.job.ingest_queue = ingest_queue.url
                     tile_index_queue = self.create_tile_index_queue()
-                    self.lambda_connect_sqs(tile_index_queue.arn, TILE_UPLOADED_LAMBDA)
+                    self.lambda_connect_sqs(tile_index_queue.queue, TILE_UPLOADED_LAMBDA)
                     self.create_tile_error_queue()
                 elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
                     # Will the management console be ok with ingest_queue being null?
@@ -562,7 +562,7 @@ class IngestManager:
 
         ingest_queue = self.get_ingest_job_ingest_queue(ingest_job)
         if get_sqs_num_msgs(ingest_queue.url, ingest_queue.region_name) > 0:
-            self.lambda_connect_sqs(ingest_queue.arn, INGEST_LAMBDA)
+            self.lambda_connect_sqs(ingest_queue.queue, INGEST_LAMBDA)
             raise BossError(INGEST_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
         tile_index_queue = self.get_ingest_job_tile_index_queue(ingest_job)
@@ -658,6 +658,10 @@ class IngestManager:
         """
         IngestQueue.createQueue(self.nd_proj, endpoint_url=None)
         queue = IngestQueue(self.nd_proj, endpoint_url=None)
+        timeout = self.get_ingest_lambda_timeout(INGEST_LAMBDA)
+        # Ensure visibility timeout is greater than the ingest lambda that pulls
+        # from it with a bit of buffer.
+        queue.queue.set_attributes(Attributes={'VisibilityTimeout': str(timeout + 20)})
         return queue
 
     def delete_upload_queue(self):
@@ -703,12 +707,31 @@ class IngestManager:
         self.remove_sqs_event_source_from_lambda(queue.arn)
         IngestQueue.deleteQueue(self.nd_proj)
 
-    def lambda_connect_sqs(self, queue_arn, lambda_name, num_msgs=1):
+    def get_ingest_lambda_timeout(self, name):
+        """
+        Get the current timeout of the tile ingest lambda.
+
+        Args:
+            name (str): Name of lambda.
+
+        Returns:
+            (int): Number of seconds of the timeout.
+        """
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        try:
+            resp = client.get_function(FunctionName=name)
+            return resp['Configuration']['Timeout']
+        except Exception as ex:
+            log = bossLogger()
+            log.error(f"Couldn't get lambda: {name} data from AWS: {ex}")
+            raise
+
+    def lambda_connect_sqs(self, queue, lambda_name, num_msgs=1):
         """
         Adds an SQS event trigger to the given lambda.
 
         Args:
-            queue_arn (str): Arn of SQS queue that will be the trigger source.
+            queue (SQS.Queue): SQS queue that will be the trigger source.
             lambda_name (str): Lambda function name.
             num_msgs (optional[int]): Number of messages to send to the lambda.  Defaults to 1, max 10.
 
@@ -718,6 +741,11 @@ class IngestManager:
         if num_msgs < 1 or num_msgs > MAX_SQS_BATCH_SIZE:
             raise ValueError('lambda_connect_sqs(): Bad num_msgs: {}'.format(num_msgs))
 
+        queue_arn = queue.attributes['QueueArn']
+        timeout = self.get_ingest_lambda_timeout(lambda_name)
+        # AWS recommends that an SQS queue used as a lambda event source should
+        # have a visibility timeout that's 6 times the lambda's timeout.
+        queue.set_attributes(Attributes={'VisibilityTimeout': str(timeout * 6)})
         client = boto3.client('lambda', region_name=bossutils.aws.get_region())
         try:
             client.create_event_source_mapping(
