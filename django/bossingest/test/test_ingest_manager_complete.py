@@ -128,6 +128,7 @@ class BossIngestManagerCompleteTest(APITestCase):
         upload_q = MagicMock(spec=UploadQueue)
         upload_q.url = UPLOAD_QUEUE_URL
         upload_q.region_name = self.region
+        upload_q.queue = MagicMock()
 
         get_upload_q = self.patch_ingest_mgr('get_ingest_job_upload_queue')
         get_upload_q.return_value = upload_q
@@ -135,6 +136,7 @@ class BossIngestManagerCompleteTest(APITestCase):
         ingest_q = MagicMock(spec=IngestQueue)
         ingest_q.url = INGEST_QUEUE_URL
         ingest_q.region_name = self.region
+        ingest_q.queue = MagicMock()
 
         get_ingest_q = self.patch_ingest_mgr('get_ingest_job_ingest_queue')
         get_ingest_q.return_value = ingest_q
@@ -142,6 +144,7 @@ class BossIngestManagerCompleteTest(APITestCase):
         tile_index_q = MagicMock(spec=TileIndexQueue)
         tile_index_q.url = TILE_INDEX_QUEUE_URL
         tile_index_q.region_name = self.region
+        tile_index_q.queue = MagicMock()
 
         get_tile_index_q = self.patch_ingest_mgr('get_ingest_job_tile_index_queue')
         get_tile_index_q.return_value = tile_index_q
@@ -149,6 +152,7 @@ class BossIngestManagerCompleteTest(APITestCase):
         tile_error_q = MagicMock(spec=TileErrorQueue)
         tile_error_q.url = TILE_ERROR_QUEUE_URL
         tile_error_q.region_name = self.region
+        tile_error_q.queue = MagicMock()
 
         get_tile_error_q = self.patch_ingest_mgr('get_ingest_job_tile_error_queue')
         get_tile_error_q.return_value = tile_error_q

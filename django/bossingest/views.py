@@ -420,7 +420,7 @@ class IngestJobCompleteView(IngestServiceView):
             except BossError as be:
                 if (be.message == INGEST_QUEUE_NOT_EMPTY_ERR_MSG or
                         be.message == TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG or
-                        be.message == TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG):
+                        be.message == INGEST_QUEUE_NOT_EMPTY_ERR_MSG):
                     return Response(
                         data={ 'wait_secs': WAIT_FOR_QUEUES_SECS, 'info': 'Internal queues not empty yet' },
                         status=status.HTTP_400_BAD_REQUEST)

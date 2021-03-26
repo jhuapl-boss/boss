@@ -12,6 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Note that these tests all pass when run in isolation when run locally, but
+there are several failures when all tests run together:
+
+FAIL: test_delete_role (sso.tests.test_user_roles.TestBossUserRole)
+FAIL: test_failed_delete_role (sso.tests.test_user_roles.TestBossUserRole)
+FAIL: test_failed_get_role (sso.tests.test_user_roles.TestBossUserRole)
+FAIL: test_failed_post_role (sso.tests.test_user_roles.TestBossUserRole)
+FAIL: test_get_role_no_role (sso.tests.test_user_roles.TestBossUserRole)
+FAIL: test_get_role_with_role (sso.tests.test_user_roles.TestBossUserRole)
+FAIL: test_get_role_with_role1 (sso.tests.test_user_roles.TestBossUserRole)
+FAIL: test_post_role (sso.tests.test_user_roles.TestBossUserRole)
+"""
+
 from unittest import mock
 import json
 

@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Note that these tests all pass when run in isolation when run locally, but
+there are several failures when all tests run together:
+
+FAIL: test_delete_user (sso.tests.test_users.TestBossUser)
+FAIL: test_delete_user_bossadmin (sso.tests.test_users.TestBossUser)
+FAIL: test_failed_delete_user (sso.tests.test_users.TestBossUser)
+FAIL: test_failed_post_user (sso.tests.test_users.TestBossUser)
+FAIL: test_failed_post_user_rollback (sso.tests.test_users.TestBossUser)
+FAIL: test_post_user (sso.tests.test_users.TestBossUser)
+"""
+
 from unittest import mock
 
 # This must be imported before the views class so check_role() can be properly
