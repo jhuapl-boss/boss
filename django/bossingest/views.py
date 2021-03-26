@@ -387,8 +387,17 @@ class IngestJobCompleteView(IngestServiceView):
                 return BossHTTPError("You cannot complete a job that is still preparing. You must cancel instead.",
                                      ErrorCodes.BAD_REQUEST)
             elif ingest_job.status == IngestJob.UPLOADING:
-                data = ingest_mgmr.try_enter_wait_on_queue_state(ingest_job)
-                return Response(data=data, status=status.HTTP_202_ACCEPTED)
+                try:
+                    data = ingest_mgmr.try_enter_wait_on_queue_state(ingest_job)
+                    return Response(data=data, status=status.HTTP_202_ACCEPTED)
+                except BossError as be:
+                    if (be.message == INGEST_QUEUE_NOT_EMPTY_ERR_MSG or
+                            be.message == TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG or
+                            be.message == INGEST_QUEUE_NOT_EMPTY_ERR_MSG):
+                        return Response(
+                            data={ 'wait_secs': WAIT_FOR_QUEUES_SECS, 'info': 'Internal queues not empty yet' },
+                            status=status.HTTP_400_BAD_REQUEST)
+                    raise
             elif ingest_job.status == IngestJob.WAIT_ON_QUEUES:
                 pass
                 # Continue below.
