@@ -392,8 +392,10 @@ class IngestJobCompleteView(IngestServiceView):
                     return Response(data=data, status=status.HTTP_202_ACCEPTED)
                 except BossError as be:
                     if (be.message == INGEST_QUEUE_NOT_EMPTY_ERR_MSG or
-                            be.message == TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG or
-                            be.message == INGEST_QUEUE_NOT_EMPTY_ERR_MSG):
+                            be.message == TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG):
+                        # If there are messages in the tile error queue, this
+                        # will have to be handled manually.  Non-empty ingest
+                        # or tile index queues should resolve on their own.
                         return Response(
                             data={ 'wait_secs': WAIT_FOR_QUEUES_SECS, 'info': 'Internal queues not empty yet' },
                             status=status.HTTP_400_BAD_REQUEST)

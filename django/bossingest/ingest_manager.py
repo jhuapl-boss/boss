@@ -191,11 +191,12 @@ class IngestManager:
 
                 # Create the ingest queue
                 if self.job.ingest_type == IngestJob.TILE_INGEST:
+                    tile_error_queue = self.create_tile_error_queue()
                     ingest_queue = self.create_ingest_queue()
                     self.job.ingest_queue = ingest_queue.url
                     tile_index_queue = self.create_tile_index_queue()
+                    tile_index_queue.addDeadLetterQueue(3, tile_error_queue.arn)
                     self.lambda_connect_sqs(tile_index_queue.queue, TILE_UPLOADED_LAMBDA)
-                    self.create_tile_error_queue()
                 elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
                     # Will the management console be ok with ingest_queue being null?
                     pass
@@ -560,8 +561,10 @@ class IngestManager:
         if get_sqs_num_msgs(upload_queue.url, upload_queue.region_name) > 0:
             raise BossError(UPLOAD_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
+        tile_error_queue = self.get_ingest_job_tile_error_queue(ingest_job)
         ingest_queue = self.get_ingest_job_ingest_queue(ingest_job)
         if get_sqs_num_msgs(ingest_queue.url, ingest_queue.region_name) > 0:
+            ingest_queue.addDeadLetterQueue(3, tile_error_queue.arn)
             self.lambda_connect_sqs(ingest_queue.queue, INGEST_LAMBDA)
             raise BossError(INGEST_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
@@ -569,7 +572,6 @@ class IngestManager:
         if get_sqs_num_msgs(tile_index_queue.url, tile_index_queue.region_name) > 0:
             raise BossError(TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
-        tile_error_queue = self.get_ingest_job_tile_error_queue(ingest_job)
         if get_sqs_num_msgs(tile_error_queue.url, tile_error_queue.region_name) > 0:
             raise BossError(TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
