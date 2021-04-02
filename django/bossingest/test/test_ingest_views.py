@@ -20,6 +20,7 @@ from bosscore.constants import ADMIN_USER
 from bosscore.error import BossError, ErrorCodes
 from bossingest.ingest_manager import IngestManager, INGEST_QUEUE_NOT_EMPTY_ERR_MSG
 from bossingest.models import IngestJob
+from bossutils.ingestcreds import IngestCredentials
 
 
 version = settings.BOSS_VERSION

@@ -25,12 +25,8 @@ from bosscore.error import BossError, ErrorCodes, BossHTTPError
 from bossingest.ingest_manager import (
     IngestManager, INGEST_BUCKET,
     WAIT_FOR_QUEUES_SECS,
-    NOT_IN_WAIT_ON_QUEUES_STATE_ERR_MSG,
-    UPLOAD_QUEUE_NOT_EMPTY_ERR_MSG,
     INGEST_QUEUE_NOT_EMPTY_ERR_MSG,
     TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG,
-    TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG,
-    ALREADY_COMPLETING_ERR_MSG
 )
 from bossingest.serializers import IngestJobListSerializer
 from bosscore.models import Collection, Experiment, Channel
@@ -41,7 +37,6 @@ from bosscore.models import ThrottleMetric
 
 import bossutils
 from bossutils.ingestcreds import IngestCredentials
-import time
 import json
 
 
@@ -173,45 +168,8 @@ class IngestJobView(IngestServiceView):
             data['OBJECTIO_CONFIG'].pop('index_deadletter_queue', None)
             data['OBJECTIO_CONFIG'].pop('index_cuboids_keys_queue', None)
 
-
-            # add the lambda - Possibly remove this later
-            config = bossutils.configuration.BossConfig()
-            data['ingest_lambda'] = config["lambda"]["page_in_function"]
-
-            # Generate a "resource" for the ingest lambda function to be able to use SPDB cleanly
-            collection = Collection.objects.get(name=data['ingest_job']["collection"])
-            experiment = Experiment.objects.get(name=data['ingest_job']["experiment"], collection=collection)
-            coord_frame = experiment.coord_frame
-            channel = Channel.objects.get(name=data['ingest_job']["channel"], experiment=experiment)
-
-            resource={}
-            resource['boss_key'] = '{}&{}&{}'.format(data['ingest_job']["collection"],
-                                                     data['ingest_job']["experiment"],
-                                                     data['ingest_job']["channel"])
-            resource['lookup_key'] = '{}&{}&{}'.format(collection.id,
-                                                       experiment.id,
-                                                       channel.id)
-
-            # The Lambda function needs certain resource properties to perform write ops. Set required things only.
-            # This is because S3 metadata is limited to 2kb, so we only set the bits of info needed, and in the lambda
-            # Function Populate the rest with dummy info
-            # IF YOU NEED ADDITIONAL DATA YOU MUST ADD IT HERE AND IN THE LAMBDA FUNCTION
-            resource['channel'] = {}
-            resource['channel']['type'] = channel.type
-            resource['channel']['datatype'] = channel.datatype
-            resource['channel']['base_resolution'] = channel.base_resolution
-
-            resource['experiment'] = {}
-            resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
-            resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
-
-            resource['coord_frame'] = {}
-            resource['coord_frame']['x_voxel_size'] = coord_frame.x_voxel_size
-            resource['coord_frame']['y_voxel_size'] = coord_frame.y_voxel_size
-            resource['coord_frame']['z_voxel_size'] = coord_frame.z_voxel_size
-
             # Set resource
-            data['resource'] = resource
+            data['resource'] = ingest_mgmr.get_resource_data(ingest_job_id)
 
             return Response(data, status=status.HTTP_200_OK)
         except BossError as err:

@@ -17,6 +17,7 @@ import jsonschema
 import boto3
 import math
 from django.utils import timezone
+from django.conf import settings
 
 from ingestclient.core.config import Configuration
 from ingestclient.core.backend import BossBackend
@@ -191,12 +192,11 @@ class IngestManager:
 
                 # Create the ingest queue
                 if self.job.ingest_type == IngestJob.TILE_INGEST:
-                    tile_error_queue = self.create_tile_error_queue()
                     ingest_queue = self.create_ingest_queue()
                     self.job.ingest_queue = ingest_queue.url
                     tile_index_queue = self.create_tile_index_queue()
-                    tile_index_queue.addDeadLetterQueue(3, tile_error_queue.arn)
                     self.lambda_connect_sqs(tile_index_queue.queue, TILE_UPLOADED_LAMBDA)
+                    self.create_tile_error_queue()
                 elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
                     # Will the management console be ok with ingest_queue being null?
                     pass
@@ -322,6 +322,67 @@ class IngestManager:
         except IngestJob.DoesNotExist:
             raise BossError("The ingest job with id {} does not exist".format(str(ingest_job_id)),
                             ErrorCodes.OBJECT_NOT_FOUND)
+
+    def get_resource_data(self, ingest_job_id):
+        """
+        Get a partial set of resource data that is enough to reconstitute a
+        Boss resource.  This data is part of the data passed to the tile and
+        ingest lambdas.
+
+        Args:
+            ingest_job_id: Id of the ingest job
+
+        Returns:
+            (dict)
+        """
+        job = self.get_ingest_job(ingest_job_id)
+        return self._get_resource_data(job)
+
+    def _get_resource_data(self, ingest_job):
+        """
+        Get a partial set of resource data that is enough to reconstitute a
+        Boss resource.  This data is part of the data passed to the tile and
+        ingest lambdas.
+
+        Args:
+            ingest_job: ingest job
+
+        Returns:
+            (dict)
+        """
+
+        # Generate a "resource" for the ingest lambda function to be able to use SPDB cleanly
+        collection = Collection.objects.get(name=ingest_job.collection)
+        experiment = Experiment.objects.get(name=ingest_job.experiment, collection=collection)
+        coord_frame = experiment.coord_frame
+        channel = Channel.objects.get(name=ingest_job.channel, experiment=experiment)
+
+        resource = {}
+        resource['boss_key'] = '{}&{}&{}'.format(collection.name, experiment.name, channel.name)
+        resource['lookup_key'] = '{}&{}&{}'.format(collection.id, experiment.id, channel.id)
+
+        # The comment below may no longer apply now that we don't trigger
+        # the tile upload lambda from S3.
+
+        # The Lambda function needs certain resource properties to perform write ops. Set required things only.
+        # This is because S3 metadata is limited to 2kb, so we only set the bits of info needed, and in the lambda
+        # Function Populate the rest with dummy info
+        # IF YOU NEED ADDITIONAL DATA YOU MUST ADD IT HERE AND IN THE LAMBDA FUNCTION
+        resource['channel'] = {}
+        resource['channel']['type'] = channel.type
+        resource['channel']['datatype'] = channel.datatype
+        resource['channel']['base_resolution'] = channel.base_resolution
+
+        resource['experiment'] = {}
+        resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
+        resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
+
+        resource['coord_frame'] = {}
+        resource['coord_frame']['x_voxel_size'] = coord_frame.x_voxel_size
+        resource['coord_frame']['y_voxel_size'] = coord_frame.y_voxel_size
+        resource['coord_frame']['z_voxel_size'] = coord_frame.z_voxel_size
+
+        return resource
 
     def get_ingest_job_upload_queue(self, ingest_job):
         """
@@ -518,8 +579,6 @@ class IngestManager:
 
         Returns:
             (str|None): Arn of step function if successful
-
-        Raises:
         """
         if ingest_job.ingest_type != IngestJob.TILE_INGEST:
             return None
@@ -538,7 +597,13 @@ class IngestManager:
                 'upload_queue': ingest_job.upload_queue,
                 'ingest_queue': ingest_job.ingest_queue,
                 'ingest_type': ingest_job.ingest_type
-            }
+            },
+            'KVIO_SETTINGS': settings.KVIO_SETTINGS,
+            'STATEIO_CONFIG': settings.STATEIO_CONFIG,
+            'OBJECTIO_CONFIG': settings.OBJECTIO_CONFIG,
+            'resource': self._get_resource_data(ingest_job),
+            'x_size': ingest_job.tile_size_x,
+            'y_size': ingest_job.tile_size_y,
         }
 
         session = bossutils.aws.get_session()
@@ -561,19 +626,14 @@ class IngestManager:
         if get_sqs_num_msgs(upload_queue.url, upload_queue.region_name) > 0:
             raise BossError(UPLOAD_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
-        tile_error_queue = self.get_ingest_job_tile_error_queue(ingest_job)
         ingest_queue = self.get_ingest_job_ingest_queue(ingest_job)
         if get_sqs_num_msgs(ingest_queue.url, ingest_queue.region_name) > 0:
-            ingest_queue.addDeadLetterQueue(3, tile_error_queue.arn)
             self.lambda_connect_sqs(ingest_queue.queue, INGEST_LAMBDA)
             raise BossError(INGEST_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
         tile_index_queue = self.get_ingest_job_tile_index_queue(ingest_job)
         if get_sqs_num_msgs(tile_index_queue.url, tile_index_queue.region_name) > 0:
             raise BossError(TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
-
-        if get_sqs_num_msgs(tile_error_queue.url, tile_error_queue.region_name) > 0:
-            raise BossError(TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
     def cleanup_ingest_job(self, ingest_job, job_status):
         """

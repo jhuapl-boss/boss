@@ -400,22 +400,6 @@ class BossIngestManagerCompleteTest(APITestCase):
         self.assertEqual(ErrorCodes.BAD_REQUEST, actual.error_code)
         self.assertEqual(TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG, actual.message)
 
-    @patch('bossingest.ingest_manager.get_sqs_num_msgs', autospec=True)
-    def test_ensure_queues_empty_should_fail_if_tile_error_queue_not_empty(self, fake_get_sqs_num_msgs):
-        """Should fail if the tile error queue isn't empty."""
-        job = self.make_ingest_job(status=IngestJob.UPLOADING)
-
-        fake_get_sqs_num_msgs.side_effect = make_fake_get_sqs_num_msgs([(TILE_ERROR_QUEUE_URL, 1)])
-        self.make_fake_sqs_queues()
-
-        with self.assertRaises(BossError) as be:
-            self.ingest_mgr.ensure_queues_empty(job);
-
-        actual = be.exception
-        self.assertEqual(400, actual.status_code)
-        self.assertEqual(ErrorCodes.BAD_REQUEST, actual.error_code)
-        self.assertEqual(TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG, actual.message)
-
     def test_start_completion_activity_exits_if_not_tile_ingest(self):
         job = self.make_ingest_job(status=IngestJob.UPLOADING)
         job.ingest_type = IngestJob.VOLUMETRIC_INGEST
