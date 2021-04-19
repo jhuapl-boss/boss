@@ -171,6 +171,12 @@ class IngestJobView(IngestServiceView):
             # Set resource
             data['resource'] = ingest_mgmr.get_resource_data(ingest_job_id)
 
+            # ingest_lambda is no longer required by the backend.  The backend
+            # gets the name of the ingest lambda from boss-manage/lib/names.py.
+            # Keep providing it in case an older ingest client used (which
+            # still expects it).
+            data['ingest_lambda'] = 'deprecated'
+
             return Response(data, status=status.HTTP_200_OK)
         except BossError as err:
                 return err.to_http()

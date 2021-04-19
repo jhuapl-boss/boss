@@ -1,4 +1,4 @@
-# Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
+# Copyright 2021 The Johns Hopkins University Applied Physics Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -563,6 +563,9 @@ class IngestManager:
         # process.  Otherwise, completion already started.
         if rows_updated > 0:
             self._start_completion_activity(ingest_job)
+            log = bossLogger()
+            log.info(f"Started completion step function for job: {ingest_job.id}")
+
 
         return completing_success
 
@@ -698,6 +701,10 @@ class IngestManager:
         """
         TileIndexQueue.createQueue(self.nd_proj, endpoint_url=None)
         queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
+        timeout = self.get_ingest_lambda_timeout(INGEST_LAMBDA)
+        # Ensure visibility timeout is greater than the ingest lambda that pulls
+        # from it with a bit of buffer.
+        queue.queue.set_attributes(Attributes={'VisibilityTimeout': str(timeout + 20)})
         return queue
 
     def create_tile_error_queue(self):
@@ -745,7 +752,7 @@ class IngestManager:
 
         """
         queue = TileIndexQueue(self.nd_proj)
-        self.remove_sqs_event_source_from_lambda(queue.arn)
+        self.remove_sqs_event_source_from_lambda(queue.arn, TILE_UPLOADED_LAMBDA)
         TileIndexQueue.deleteQueue(self.nd_proj, delete_deadletter_queue=True)
 
     def delete_tile_error_queue(self):
@@ -766,7 +773,7 @@ class IngestManager:
             None
         """
         queue = IngestQueue(self.nd_proj)
-        self.remove_sqs_event_source_from_lambda(queue.arn)
+        self.remove_sqs_event_source_from_lambda(queue.arn, INGEST_LAMBDA)
         IngestQueue.deleteQueue(self.nd_proj)
 
     def get_ingest_lambda_timeout(self, name):
