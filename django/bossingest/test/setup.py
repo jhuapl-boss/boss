@@ -152,9 +152,9 @@ class SetupTests(object):
         data['ingest_job']['extent']['t'] = [0, 1]
 
         data['ingest_job']['chunk_size'] = {}
-        data['ingest_job']['chunk_size']['x'] = 512
-        data['ingest_job']['chunk_size']['y'] = 512
-        data['ingest_job']['chunk_size']['z'] = 16
+        data['ingest_job']['chunk_size']['x'] = 1024
+        data['ingest_job']['chunk_size']['y'] = 1024
+        data['ingest_job']['chunk_size']['z'] = 64
 
         data['ingest_job']['ingest_type'] = 'volumetric'
 

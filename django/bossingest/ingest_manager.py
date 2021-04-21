@@ -1,4 +1,4 @@
-# Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
+# Copyright 2021 The Johns Hopkins University Applied Physics Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ import jsonschema
 import boto3
 import math
 from django.utils import timezone
+from django.conf import settings
 
 from ingestclient.core.config import Configuration
 from ingestclient.core.backend import BossBackend
@@ -34,11 +35,11 @@ from ndingest.ndqueue.ingestqueue import IngestQueue
 from ndingest.ndqueue.tileindexqueue import TileIndexQueue
 from ndingest.ndqueue.tileerrorqueue import TileErrorQueue
 from ndingest.ndingestproj.bossingestproj import BossIngestProj
-from ndingest.nddynamo.boss_tileindexdb import BossTileIndexDB
 from ndingest.ndbucket.tilebucket import TileBucket
 from ndingest.util.bossutil import BossUtil
 
 import bossutils
+from bossutils.logger import bossLogger
 from bossutils.ingestcreds import IngestCredentials
 
 # Get the ingest bucket name from boss.config
@@ -194,7 +195,7 @@ class IngestManager:
                     ingest_queue = self.create_ingest_queue()
                     self.job.ingest_queue = ingest_queue.url
                     tile_index_queue = self.create_tile_index_queue()
-                    self.add_trigger_tile_uploaded_lambda_from_queue(tile_index_queue.arn)
+                    self.lambda_connect_sqs(tile_index_queue.queue, TILE_UPLOADED_LAMBDA)
                     self.create_tile_error_queue()
                 elif self.job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
                     # Will the management console be ok with ingest_queue being null?
@@ -321,6 +322,67 @@ class IngestManager:
         except IngestJob.DoesNotExist:
             raise BossError("The ingest job with id {} does not exist".format(str(ingest_job_id)),
                             ErrorCodes.OBJECT_NOT_FOUND)
+
+    def get_resource_data(self, ingest_job_id):
+        """
+        Get a partial set of resource data that is enough to reconstitute a
+        Boss resource.  This data is part of the data passed to the tile and
+        ingest lambdas.
+
+        Args:
+            ingest_job_id: Id of the ingest job
+
+        Returns:
+            (dict)
+        """
+        job = self.get_ingest_job(ingest_job_id)
+        return self._get_resource_data(job)
+
+    def _get_resource_data(self, ingest_job):
+        """
+        Get a partial set of resource data that is enough to reconstitute a
+        Boss resource.  This data is part of the data passed to the tile and
+        ingest lambdas.
+
+        Args:
+            ingest_job: ingest job
+
+        Returns:
+            (dict)
+        """
+
+        # Generate a "resource" for the ingest lambda function to be able to use SPDB cleanly
+        collection = Collection.objects.get(name=ingest_job.collection)
+        experiment = Experiment.objects.get(name=ingest_job.experiment, collection=collection)
+        coord_frame = experiment.coord_frame
+        channel = Channel.objects.get(name=ingest_job.channel, experiment=experiment)
+
+        resource = {}
+        resource['boss_key'] = '{}&{}&{}'.format(collection.name, experiment.name, channel.name)
+        resource['lookup_key'] = '{}&{}&{}'.format(collection.id, experiment.id, channel.id)
+
+        # The comment below may no longer apply now that we don't trigger
+        # the tile upload lambda from S3.
+
+        # The Lambda function needs certain resource properties to perform write ops. Set required things only.
+        # This is because S3 metadata is limited to 2kb, so we only set the bits of info needed, and in the lambda
+        # Function Populate the rest with dummy info
+        # IF YOU NEED ADDITIONAL DATA YOU MUST ADD IT HERE AND IN THE LAMBDA FUNCTION
+        resource['channel'] = {}
+        resource['channel']['type'] = channel.type
+        resource['channel']['datatype'] = channel.datatype
+        resource['channel']['base_resolution'] = channel.base_resolution
+
+        resource['experiment'] = {}
+        resource['experiment']['num_hierarchy_levels'] = experiment.num_hierarchy_levels
+        resource['experiment']['hierarchy_method'] = experiment.hierarchy_method
+
+        resource['coord_frame'] = {}
+        resource['coord_frame']['x_voxel_size'] = coord_frame.x_voxel_size
+        resource['coord_frame']['y_voxel_size'] = coord_frame.y_voxel_size
+        resource['coord_frame']['z_voxel_size'] = coord_frame.z_voxel_size
+
+        return resource
 
     def get_ingest_job_upload_queue(self, ingest_job):
         """
@@ -501,6 +563,9 @@ class IngestManager:
         # process.  Otherwise, completion already started.
         if rows_updated > 0:
             self._start_completion_activity(ingest_job)
+            log = bossLogger()
+            log.info(f"Started completion step function for job: {ingest_job.id}")
+
 
         return completing_success
 
@@ -517,8 +582,6 @@ class IngestManager:
 
         Returns:
             (str|None): Arn of step function if successful
-
-        Raises:
         """
         if ingest_job.ingest_type != IngestJob.TILE_INGEST:
             return None
@@ -537,7 +600,13 @@ class IngestManager:
                 'upload_queue': ingest_job.upload_queue,
                 'ingest_queue': ingest_job.ingest_queue,
                 'ingest_type': ingest_job.ingest_type
-            }
+            },
+            'KVIO_SETTINGS': settings.KVIO_SETTINGS,
+            'STATEIO_CONFIG': settings.STATEIO_CONFIG,
+            'OBJECTIO_CONFIG': settings.OBJECTIO_CONFIG,
+            'resource': self._get_resource_data(ingest_job),
+            'x_size': ingest_job.tile_size_x,
+            'y_size': ingest_job.tile_size_y,
         }
 
         session = bossutils.aws.get_session()
@@ -547,7 +616,8 @@ class IngestManager:
     def ensure_queues_empty(self, ingest_job):
         """
         As part of verifying that an ingest job is ready to complete, check
-        each SQS queue associated with the ingest job.
+        each SQS queue associated with the ingest job.  If the ingest queue is
+        not empty, connect the ingest queue to the ingest lambda.
 
         Args:
             ingest_job: Ingest job model
@@ -561,15 +631,12 @@ class IngestManager:
 
         ingest_queue = self.get_ingest_job_ingest_queue(ingest_job)
         if get_sqs_num_msgs(ingest_queue.url, ingest_queue.region_name) > 0:
+            self.lambda_connect_sqs(ingest_queue.queue, INGEST_LAMBDA)
             raise BossError(INGEST_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
         tile_index_queue = self.get_ingest_job_tile_index_queue(ingest_job)
         if get_sqs_num_msgs(tile_index_queue.url, tile_index_queue.region_name) > 0:
             raise BossError(TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
-
-        tile_error_queue = self.get_ingest_job_tile_error_queue(ingest_job)
-        if get_sqs_num_msgs(tile_error_queue.url, tile_error_queue.region_name) > 0:
-            raise BossError(TILE_ERROR_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
     def cleanup_ingest_job(self, ingest_job, job_status):
         """
@@ -634,6 +701,10 @@ class IngestManager:
         """
         TileIndexQueue.createQueue(self.nd_proj, endpoint_url=None)
         queue = TileIndexQueue(self.nd_proj, endpoint_url=None)
+        timeout = self.get_ingest_lambda_timeout(INGEST_LAMBDA)
+        # Ensure visibility timeout is greater than the ingest lambda that pulls
+        # from it with a bit of buffer.
+        queue.queue.set_attributes(Attributes={'VisibilityTimeout': str(timeout + 20)})
         return queue
 
     def create_tile_error_queue(self):
@@ -656,6 +727,10 @@ class IngestManager:
         """
         IngestQueue.createQueue(self.nd_proj, endpoint_url=None)
         queue = IngestQueue(self.nd_proj, endpoint_url=None)
+        timeout = self.get_ingest_lambda_timeout(INGEST_LAMBDA)
+        # Ensure visibility timeout is greater than the ingest lambda that pulls
+        # from it with a bit of buffer.
+        queue.queue.set_attributes(Attributes={'VisibilityTimeout': str(timeout + 20)})
         return queue
 
     def delete_upload_queue(self):
@@ -676,8 +751,9 @@ class IngestManager:
             None
 
         """
-        # self.remove_trigger_tile_uploaded_lambda_from_queue(queue.arn)
-        TileIndexQueue.deleteQueue(self.nd_proj, endpoint_url=None, delete_deadletter_queue=True)
+        queue = TileIndexQueue(self.nd_proj)
+        self.remove_sqs_event_source_from_lambda(queue.arn, TILE_UPLOADED_LAMBDA)
+        TileIndexQueue.deleteQueue(self.nd_proj, delete_deadletter_queue=True)
 
     def delete_tile_error_queue(self):
         """
@@ -690,46 +766,89 @@ class IngestManager:
 
     def delete_ingest_queue(self):
         """
-        Delete the current ingest queue
+        Delete the current ingest queue and removes it as an event source of
+        the ingest lambda if it's connected.
+
         Returns:
             None
-
         """
-        IngestQueue.deleteQueue(self.nd_proj, endpoint_url=None)
+        queue = IngestQueue(self.nd_proj)
+        self.remove_sqs_event_source_from_lambda(queue.arn, INGEST_LAMBDA)
+        IngestQueue.deleteQueue(self.nd_proj)
 
-    def add_trigger_tile_uploaded_lambda_from_queue(self, queue_arn, num_msgs=1):
+    def get_ingest_lambda_timeout(self, name):
         """
-        Adds an SQS event trigger to the tile uploaded lambda.
+        Get the current timeout of the tile ingest lambda.
 
         Args:
-            queue_arn (str): Arn of SQS queue that will be the trigger source.
+            name (str): Name of lambda.
+
+        Returns:
+            (int): Number of seconds of the timeout.
+        """
+        client = boto3.client('lambda', region_name=bossutils.aws.get_region())
+        try:
+            resp = client.get_function(FunctionName=name)
+            return resp['Configuration']['Timeout']
+        except Exception as ex:
+            log = bossLogger()
+            log.error(f"Couldn't get lambda: {name} data from AWS: {ex}")
+            raise
+
+    def lambda_connect_sqs(self, queue, lambda_name, num_msgs=1):
+        """
+        Adds an SQS event trigger to the given lambda.
+
+        Args:
+            queue (SQS.Queue): SQS queue that will be the trigger source.
+            lambda_name (str): Lambda function name.
             num_msgs (optional[int]): Number of messages to send to the lambda.  Defaults to 1, max 10.
 
         Raises:
             (ValueError): if num_msgs is greater than the SQS max batch size.
         """
         if num_msgs < 1 or num_msgs > MAX_SQS_BATCH_SIZE:
-            raise ValueError('trigger_tile_uploaded_lambda_from_queue(): Bad num_msgs: {}'.format(num_msgs))
+            raise ValueError('lambda_connect_sqs(): Bad num_msgs: {}'.format(num_msgs))
 
+        queue_arn = queue.attributes['QueueArn']
+        timeout = self.get_ingest_lambda_timeout(lambda_name)
+        # AWS recommends that an SQS queue used as a lambda event source should
+        # have a visibility timeout that's 6 times the lambda's timeout.
+        queue.set_attributes(Attributes={'VisibilityTimeout': str(timeout * 6)})
         client = boto3.client('lambda', region_name=bossutils.aws.get_region())
-        client.create_event_source_mapping(
-            EventSourceArn=queue_arn,
-            FunctionName=TILE_UPLOADED_LAMBDA,
-            BatchSize=num_msgs)
+        try:
+            client.create_event_source_mapping(
+                EventSourceArn=queue_arn,
+                FunctionName=lambda_name,
+                BatchSize=num_msgs)
+        except client.exceptions.ResourceConflictException:
+            log = bossLogger()
+            log.warning(f'ResourceConflictException caught trying to connect {queue_arn} to {lambda_name}.  This should be harmless because this happens when the queue has already been connected.')
 
-    def remove_trigger_tile_uploaded_lambda_from_queue(self, queue_arn):
+    def remove_sqs_event_source_from_lambda(self, queue_arn, lambda_name):
         """
-        Removes an SQS event triggger from the tile uploaded lambda.
+        Removes an SQS event triggger from the given lambda.
 
         Args:
             queue_arn (str): Arn of SQS queue that will be the trigger source.
+            lambda_name (str): Lambda function name.
         """
+        log = bossLogger()
         client = boto3.client('lambda', region_name=bossutils.aws.get_region())
-        resp = client.list_event_source_mappings(
-            EventSourceArn=queue_arn,
-            FunctionName=TILE_UPLOADED_LAMBDA)
+        try:
+            resp = client.list_event_source_mappings(
+                EventSourceArn=queue_arn,
+                FunctionName=lambda_name)
+        except Exception as ex:
+            log.error(f"Couldn't list event source mappings for {lambda_name}: {ex}")
+            return
         for evt in resp['EventSourceMappings']:
-            client.delete_event_source_mapping(UUID=evt['UUID'])
+            try:
+                client.delete_event_source_mapping(UUID=evt['UUID'])
+            except client.exceptions.ResourceNotFoundException:
+                pass
+            except Exception as ex:
+                log.error(f"Couldn't remove event source mapping {queue_arn} from {lambda_name}: {ex}")
 
     def get_tile_bucket(self):
         """

@@ -77,7 +77,7 @@ class BossIngestManagerTest(APITestCase):
         assert (self.ingest_mgr.channel.name == 'my_ch_1')
 
     def test_create_ingest_job(self):
-        """Method to test creation o a ingest job from a config_data dict"""
+        """Method to test creation of a ingest job from a config_data dict"""
         self.ingest_mgr.validate_config_file(self.example_config_data)
         self.ingest_mgr.validate_properties()
         self.ingest_mgr.owner = self.user.pk
@@ -126,3 +126,16 @@ class BossIngestManagerTest(APITestCase):
         """ Test get tile bucket name"""
         tile_bucket_name = self.ingest_mgr.get_tile_bucket()
         assert(tile_bucket_name is not None)
+
+    def test_get_resource_data(self):
+        """Run the method and ensure keys set"""
+        self.ingest_mgr.validate_config_file(self.example_config_data)
+        self.ingest_mgr.validate_properties()
+        self.ingest_mgr.owner = self.user.pk
+        job = self.ingest_mgr.create_ingest_job()
+        actual = self.ingest_mgr.get_resource_data(job.id)
+        self.assertIn('boss_key', actual)
+        self.assertIn('lookup_key', actual)
+        self.assertIn('channel', actual)
+        self.assertIn('experiment', actual)
+        self.assertIn('coord_frame', actual)

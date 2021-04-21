@@ -20,6 +20,7 @@ from bosscore.constants import ADMIN_USER
 from bosscore.error import BossError, ErrorCodes
 from bossingest.ingest_manager import IngestManager, INGEST_QUEUE_NOT_EMPTY_ERR_MSG
 from bossingest.models import IngestJob
+from bossutils.ingestcreds import IngestCredentials
 
 
 version = settings.BOSS_VERSION
@@ -152,8 +153,8 @@ class TestBossIngestView(APITestCase):
         resp = self.client.post(url, format='json')
         self.assertEqual(400, resp.status_code)
         actual = resp.json()
-        self.assertEqual(ErrorCodes.BAD_REQUEST, actual['code'])
-        self.assertEqual(400, actual['status'])
+        self.assertIn('wait_secs', actual)
+        self.assertIn('info', actual)
 
     def test_complete_should_fail_if_wait_on_queues_still_waiting(self, ingest_mgr_creator):
         """Should get a failure response along with how much longer to wait."""

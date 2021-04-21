@@ -1,36 +1,47 @@
 
+const STATUS_NAME = 0;
+const ENABLE_COMPLETE_BTN = 1;
+const ENABLE_CANCEL_BTN = 2;
+
+const statusMap = {
+  // Tuple values are name, can-complete, can-cancel.
+  0: ['Preparing', false, true],
+  1: ['Uploading', false, true],
+  2: ['Complete', false, false],
+  3: ['Deleted', false, false],
+  4: ['Failed', false, false],
+  5: ['Completing', false, false],
+  6: ['Wait on queues', true, false],
+};
+
 function get_status_str(val){
-    var status = "Preparing";
-    if (val == 1) {
-        status = "Uploading";
-    } else if (val == 2) {
-        status = "Complete";
-    } else if (val == 3) {
-        status = "Deleted";
-    } else if (val == 4) {
-        status = "Failed";
+    let status = "Unknown";
+    if (statusMap.hasOwnProperty(val)) {
+      status = statusMap[val][STATUS_NAME];
+    } else {
+        console.error(`Got unknown ingest status ${val}`);
     }
     return status
 }
 
 function set_button_modes(val) {
+    if (statusMap.hasOwnProperty(val)) {
+        const completable = statusMap[val][ENABLE_COMPLETE_BTN];
+        const cancellable = statusMap[val][ENABLE_CANCEL_BTN];
 
-    if (val == 0) {
-        // Preparing
-        $("#complete-btn").addClass('disabled');
-        $("#cancel-btn").removeClass('disabled');
-    } else if (val == 1) {
-        // Uploading
-        $("#complete-btn").addClass('disabled');
-        $("#cancel-btn").removeClass('disabled');
-    } else if (val == 2) {
-        // Complete
-        $("#complete-btn").addClass('disabled');
-        $("#cancel-btn").addClass('disabled');
+        if (completable) {
+            $("#complete-btn").removeClass('disabled');
+        } else {
+            $("#complete-btn").addClass('disabled');
+        }
+
+        if (cancellable) {
+            $("#cancel-btn").removeClass('disabled');
+        } else {
+            $("#cancel-btn").addClass('disabled');
+        }
     } else {
-        // Canceled or Failed
-        $("#complete-btn").addClass('disabled');
-        $("#cancel-btn").addClass('disabled');
+        console.error(`Got unknown ingest status ${val}`);
     }
 }
 
