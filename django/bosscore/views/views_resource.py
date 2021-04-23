@@ -668,11 +668,14 @@ class ChannelDetail(APIView):
                 # The source and related channels are names and need to be removed from the dict before serialization
                 source_channels = channel_data.pop('sources', [])
                 related_channels = channel_data.pop('related', [])
-
+                
+                # TODO: Removed source channel requirement for annotation channels. Future update should allow source channel from
+                # different collections. 
+                
                 # Source channels have to be included for new annotation channels
-                if 'type' in channel_data and channel_data['type'] == 'annotation' and len(source_channels) == 0:
-                    return BossHTTPError("Annotation channels require the source channel to be set. "
-                                         "Specify a valid source channel in the post", ErrorCodes.INVALID_POST_ARGUMENT)
+                # if 'type' in channel_data and channel_data['type'] == 'annotation' and len(source_channels) == 0:
+                #     return BossHTTPError("Annotation channels require the source channel to be set. "
+                #                          "Specify a valid source channel in the post", ErrorCodes.INVALID_POST_ARGUMENT)
 
                 # Validate the source and related channels if they are incuded
                 channels = self.validate_source_related_channels(experiment_obj, source_channels, related_channels)
