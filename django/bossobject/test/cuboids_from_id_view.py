@@ -92,12 +92,20 @@ class CuboidsFromIDMixin(object):
                                          resolution='0', id='4')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        cuboids = response.data
-        # TODO: Ensure output is equal
-        self.assertEqual(bb['t_range'], [0, 1])
-        self.assertEqual(bb['x_range'], [1536, 2048])
-        self.assertEqual(bb['y_range'], [1536, 2048])
-        self.assertEqual(bb['z_range'], [0, 16])
+        actual = response.data
+        
+        # Ensure output is equal
+        expected = {
+            "cuboids": [
+                [
+                    (1536, 1536+512),
+                    (1536, 1536+512),
+                    (0, 16)
+                ]
+            ]
+        }
+
+        self.assertEqual(expected, actual)
 
     #@unittest.skipUnless(settings.RUN_HIGH_MEM_TESTS, "Test Requires >2.5GB of Memory")
     @unittest.skip('Skipping - indexing is now an asynchronous process')
@@ -154,12 +162,26 @@ class CuboidsFromIDMixin(object):
                                          resolution='0', id='1')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        bb = response.data
-        #TODO: Check the inputs are equal
-        self.assertEqual(bb['t_range'], [0, 1])
-        self.assertEqual(bb['x_range'], [0, 1024])
-        self.assertEqual(bb['y_range'], [0, 1024])
-        self.assertEqual(bb['z_range'], [0, 32])
+        actual = response.data
+
+        # Ensure output is equal
+        expected = {
+            "cuboids": [
+                [
+                    (1536, 1536+512),
+                    (1536, 1536+512),
+                    (0, 16)
+                ],
+                [
+                    (1536, 1536+512),
+                    (1536, 1536+512),
+                    (16, 32)
+                ]
+
+            ]
+        }
+
+        self.assertEqual(expected, actual)
 
 
 @patch('redis.StrictRedis', FakeStrictRedis)
