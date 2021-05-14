@@ -22,19 +22,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
 from datetime import datetime
-from functools import wraps
 
 from bosscore.error import BossError, BossHTTPError, BossPermissionError, BossResourceNotFoundError, ErrorCodes
 from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
-from bosscore.public_channels import PUBLIC_CHANNELS
 
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, \
     CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer, ChannelReadSerializer, \
     ExperimentUpdateSerializer, ChannelUpdateSerializer, CoordinateFrameDeleteSerializer
 
-from bosscore.models import Collection, Experiment, Channel, CoordinateFrame, Source
+from bosscore.models import Collection, Experiment, Channel, CoordinateFrame 
 
 
 class CollectionDetail(APIView):
@@ -57,11 +55,9 @@ class CollectionDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
 
             # Check for permissions
-            # TODO SH Hack added to allow us to quickly make collection detail public without logging in.
             if collection_obj is None:
                 return BossResourceNotFoundError(collection)
-            if collection_obj.id in [53, 54, 59, 61, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
-                                     79, 80, 81, 82, 85, 89, 90, 91, 92, 94, 96, 101, 102, 108] or request.user.has_perm("read", collection_obj):
+            if collection_obj.public or request.user.has_perm("read", collection_obj):
                 if collection_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
@@ -323,15 +319,9 @@ class ExperimentDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for permissions
-            # TODO SH Hack added to allow us to quickly make experiment detail public without logging in.
             if experiment_obj is None:
                 return BossResourceNotFoundError(experiment)
-            if experiment_obj.id in [67, 68, 76, 77, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94,
-                                     95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-                                     112, 113, 114, 115, 116, 117, 118, 120, 121, 122, 123, 124, 125, 126, 127, 128,
-                                     129, 130, 133, 134, 139, 140, 141, 142, 143, 147, 148, 155, 156, 158, 160, 162,
-                                     163, 164, 165, 166, 167, 168, 169, 170, 176, 177, 180, 181, 182, 183, 184, 185,
-                                     186] or request.user.has_perm("read", experiment_obj):
+            if experiment_obj.public or request.user.has_perm("read", experiment_obj):
                 if experiment_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
@@ -617,10 +607,9 @@ class ChannelDetail(APIView):
             channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
 
             # Check for permissions
-            # TODO SH Hack added to allow us to quickly make channels detail public without logging in.
             if channel_obj is None:
                 return BossResourceNotFoundError(channel)
-            if channel_obj.id in PUBLIC_CHANNELS or request.user.has_perm("read", channel_obj):
+            if channel_obj.public or request.user.has_perm("read", channel_obj):
                 if channel_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)

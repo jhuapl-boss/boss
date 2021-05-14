@@ -311,6 +311,10 @@ class Channel(models.Model):
 
     storage_type = models.CharField(choices=STORAGE_TYPE_CHOICES, default=StorageType.SPDB, max_length=30, null=False)
 
+    # Name of S3 bucket for this channel.  Note that value may be NULL which
+    # indicates the default bucket should be used (cuboids.<domain>).
+    s3bucket = models.CharField(null=True, max_length=64)
+
     class Meta:
         db_table = u"channel"
         unique_together = ('experiment', 'name')

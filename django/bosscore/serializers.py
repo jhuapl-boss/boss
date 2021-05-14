@@ -263,11 +263,7 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
         "return all channels that are not marked to be deleted and the user has read permissions on"
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        if experiment_obj.id in [67, 68, 76, 77, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
-                                 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
-                                 114, 115, 116, 117, 118, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 133,
-                                 134, 139, 140, 141, 142, 143, 147, 148, 155, 156, 158, 160, 162, 163, 164, 165, 166,
-                                 167, 168, 169, 170, 176, 177, 180, 181, 182, 183, 184, 185, 186]:
+        if experiment_obj.public:
             return self.get_channels(experiment_obj)
         channels = get_objects_for_user(cur_user, 'read', klass=Channel).filter(experiment=experiment_obj)
         channels = channels.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
@@ -291,8 +287,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     def get_experiments_permissions(self, collection, cur_user):
         "return all experiments that are not marked to be deleted and that the user has read permissions on"
         collection_obj = Collection.objects.get(name=collection)
-        if collection_obj.id in [53, 54, 59, 61, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-                                 80, 81, 82, 85, 89, 90, 91, 92, 94, 96, 101, 102, 108]:
+        if collection_obj.public:
             return self.get_experiments(collection_obj)
         all_experiments = get_objects_for_user(cur_user, 'read', klass=Experiment).exclude(to_be_deleted__isnull=False)
         return all_experiments.filter(collection=collection_obj).values_list('name', flat=True)

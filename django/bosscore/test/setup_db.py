@@ -1,4 +1,4 @@
-# Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
+# Copyright 2021 The Johns Hopkins University Applied Physics Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -209,18 +209,19 @@ class SetupTestDB:
             assign_perm('read_volumetric_data', user_primary_group, obj)
             assign_perm('delete_volumetric_data', user_primary_group, obj)
 
-    def add_collection(self, collection_name, description):
+    def add_collection(self, collection_name, description, public=False):
         """
         Add a new collection and lookupkey to the database
         Args:
             collection_name: Name of collection
             description: Description of the collection
+            public (bool): Is collection public?  Defaults to False.
 
         Returns:
             Collection
 
         """
-        col = Collection.objects.create(name=collection_name, description=description, creator=self.user)
+        col = Collection.objects.create(name=collection_name, description=description, creator=self.user, public=public)
 
         # Add a lookup key
         lkup_key = str(col.pk)
@@ -266,7 +267,7 @@ class SetupTestDB:
         return cf
 
     def add_experiment(self, collection_name, experiment_name, coordinate_name, num_hierarchy_levels,
-                       num_time_samples, time_step, hierarchy_method="anisotropic"):
+                       num_time_samples, time_step, hierarchy_method="anisotropic", public=False):
         """
 
         Args:
@@ -275,6 +276,7 @@ class SetupTestDB:
             coordinate_name: Name of the coordinate frame
             num_hierarchy_levels:
             num_time_samples:
+            public (bool): Is experiment public?  Defaults to False.
 
         Returns:
             experiment
@@ -284,7 +286,8 @@ class SetupTestDB:
         cf = CoordinateFrame.objects.get(name=coordinate_name)
         exp = Experiment.objects.create(name=experiment_name, collection=col, coord_frame=cf,
                                         num_hierarchy_levels=num_hierarchy_levels, hierarchy_method=hierarchy_method,
-                                        num_time_samples=num_time_samples, time_step=time_step, creator=self.user)
+                                        num_time_samples=num_time_samples, time_step=time_step, creator=self.user,
+                                        public=public)
 
         lkup_key = str(col.pk) + '&' + str(exp.pk)
         bs_key = col.name + '&' + str(exp.name)
@@ -299,7 +302,7 @@ class SetupTestDB:
 
     def add_channel(self, collection_name, experiment_name, channel_name,
                     default_time_sample, base_resolution, datatype, 
-                    channel_type=None, source_channels=[]):
+                    channel_type=None, source_channels=[], public=False):
         """
 
         Args:
@@ -311,6 +314,7 @@ class SetupTestDB:
             datatype (str): Data type
             channel_type (str):  Channel Type (image or annotation)
             source_channels (list[str]): Source channel(s) for an annotation channel
+            public (bool): Is channel public?  Defaults to False.
 
         Returns:
             Channel
@@ -328,7 +332,8 @@ class SetupTestDB:
         exp = Experiment.objects.get(name=experiment_name, collection=col)
         channel = Channel.objects.create(name=channel_name, experiment=exp,
                                          default_time_sample=default_time_sample, base_resolution=base_resolution,
-                                         type=channel_type, datatype=datatype, creator=self.user)
+                                         type=channel_type, datatype=datatype, creator=self.user,
+                                         public=public)
 
         src_chan_objs, rel_chan_objs = ChannelDetail.validate_source_related_channels(
                 exp, source_channels, related_channels)
