@@ -311,12 +311,12 @@ class Channel(models.Model):
 
     storage_type = models.CharField(choices=STORAGE_TYPE_CHOICES, default=StorageType.SPDB, max_length=30, null=False)
 
-    # Name of S3 bucket for this channel.  Note that value may be NULL which
+    # Name of bucket for this channel.  Note that value may be NULL which
     # indicates the default bucket should be used (cuboids.<domain>).
-    s3bucket = models.CharField(null=True, max_length=64)
+    bucket = models.CharField(null=True, max_length=64)
 
     # Optional CloudVolume path.  If storage_type == StorageType.CLOUD_VOLUME,
-    # then instantiate CloudVolume with: f"s3://{s3bucket}{cv_path}"
+    # then instantiate CloudVolume with: f"s3://{bucket}{cv_path}"
     cv_path = models.CharField(null=True, max_length=2000)
 
     class Meta:
