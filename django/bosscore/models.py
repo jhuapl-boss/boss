@@ -315,6 +315,10 @@ class Channel(models.Model):
     # indicates the default bucket should be used (cuboids.<domain>).
     s3bucket = models.CharField(null=True, max_length=64)
 
+    # Optional CloudVolume path.  If storage_type == StorageType.CLOUD_VOLUME,
+    # then instantiate CloudVolume with: f"s3://{s3bucket}{cv_path}"
+    cv_path = models.CharField(null=True, max_length=2000)
+
     class Meta:
         db_table = u"channel"
         unique_together = ('experiment', 'name')
