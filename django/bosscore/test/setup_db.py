@@ -21,6 +21,7 @@ from guardian.shortcuts import assign_perm
 from ..models import Collection, Experiment, CoordinateFrame, Channel, BossLookup, BossRole, BossGroup
 from ..views.views_resource import ChannelDetail
 from ..constants import ADMIN_USER, ADMIN_GRP, PUBLIC_GRP
+from ..permissions import BossPermissionManager
 
 from spdb.spatialdb.test.setup import AWSSetupLayer
 
@@ -42,11 +43,11 @@ CHAN_BASE_RES = 'chan-with-base-res'
 
 class SetupTestDB:
     def __init__(self):
-        self.created_super_user = False
+        self.super_user = None
 
     def create_user(self, username=None):
         # If you have yet to create the superuser, you need to do that first for permissions to work OK
-        if not self.created_super_user:
+        if self.super_user is None:
             self.create_super_user()
 
         if not username:
@@ -66,21 +67,32 @@ class SetupTestDB:
             user = self.user
         BossRole.objects.create(user=user, role=role_name)
 
-    def create_super_user(self):
-        self.user = User.objects.create_superuser(username=ADMIN_USER, email=ADMIN_USER+'@theboss.io',
-                                                  password=ADMIN_USER)
+    def create_super_user(self, username=ADMIN_USER, email=None, password=ADMIN_USER):
+        if self.super_user is not None:
+            return
+
+        if email is None:
+            full_email = username + '@boss.io'
+        else:
+            full_email = email
+
+        self.super_user = User.objects.create_superuser(username=username, email=full_email,
+                                                        password=password)
         user_primary_group, created = Group.objects.get_or_create(name=ADMIN_USER+'-primary')
 
         # add the user to the public group and primary group and admin group
         public_group, created = Group.objects.get_or_create(name=PUBLIC_GRP)
         admin_group, created = Group.objects.get_or_create(name=ADMIN_GRP)
-        self.user.groups.add(user_primary_group)
-        self.user.groups.add(public_group)
-        self.user.groups.add(admin_group)
+        self.super_user.groups.add(user_primary_group)
+        self.super_user.groups.add(public_group)
+        self.super_user.groups.add(admin_group)
+        self.add_role('admin', self.super_user)
 
-        self.created_super_user = True
+        # Keep this old behavior in case other code was relying on this side
+        # effect.
+        self.user = self.super_user
 
-        return self.user
+        return self.super_user
 
     def get_user(self):
         return self.user
@@ -208,6 +220,9 @@ class SetupTestDB:
             assign_perm('add_volumetric_data', user_primary_group, obj)
             assign_perm('read_volumetric_data', user_primary_group, obj)
             assign_perm('delete_volumetric_data', user_primary_group, obj)
+
+        # Make sure admin group can also access.
+        BossPermissionManager.add_permissions_admin_group(obj)
 
     def add_collection(self, collection_name, description, public=False):
         """

@@ -21,7 +21,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
-from datetime import datetime
+from django.utils import timezone
 
 from bosscore.error import BossError, BossHTTPError, BossPermissionError, BossResourceNotFoundError, ErrorCodes
 from bosscore.lookup import LookUpKey
@@ -33,6 +33,7 @@ from bosscore.serializers import CollectionSerializer, ExperimentSerializer, Cha
     ExperimentUpdateSerializer, ChannelUpdateSerializer, CoordinateFrameDeleteSerializer
 
 from bosscore.models import Collection, Experiment, Channel, CoordinateFrame 
+from bosscore.constants import ADMIN_GRP
 
 
 class CollectionDetail(APIView):
@@ -165,7 +166,7 @@ class CollectionDetail(APIView):
                                          "Please delete the experiments first.".format(collection),
                                          ErrorCodes.INTEGRITY_ERROR)
 
-                collection_obj.to_be_deleted = datetime.now()
+                collection_obj.to_be_deleted = timezone.now()
                 collection_obj.save()
 
                 return HttpResponse(status=204)
@@ -287,7 +288,7 @@ class CoordinateFrameDetail(APIView):
                                          "Please delete the experiments first.".format(coordframe),
                                          ErrorCodes.INTEGRITY_ERROR)
 
-                coordframe_obj.to_be_deleted = datetime.now()
+                coordframe_obj.to_be_deleted = timezone.now()
                 coordframe_obj.save()
                 return HttpResponse(status=204)
             else:
@@ -465,7 +466,7 @@ class ExperimentDetail(APIView):
                                          "Please delete the channels first.".format(experiment),
                                          ErrorCodes.INTEGRITY_ERROR)
 
-                experiment_obj.to_be_deleted = datetime.now()
+                experiment_obj.to_be_deleted = timezone.now()
                 experiment_obj.save()
 
                 return HttpResponse(status=204)
@@ -646,6 +647,13 @@ class ChannelDetail(APIView):
         channel_data['name'] = channel
 
         try:
+            is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+            if 'bucket' in channel_data and channel_data['bucket'] != '' and not is_admin:
+                return BossHTTPError('Only admins can set bucket name', ErrorCodes.MISSING_PERMISSION)
+
+            if 'cv_path' in channel_data and channel_data['cv_path'] != '' and not is_admin:
+                return BossHTTPError('Only admins can set cv_path', ErrorCodes.MISSING_PERMISSION)
+
             # Get the collection and experiment
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
@@ -653,6 +661,11 @@ class ChannelDetail(APIView):
             # Check for add permissions
             if request.user.has_perm("add", experiment_obj):
                 channel_data['experiment'] = experiment_obj.pk
+
+                use_cloudvol = channel_data.get('storage_type', None) == Channel.StorageType.CLOUD_VOLUME
+                cv_path = channel_data.get('cv_path', None)
+                if use_cloudvol and (cv_path is None or cv_path == ''):
+                    channel_data['cv_path'] = f'/{collection}/{experiment}/{channel}'
 
                 # The source and related channels are names and need to be removed from the dict before serialization
                 source_channels = channel_data.pop('sources', [])
@@ -734,6 +747,17 @@ class ChannelDetail(APIView):
             if request.user.has_perm("update", channel_obj):
 
                 data = copy.deepcopy(request.data)
+                is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+
+                if 'storage_type' in data and not is_admin:
+                    return BossHTTPError('Only admins can change storage_type after creation',
+                                         ErrorCodes.MISSING_PERMISSION)
+
+                if 'bucket' in data and data['bucket'] != '' and not is_admin:
+                    return BossHTTPError('Only admins can set bucket name', ErrorCodes.MISSING_PERMISSION)
+
+                if 'cv_path' in data and not is_admin:
+                    return BossHTTPError('Only admins can set cv_path', ErrorCodes.MISSING_PERMISSION)
 
                 # The source and related channels are names and need to be removed from the dict before serialization
                 source_channels = data.pop('sources', [])
@@ -804,7 +828,7 @@ class ChannelDetail(APIView):
                 if len(derived_channels) > 0:
                     return BossHTTPError("Channel {} is the source channel of other channels and cannot be deleted"
                                          .format(channel), ErrorCodes.INTEGRITY_ERROR)
-                channel_obj.to_be_deleted = datetime.now()
+                channel_obj.to_be_deleted = timezone.now()
                 channel_obj.save()
                 return HttpResponse(status=204)
             else:

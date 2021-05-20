@@ -16,8 +16,9 @@ from django.contrib.auth.models import Group, User
 from django.contrib.contenttypes.models import ContentType
 
 from guardian.shortcuts import assign_perm, get_perms, remove_perm, get_perms_for_model
-from .error import BossHTTPError, ErrorCodes, BossError
+from .error import ErrorCodes, BossError
 from bosscore.models import BossGroup
+from bosscore.constants import ADMIN_USER, ADMIN_GRP
 
 def check_is_member_or_maintainer(user, group_name):
     """
@@ -36,7 +37,7 @@ def check_is_member_or_maintainer(user, group_name):
             return True
         else:
             return False
-    except (Group.DoesNotExist , BossGroup.DoesNotExist) as e:
+    except (Group.DoesNotExist , BossGroup.DoesNotExist):
         return BossError("{} does not exist".format(group_name), ErrorCodes.RESOURCE_NOT_FOUND)
 
 
@@ -169,10 +170,10 @@ class BossPermissionManager:
         """
         # Get the type of model
         try:
-            admin_group, created = Group.objects.get_or_create(name="admin")
+            admin_group, created = Group.objects.get_or_create(name=ADMIN_GRP)
             if created:
-                admin_user = User.objects.get(username='bossadmin')
-                bgroup = BossGroup.objects.create(group=admin_group, creator=admin_user)
+                admin_user = User.objects.get(username=ADMIN_USER)
+                BossGroup.objects.create(group=admin_group, creator=admin_user)
                 
             ct = ContentType.objects.get_for_model(obj)
             assign_perm('read', admin_group, obj)

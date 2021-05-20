@@ -81,13 +81,16 @@ class ChannelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
-                  'base_resolution', 'datatype', 'downsample_status', 'creator')
+        fields = ('name', 'public', 'description', 'experiment', 'default_time_sample', 'type',
+                  'base_resolution', 'datatype', 'downsample_status', 'creator',
+                  'storage_type', 'bucket', 'cv_path')
 
     def validate(self, data):
-        """Validate the default_time_step and base_resolution
+        """Validate the default_time_step, base_resolution, storage_type, and cv_path
 
         If these are included,validate that they are within the bounds of num_time_samples and num_hierarchy_levels.
+        If cv_path is set, then storage_type must be CloudVolume.
+
         Args:
             data (dict): The data fields to be validated.
         Returns:
@@ -109,6 +112,12 @@ class ChannelSerializer(serializers.ModelSerializer):
         if default_time_sample is not None and default_time_sample >= num_time_samples:
             errors['default_time_sample'] = 'Ensure this value is less that the experiments num_time_samples {}.'\
                 .format(num_time_samples)
+
+        # Ensure storage_type is CloudVolume if cv_path is set.
+        if 'cv_path' in data and data['cv_path'] is not None and data['cv_path'] != '':
+            storage_type = data.get('storage_type', None)
+            if storage_type != Channel.StorageType.CLOUD_VOLUME:
+                errors['storage_type'] = f'Must be set to {Channel.StorageType.CLOUD_VOLUME}, if setting cv_path'
 
         # Validate that base_resolution is less than the num_hierarchy_levels
         # We no longer check this because we may delete some resolutions to
@@ -136,7 +145,8 @@ class ChannelUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'default_time_sample', 'base_resolution', 'sources', 'related')
+        fields = ('name', 'public', 'description', 'default_time_sample', 'base_resolution', 'sources', 'related',
+                  'bucket', 'cv_path', 'storage_type')
 
     def is_valid(self, raise_exception=False):
         super().is_valid(False)
@@ -166,8 +176,10 @@ class ChannelReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
-                  'base_resolution', 'datatype', 'creator', 'sources', 'downsample_status', 'related')
+        fields = ('name', 'public', 'description', 'experiment', 'default_time_sample', 'type',
+                  'base_resolution', 'datatype', 'creator', 'sources', 'downsample_status', 'related',
+                  'storage_type', 'bucket', 'cv_path')
+        read_only_fields = ('storage_type', 'bucket', 'cv_path')
 
     def get_sources(self, channel):
         """
@@ -211,7 +223,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
+        fields = ('name', 'public', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
                   'num_time_samples', 'time_step', 'time_step_unit', 'creator')
 
 
@@ -222,7 +234,7 @@ class ExperimentUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('name', 'description', 'num_hierarchy_levels', 'hierarchy_method', 'num_time_samples',
+        fields = ('name', 'public', 'description', 'num_hierarchy_levels', 'hierarchy_method', 'num_time_samples',
                   'time_step', 'time_step_unit')
 
     def is_valid(self, raise_exception=False):
@@ -253,7 +265,7 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('channels', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels',
+        fields = ('channels', 'name', 'public', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels',
                   'hierarchy_method', 'num_time_samples', 'time_step', 'time_step_unit', 'creator')
 
     def get_channels(self, experiment):
@@ -279,7 +291,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('name', 'description', 'experiments', 'creator')
+        fields = ('name', 'public', 'description', 'experiments', 'creator')
 
     def get_experiments(self, collection):
         return collection.experiments.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)

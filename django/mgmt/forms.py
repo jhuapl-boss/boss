@@ -1,4 +1,6 @@
 from django import forms
+from bosscore.models import Channel
+from bossutils.configuration import BossConfig
 
 class UpdateForm(forms.Form):
     '''Custom base class for forms that need to support updating
@@ -95,8 +97,10 @@ class GroupMemberForm(forms.Form):
     user = forms.CharField()
     role = forms.ChoiceField(choices=[(c,c) for c in ['', 'member', 'maintainer', 'member+maintainer']])
 
-class CollectionForm(forms.Form):
+class CollectionForm(UpdateForm):
+    UPDATE_FIELDS = ['public']
     name = forms.CharField(label="Collection", help_text="Globally unique string identifier")
+    public = forms.BooleanField(required=False, help_text="Give read access to all?")
     description = forms.CharField(required=False, help_text="Optional")
 
 class CoordinateFrameForm(UpdateForm):
@@ -126,7 +130,7 @@ class CoordinateFrameForm(UpdateForm):
 
 
 class ExperimentForm(UpdateForm):
-    UPDATE_FIELDS = ['name', 'description',
+    UPDATE_FIELDS = ['name', 'public', 'description',
                      'num_hierarchy_levels',
                      'hierarch_method',
                      'num_time_samples',
@@ -134,6 +138,7 @@ class ExperimentForm(UpdateForm):
                      'time_step_unit']
 
     name = forms.CharField(label="Experiment", help_text="A string identifier, unique to this Collection")
+    public = forms.BooleanField(required=False, help_text="Give read access to all?")
     description = forms.CharField(required=False, help_text="Optional")
 
     coord_frame = forms.CharField(help_text="String identifier for this experiment's Coordinate Frame") # DP TODO: make a drop down with valid coord frame names
@@ -158,13 +163,29 @@ class MetaForm(UpdateForm):
     value = forms.CharField(widget=forms.Textarea)
 
 class ChannelForm(UpdateForm):
-    UPDATE_FIELDS = ['name', 'description',
-                     'default_time_sample',
-                     'base_resolution',
-                     'sources', 'related']
+    # This list is for all users.  Users in the admin group get additional
+    # fields when is_update() called.
+    BASE_UPDATE_FIELDS = ['name', 'public', 'description',
+                         'default_time_sample',
+                         'base_resolution',
+                         'sources', 'related']
 
     name = forms.CharField(label="Channel", help_text="String identifier unique to the experiment")
+    public = forms.BooleanField(required=False, help_text="Give read access to all?")
     description = forms.CharField(required=False, help_text="Optional description")
+
+    storage_type = forms.ChoiceField(choices=(('', ''),) + Channel.STORAGE_TYPE_CHOICES,
+                                     required=False,
+                                     help_text='Storage backend for this channel')
+    boss_config = BossConfig()
+    try:
+        domain = '.' + boss_config['system']['fqdn'].split('.', 1)[1]
+    except Exception:
+        domain = ''
+    bucket = forms.CharField(required=False, empty_value=f'cuboids{domain}',
+                             help_text=f'(default is cuboids{domain})',
+                             label='Bucket Name')
+    cv_path = forms.CharField(required=False, help_text='CloudVolume path', label='CloudVolume Path')
 
     type = forms.ChoiceField(choices=[(c,c) for c in ['', 'image', 'annotation']],
                              help_text="image = source image dataset<br>annotation = label dataset")
@@ -179,6 +200,19 @@ class ChannelForm(UpdateForm):
                                  help_text="Optional comma separated list of channels from which this channel is derived.<br>Useful for linking annotation to image channels")
     related = DelimitedCharField(label="Related Channels", required=False,
                                  help_text="Optional comma separated list of channels related to this channel.")
+
+    def is_update(self):
+        """
+        Override base class' is_update() so admins can update additional fields.
+        """
+        self.UPDATE_FIELDS = self.BASE_UPDATE_FIELDS
+
+        is_admin = self.form.get('is_admin', False)
+        if is_admin:
+            self.UPDATE_FIELDS += ['storage_type', 'bucket', 'cv_path']
+
+        super.is_update()
+
 
 def PermField():
     #perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']

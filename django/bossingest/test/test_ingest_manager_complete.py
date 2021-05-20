@@ -90,8 +90,8 @@ class BossIngestManagerCompleteTest(APITestCase):
         # AWS region.
         self.region = 'us-east-1'
 
-        self.user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
+        self.user = dbsetup.create_super_user(username='testuser', email='test@test.com', password='testuser')
         dbsetup.set_user(self.user)
 
         self.client.force_login(self.user)

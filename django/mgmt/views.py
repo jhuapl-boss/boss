@@ -6,8 +6,10 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
 
-from bosscore.privileges import BossPrivilegeManager, check_role
+from bosscore.constants import ADMIN_GRP
 from bosscore.error import BossError
+from bosscore.permissions import BossPermissionManager
+from bosscore.privileges import BossPrivilegeManager, check_role
 
 from .forms import UserForm, RoleForm, GroupForm, GroupMemberForm
 from .forms import CollectionForm, ExperimentForm, ChannelForm
@@ -677,6 +679,8 @@ class Channel(LoginRequiredMixin, View):
             return err
 
         if not chan_form:
+            is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+            channel['is_admin'] = is_admin
             chan_form = ChannelForm(channel).is_update()
             chan_error = ""
         else:
@@ -690,6 +694,7 @@ class Channel(LoginRequiredMixin, View):
         perms, err = utils.get_perms(request, collection_name, experiment_name, channel_name)
         if err:
             return err
+
 
         args = {
             'user_roles': get_roles(request),
