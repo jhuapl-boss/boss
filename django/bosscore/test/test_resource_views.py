@@ -15,6 +15,7 @@
 from rest_framework.test import APITestCase
 from django.conf import settings
 from .setup_db import SetupTestDB, TEST_DATA_EXPERIMENTS
+from bosscore.models import Channel
 
 version = settings.BOSS_VERSION
 
@@ -699,6 +700,7 @@ class ResourceViewsChannelTests(APITestCase):
 
         """
         dbsetup = SetupTestDB()
+        self.super_user = dbsetup.create_super_user()
         user = dbsetup.create_user('testuser')
         dbsetup.add_role('resource-manager')
         dbsetup.set_user(user)
@@ -740,6 +742,75 @@ class ResourceViewsChannelTests(APITestCase):
         data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_set_cloudvol_storage_no_cv_path(self):
+        """
+        When using CloudVolume storage type w/o providing cv_path, cv_path
+        should default to /{coll}/{exp}/{chan}.
+        """
+        coll = 'col1'
+        exp = 'exp1'
+        chan = 'channel10'
+        url = '/' + version + f'/collection/{coll}/experiment/{exp}/channel/{chan}/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image',
+                'storage_type': Channel.StorageType.CLOUD_VOLUME}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['cv_path'], f'/{coll}/{exp}/{chan}')
+
+    def test_post_channel_set_bucket_forbidden_for_non_admins(self):
+        """
+        Only admins should be able to set the bucket name.
+        """
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'bucket': 'my.bucket.boss'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+
+    def test_post_channel_set_bucket_as_admin(self):
+        """
+        Only admins should be able to set the bucket name.
+        """
+        self.client.force_login(self.super_user)
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'bucket': 'my.bucket.boss'}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+    def test_post_channel_spdb_with_cv_path(self):
+        """
+        Setting cv_path when storage_type != CloudVolume is invalid.
+        """
+        self.client.force_login(self.super_user)
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image',
+                'cv_path': '/custom/cv', 'storage_type': Channel.StorageType.SPDB}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_channel_cloudvol_with_cv_path_forbidden_when_not_admin(self):
+        """
+        Setting cv_path is isvalid when not an admin.
+        """
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image',
+                'cv_path': '/custom/cv', 'storage_type': Channel.StorageType.CLOUD_VOLUME}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_post_channel_cloudvol_with_cv_path_as_admin(self):
+        """
+        Setting cv_path when storage_type == CloudVolume is valid when done as admin.
+        """
+        self.client.force_login(self.super_user)
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
+        cv_path = '/custom/cv'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image',
+                'cv_path': cv_path, 'storage_type': Channel.StorageType.CLOUD_VOLUME}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['cv_path'], cv_path)
 
     def test_post_channel_with_valid_timestep(self):
         """
@@ -789,14 +860,14 @@ class ResourceViewsChannelTests(APITestCase):
 
     def test_post_channel_annotation_without_source(self):
         """
-        Post a new channel of type annotation(invalid - source missing)
-
+        Post a new channel of type annotation w/o providing a source channel.
+        This used to be forbidden but we decided to allow this.
         """
         # Post a new channel
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
         data = {'description': 'This is a new channel', 'type': 'annotation', 'datatype': 'uint8'}
         response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 201)
 
     def test_post_channel_annotation_with_source(self):
         """
@@ -910,7 +981,75 @@ class ResourceViewsChannelTests(APITestCase):
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
         data = {'description': 'A new channel for unit tests. Updated'}
 
-        # Get an existing collection
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_put_channel_set_cv_path_forbidden_for_non_admins(self):
+        """
+        Update a channel (Invalid - only admins can set cv_path)
+
+        """
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        data = {'cv_path': '/my/custom/cv/dataset'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_put_channel_set_cv_path_as_admin(self):
+        """
+        Update a channel's bucket (Valid - admins can set cv_path)
+
+        """
+        self.client.force_login(self.super_user)
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        data = {'cv_path': '/my/custom/cv/dataset'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_put_channel_set_bucket_forbidden_for_non_admins(self):
+        """
+        Update a channel (Invalid - only admins can set the bucket name)
+
+        """
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        data = {'bucket': 'new.bucket.boss'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_put_channel_set_bucket_as_admin(self):
+        """
+        Update a channel's bucket (Valid - admins can set the bucket name)
+
+        """
+        self.client.force_login(self.super_user)
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        data = {'bucket': 'new.bucket.boss'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_put_channel_set_storage_type_forbidden_for_non_admins(self):
+        """
+        Update a channel (Invalid - only admins can set the storage type after creation)
+
+        """
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        data = {'storage_type': Channel.StorageType.CLOUD_VOLUME}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_put_channel_set_storage_type_as_admin(self):
+        """
+        Update a channel's storage type (Valid - admins can change this after creation)
+
+        """
+        self.client.force_login(self.super_user)
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        data = {'storage_type': Channel.StorageType.CLOUD_VOLUME}
+
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
 

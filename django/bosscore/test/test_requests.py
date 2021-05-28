@@ -39,8 +39,8 @@ class CutoutRequestTests(APITestCase):
             :return:
         """
         self.rf = APIRequestFactory()
-        user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
         dbsetup = SetupTestDB()
+        user = dbsetup.create_super_user(username='testuser', email='test@test.com', password='testuser')
         dbsetup.set_user(user)
         self.user = user
         self.client.force_login(user)

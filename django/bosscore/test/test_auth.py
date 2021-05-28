@@ -1,4 +1,4 @@
-# Copyright 2016 The Johns Hopkins University Applied Physics Laboratory
+# Copyright 2021 The Johns Hopkins University Applied Physics Laboratory
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,11 @@ from .setup_db import SetupTestDB
 
 version = settings.BOSS_VERSION
 
+PUBLIC_COLLECTION = 'public_coll'
+PUBLIC_EXPERIMENT = 'public_exp'
+PUBLIC_CHANNEL = 'public_chan'
+# Really, all coord frames are public.
+PUBLIC_COORD_FRAME = 'public_cf'
 
 class UserPermissionsCollection(APITestCase):
     """
@@ -35,13 +40,15 @@ class UserPermissionsCollection(APITestCase):
 
         self.client.force_login(user1)
         dbsetup.insert_test_data()
+        dbsetup.add_collection(PUBLIC_COLLECTION, 'public-test', public=True)
 
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
-        dbsetup.add_role('resource-manager')
+        dbsetup.add_role('resource-manager', user2)
         dbsetup.set_user(user2)
         self.client.force_login(user2)
         dbsetup.add_collection("unittestcol", "testcollection")
+        
 
     def test_get_collection_no_permission(self):
         """
@@ -66,12 +73,35 @@ class UserPermissionsCollection(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'unittestcol')
 
+    def test_get_collection_public(self):
+        """
+        A public collection that the user does not have explicit permission for
+        should still be readable.
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/'
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], PUBLIC_COLLECTION)
+
     def test_put_collection_no_permissions(self):
         """
         Update a collection for which the user does not have update permissions
 
         """
         url = '/' + version + '/collection/col1/'
+        data = {'description': 'A new collection for unit tests. Updated'}
+
+        # Get an existing collection
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
+    def test_put_public_collection_no_permissions(self):
+        """
+        Update a collection for which the user does not have update permissions
+
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/'
         data = {'description': 'A new collection for unit tests. Updated'}
 
         # Get an existing collection
@@ -108,7 +138,17 @@ class UserPermissionsCollection(APITestCase):
 
         """
         url = '/' + version + '/collection/col1/'
-        # Get an existing collection
+        # Delete an existing collection
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_delete_public_collection_no_permissions(self):
+        """
+        Delete a collection that the user does not have permission for
+
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/'
+        # Delete an existing collection
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
 
@@ -268,6 +308,9 @@ class UserPermissionsExperiment(APITestCase):
 
         self.client.force_login(user1)
         dbsetup.insert_test_data()
+        dbsetup.add_collection(PUBLIC_COLLECTION, 'public-test', public=True)
+        dbsetup.add_coordinate_frame(PUBLIC_COORD_FRAME, 'Description for public cf', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
+        dbsetup.add_experiment(PUBLIC_COLLECTION, PUBLIC_EXPERIMENT, PUBLIC_COORD_FRAME, 10, 10, 1, public=True)
 
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
@@ -298,6 +341,17 @@ class UserPermissionsExperiment(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'unittestexp')
+
+    def test_get_public_experiment(self):
+        """
+        Get a valid experiment
+
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/experiment/{PUBLIC_EXPERIMENT}/'
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], PUBLIC_EXPERIMENT)
 
     def test_post_experiment_no_collection(self):
         """
@@ -348,6 +402,17 @@ class UserPermissionsExperiment(APITestCase):
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 403)
 
+    def test_put_public_experiment_no_permissions(self):
+        """
+        Update an experiment for which the user does not have update permissions on
+
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/experiment/{PUBLIC_EXPERIMENT}/'
+        data = {'description': 'A new experiment for unit tests. Updated'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
     def test_put_experiment_valid_permission(self):
         """
         Update a experiment that  the user has permissions on
@@ -365,6 +430,15 @@ class UserPermissionsExperiment(APITestCase):
 
         """
         url = '/' + version + '/collection/col1/experiment/exp1/'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_delete_public_experiment_no_permissions(self):
+        """
+        Delete an experiment that the user does not have permission for
+
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/experiment/{PUBLIC_EXPERIMENT}/'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
 
@@ -419,6 +493,10 @@ class UserPermissionsChannel(APITestCase):
 
         self.client.force_login(user1)
         dbsetup.insert_test_data()
+        dbsetup.add_collection(PUBLIC_COLLECTION, 'public-test', public=True)
+        dbsetup.add_coordinate_frame(PUBLIC_COORD_FRAME, 'Description for public cf', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
+        dbsetup.add_experiment(PUBLIC_COLLECTION, PUBLIC_EXPERIMENT, PUBLIC_COORD_FRAME, 10, 10, 1, public=True)
+        dbsetup.add_channel(PUBLIC_COLLECTION, PUBLIC_EXPERIMENT, PUBLIC_CHANNEL, 0, 0, 'uint8', public=True)
 
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
@@ -453,6 +531,17 @@ class UserPermissionsChannel(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'unittestchannel')
 
+    def test_get_public_channel(self):
+        """
+        Get a public channel
+
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/experiment/{PUBLIC_EXPERIMENT}/channel/{PUBLIC_CHANNEL}'
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['name'], PUBLIC_CHANNEL)
+
     def test_post_channel(self):
         """
         Post a new channel
@@ -484,6 +573,17 @@ class UserPermissionsChannel(APITestCase):
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 403)
 
+    def test_put_public_channel_no_permissions(self):
+        """
+        Update an channel for which the user does not have update permissions on
+
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/experiment/{PUBLIC_EXPERIMENT}/channel/{PUBLIC_CHANNEL}'
+        data = {'description': 'A new channel for unit tests. Updated'}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
     def test_put_channel_valid_permission(self):
         """
         Update a channel that  the user has permissions on
@@ -501,6 +601,15 @@ class UserPermissionsChannel(APITestCase):
 
         """
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1'
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_delete_public_channel_no_permissions(self):
+        """
+        Delete an channel that the user does not have permission for
+
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/experiment/{PUBLIC_EXPERIMENT}/channel/{PUBLIC_CHANNEL}'
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 403)
 

@@ -78,6 +78,9 @@ class Collection(models.Model):
     creator = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='collections')
     to_be_deleted = models.DateTimeField(null=True, blank=True)
 
+    # Is this a public collection?
+    public = models.BooleanField(null=False, default=False)
+
     # ToDo: replace with constants.
     DELETED_STATUS_CHOICES = (
         ('started', 'STARTED'),
@@ -208,6 +211,9 @@ class Experiment(models.Model):
     )
     deleted_status = models.CharField(choices=DELETED_STATUS_CHOICES, max_length=100, null=True, blank=True)
 
+    # Is this a public experiment?
+    public = models.BooleanField(null=False, default=False)
+
     class Meta:
         db_table = u"experiment"
         unique_together = ('collection', 'name')
@@ -287,6 +293,31 @@ class Channel(models.Model):
     )
     downsample_status = models.CharField(choices=DOWNSAMPLE_STATUS_CHOICES, default=DownsampleStatus.NOT_DOWNSAMPLED, max_length=100)
     downsample_arn = models.CharField(max_length=4096, blank=True, null=True)
+
+    # Is this a public channel?
+    public = models.BooleanField(null=False, default=False)
+
+    class StorageType:
+        """
+        String values are actual values stored in DB.
+        """
+        SPDB = 'spdb'               # Original Boss storage format.
+        CLOUD_VOLUME = 'cloudvol'   # Princeton's Cloudvolume format.
+
+    STORAGE_TYPE_CHOICES = (
+        (StorageType.SPDB, 'Boss Spatial Database'),
+        (StorageType.CLOUD_VOLUME, 'CloudVolume'),
+    )
+
+    storage_type = models.CharField(choices=STORAGE_TYPE_CHOICES, default=StorageType.SPDB, max_length=30, null=False)
+
+    # Name of bucket for this channel.  Note that value may be NULL which
+    # indicates the default bucket should be used (cuboids.<domain>).
+    bucket = models.CharField(null=True, max_length=64)
+
+    # Optional CloudVolume path.  If storage_type == StorageType.CLOUD_VOLUME,
+    # then instantiate CloudVolume with: f"s3://{bucket}{cv_path}"
+    cv_path = models.CharField(null=True, max_length=2000)
 
     class Meta:
         db_table = u"channel"

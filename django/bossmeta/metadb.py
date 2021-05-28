@@ -36,8 +36,9 @@ class MetaDB:
         Returns:
 
         """
-        self.__local_dynamo = os.environ.get('USING_DJANGO_TESTRUNNER') is not None
-        if not self.__local_dynamo:
+        # DYNAMODB_URL allows use of a local DynamoDB.
+        dynamo_url = os.environ.get('DYNAMODB_URL', None)
+        if dynamo_url is None:
             session = get_session()
             dynamodb = session.resource('dynamodb')
             if 'test' in sys.argv:
@@ -48,7 +49,7 @@ class MetaDB:
         else:
             tablename = config["aws"]["meta-db"]
             session = boto3.Session(aws_access_key_id='foo', aws_secret_access_key='foo')
-            dynamodb = session.resource('dynamodb', region_name='us-east-1', endpoint_url='http://localhost:8000')
+            dynamodb = session.resource('dynamodb', region_name='us-east-1', endpoint_url=dynamo_url)
 
         self.table = dynamodb.Table(tablename)
 

@@ -81,13 +81,16 @@ class ChannelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
-                  'base_resolution', 'datatype', 'downsample_status', 'creator')
+        fields = ('name', 'public', 'description', 'experiment', 'default_time_sample', 'type',
+                  'base_resolution', 'datatype', 'downsample_status', 'creator',
+                  'storage_type', 'bucket', 'cv_path')
 
     def validate(self, data):
-        """Validate the default_time_step and base_resolution
+        """Validate the default_time_step, base_resolution, storage_type, and cv_path
 
         If these are included,validate that they are within the bounds of num_time_samples and num_hierarchy_levels.
+        If cv_path is set, then storage_type must be CloudVolume.
+
         Args:
             data (dict): The data fields to be validated.
         Returns:
@@ -109,6 +112,12 @@ class ChannelSerializer(serializers.ModelSerializer):
         if default_time_sample is not None and default_time_sample >= num_time_samples:
             errors['default_time_sample'] = 'Ensure this value is less that the experiments num_time_samples {}.'\
                 .format(num_time_samples)
+
+        # Ensure storage_type is CloudVolume if cv_path is set.
+        if 'cv_path' in data and data['cv_path'] is not None and data['cv_path'] != '':
+            storage_type = data.get('storage_type', None)
+            if storage_type != Channel.StorageType.CLOUD_VOLUME:
+                errors['storage_type'] = f'Must be set to {Channel.StorageType.CLOUD_VOLUME}, if setting cv_path'
 
         # Validate that base_resolution is less than the num_hierarchy_levels
         # We no longer check this because we may delete some resolutions to
@@ -136,7 +145,8 @@ class ChannelUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'default_time_sample', 'base_resolution', 'sources', 'related')
+        fields = ('name', 'public', 'description', 'default_time_sample', 'base_resolution', 'sources', 'related',
+                  'bucket', 'cv_path', 'storage_type')
 
     def is_valid(self, raise_exception=False):
         super().is_valid(False)
@@ -166,8 +176,10 @@ class ChannelReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Channel
-        fields = ('name', 'description', 'experiment', 'default_time_sample', 'type',
-                  'base_resolution', 'datatype', 'creator', 'sources', 'downsample_status', 'related')
+        fields = ('name', 'public', 'description', 'experiment', 'default_time_sample', 'type',
+                  'base_resolution', 'datatype', 'creator', 'sources', 'downsample_status', 'related',
+                  'storage_type', 'bucket', 'cv_path')
+        read_only_fields = ('storage_type', 'bucket', 'cv_path')
 
     def get_sources(self, channel):
         """
@@ -211,7 +223,7 @@ class ExperimentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
+        fields = ('name', 'public', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels', 'hierarchy_method',
                   'num_time_samples', 'time_step', 'time_step_unit', 'creator')
 
 
@@ -222,7 +234,7 @@ class ExperimentUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('name', 'description', 'num_hierarchy_levels', 'hierarchy_method', 'num_time_samples',
+        fields = ('name', 'public', 'description', 'num_hierarchy_levels', 'hierarchy_method', 'num_time_samples',
                   'time_step', 'time_step_unit')
 
     def is_valid(self, raise_exception=False):
@@ -253,7 +265,7 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Experiment
-        fields = ('channels', 'name', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels',
+        fields = ('channels', 'name', 'public', 'description', 'collection', 'coord_frame', 'num_hierarchy_levels',
                   'hierarchy_method', 'num_time_samples', 'time_step', 'time_step_unit', 'creator')
 
     def get_channels(self, experiment):
@@ -263,11 +275,7 @@ class ExperimentReadSerializer(serializers.ModelSerializer):
         "return all channels that are not marked to be deleted and the user has read permissions on"
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        if experiment_obj.id in [67, 68, 76, 77, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
-                                 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,
-                                 114, 115, 116, 117, 118, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 133,
-                                 134, 139, 140, 141, 142, 143, 147, 148, 155, 156, 158, 160, 162, 163, 164, 165, 166,
-                                 167, 168, 169, 170, 176, 177, 180, 181, 182, 183, 184, 185, 186]:
+        if experiment_obj.public:
             return self.get_channels(experiment_obj)
         channels = get_objects_for_user(cur_user, 'read', klass=Channel).filter(experiment=experiment_obj)
         channels = channels.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
@@ -283,7 +291,7 @@ class CollectionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Collection
-        fields = ('name', 'description', 'experiments', 'creator')
+        fields = ('name', 'public', 'description', 'experiments', 'creator')
 
     def get_experiments(self, collection):
         return collection.experiments.exclude(to_be_deleted__isnull=False).values_list('name', flat=True)
@@ -291,8 +299,7 @@ class CollectionSerializer(serializers.ModelSerializer):
     def get_experiments_permissions(self, collection, cur_user):
         "return all experiments that are not marked to be deleted and that the user has read permissions on"
         collection_obj = Collection.objects.get(name=collection)
-        if collection_obj.id in [53, 54, 59, 61, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-                                 80, 81, 82, 85, 89, 90, 91, 92, 94, 96, 101, 102, 108]:
+        if collection_obj.public:
             return self.get_experiments(collection_obj)
         all_experiments = get_objects_for_user(cur_user, 'read', klass=Experiment).exclude(to_be_deleted__isnull=False)
         return all_experiments.filter(collection=collection_obj).values_list('name', flat=True)

@@ -17,9 +17,8 @@ import numpy as np
 
 from .models import Collection, Experiment, Channel
 from .lookup import LookUpKey
-from .error import BossHTTPError, BossError, ErrorCodes, BossRestArgsError
+from .error import BossHTTPError, BossError, ErrorCodes
 from .permissions import BossPermissionManager
-from .public_channels import PUBLIC_CHANNELS
 
 META_CONNECTOR = "&"
 
@@ -787,17 +786,14 @@ class BossRequest:
             raise BossError("Error creating the boss key", ErrorCodes.UNABLE_TO_VALIDATE)
 
     def check_permissions(self):
-        """ Set the base boss key for the request
+        """ Check if user has permissions for the service hit in the request
 
-        The boss key concatenates the names of the datamodel stack to create a string represting the request.
-        Returns:
-            self.bosskey(str) : String that represents the boss key for the current request
+            Raises:
+                (BossError): if user doesn't have permission or if there is some other error
         """
         if self.service == 'cutout' or self.service == 'image' or self.service == 'tile'\
                 or self.service == 'boundingbox' or self.service == 'downsample':
-            # TODO SH Hack added to allow us to quickly make channels public without logging in.
-            # These are bossdb IDs.
-            if self.channel.id in PUBLIC_CHANNELS:
+            if self.channel.public and self.method == 'GET':
                 return
             perm = BossPermissionManager.check_data_permissions(self.user, self.channel, self.method)
         elif self.service == 'ids':

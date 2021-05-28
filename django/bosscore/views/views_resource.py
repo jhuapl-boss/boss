@@ -21,20 +21,19 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from guardian.shortcuts import get_objects_for_user
-from datetime import datetime
-from functools import wraps
+from django.utils import timezone
 
 from bosscore.error import BossError, BossHTTPError, BossPermissionError, BossResourceNotFoundError, ErrorCodes
 from bosscore.lookup import LookUpKey
 from bosscore.permissions import BossPermissionManager
 from bosscore.privileges import check_role
-from bosscore.public_channels import PUBLIC_CHANNELS
 
 from bosscore.serializers import CollectionSerializer, ExperimentSerializer, ChannelSerializer, \
     CoordinateFrameSerializer, CoordinateFrameUpdateSerializer, ExperimentReadSerializer, ChannelReadSerializer, \
     ExperimentUpdateSerializer, ChannelUpdateSerializer, CoordinateFrameDeleteSerializer
 
-from bosscore.models import Collection, Experiment, Channel, CoordinateFrame, Source
+from bosscore.models import Collection, Experiment, Channel, CoordinateFrame 
+from bosscore.constants import ADMIN_GRP
 
 
 class CollectionDetail(APIView):
@@ -57,11 +56,9 @@ class CollectionDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
 
             # Check for permissions
-            # TODO SH Hack added to allow us to quickly make collection detail public without logging in.
             if collection_obj is None:
                 return BossResourceNotFoundError(collection)
-            if collection_obj.id in [53, 54, 59, 61, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,
-                                     79, 80, 81, 82, 85, 89, 90, 91, 92, 94, 96, 101, 102, 108] or request.user.has_perm("read", collection_obj):
+            if collection_obj.public or request.user.has_perm("read", collection_obj):
                 if collection_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
@@ -169,7 +166,7 @@ class CollectionDetail(APIView):
                                          "Please delete the experiments first.".format(collection),
                                          ErrorCodes.INTEGRITY_ERROR)
 
-                collection_obj.to_be_deleted = datetime.now()
+                collection_obj.to_be_deleted = timezone.now()
                 collection_obj.save()
 
                 return HttpResponse(status=204)
@@ -291,7 +288,7 @@ class CoordinateFrameDetail(APIView):
                                          "Please delete the experiments first.".format(coordframe),
                                          ErrorCodes.INTEGRITY_ERROR)
 
-                coordframe_obj.to_be_deleted = datetime.now()
+                coordframe_obj.to_be_deleted = timezone.now()
                 coordframe_obj.save()
                 return HttpResponse(status=204)
             else:
@@ -323,15 +320,9 @@ class ExperimentDetail(APIView):
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
             # Check for permissions
-            # TODO SH Hack added to allow us to quickly make experiment detail public without logging in.
             if experiment_obj is None:
                 return BossResourceNotFoundError(experiment)
-            if experiment_obj.id in [67, 68, 76, 77, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94,
-                                     95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-                                     112, 113, 114, 115, 116, 117, 118, 120, 121, 122, 123, 124, 125, 126, 127, 128,
-                                     129, 130, 133, 134, 139, 140, 141, 142, 143, 147, 148, 155, 156, 158, 160, 162,
-                                     163, 164, 165, 166, 167, 168, 169, 170, 176, 177, 180, 181, 182, 183, 184, 185,
-                                     186] or request.user.has_perm("read", experiment_obj):
+            if experiment_obj.public or request.user.has_perm("read", experiment_obj):
                 if experiment_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
@@ -475,7 +466,7 @@ class ExperimentDetail(APIView):
                                          "Please delete the channels first.".format(experiment),
                                          ErrorCodes.INTEGRITY_ERROR)
 
-                experiment_obj.to_be_deleted = datetime.now()
+                experiment_obj.to_be_deleted = timezone.now()
                 experiment_obj.save()
 
                 return HttpResponse(status=204)
@@ -617,10 +608,9 @@ class ChannelDetail(APIView):
             channel_obj = Channel.objects.get(name=channel, experiment=experiment_obj)
 
             # Check for permissions
-            # TODO SH Hack added to allow us to quickly make channels detail public without logging in.
             if channel_obj is None:
                 return BossResourceNotFoundError(channel)
-            if channel_obj.id in PUBLIC_CHANNELS or request.user.has_perm("read", channel_obj):
+            if channel_obj.public or request.user.has_perm("read", channel_obj):
                 if channel_obj.to_be_deleted is not None:
                     return BossHTTPError("Invalid Request. This Resource has been marked for deletion",
                                          ErrorCodes.RESOURCE_MARKED_FOR_DELETION)
@@ -657,6 +647,13 @@ class ChannelDetail(APIView):
         channel_data['name'] = channel
 
         try:
+            is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+            if 'bucket' in channel_data and channel_data['bucket'] != '' and not is_admin:
+                return BossHTTPError('Only admins can set bucket name', ErrorCodes.MISSING_PERMISSION)
+
+            if 'cv_path' in channel_data and channel_data['cv_path'] != '' and not is_admin:
+                return BossHTTPError('Only admins can set cv_path', ErrorCodes.MISSING_PERMISSION)
+
             # Get the collection and experiment
             collection_obj = Collection.objects.get(name=collection)
             experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
@@ -664,6 +661,11 @@ class ChannelDetail(APIView):
             # Check for add permissions
             if request.user.has_perm("add", experiment_obj):
                 channel_data['experiment'] = experiment_obj.pk
+
+                use_cloudvol = channel_data.get('storage_type', None) == Channel.StorageType.CLOUD_VOLUME
+                cv_path = channel_data.get('cv_path', None)
+                if use_cloudvol and (cv_path is None or cv_path == ''):
+                    channel_data['cv_path'] = f'/{collection}/{experiment}/{channel}'
 
                 # The source and related channels are names and need to be removed from the dict before serialization
                 source_channels = channel_data.pop('sources', [])
@@ -745,6 +747,17 @@ class ChannelDetail(APIView):
             if request.user.has_perm("update", channel_obj):
 
                 data = copy.deepcopy(request.data)
+                is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+
+                if 'storage_type' in data and not is_admin:
+                    return BossHTTPError('Only admins can change storage_type after creation',
+                                         ErrorCodes.MISSING_PERMISSION)
+
+                if 'bucket' in data and data['bucket'] != '' and not is_admin:
+                    return BossHTTPError('Only admins can set bucket name', ErrorCodes.MISSING_PERMISSION)
+
+                if 'cv_path' in data and not is_admin:
+                    return BossHTTPError('Only admins can set cv_path', ErrorCodes.MISSING_PERMISSION)
 
                 # The source and related channels are names and need to be removed from the dict before serialization
                 source_channels = data.pop('sources', [])
@@ -815,7 +828,7 @@ class ChannelDetail(APIView):
                 if len(derived_channels) > 0:
                     return BossHTTPError("Channel {} is the source channel of other channels and cannot be deleted"
                                          .format(channel), ErrorCodes.INTEGRITY_ERROR)
-                channel_obj.to_be_deleted = datetime.now()
+                channel_obj.to_be_deleted = timezone.now()
                 channel_obj.save()
                 return HttpResponse(status=204)
             else:
