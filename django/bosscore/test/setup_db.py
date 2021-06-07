@@ -164,6 +164,17 @@ class SetupTestDB:
         # bbchan1 is a channel for bounding box tests.
         self.add_channel('col1', 'exp1', 'bbchan1', 0, 0, 'uint64', 'annotation', ['channel1'])
 
+    def insert_cloudvolume_test_data(self):
+        """
+        Test data for cloudvolume integration.
+        """
+        self.add_collection('col1', 'Description for collection1')
+        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4)
+        self.add_experiment('col1', 'exp1', 'cf1', 10, 500, 1)
+        self.add_channel('col1', 'exp1', 'chan1', 0, 0, 'uint8', 'image', storage_type='cloudvol', bucket='bossdb-test-data')
+        self.add_channel('col1', 'exp1', 'chan2', 0, 0, 'uint16', 'image', storage_type='cloudvol', bucket='bossdb-test-data')
+        self.add_channel('col1', 'exp1', 'anno1', 0, 0, 'uint64', 'annotation', ['channel1'], storage_type='cloudvol', bucket='bossdb-test-data')
+
     def insert_ingest_test_data(self):
 
         self.add_collection('my_col_1', 'Description for collection1')
@@ -317,7 +328,8 @@ class SetupTestDB:
 
     def add_channel(self, collection_name, experiment_name, channel_name,
                     default_time_sample, base_resolution, datatype, 
-                    channel_type=None, source_channels=[], public=False):
+                    channel_type=None, source_channels=[], public=False, storage_type='spdb', 
+                    bucket=None, cv_path=None):
         """
 
         Args:
@@ -330,6 +342,9 @@ class SetupTestDB:
             channel_type (str):  Channel Type (image or annotation)
             source_channels (list[str]): Source channel(s) for an annotation channel
             public (bool): Is channel public?  Defaults to False.
+            storage_type (str): storage backend. default to spdb
+            bucket (str | null): source bucket. if null defaults to cuboids bucket
+            cv_path (str | null): cloudpath for cloudvolume data if backend is cloudvol. 
 
         Returns:
             Channel
@@ -348,7 +363,7 @@ class SetupTestDB:
         channel = Channel.objects.create(name=channel_name, experiment=exp,
                                          default_time_sample=default_time_sample, base_resolution=base_resolution,
                                          type=channel_type, datatype=datatype, creator=self.user,
-                                         public=public)
+                                         public=public, storage_type=storage_type, bucket=bucket, cv_path=cv_path)
 
         src_chan_objs, rel_chan_objs = ChannelDetail.validate_source_related_channels(
                 exp, source_channels, related_channels)
