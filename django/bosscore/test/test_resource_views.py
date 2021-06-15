@@ -767,7 +767,6 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 403)
 
-
     def test_post_channel_set_bucket_as_admin(self):
         """
         Only admins should be able to set the bucket name.
@@ -1284,7 +1283,7 @@ class ResourceViewsChannelTests(APITestCase):
         """
         url = '/' + version + '/collection/col1/experiment/exp1/channel/'
 
-        # Get an existing collection
+        # Get an existing channel
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['channels'][0], 'channel1')
