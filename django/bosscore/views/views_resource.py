@@ -850,7 +850,8 @@ class CollectionList(generics.ListAPIView):
     List all collections or create a new collection
 
     """
-    queryset = Collection.objects.all()
+    # Cache the public collections.
+    queryset = Collection.objects.filter(public=True)
     serializer_class = CollectionSerializer
 
     def list(self, request, *args, **kwargs):
@@ -864,9 +865,9 @@ class CollectionList(generics.ListAPIView):
         Returns: Collections that user has view permissions on
 
         """
-        # queryset = self.get_queryset()
         collections = get_objects_for_user(request.user, 'read', klass=Collection).exclude(to_be_deleted__isnull=False)
-        data = {"collections": [collection.name for collection in collections]}
+        all_colls = collections.union(self.get_queryset())
+        data = {"collections": [collection.name for collection in all_colls]}
         return Response(data)
 
 
@@ -891,10 +892,13 @@ class ExperimentList(generics.ListAPIView):
 
         """
         collection_obj = Collection.objects.get(name=collection)
-        all_experiments = get_objects_for_user(request.user, 'read', klass=Experiment)\
-            .exclude(to_be_deleted__isnull=False)
-        experiments = all_experiments.filter(collection=collection_obj)
-        data = {"experiments": [experiment.name for experiment in experiments]}
+        experiments = self.get_queryset().filter(collection=collection_obj).exclude(to_be_deleted__isnull=False)
+        data = {
+            "experiments": [
+                            exp.name for exp in experiments
+                            if exp.public == True or request.user.has_perm('read', exp)
+                            ]
+        }
         return Response(data)
 
 
@@ -921,9 +925,13 @@ class ChannelList(generics.ListAPIView):
         """
         collection_obj = Collection.objects.get(name=collection)
         experiment_obj = Experiment.objects.get(name=experiment, collection=collection_obj)
-        channels = get_objects_for_user(request.user, 'read', klass=Channel).filter(experiment=experiment_obj)
-        channels= channels.exclude(to_be_deleted__isnull=False)
-        data = {"channels": [channel.name for channel in channels]}
+        channels = self.get_queryset().filter(experiment=experiment_obj).exclude(to_be_deleted__isnull=False)
+        data = {
+            "channels": [
+                            channel.name for channel in channels
+                            if channel.public == True or request.user.has_perm('read', channel)
+                        ]
+        }
         return Response(data)
 
 

@@ -42,8 +42,18 @@ TEST_DATA_EXPERIMENTS = [EXP1, EXP22, EXP_BASE_RES]
 CHAN_BASE_RES = 'chan-with-base-res'
 
 class SetupTestDB:
-    def __init__(self):
-        self.super_user = None
+    def __init__(self, super_user=None):
+        """
+        Constructor.
+
+        An existing super user may be supplied when creating an another
+        instance of this class for additional test DB configuration.
+
+        Args:
+            super_user (Optional[User]): Provide an existing super user.
+        """
+        self.super_user = super_user
+        self.user = super_user
 
     def create_user(self, username=None):
         # If you have yet to create the superuser, you need to do that first for permissions to work OK

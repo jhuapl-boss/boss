@@ -19,8 +19,11 @@ from .setup_db import SetupTestDB
 version = settings.BOSS_VERSION
 
 PUBLIC_COLLECTION = 'public_coll'
+PRIVATE_COLLECTION = 'private_coll'
 PUBLIC_EXPERIMENT = 'public_exp'
+PRIVATE_EXPERIMENT = 'private_exp'
 PUBLIC_CHANNEL = 'public_chan'
+PRIVATE_CHANNEL = 'private_chan'
 # Really, all coord frames are public.
 PUBLIC_COORD_FRAME = 'public_cf'
 
@@ -41,6 +44,7 @@ class UserPermissionsCollection(APITestCase):
         self.client.force_login(user1)
         dbsetup.insert_test_data()
         dbsetup.add_collection(PUBLIC_COLLECTION, 'public-test', public=True)
+        dbsetup.add_collection(PRIVATE_COLLECTION, 'private-test', public=False)
 
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
@@ -174,11 +178,10 @@ class UserPermissionsCollection(APITestCase):
         """
         url = '/' + version + '/collection/'
 
-        # Get an existing collection
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data['collections'][0], 'unittestcol')
-        self.assertEqual(len(response.data['collections']), 1)
+        exp_colls = ['unittestcol', PUBLIC_COLLECTION]
+        self.assertCountEqual(response.data['collections'], exp_colls)
 
 
 class UserPermissionsCoordinateFrame(APITestCase):
@@ -311,6 +314,7 @@ class UserPermissionsExperiment(APITestCase):
         dbsetup.add_collection(PUBLIC_COLLECTION, 'public-test', public=True)
         dbsetup.add_coordinate_frame(PUBLIC_COORD_FRAME, 'Description for public cf', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
         dbsetup.add_experiment(PUBLIC_COLLECTION, PUBLIC_EXPERIMENT, PUBLIC_COORD_FRAME, 10, 10, 1, public=True)
+        dbsetup.add_experiment(PUBLIC_COLLECTION, PRIVATE_EXPERIMENT, PUBLIC_COORD_FRAME, 10, 10, 1, public=False)
 
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
@@ -476,6 +480,16 @@ class UserPermissionsExperiment(APITestCase):
         self.assertEqual(response.data['experiments'][0], 'unittestexp')
         self.assertEqual(len(response.data['experiments']), 1)
 
+    def test_should_only_list_public_experiments(self):
+        """
+        Only list public experiments when user doess not have permission
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/experiment/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['experiments'][0], PUBLIC_EXPERIMENT)
+        self.assertEqual(1, len(response.data['experiments']))
+
 
 class UserPermissionsChannel(APITestCase):
     """
@@ -497,6 +511,7 @@ class UserPermissionsChannel(APITestCase):
         dbsetup.add_coordinate_frame(PUBLIC_COORD_FRAME, 'Description for public cf', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
         dbsetup.add_experiment(PUBLIC_COLLECTION, PUBLIC_EXPERIMENT, PUBLIC_COORD_FRAME, 10, 10, 1, public=True)
         dbsetup.add_channel(PUBLIC_COLLECTION, PUBLIC_EXPERIMENT, PUBLIC_CHANNEL, 0, 0, 'uint8', public=True)
+        dbsetup.add_channel(PUBLIC_COLLECTION, PUBLIC_EXPERIMENT, PRIVATE_CHANNEL, 0, 0, 'uint8', public=False)
 
         # Create a new user with different objects
         user2 = dbsetup.create_user('testuser1')
@@ -634,3 +649,14 @@ class UserPermissionsChannel(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['channels'][0], 'unittestchannel')
+
+    def test_should_list_only_public_channels(self):
+        """
+        When listing an experiment's channels, only the public channels should
+        be listed if the user does not own the channel.
+        """
+        url = '/' + version + f'/collection/{PUBLIC_COLLECTION}/experiment/{PUBLIC_EXPERIMENT}/channel/'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data['channels'][0], PUBLIC_CHANNEL)
+        self.assertEqual(1, len(response.data['channels']))
