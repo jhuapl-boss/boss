@@ -207,11 +207,11 @@ class ChannelForm(UpdateForm):
         """
         self.UPDATE_FIELDS = self.BASE_UPDATE_FIELDS
 
-        is_admin = self.form.get('is_admin', False)
+        is_admin = self.fields.get('is_admin', False)
         if is_admin:
             self.UPDATE_FIELDS += ['storage_type', 'bucket', 'cv_path']
 
-        super.is_update()
+        return super().is_update()
 
 
 def PermField():

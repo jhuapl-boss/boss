@@ -27,6 +27,113 @@ from bossspatialdb.views import Cutout
 
 version = settings.BOSS_VERSION
 
+class TestDjangoResourceCloudVolume(APITestCase):
+    
+    def setUp(self):
+        """Setup test by inserting data model items into the database"""
+        self.rf = APIRequestFactory()
+        dbsetup = SetupTestDB()
+        self.user = dbsetup.create_user()
+        dbsetup.add_role("resource-manager", self.user)
+        self.client.force_login(self.user)
+        dbsetup.insert_cloudvolume_test_data()
+
+
+        url = '/' + version + '/cutout/col1/exp1/chan1/2/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "chan1",
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        self.request_channel = BossRequest(drfrequest, request_args)
+
+        # Setup Layer
+        url = '/' + version + '/cutout/col1/exp1/anno1/2/0:5/0:6/0:2/'
+
+        # Create the request
+        request = self.rf.get(url)
+        force_authenticate(request, user=self.user)
+        drfrequest = Cutout().initialize_request(request)
+        drfrequest.version = version
+
+        # Create the request dict
+        request_args = {
+            "service": "cutout",
+            "collection_name": "col1",
+            "experiment_name": "exp1",
+            "channel_name": "anno1",
+            "resolution": 2,
+            "x_args": "0:5",
+            "y_args": "0:6",
+            "z_args": "0:2",
+            "time_args": None
+        }
+
+        self.request_annotation = BossRequest(drfrequest, request_args)
+
+    
+    def test_django_resource_channel_image_cloudvol(self):
+        """Test basic get channel interface
+
+        Returns:
+            None
+
+        """
+        resource = BossResourceDjango(self.request_channel)
+
+        channel = resource.get_channel()
+        assert channel.is_image() is True
+        assert channel.is_cloudvolume() is True
+        assert channel.name == self.request_channel.channel.name
+        assert channel.description == self.request_channel.channel.description
+        assert channel.datatype == self.request_channel.channel.datatype
+        assert channel.type == self.request_channel.channel.type
+        assert channel.base_resolution == self.request_channel.channel.base_resolution
+        assert channel.default_time_sample == self.request_channel.channel.default_time_sample
+        assert channel.related == []
+        assert channel.sources == []
+        assert channel.storage_type == self.request_channel.storage_type
+        assert channel.bucket == self.request_channel.bucket
+        assert channel.cv_path == self.request_channel.cv_path
+
+    def test_django_resource_channel_annotation_cloudvol(self):
+        """Test basic get channel when an annotation interface
+
+        Returns:
+            None
+
+        """
+        resource = BossResourceDjango(self.request_annotation)
+
+        channel = resource.get_channel()
+        assert channel.is_image() is False
+        assert channel.is_cloudvolume() is True
+        assert channel.name == self.request_annotation.channel.name
+        assert channel.description == self.request_annotation.channel.description
+        assert channel.datatype == self.request_annotation.channel.datatype
+        assert channel.type == self.request_annotation.channel.type
+        assert channel.base_resolution == self.request_annotation.channel.base_resolution
+        assert channel.default_time_sample == self.request_annotation.channel.default_time_sample
+        assert channel.related == []
+        assert channel.sources == ['channel1']
+        assert channel.storage_type == self.request_annotation.storage_type
+        assert channel.bucket == self.request_annotation.bucket
+        assert channel.cv_path == self.request_annotation.cv_path
 
 class TestDjangoResource(APITestCase):
 

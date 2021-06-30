@@ -38,6 +38,9 @@ from bosscore.models import ThrottleMetric
 from spdb.spatialdb.spatialdb import SpatialDB, CUBOIDSIZE
 from spdb.spatialdb.rediskvio import RedisKVIO
 from spdb import project
+
+from cvdb.cloudvolumedb import CloudVolumeDB
+
 import bossutils
 from bossutils.logger import bossLogger
 from bossspatialdb.downsample import delete_queued_job, start
@@ -174,10 +177,14 @@ class Cutout(APIView):
 
 
 
-        # Get interface to SPDB cache
-        cache = SpatialDB(settings.KVIO_SETTINGS,
-                          settings.STATEIO_CONFIG,
-                          settings.OBJECTIO_CONFIG)
+        # Get interface to SPDB or CVDB cache
+
+        if resource.get_channel().is_cloudvolume():
+            cache = CloudVolumeDB()
+        else:
+            cache = SpatialDB(settings.KVIO_SETTINGS,
+                            settings.STATEIO_CONFIG,
+                            settings.OBJECTIO_CONFIG)
 
         # Get the params to pull data out of the cache
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
