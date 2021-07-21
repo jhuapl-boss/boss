@@ -169,6 +169,7 @@ class ChannelForm(UpdateForm):
                          'default_time_sample',
                          'base_resolution',
                          'sources', 'related']
+    UPDATE_FIELDS = BASE_UPDATE_FIELDS.copy()
 
     name = forms.CharField(label="Channel", help_text="String identifier unique to the experiment")
     public = forms.BooleanField(required=False, help_text="Give read access to all?")
@@ -201,17 +202,29 @@ class ChannelForm(UpdateForm):
     related = DelimitedCharField(label="Related Channels", required=False,
                                  help_text="Optional comma separated list of channels related to this channel.")
 
-    def is_update(self):
+    def update_fields_if_admin(self):
         """
-        Override base class' is_update() so admins can update additional fields.
+        Augment the set of fields that are updatable if user had admin privileges.
         """
-        self.UPDATE_FIELDS = self.BASE_UPDATE_FIELDS
-
+        self.UPDATE_FIELDS = self.BASE_UPDATE_FIELDS.copy()
         is_admin = self.fields.get('is_admin', False)
         if is_admin:
             self.UPDATE_FIELDS += ['storage_type', 'bucket', 'cv_path']
 
+    def is_update(self):
+        """
+        Override base class' is_update() so admins can update additional fields.
+        """
+        self.update_fields_if_admin()
         return super().is_update()
+
+    @property
+    def cleaned_update_data(self):
+        """
+        Override base class' property so admins can update additional fields.
+        """
+        self.update_fields_if_admin()
+        return super().cleaned_update_data
 
 
 def PermField():
