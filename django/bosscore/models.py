@@ -317,7 +317,7 @@ class Channel(models.Model):
 
     # Optional CloudVolume path.  If storage_type == StorageType.CLOUD_VOLUME,
     # then instantiate CloudVolume with: f"s3://{bucket}{cv_path}"
-    cv_path = models.CharField(null=True, max_length=2000)
+    cv_path = models.CharField(null=True, blank=True, max_length=2000)
 
     class Meta:
         db_table = u"channel"
