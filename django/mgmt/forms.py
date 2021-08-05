@@ -210,7 +210,7 @@ class ChannelForm(UpdateForm):
         Augment the set of fields that are updatable if user had admin privileges.
         """
         self.UPDATE_FIELDS = self.BASE_UPDATE_FIELDS.copy()
-        is_admin = self.fields.get('is_admin', False)
+        is_admin = self.data.get('is_admin', False)
         if is_admin:
             self.UPDATE_FIELDS += ['storage_type', 'bucket', 'cv_path']
 
