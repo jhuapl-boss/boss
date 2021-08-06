@@ -186,7 +186,10 @@ class ChannelForm(UpdateForm):
     bucket = forms.CharField(required=False, empty_value=f'cuboids{domain}',
                              help_text=f'(default is cuboids{domain})',
                              label='Bucket Name')
-    cv_path = forms.CharField(required=False, help_text='CloudVolume path', label='CloudVolume Path')
+    
+    cv_path = forms.CharField(required=False, 
+                              help_text='Public S3 URI to Cloudvolume Dataset', 
+                              label='CloudVolume Path')
 
     type = forms.ChoiceField(choices=[(c,c) for c in ['', 'image', 'annotation']],
                              help_text="image = source image dataset<br>annotation = label dataset")
@@ -207,7 +210,7 @@ class ChannelForm(UpdateForm):
         Augment the set of fields that are updatable if user had admin privileges.
         """
         self.UPDATE_FIELDS = self.BASE_UPDATE_FIELDS.copy()
-        is_admin = self.fields.get('is_admin', False)
+        is_admin = self.data.get('is_admin', False)
         if is_admin:
             self.UPDATE_FIELDS += ['storage_type', 'bucket', 'cv_path']
 

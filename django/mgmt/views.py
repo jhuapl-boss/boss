@@ -740,6 +740,13 @@ class Channel(LoginRequiredMixin, View):
             return self.get(request, collection_name, experiment_name, channel_name, perms_form=form)
         elif action == 'update':
             form = ChannelForm(request.POST)
+
+            # DEV NOTE: Some fields only update-able if request originates from admin
+            is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+            data = form.data.copy()
+            data['is_admin'] = is_admin
+            form.data = data
+
             if form.is_valid():
                 data = form.cleaned_update_data
 
