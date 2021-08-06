@@ -227,6 +227,14 @@ class ChannelForm(UpdateForm):
         self.update_fields_if_admin()
         return super().cleaned_update_data
 
+    def disable_non_admin_fields(self):
+        """
+        Disable fields that only admins can access.  Use this when providing a
+        create form for the non-admin user.
+        """
+        self.fields['bucket'].disabled = True
+        self.fields['cv_path'].disabled = True
+
 
 def PermField():
     #perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']

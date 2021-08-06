@@ -600,14 +600,20 @@ class Experiment(LoginRequiredMixin, View):
             'perms': perms,
             'exp_form': exp_form,
             'exp_error': exp_error,
-            'chan_form': chan_form if chan_form else ChannelForm(initial={"base_resolution": 0,
-                                                                          "default_time_sample": 0}),
+            'chan_form': chan_form if chan_form else None,
             'chan_error': "error" if chan_form else "",
             'meta_form': meta_form if meta_form else MetaForm(),
             'meta_error': "error" if meta_form else "",
             'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
         }
+        if args['chan_form'] is None:
+            is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+            new_chan_form = ChannelForm(initial={"base_resolution": 0, "default_time_sample": 0})
+            if not is_admin:
+                new_chan_form.disable_non_admin_fields()
+            args['chan_form'] = new_chan_form
+
         return HttpResponse(render_to_string('experiment.html', args, request=request))
 
     def post(self, request, collection_name, experiment_name):
