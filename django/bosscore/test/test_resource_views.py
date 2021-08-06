@@ -19,7 +19,6 @@ from bosscore.models import Channel
 
 version = settings.BOSS_VERSION
 
-
 class ResourceViewsCollectionTests(APITestCase):
     """
     Class to test the resource service
@@ -773,9 +772,11 @@ class ResourceViewsChannelTests(APITestCase):
         """
         self.client.force_login(self.super_user)
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel10/'
-        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'bucket': 'my.bucket.boss'}
+        bucket_name = 'my.bucket.boss'
+        data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image', 'bucket': bucket_name}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['bucket'], bucket_name)
 
     def test_post_channel_spdb_with_cv_path(self):
         """

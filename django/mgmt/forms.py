@@ -1,6 +1,6 @@
 from django import forms
 from bosscore.models import Channel
-from bossutils.configuration import BossConfig
+from bosscore.views.views_resource import DEFAULT_CUBOID_BUCKET_NAME
 
 class UpdateForm(forms.Form):
     '''Custom base class for forms that need to support updating
@@ -178,17 +178,15 @@ class ChannelForm(UpdateForm):
     storage_type = forms.ChoiceField(choices=(('', ''),) + Channel.STORAGE_TYPE_CHOICES,
                                      required=False,
                                      help_text='Storage backend for this channel')
-    boss_config = BossConfig()
-    try:
-        domain = '.' + boss_config['system']['fqdn'].split('.', 1)[1]
-    except Exception:
-        domain = ''
-    bucket = forms.CharField(required=False, empty_value=f'cuboids{domain}',
-                             help_text=f'(default is cuboids{domain})',
+
+    bucket = forms.CharField(required=False,
+                             empty_value=None,
+                             help_text=f'(default is {DEFAULT_CUBOID_BUCKET_NAME})',
                              label='Bucket Name')
     
     cv_path = forms.CharField(required=False, 
-                              help_text='Public S3 URI to Cloudvolume Dataset', 
+                              empty_value=None,
+                              help_text='Public S3 URI to Cloudvolume Dataset (start with / after the bucket name)',
                               label='CloudVolume Path')
 
     type = forms.ChoiceField(choices=[(c,c) for c in ['', 'image', 'annotation']],

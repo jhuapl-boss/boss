@@ -292,7 +292,7 @@ class Channel(models.Model):
         (DownsampleStatus.FAILED, 'Failed'),
     )
     downsample_status = models.CharField(choices=DOWNSAMPLE_STATUS_CHOICES, default=DownsampleStatus.NOT_DOWNSAMPLED, max_length=100)
-    downsample_arn = models.CharField(max_length=4096, blank=True, null=True)
+    downsample_arn = models.CharField(max_length=4096, null=True)
 
     # Is this a public channel?
     public = models.BooleanField(null=False, default=False)

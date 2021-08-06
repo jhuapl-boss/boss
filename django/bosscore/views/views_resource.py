@@ -34,7 +34,15 @@ from bosscore.serializers import CollectionSerializer, ExperimentSerializer, Cha
 
 from bosscore.models import Collection, Experiment, Channel, CoordinateFrame 
 from bosscore.constants import ADMIN_GRP
+from bossutils.configuration import BossConfig
+from bossutils.logger import bossLogger
 
+boss_config = BossConfig()
+try:
+    DEFAULT_CUBOID_BUCKET_NAME = 'cuboids.' + boss_config['system']['fqdn'].split('.', 1)[1]
+except Exception as ex:
+    DEFAULT_CUBOID_BUCKET_NAME = ''
+    bossLogger().error(f'Failed getting system.fqdn from boss.config: {ex}')
 
 class CollectionDetail(APIView):
 
@@ -648,10 +656,10 @@ class ChannelDetail(APIView):
 
         try:
             is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
-            if 'bucket' in channel_data and channel_data['bucket'] != '' and not is_admin:
+            if 'bucket' in channel_data and channel_data['bucket'] and not is_admin:
                 return BossHTTPError('Only admins can set bucket name', ErrorCodes.MISSING_PERMISSION)
 
-            if 'cv_path' in channel_data and channel_data['cv_path'] != '' and not is_admin:
+            if 'cv_path' in channel_data and channel_data['cv_path'] and not is_admin:
                 return BossHTTPError('Only admins can set cv_path', ErrorCodes.MISSING_PERMISSION)
 
             # Get the collection and experiment
@@ -753,10 +761,10 @@ class ChannelDetail(APIView):
                     return BossHTTPError('Only admins can change storage_type after creation',
                                          ErrorCodes.MISSING_PERMISSION)
 
-                if 'bucket' in data and data['bucket'] != '' and not is_admin:
+                if 'bucket' in data and data['bucket'] and not is_admin:
                     return BossHTTPError('Only admins can set bucket name', ErrorCodes.MISSING_PERMISSION)
 
-                if 'cv_path' in data and not is_admin:
+                if 'cv_path' in data and data['cv_path'] and not is_admin:
                     return BossHTTPError('Only admins can set cv_path', ErrorCodes.MISSING_PERMISSION)
 
                 # The source and related channels are names and need to be removed from the dict before serialization
