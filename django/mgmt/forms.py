@@ -171,6 +171,9 @@ class ChannelForm(UpdateForm):
                          'sources', 'related']
     UPDATE_FIELDS = BASE_UPDATE_FIELDS.copy()
 
+    # Currently, these fields are restricted to admins.
+    ADMIN_ONLY_FIELDS = ['storage_type', 'bucket', 'cv_path']
+
     name = forms.CharField(label="Channel", help_text="String identifier unique to the experiment")
     public = forms.BooleanField(required=False, help_text="Give read access to all?")
     description = forms.CharField(required=False, help_text="Optional description")
@@ -210,7 +213,7 @@ class ChannelForm(UpdateForm):
         self.UPDATE_FIELDS = self.BASE_UPDATE_FIELDS.copy()
         is_admin = self.data.get('is_admin', False)
         if is_admin:
-            self.UPDATE_FIELDS += ['storage_type', 'bucket', 'cv_path']
+            self.UPDATE_FIELDS.extend(self.ADMIN_ONLY_FIELDS)
 
     def is_update(self):
         """
@@ -232,8 +235,8 @@ class ChannelForm(UpdateForm):
         Disable fields that only admins can access.  Use this when providing a
         create form for the non-admin user.
         """
-        self.fields['bucket'].disabled = True
-        self.fields['cv_path'].disabled = True
+        for name in self.ADMIN_ONLY_FIELDS:
+            self.fields[name].disabled = True
 
 
 def PermField():
