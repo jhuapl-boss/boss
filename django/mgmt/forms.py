@@ -1,6 +1,6 @@
 from django import forms
 from bosscore.models import Channel
-from bossutils.configuration import BossConfig
+from bosscore.views.views_resource import DEFAULT_CUBOID_BUCKET_NAME
 
 class UpdateForm(forms.Form):
     '''Custom base class for forms that need to support updating
@@ -171,6 +171,9 @@ class ChannelForm(UpdateForm):
                          'sources', 'related']
     UPDATE_FIELDS = BASE_UPDATE_FIELDS.copy()
 
+    # Currently, these fields are restricted to admins.
+    ADMIN_ONLY_FIELDS = ['storage_type', 'bucket', 'cv_path']
+
     name = forms.CharField(label="Channel", help_text="String identifier unique to the experiment")
     public = forms.BooleanField(required=False, help_text="Give read access to all?")
     description = forms.CharField(required=False, help_text="Optional description")
@@ -178,17 +181,15 @@ class ChannelForm(UpdateForm):
     storage_type = forms.ChoiceField(choices=(('', ''),) + Channel.STORAGE_TYPE_CHOICES,
                                      required=False,
                                      help_text='Storage backend for this channel')
-    boss_config = BossConfig()
-    try:
-        domain = '.' + boss_config['system']['fqdn'].split('.', 1)[1]
-    except Exception:
-        domain = ''
-    bucket = forms.CharField(required=False, empty_value=f'cuboids{domain}',
-                             help_text=f'(default is cuboids{domain})',
+
+    bucket = forms.CharField(required=False,
+                             empty_value=None,
+                             help_text=f'(default is {DEFAULT_CUBOID_BUCKET_NAME})',
                              label='Bucket Name')
     
     cv_path = forms.CharField(required=False, 
-                              help_text='Public S3 URI to Cloudvolume Dataset', 
+                              empty_value=None,
+                              help_text='Public S3 URI to Cloudvolume Dataset (start with / after the bucket name)',
                               label='CloudVolume Path')
 
     type = forms.ChoiceField(choices=[(c,c) for c in ['', 'image', 'annotation']],
@@ -212,7 +213,7 @@ class ChannelForm(UpdateForm):
         self.UPDATE_FIELDS = self.BASE_UPDATE_FIELDS.copy()
         is_admin = self.data.get('is_admin', False)
         if is_admin:
-            self.UPDATE_FIELDS += ['storage_type', 'bucket', 'cv_path']
+            self.UPDATE_FIELDS.extend(self.ADMIN_ONLY_FIELDS)
 
     def is_update(self):
         """
@@ -228,6 +229,14 @@ class ChannelForm(UpdateForm):
         """
         self.update_fields_if_admin()
         return super().cleaned_update_data
+
+    def disable_non_admin_fields(self):
+        """
+        Disable fields that only admins can access.  Use this when providing a
+        create form for the non-admin user.
+        """
+        for name in self.ADMIN_ONLY_FIELDS:
+            self.fields[name].disabled = True
 
 
 def PermField():
