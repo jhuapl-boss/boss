@@ -41,12 +41,12 @@ version = settings.BOSS_VERSION
 class CutoutInterfaceViewCloudVolumeMixin(object):
     def test_channel_uint8_cuboid_aligned(self):
         "uint8 - cuboid aligned - no offset"
-        # Generate random data
-        test_mat = np.random.randint(1, 254, (16, 128, 128))
-        test_mat = test_mat.astype(np.uint8)
+        
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint8[0:128, 0:128, 0:16] 
 
-        # Upload Data to Cloudvolume
-        self.vol_uint8[0:128, 0:128, 0:16] = test_mat.T
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
@@ -71,12 +71,12 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
     def test_channel_uint8_cuboid_aligned_offset(self):
         "uint8 - cuboid aligned - offset present"
-        # Generate random data
-        test_mat = np.random.randint(1, 254, (16, 512, 512))
-        test_mat = test_mat.astype(np.uint8)
 
-        # Upload Data to Cloudvolume
-        self.vol_uint8[0:512, 0:512, 16:32] = test_mat.T
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint8[0:512, 0:512, 16:32] 
+        
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
@@ -102,13 +102,13 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
     def test_channel_uint8_cuboid_unaligned_offset(self):
         "uint8 - cuboid unaligned - offset present"
-        # Generate random data
-        test_mat = np.random.randint(1, 254, (32, 512, 1024))
-        test_mat = test_mat.astype(np.uint8)
 
-        # Upload Data to Cloudvolume
-        self.vol_uint8[0:1024, 0:512, 0:32] = test_mat.T
-
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint8[0:1024, 0:512, 0:32] 
+        
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
+        
         # Create Request to get data you posted
         factory = APIRequestFactory()
         request = factory.get('/' + version + '/cutout/col1/exp1/chan1/0/140:692/256:384/7:31/',
@@ -133,13 +133,12 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
     
     def test_channel_uint16_cuboid_aligned(self):
         "uint16 - cuboid aligned - no offset"
-        # Generate random data
-        test_mat = np.random.randint(1, 2**16-1, (16, 128, 128))
-        test_mat = test_mat.astype(np.uint16)
-
-        # Upload Data to Cloudvolume
-        self.vol_uint16[0:128, 0:128, 0:16] = test_mat.T
-
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint16[0:128, 0:128, 0:16] 
+        
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
+        
         # Create Request to get data you posted
         factory = APIRequestFactory()
         request = factory.get('/' + version + '/cutout/col1/exp1/chan2/0/0:128/0:128/0:16/',
@@ -163,12 +162,11 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
     def test_channel_uint16_cuboid_aligned_offset(self):
         "uint16 - cuboid aligned - offset present"
-        # Generate random data
-        test_mat = np.random.randint(1, 2**16-1, (16, 512, 512))
-        test_mat = test_mat.astype(np.uint16)
-
-        # Upload Data to Cloudvolume
-        self.vol_uint16[0:512, 0:512, 16:32] = test_mat.T
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint16[0:512, 0:512, 16:32]
+        
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
@@ -194,12 +192,11 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
     def test_channel_uint16_cuboid_unaligned_offset(self):
         "uint16 - cuboid unaligned - offset present"
-        # Generate random data
-        test_mat = np.random.randint(1, 2**16-1, (32, 512, 1024))
-        test_mat = test_mat.astype(np.uint16)
-
-        # Upload Data to Cloudvolume
-        self.vol_uint16[0:1024, 0:512, 0:32] = test_mat.T
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint16[0:1024, 0:512, 0:32] 
+        
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
@@ -225,12 +222,12 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
     def test_channel_uint64_cuboid_aligned(self):
         "uint64 - cuboid aligned - no offset"
-        # Generate random data
-        test_mat = np.random.randint(1, 2**64-1, (16, 128, 128))
-        test_mat = test_mat.astype(np.uint64)
 
-        # Upload Data to Cloudvolume
-        self.vol_uint64[0:128, 0:128, 0:16] = test_mat.T
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint64[0:128, 0:128, 0:16]
+        
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
@@ -255,12 +252,12 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
     def test_channel_uint64_cuboid_aligned_offset(self):
         "uint64 - cuboid aligned - offset present"
-        # Generate random data
-        test_mat = np.random.randint(1, 2**64-1, (16, 512, 512))
-        test_mat = test_mat.astype(np.uint64)
 
-        # Upload Data to Cloudvolume
-        self.vol_uint64[0:512, 0:512, 16:32] = test_mat.T
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint64[0:512, 0:512, 16:32]
+
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
@@ -286,12 +283,11 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
     def test_channel_uint64_cuboid_unaligned_offset(self):
         "uint64 - cuboid unaligned - offset present"
-        # Generate random data
-        test_mat = np.random.randint(1, 2**64-1, (32, 512, 1024))
-        test_mat = test_mat.astype(np.uint64)
 
-        # Upload Data to Cloudvolume
-        self.vol_uint64[0:1024, 0:512, 0:32] = test_mat.T
+        # Get test data from cloudvolume, returned in XYZT
+        test_mat = self.vol_uint64[0:1024, 0:512, 0:32] 
+        # Convert to ZYX
+        test_mat = np.squeeze(test_mat).T
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
@@ -329,7 +325,10 @@ class TestCutoutCloudVolumeInterfaceView(CutoutInterfaceViewCloudVolumeMixin, AP
 
         # Set up external cloudvolume instance
         # TODO: Fails if cloudvolume not already set up. Make method that creates new cloudvolume.
-        cls.vol_uint8 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan1")
-        cls.vol_uint16 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan2")
-        cls.vol_uint64 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/anno1")
-
+        cls.vol_uint8 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan1", use_https=True)
+        cls.vol_uint16 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan2", use_https=True)
+        cls.vol_uint64 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/anno1", use_https=True)
+    
+    @classmethod
+    def tearDownClass(cls):
+        pass

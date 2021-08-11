@@ -181,9 +181,24 @@ class SetupTestDB:
         self.add_collection('col1', 'Description for collection1')
         self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4)
         self.add_experiment('col1', 'exp1', 'cf1', 10, 500, 1)
-        self.add_channel('col1', 'exp1', 'chan1', 0, 0, 'uint8', 'image', storage_type='cloudvol', bucket='bossdb-test-data')
-        self.add_channel('col1', 'exp1', 'chan2', 0, 0, 'uint16', 'image', storage_type='cloudvol', bucket='bossdb-test-data')
-        self.add_channel('col1', 'exp1', 'anno1', 0, 0, 'uint64', 'annotation', ['channel1'], storage_type='cloudvol', bucket='bossdb-test-data')
+
+        # Dev Note: Prepopulated cloudvolume layer for uint8 data located at this cloudpath
+        self.add_channel('col1', 'exp1', 'chan1', 0, 0, 'uint8', 'image', 
+                storage_type='cloudvol', 
+                bucket='bossdb-test-data',
+                cv_path='col1/exp1/chan1')
+        
+        # Dev Note: Prepopulated cloudvolume layer for uint16 data located at this cloudpath
+        self.add_channel('col1', 'exp1', 'chan2', 0, 0, 'uint16', 'image', 
+                storage_type='cloudvol', 
+                bucket='bossdb-test-data',
+                cv_path='col1/exp1/chan2')
+        
+        # Dev Note: Prepopulated cloudvolume layer for uint16 data located at this cloudpath
+        self.add_channel('col1', 'exp1', 'anno1', 0, 0, 'uint64', 'annotation', 
+                storage_type='cloudvol', 
+                bucket='bossdb-test-data',
+                cv_path='col1/exp1/anno1')
 
     def insert_ingest_test_data(self):
 
@@ -362,8 +377,6 @@ class SetupTestDB:
         """
         if channel_type is None:
             channel_type = 'image'
-        elif channel_type == 'annotation' and len(source_channels) == 0:
-            raise Exception('Annotation channel must have source channel.')
 
         # Not setting up any related channels.
         related_channels = []
