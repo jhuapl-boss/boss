@@ -667,7 +667,7 @@ class ChannelDetail(APIView):
                 if use_cloudvol and (cv_path is None or cv_path == ''):
                     channel_data['cv_path'] = f'/{collection}/{experiment}/{channel}'
             
-                from bossutils import bossLogger
+                from bossutils.logger import bossLogger
                 logger = bossLogger()
                 logger.info(f'DX...channel data: {channel_data}')
                 logger.info(f'DX...channel request: {request.__dict__}')

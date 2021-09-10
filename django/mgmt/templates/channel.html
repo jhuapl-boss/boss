@@ -36,11 +36,13 @@
                                 </div>
                                 <div class="col-xs-7">
                                     <div class="panel-body">
-                                        <a id="downsample-btn" type='button' class='btn btn-primary btn-sm action-button disabled' href='javascript:void(0);' onclick='start_downsample("{{ collection_name }}", "{{ experiment_name }}", "{{ channel_name }}")'><span class='glyphicon glyphicon-sort-by-attributes-alt' aria-hidden='true'></span> Start Downsample</a>
-                                        <a id="cancel-btn" type='button' class='btn btn-danger btn-sm action-button disabled' href='javascript:void(0);' onclick='cancel_downsample("{{collection_name }}", "{{ experiment_name }}", "{{ channel_name }}")'><span class='glyphicon glyphicon-remove' aria-hidden='true'></span> Cancel Downsample</a>
-                                        {% if user.is_staff %}
+                                        {% if channel.storage_type == "spdb" %}
+                                          <a id="downsample-btn" type='button' class='btn btn-primary btn-sm action-button disabled' href='javascript:void(0);' onclick='start_downsample("{{ collection_name }}", "{{ experiment_name }}", "{{ channel_name }}")'><span class='glyphicon glyphicon-sort-by-attributes-alt' aria-hidden='true'></span> Start Downsample</a>
+                                          <a id="cancel-btn" type='button' class='btn btn-danger btn-sm action-button disabled' href='javascript:void(0);' onclick='cancel_downsample("{{collection_name }}", "{{ experiment_name }}", "{{ channel_name }}")'><span class='glyphicon glyphicon-remove' aria-hidden='true'></span> Cancel Downsample</a>
+                                          {% if user.is_staff %}
                                             <br/><br />
                                             <a id="redownsample-btn" type='button' class='btn btn-primary btn-sm action-button' href='javascript:void(0);' onclick='start_redownsample("{{ collection_name }}", "{{ experiment_name }}", "{{ channel_name }}")'><span class='glyphicon glyphicon-sort-by-attributes-alt' aria-hidden='true'></span> Start Re-downsample</a>
+                                          {% endif %}
                                         {% endif %}
                                     </div>
                                 </div>

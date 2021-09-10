@@ -114,7 +114,7 @@ class ChannelSerializer(serializers.ModelSerializer):
                 .format(num_time_samples)
 
         # Validate cloudvolume specific properties
-        is_cloudvol = channel_data.get('storage_type') == Channel.StorageType.CLOUD_VOLUME
+        is_cloudvol = data.get('storage_type') == Channel.StorageType.CLOUD_VOLUME
         
         # Ensure storage_type is CloudVolume if cv_path is set
         if (not is_cloudvol and data.get('cv_path') not in (None, '')):
