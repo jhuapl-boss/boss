@@ -666,6 +666,16 @@ class ChannelDetail(APIView):
                 cv_path = channel_data.get('cv_path', None)
                 if use_cloudvol and (cv_path is None or cv_path == ''):
                     channel_data['cv_path'] = f'/{collection}/{experiment}/{channel}'
+            
+                from bossutils import bossLogger
+                logger = bossLogger()
+                logger.info(f'DX...channel data: {channel_data}')
+                logger.info(f'DX...channel request: {request.__dict__}')
+                if use_cloudvol:
+                    # DX NOTE: For now we assume that cloudvolume channels are downsampled. This means
+                    # that the num_hierarchy_levels in the experiment should be limited to the available
+                    # mip levels in the cloudvolume layer.
+                    channel_data['downsample_status'] = 'DOWNSAMPLED'
 
                 # The source and related channels are names and need to be removed from the dict before serialization
                 source_channels = channel_data.pop('sources', [])
