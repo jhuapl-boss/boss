@@ -113,12 +113,18 @@ class ChannelSerializer(serializers.ModelSerializer):
             errors['default_time_sample'] = 'Ensure this value is less that the experiments num_time_samples {}.'\
                 .format(num_time_samples)
 
-        # Ensure storage_type is CloudVolume if cv_path is set.
-        if 'cv_path' in data and data['cv_path'] is not None and data['cv_path'] != '':
-            storage_type = data.get('storage_type', None)
-            if storage_type != Channel.StorageType.CLOUD_VOLUME:
-                errors['storage_type'] = f'Must be set to {Channel.StorageType.CLOUD_VOLUME}, if setting cv_path'
+        # Validate cloudvolume specific properties
+        is_cloudvol = data.get('storage_type') == Channel.StorageType.CLOUD_VOLUME
+        
+        # Ensure storage_type is CloudVolume if cv_path is set
+        if (not is_cloudvol and data.get('cv_path') not in (None, '')):
+            errors['storage_type'] = f'Must be set to {Channel.StorageType.CLOUD_VOLUME}, if setting cv_path'
 
+        # Ensure channel is downsampled
+        if is_cloudvol and data.get('downsample_status') != 'DOWNSAMPLED':
+            errors['downsample_status'] = f'{Channel.StorageType.CLOUD_VOLUME} channels must be already downsampled.'
+
+        
         # Validate that base_resolution is less than the num_hierarchy_levels
         # We no longer check this because we may delete some resolutions to
         # reduce storage costs.  When we do this, we change num_hierarchy_levels
