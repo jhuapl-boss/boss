@@ -6,7 +6,7 @@ function channel_handler(response) {
     var neuroglancer_base_url = "https://neuroglancer." + window.location.host.split('.')[1] + ".io/"
     var neuroglancer_url = neuroglancer_base_url + "#!{'layers':{'" + resources[1] + "':{'source':'boss://https://" + window.location.host + "/" + resources[0] + "/" + resources[1] + "/";
 
-    return channel_resource_formatter(response, detail_base_url, delete_function, delete_base_url, neuroglancer_url);
+    return channel_resource_formatter(response, detail_base_url, delete_function, delete_base_url, neuroglancer_url, is_admin);
 }
 
 function get_channels_callback(params, response) {

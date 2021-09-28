@@ -378,6 +378,8 @@ class Resources(LoginRequiredMixin, View):
     def get(self, request, col_form=None, coord_form=None):
         page_error = None
 
+        is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+
         args = {
             'user_roles': get_roles(request),
             'page_error': page_error,
@@ -387,6 +389,7 @@ class Resources(LoginRequiredMixin, View):
                                                                                                      "y_start": 0,
                                                                                                      "z_start": 0}),
             'coord_error': "error" if coord_form else "",
+            'is_admin': is_admin,
         }
         return HttpResponse(render_to_string('collections.html', args, request=request))
 
@@ -487,6 +490,8 @@ class Collection(LoginRequiredMixin, View):
         if err:
             return err
 
+        is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+
         args = {
             'user_roles': get_roles(request),
             'page_error': page_error,
@@ -504,6 +509,7 @@ class Collection(LoginRequiredMixin, View):
             'meta_error': "error" if meta_form else "",
             'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
+            'is_admin':is_admin,
         }
         return HttpResponse(render_to_string('collection.html', args, request=request))
 
@@ -590,6 +596,8 @@ class Experiment(LoginRequiredMixin, View):
         if err:
             return err
 
+        is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+
         args = {
             'user_roles': get_roles(request),
             'page_error': page_error,
@@ -606,6 +614,7 @@ class Experiment(LoginRequiredMixin, View):
             'meta_error': "error" if meta_form else "",
             'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
+            'is_admin':is_admin,
         }
         if args['chan_form'] is None:
             is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
@@ -701,6 +710,7 @@ class Channel(LoginRequiredMixin, View):
         if err:
             return err
 
+        is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
 
         args = {
             'user_roles': get_roles(request),
@@ -717,6 +727,7 @@ class Channel(LoginRequiredMixin, View):
             'meta_error': "error" if meta_form else "",
             'perms_form': perms_form if perms_form else ResourcePermissionsForm(),
             'perms_error': "error" if perms_form else "",
+            'is_admin':is_admin,
         }
         return HttpResponse(render_to_string('channel.html', args, request=request))
 
