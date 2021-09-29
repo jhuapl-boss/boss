@@ -41,6 +41,13 @@ TEST_DATA_EXPERIMENTS = [EXP1, EXP22, EXP_BASE_RES]
 
 CHAN_BASE_RES = 'chan-with-base-res'
 
+# Channel for cloudvolume tests uses this bucket name.
+CLOUD_VOL_BUCKET = 'bossdb-test-data'
+CVPATH_CHAN1 = 'col1/exp1/chan1'
+CVPATH_CHAN2 = 'col1/exp1/chan2'
+CVPATH_ANNO1 = 'col1/exp1/anno1'
+
+
 class SetupTestDB:
     def __init__(self, super_user=None):
         """
@@ -149,7 +156,7 @@ class SetupTestDB:
         self.add_collection('col2', 'Description for collection2')
 
         self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
-        
+
         self.add_experiment('col1', 'exp1', 'cf1', 10, 10, 1)
 
         # This experiment is _purposed_ named the same as the exp in col1.
@@ -183,22 +190,22 @@ class SetupTestDB:
         self.add_experiment('col1', 'exp1', 'cf1', 10, 500, 1)
 
         # Dev Note: Prepopulated cloudvolume layer for uint8 data located at this cloudpath
-        self.add_channel('col1', 'exp1', 'chan1', 0, 0, 'uint8', 'image', 
-                storage_type='cloudvol', 
-                bucket='bossdb-test-data',
-                cv_path='col1/exp1/chan1')
-        
+        self.add_channel('col1', 'exp1', 'chan1', 0, 0, 'uint8', 'image',
+                storage_type='cloudvol',
+                bucket=CLOUD_VOL_BUCKET,
+                cv_path=CVPATH_CHAN1)
+
         # Dev Note: Prepopulated cloudvolume layer for uint16 data located at this cloudpath
-        self.add_channel('col1', 'exp1', 'chan2', 0, 0, 'uint16', 'image', 
-                storage_type='cloudvol', 
-                bucket='bossdb-test-data',
-                cv_path='col1/exp1/chan2')
-        
+        self.add_channel('col1', 'exp1', 'chan2', 0, 0, 'uint16', 'image',
+                storage_type='cloudvol',
+                bucket=CLOUD_VOL_BUCKET,
+                cv_path=CVPATH_CHAN2)
+
         # Dev Note: Prepopulated cloudvolume layer for uint16 data located at this cloudpath
-        self.add_channel('col1', 'exp1', 'anno1', 0, 0, 'uint64', 'annotation', 
-                storage_type='cloudvol', 
-                bucket='bossdb-test-data',
-                cv_path='col1/exp1/anno1')
+        self.add_channel('col1', 'exp1', 'anno1', 0, 0, 'uint64', 'annotation',
+                storage_type='cloudvol',
+                bucket=CLOUD_VOL_BUCKET,
+                cv_path=CVPATH_ANNO1)
 
     def insert_ingest_test_data(self):
 
