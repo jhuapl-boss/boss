@@ -142,6 +142,9 @@ Resources are used to organize data in the Boss
 
 
 {% block js_includes %}
+<script>
+    var is_admin = {{is_admin}};
+</script>
 <script type="text/javascript" src="{% static "js/collections.js" %}"></script>
    <script type="text/javascript">
     $(function () {

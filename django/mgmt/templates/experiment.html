@@ -153,6 +153,9 @@
 
 
 {% block js_includes %}
+<script>
+  var is_admin = {{is_admin}};
+</script>
 <script type="text/javascript" src="{% static "js/experiments.js" %}"></script>
   <script type="text/javascript">
     $(function () {

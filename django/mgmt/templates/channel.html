@@ -144,6 +144,9 @@
 {% block js_includes %}
 <script type="text/javascript" src="{% static "js/channel.js" %}"></script>
 <script type="text/javascript" src="{% static "js/downsample.js" %}"></script>
+<script>
+  var is_admin = {{is_admin}};
+</script>
   <script type="text/javascript">
     $(function () {
       $('[data-toggle="popover"]').popover();
