@@ -388,7 +388,11 @@ class Downsample(APIView):
 
         # Gen Voxel dims
         voxel_size = {}
-        voxel_dims = resource.get_downsampled_voxel_dims(iso=iso)
+        try:                                                                                                                                                                                      
+            voxel_dims = resource.get_downsampled_voxel_dims(iso=iso)                                                                                                                             
+        except ValueError as e:                                                                                                                                                                    
+            return BossHTTPError("Error while getting downsampled voxel dimensions: {}".format(e), ErrorCodes.BOSS_SYSTEM_ERROR)
+
         for res, dims in enumerate(voxel_dims):
             voxel_size["{}".format(res)] = dims
 
