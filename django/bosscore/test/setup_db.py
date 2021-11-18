@@ -38,8 +38,10 @@ EXP1 = 'exp1'
 EXP22 = 'exp22'
 EXP_BASE_RES = 'exp-base-res-test'
 TEST_DATA_EXPERIMENTS = [EXP1, EXP22, EXP_BASE_RES]
+EXP_NOT_PUBLIC = 'exp-not-public'
 
 CHAN_BASE_RES = 'chan-with-base-res'
+CHAN_NOT_PUBLIC = 'chan-not-public'
 
 # Channel for cloudvolume tests uses this bucket name.
 CLOUD_VOL_BUCKET = 'bossdb-test-data'
@@ -47,6 +49,8 @@ CVPATH_CHAN1 = 'col1/exp1/chan1'
 CVPATH_CHAN2 = 'col1/exp1/chan2'
 CVPATH_ANNO1 = 'col1/exp1/anno1'
 
+# Collection names.
+COLL_NOT_PUBLIC = 'col-not-public'
 
 class SetupTestDB:
     def __init__(self, super_user=None):
@@ -134,18 +138,21 @@ class SetupTestDB:
         self.add_collection('col1', 'Description for collection1')
         self.add_collection('col1-22', 'Description for collection1-22')
         self.add_collection('col2', 'Description for collection2')
+        self.add_collection(COLL_NOT_PUBLIC, 'Collection to test setting public', public=False)
 
         self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
         
         self.add_experiment('col1', EXP1, 'cf1', NUM_HIERARCHY_LEVELS, 10, 1)
         self.add_experiment('col1', EXP22, 'cf1', NUM_HIERARCHY_LEVELS, 500, 1)
         self.add_experiment('col1', EXP_BASE_RES, 'cf1', NUM_HIERARCHY_LEVELS, 10, 1)
+        self.add_experiment(COLL_NOT_PUBLIC, EXP_NOT_PUBLIC, 'cf1', NUM_HIERARCHY_LEVELS, 1, 1, public=False)
 
         self.add_channel('col1', EXP1, 'channel1', 0, 0, 'uint8', 'image')
         self.add_channel('col1', EXP1, 'channel2', 0, 0, 'uint8', 'image')
         self.add_channel('col1', EXP1, 'channel3', 0, 0, 'uint64', 'annotation', ['channel1'])
         self.add_channel('col1', EXP_BASE_RES, CHAN_BASE_RES, 0, BASE_RESOLUTION, 'uint8', 'image')
         self.add_channel('col1', EXP1, 'layer1', 0, 0, 'uint64', 'annotation', ['channel1'])
+        self.add_channel(COLL_NOT_PUBLIC, EXP_NOT_PUBLIC, CHAN_NOT_PUBLIC, 0, 0, 'uint8', 'image', public=False)
 
     def insert_lookup_test_data(self):
         """
