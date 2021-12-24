@@ -1,0 +1,144 @@
+version: 2.1
+orbs:
+  python: circleci/python@0.2.1
+  slack: circleci/slack@4.5.1
+
+commands:
+  # Should be able to remove this when 2.1 released on PyPi.
+  install_heaviside:
+    description: "Get heaviside from GitHub"
+    steps:
+      - run: git clone https://github.com/jhuapl-boss/heaviside.git
+      - run: cd heaviside && pip install -r requirements.txt
+      - run: cd heaviside && pip install .
+
+  install_ndingest:
+    description: "Get ndingest from GitHub"
+    steps:
+      - run: git clone https://github.com/jhuapl-boss/ndingest.git 
+      - run: pip install -e ndingest/.
+      - run: cp ndingest/ndingest/settings/settings.ini.test ndingest/ndingest/settings/settings.ini
+
+  install_spdb:
+    description: "Clone spdb and install"
+    steps:
+      - run: git clone https://github.com/jhuapl-boss/spdb.git
+      - run: cd spdb && python setup.py build_ext
+      - run: cd spdb && pip install .
+      - run: cd spdb && pip install -r requirements-test.txt
+
+  install_bossutils:
+    description: "The bossutils folder of the project is pip installable"
+    steps:
+      - run: git clone https://github.com/jhuapl-boss/boss-tools.git
+      ########## Change this to integration when the branch is merged!! ######
+      - run: cd boss-tools && git checkout pip-installable
+      - run: cd boss-tools/bossutils && pip install .
+
+  install_compressed_segmentation:
+    # Compile this locally so we know that it's built using the same version
+    # of numpy used by the rest of the Boss endpoint.  This is a dependendy
+    # of cloud_volume.
+    description: "Compile and install compressed_segmentation package"
+    steps:
+      - run: sudo apt install -y g++ python3-dev
+      # Use --no-binary so it's built with our version of Numpy.
+      - run: pip install --no-binary compressed_segmentation compressed_segmentation
+
+  install_cvdb:
+    description: "Clone cvdb and install"
+    steps:
+      - run: git clone https://github.com/jhuapl-boss/cvdb.git
+      ########## Change this to integration when the branch is merged!! ######
+      - run: cd cvdb && git checkout pin-cloudvolume
+      - run: cd cvdb && pip install .
+
+  install_ingest_client:
+    description: "Clone ingest-client and install"
+      # ToDo: consider adding this to Boss' requirements.txt.
+    steps:
+      - run: git clone https://github.com/jhuapl-boss/ingest-client.git
+      - run: cd ingest-client && pip install .
+
+  install:
+    description: "Install Python dependencies"
+    steps:
+      - checkout
+      - python/load-cache
+      # Consider moving all these to boss' requirements.txt!
+      - install_heaviside
+      - install_ndingest
+      - install_spdb
+      - install_bossutils
+      - install_compressed_segmentation
+      - install_cvdb
+      - install_ingest_client
+      # Install boss' dependencies last because Blosc isn't pinned in intern.
+      - python/install-deps
+      - python/save-cache
+
+  setup:
+    description: "Miscellaneous setup for testing"
+    steps:
+      - run: sudo mkdir -p /var/log/boss
+      - run: sudo chown circleci /var/log/boss
+      - run: sudo mkdir -p /etc/boss
+      - run: sudo chown circleci /etc/boss
+      - run: cp /home/circleci/project/django/boss-test.config /etc/boss/boss.config
+
+  wait_for_mysql:
+    description: "Ensure MySQL container ready"
+    steps:
+      - run:
+          name: Wait
+          command: |
+            for i in `seq 1 10`;
+            do
+              nc -z 127.0.0.1 3306 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for MySQL && exit 1
+
+  do_django_migrations:
+    description: "Make any necessary DB migrations"
+    steps:
+      - run: cd django && python manage.py makemigrations --settings boss.settings.mysql
+      - run: cd django && python manage.py migrate --settings boss.settings.mysql
+
+  test_django:
+    description: "Run Boss unit tests"
+    steps:
+      # Don't use the Django-nose2 test runner because it loads the layers used
+      # for integration tests.
+      - run: cd django && python manage.py test --settings boss.settings.mysql --testrunner=django.test.runner.DiscoverRunner
+
+jobs:
+  test_py3_9:
+    docker:
+      - image: circleci/python:3.9
+
+      - image: circleci/mysql:5.6.51-ram
+        environment:
+          MYSQL_ROOT_PASSWORD: MICrONS
+          MYSQL_DATABASE: microns
+
+    steps:
+      - install
+      - setup
+      - wait_for_mysql
+      - do_django_migrations
+      - test_django
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
+      - slack/notify:
+          event: pass
+          template: basic_success_1
+
+workflows:
+  test:
+    jobs:
+      - test_py3_9:
+          context:
+            - circleci
