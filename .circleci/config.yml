@@ -31,8 +31,7 @@ commands:
     description: "The bossutils folder of the project is pip installable"
     steps:
       - run: git clone https://github.com/jhuapl-boss/boss-tools.git
-      ########## Change this to integration when the branch is merged!! ######
-      - run: cd boss-tools && git checkout pip-installable
+      - run: cd boss-tools && git checkout integration
       - run: cd boss-tools/bossutils && pip install .
 
   install_compressed_segmentation:
