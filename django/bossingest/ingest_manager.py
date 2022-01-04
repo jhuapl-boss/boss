@@ -629,6 +629,10 @@ class IngestManager:
         if get_sqs_num_msgs(upload_queue.url, upload_queue.region_name) > 0:
             raise BossError(UPLOAD_QUEUE_NOT_EMPTY_ERR_MSG, ErrorCodes.BAD_REQUEST)
 
+        if ingest_job.ingest_type == IngestJob.VOLUMETRIC_INGEST:
+            return
+
+        # These checks are for tile ingest jobs.
         ingest_queue = self.get_ingest_job_ingest_queue(ingest_job)
         if get_sqs_num_msgs(ingest_queue.url, ingest_queue.region_name) > 0:
             self.lambda_connect_sqs(ingest_queue.queue, INGEST_LAMBDA)
