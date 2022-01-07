@@ -436,9 +436,3 @@ class BossIngestManagerCompleteTest(APITestCase):
         self.assertEqual(400, actual.status_code)
         self.assertEqual(ErrorCodes.BAD_REQUEST, actual.error_code)
         self.assertEqual(TILE_INDEX_QUEUE_NOT_EMPTY_ERR_MSG, actual.message)
-
-    def test_start_completion_activity_exits_if_not_tile_ingest(self):
-        job = self.make_ingest_job(status=IngestJob.UPLOADING)
-        job.ingest_type = IngestJob.VOLUMETRIC_INGEST
-
-        self.assertIsNone(self.ingest_mgr._start_completion_activity(job))
