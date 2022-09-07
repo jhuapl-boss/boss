@@ -583,8 +583,6 @@ class IngestManager:
         Returns:
             (str|None): Arn of step function if successful
         """
-        if ingest_job.ingest_type != IngestJob.TILE_INGEST:
-            return None
         args = {
             'tile_index_table': config['aws']['tile-index-table'],
             'status': 'complete',
