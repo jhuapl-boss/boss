@@ -203,6 +203,8 @@ class BossPermissionManager:
         Returns:
             bool. True if the user has the permission on the resource
 
+
+        # dev note: with the addition of metadata permissions this function is no longer used
         """
         if method_type == 'GET':
             permission = 'read'
@@ -239,6 +241,35 @@ class BossPermissionManager:
             permission = 'add_volumetric_data'
         elif method_type == 'DELETE':
             permission = 'delete_volumetric_data'
+        else:
+            raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
+
+        if permission in get_perms(user, obj):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def check_metadata_permissions(user, obj, method_type):
+        """
+        Check user permissions for a metadata entry
+        Args:
+            user: User name
+            obj: resource
+            method_type: Method type specified in the post
+
+        Returns:
+            bool. True if the user has the permission on the resource
+
+        """
+        if method_type == 'GET':
+            permission = 'read_metadata'
+        elif method_type == 'POST':
+            permission = 'add_metadata'
+        elif method_type == 'PUT':
+            permission = 'update_metadata'
+        elif method_type == 'DELETE':
+            permission = 'delete_metadata'
         else:
             raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
 

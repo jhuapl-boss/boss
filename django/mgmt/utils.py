@@ -28,6 +28,11 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
     add_v  = [t,t,f]
     del_v  = [t,t,t]
 
+    # read_metadata, add_metadata, update_metadata, delete_metadata
+    read_m = [t, f, f, f]
+    add_m = [t, t, f, f]
+    del_m = [t, t, t, t]
+ 
     def make_selection(p,is_chan):
         chk = [
             'read' in p,
@@ -44,15 +49,26 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
             'delete_volumetric_data' in p,
         ]
 
+        chk_m = [
+            'read_metadata' in p,
+            'add_metadata' in p,
+            'update_metadata' in p,
+            'delete_metadata' in p
+        ]
+
         perm = None
         if not is_chan:
-            if chk == read:
+            if chk == read and chk_m == read_m:
                 perm = "read"
-            elif chk == write:
+            elif chk == read and chk_m == add_m:
+                perm = "read+addmeta"
+            elif chk == read and chk_m == del_m:
+                perm = "read+meta"
+            elif chk == write and chk_m == del_m:
                 perm = "write"
-            elif chk == admin:
+            elif chk == admin and chk_m == del_m:
                 perm = "admin"
-            elif chk == admin_d:
+            elif chk == admin_d and chk_m == del_m:
                 perm = "admin+delete"
             else:
                 perm = "Raw: " + ", ".join(p)
@@ -97,13 +113,19 @@ def set_perms(request, form, collection=None, experiment=None, channel=None, gro
 
     perms = data['permissions']
     if perms == "read":
-        perms = ['read']
+        perms = ['read', 'read_metadata']
+    elif perms == "read+addmeta":
+        perms = ['read', 'read_metadata', 'add_metadata']
+    elif perms == "read+fullmeta":
+        perms = ['read', 'read_metadata', 'update_metadata', 'add_metadata', 'delete_metadata']
     elif perms == "write":
-        perms = ['read', 'add', 'update']
+        perms = ['read', 'add', 'update', 'read_metadata', 'update_metadata', 'add_metadata', 'delete_metadata']
     elif perms == "admin":
-        perms = ['read', 'add', 'update', 'assign_group', 'remove_group']
+        perms = ['read', 'add', 'update', 'assign_group', 'remove_group', 
+            'read_metadata', 'update_metadata', 'add_metadata', 'delete_metadata']
     elif perms == "admin+delete":
-        perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']
+        perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group',
+            'read_metadata', 'update_metadata', 'add_metadata', 'delete_metadata']
     else:
         raise Exception("Unknown permissions: " + perms)
 
