@@ -73,13 +73,17 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
             else:
                 perm = "Raw: " + ", ".join(p)
         else:
-            if chk == read and chk_v == read_v:
+            if chk == read and chk_m == read_m and chk_v == read_v:
                 perm = "read"
-            elif chk == write and chk_v == add_v:
+            elif chk == read and chk_m == add_m and chk_v == read_v:
+                perm = "read+addmeta"
+            elif chk == read and chk_m == del_m and chk_v == read_v:
+                perm = "read+meta"
+            elif chk == write and chk_m == del_m and chk_v == add_v:
                 perm = "write"
-            elif chk == admin and chk_v == add_v: # make sure admin has proper permissions
+            elif chk == admin and chk_m == del_m and chk_v == add_v:
                 perm = "admin"
-            elif chk == admin_d and chk_v == del_v:
+            elif chk == admin_d and chk_m == del_m and chk_v == del_v:
                 perm = "admin+delete"
             else:
                 perm = "Raw: " + ", ".join(p)
