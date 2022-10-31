@@ -117,7 +117,7 @@ jobs:
     docker:
       - image: circleci/python:3.9
 
-      - image: circleci/mysql:5.6.51-ram
+      - image: circleci/mysql:5.7.37-ram
         environment:
           MYSQL_ROOT_PASSWORD: MICrONS
           MYSQL_DATABASE: microns
