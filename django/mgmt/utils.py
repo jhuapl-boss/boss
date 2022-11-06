@@ -63,7 +63,7 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
             elif chk == read and chk_m == add_m:
                 perm = "read+addmeta"
             elif chk == read and chk_m == del_m:
-                perm = "read+meta"
+                perm = "read+fullmeta"
             elif chk == write and chk_m == del_m:
                 perm = "write"
             elif chk == admin and chk_m == del_m:
@@ -78,7 +78,7 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
             elif chk == read and chk_m == add_m and chk_v == read_v:
                 perm = "read+addmeta"
             elif chk == read and chk_m == del_m and chk_v == read_v:
-                perm = "read+meta"
+                perm = "read+fullmeta"
             elif chk == write and chk_m == del_m and chk_v == add_v:
                 perm = "write"
             elif chk == admin and chk_m == del_m and chk_v == add_v:

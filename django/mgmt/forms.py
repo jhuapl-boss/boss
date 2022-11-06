@@ -242,7 +242,7 @@ class ChannelForm(UpdateForm):
 def PermField():
     #perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']
     #return forms.MultipleChoiceField(choices=[(c,c) for c in perms])
-    perms = ['read', 'write', 'admin', 'admin+delete']
+    perms = ['read', 'read+addmeta', 'read+fullmeta', 'write', 'admin', 'admin+delete']
     return forms.ChoiceField(choices=[(c,c) for c in perms])
 
 class ResourcePermissionsForm(forms.Form):
