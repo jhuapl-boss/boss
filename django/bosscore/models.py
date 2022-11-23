@@ -103,7 +103,7 @@ class Collection(models.Model):
             ('remove_group', 'Can remove groups permissions for the resource'),
             ('add_metadata', 'Can add metadata for the channel'),
             ('read_metadata', 'Can read metadata for the channel'),
-            ('update_metadata', 'Can read metadata for the channel'),
+            ('update_metadata', 'Can update metadata for the channel'),
             ('delete_metadata', 'Can delete metadata for the channel')
 
         )
@@ -232,7 +232,7 @@ class Experiment(models.Model):
             ('remove_group', 'Can remove groups permissions for the resource'),
             ('add_metadata', 'Can add metadata for the channel'),
             ('read_metadata', 'Can read metadata for the channel'),
-            ('update_metadata', 'Can read metadata for the channel'),
+            ('update_metadata', 'Can update metadata for the channel'),
             ('delete_metadata', 'Can delete metadata for the channel')
         )
 
@@ -343,7 +343,7 @@ class Channel(models.Model):
             ('delete_volumetric_data', 'Can delete volumetric data for the channel'),
             ('add_metadata', 'Can add metadata for the channel'),
             ('read_metadata', 'Can read metadata for the channel'),
-            ('update_metadata', 'Can read metadata for the channel'),
+            ('update_metadata', 'Can update metadata for the channel'),
             ('delete_metadata', 'Can delete metadata for the channel'),
         )
 

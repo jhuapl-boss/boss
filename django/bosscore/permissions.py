@@ -206,37 +206,6 @@ class BossPermissionManager:
                             ErrorCodes.GROUP_NOT_FOUND)
 
     @staticmethod
-    def check_resource_permissions(user, obj, method_type):
-        """
-        Check user permissions for a resource object
-        Args:
-            user: User name
-            obj: Obj
-            method_type: Method type specified in the request
-
-        Returns:
-            bool. True if the user has the permission on the resource
-
-
-        # dev note: with the addition of metadata permissions this function is no longer used
-        """
-        if method_type == 'GET':
-            permission = 'read'
-        elif method_type == 'POST':
-            permission = 'add'
-        elif method_type == 'PUT':
-            permission = 'update'
-        elif method_type == 'DELETE':
-            permission = 'delete'
-        else:
-            raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
-
-        if permission in get_perms(user, obj):
-            return True
-        else:
-            return False
-
-    @staticmethod
     def check_data_permissions(user, obj, method_type):
         """
         Check user permissions for a data

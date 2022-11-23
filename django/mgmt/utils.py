@@ -33,7 +33,15 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
     add_m = [t, t, f, f]
     del_m = [t, t, t, t]
  
-    def make_selection(p,is_chan):
+    def make_selection(p, is_chan):
+        """Returns a permission group or raw permissions based on the raw 
+        permissions from the requesting user's group.
+        
+        Args:
+        p (list): list of raw permissions from the requestor's group
+        is_chan (bool): True if the requested resource is a channel
+        """
+        
         chk = [
             'read' in p,
             'add' in p,
