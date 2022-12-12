@@ -77,10 +77,11 @@ class BossPermissionManager:
         assign_perm('remove_group', user_primary_group, obj)
 
         # Add metadata permissions for primary user
-        assign_perm('read_metadata', user_primary_group, obj)
-        assign_perm('add_metadata', user_primary_group, obj)
-        assign_perm('update_metadata', user_primary_group, obj)
-        assign_perm('delete_metadata', user_primary_group, obj)
+        if ct.model != 'coordinateframe':
+            assign_perm('read_metadata', user_primary_group, obj)
+            assign_perm('add_metadata', user_primary_group, obj)
+            assign_perm('update_metadata', user_primary_group, obj)
+            assign_perm('delete_metadata', user_primary_group, obj)
 
         if ct.model == 'channel':
             assign_perm('add_volumetric_data', user_primary_group, obj)
@@ -191,10 +192,11 @@ class BossPermissionManager:
             assign_perm('remove_group', admin_group, obj)
 
             # Add metadata permissions for admin user
-            assign_perm('read_metadata', admin_group, obj)
-            assign_perm('add_metadata', admin_group, obj)
-            assign_perm('update_metadata', admin_group, obj)
-            assign_perm('delete_metadata', admin_group, obj)
+            if ct.model != 'coordinateframe':
+                assign_perm('read_metadata', admin_group, obj)
+                assign_perm('add_metadata', admin_group, obj)
+                assign_perm('update_metadata', admin_group, obj)
+                assign_perm('delete_metadata', admin_group, obj)
 
             if ct.model == 'channel':
                 assign_perm('add_volumetric_data', admin_group, obj)

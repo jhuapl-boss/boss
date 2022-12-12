@@ -266,6 +266,13 @@ class SetupTestDB:
         assign_perm('delete', user_primary_group, obj)
         assign_perm('assign_group', user_primary_group, obj)
         assign_perm('remove_group', user_primary_group, obj)
+
+        if ct.model != 'coordinateframe':
+            assign_perm('read_metadata', user_primary_group, obj)
+            assign_perm('add_metadata', user_primary_group, obj)
+            assign_perm('update_metadata', user_primary_group, obj)
+            assign_perm('delete_metadata', user_primary_group, obj)
+
         if ct.model == 'channel':
             assign_perm('add_volumetric_data', user_primary_group, obj)
             assign_perm('read_volumetric_data', user_primary_group, obj)
