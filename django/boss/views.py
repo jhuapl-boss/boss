@@ -108,6 +108,9 @@ from django.views.generic import View
 # import as to deconflict with our Token class
 from rest_framework.authtoken.models import Token as TokenModel
 
+# User name used for anonymous logins.
+PUBLIC_ACCESS_USERNAME = 'public-access'
+
 class Token(LoginRequiredMixin, View):
     def get(self, request):
         action = request.GET.get('action', None)
@@ -115,6 +118,8 @@ class Token(LoginRequiredMixin, View):
         try:
             token = TokenModel.objects.get(user = request.user)
             if action == "Revoke":
+                if request.user.username == PUBLIC_ACCESS_USERNAME:
+                    return HttpResponse(status=403, reason=f"Changing {PUBLIC_ACCESS_USERNAME}'s token forbidden")
                 token.delete()
                 token = None
         except:
