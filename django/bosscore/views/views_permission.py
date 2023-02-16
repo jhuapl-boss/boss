@@ -299,7 +299,7 @@ class ResourceUserPermission(APIView):
 
         try:
             # public group can only have read permission
-            if group_name == PUBLIC_GRP and (set(perm_list).issubset({'read', 'read_volumetric_data', 'read_metadata'})):
+            if group_name == PUBLIC_GRP and not (set(perm_list).issubset({'read', 'read_volumetric_data', 'read_metadata'})):
                 return BossHTTPError("The public group can only have read permissions",
                                      ErrorCodes.INVALID_POST_ARGUMENT)
             # If the user is not a member or maintainer of the group, they cannot patch permissions
