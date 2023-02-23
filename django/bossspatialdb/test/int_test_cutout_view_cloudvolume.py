@@ -320,16 +320,6 @@ class TestCutoutCloudVolumeInterfaceView(CutoutInterfaceViewCloudVolumeMixin, AP
         """
         # Setup config
         self.user = self.layer.user
-
-    @classmethod
-    def setUpClass(cls):
-        """ Set everything up for testing """
-        # Set up external cloudvolume instance
-        # TODO: Fails if cloudvolume not already set up. Make method that creates new cloudvolume.
-        cls.vol_uint8 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan1", use_https=True)
-        cls.vol_uint16 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan2", use_https=True)
-        cls.vol_uint64 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/anno1", use_https=True)
-    
-    @classmethod
-    def tearDownClass(cls):
-        pass
+        self.vol_uint8 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan1", use_https=True)
+        self.vol_uint16 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan2", use_https=True)
+        self.vol_uint64 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/anno1", use_https=True)
