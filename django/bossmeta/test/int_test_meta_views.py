@@ -45,7 +45,7 @@ class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITest
     @classmethod
     def setUpTestData(cls):
         dbsetup = SetupTestDB()
-        cls.user = dbsetup.create_super_user(username='test_user')
+        cls.user = dbsetup.create_super_user(username='meta-superuser')
         dbsetup.set_user(cls.user)
         dbsetup.insert_test_data()
 
