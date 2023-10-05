@@ -42,7 +42,7 @@ commands:
     steps:
       - run: sudo apt install -y g++ python3-dev
       # Use --no-binary so it's built with our version of Numpy.
-      - run: pip install --no-binary compressed_segmentation compressed_segmentation
+      - run: pip install --no-binary compressed_segmentation compressed_segmentation==2.2.0
 
   install_cvdb:
     description: "Clone cvdb and install"
