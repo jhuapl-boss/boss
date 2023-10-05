@@ -14,7 +14,10 @@
 
 from rest_framework.test import APITestCase
 from django.conf import settings
-from .setup_db import SetupTestDB, TEST_DATA_EXPERIMENTS
+from .setup_db import (
+    SetupTestDB, TEST_DATA_EXPERIMENTS,
+    COLL_NOT_PUBLIC, EXP_NOT_PUBLIC, CHAN_NOT_PUBLIC,
+)
 from bosscore.models import Channel
 
 version = settings.BOSS_VERSION
@@ -29,13 +32,13 @@ class ResourceViewsCollectionTests(APITestCase):
         Initialize the database
         :return:
         """
-        dbsetup = SetupTestDB()
-        user = dbsetup.create_user('testuser')
-        dbsetup.add_role('resource-manager')
-        dbsetup.set_user(user)
+        self.dbsetup = SetupTestDB()
+        user = self.dbsetup.create_user('testuser')
+        self.dbsetup.add_role('resource-manager')
+        self.dbsetup.set_user(user)
 
         self.client.force_login(user)
-        dbsetup.insert_test_data()
+        self.dbsetup.insert_test_data()
 
     def test_get_collection_doesnotexist(self):
         """
@@ -59,6 +62,7 @@ class ResourceViewsCollectionTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'col1')
+        self.assertFalse(response.data['public'])
 
     def test_post_collection(self):
         """
@@ -71,6 +75,19 @@ class ResourceViewsCollectionTests(APITestCase):
         # Get an existing collection
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
+        self.assertFalse(response.data['public'])
+
+    def test_post_collection_public(self):
+        url = '/' + version + '/collection/col55'
+        data = {
+            'description': 'A new public collection for unit tests',
+            'public': True,
+        }
+
+        # Get an existing collection
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.data['public'])
 
     def test_post_collection_special_characters(self):
         """
@@ -122,6 +139,34 @@ class ResourceViewsCollectionTests(APITestCase):
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
 
+    def test_put_collection_make_public(self):
+        """
+        Test making collection public.
+
+        """
+        url = f'/{version}/collection/{COLL_NOT_PUBLIC}/'
+        data = {'public': True}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['public'])
+
+    def test_put_collection_no_permission(self):
+        """
+        Test updating a collection w/o ResourceManager role forbidden.
+
+        """
+        url = f'/{version}/collection/{COLL_NOT_PUBLIC}/'
+        data = {'public': True}
+
+        user = self.dbsetup.create_user('nonresourcemgr')
+        self.dbsetup.set_user(user)
+
+        self.client.force_login(user)
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
+
     def test_put_collection_doesnotexist(self):
         """
         Update a collection that does not exist
@@ -158,7 +203,6 @@ class ResourceViewsCollectionTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        # Get an existing collection
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 204)
 
@@ -227,13 +271,13 @@ class ResourceViewsExperimentTests(APITestCase):
         Initialize the database
 
         """
-        dbsetup = SetupTestDB()
-        user = dbsetup.create_user('testuser')
-        dbsetup.add_role('resource-manager')
-        dbsetup.set_user(user)
+        self.dbsetup = SetupTestDB()
+        user = self.dbsetup.create_user('testuser')
+        self.dbsetup.add_role('resource-manager')
+        self.dbsetup.set_user(user)
 
         self.client.force_login(user)
-        dbsetup.insert_test_data()
+        self.dbsetup.insert_test_data()
 
     def test_get_experiment_doesnotexist(self):
         """
@@ -257,6 +301,7 @@ class ResourceViewsExperimentTests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'exp1')
+        self.assertFalse(response.data['public'])
 
     def test_post_experiment(self):
         """
@@ -394,6 +439,22 @@ class ResourceViewsExperimentTests(APITestCase):
         response = self.client.post(url)
         self.assertEqual(response.status_code, 400)
 
+    def test_post_experiment_public(self):
+        # Get the coordinate frame id
+        url = '/' + version + '/coord/cf1'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        cf = response.data['name']
+
+        # Post a new experiment
+        url = '/' + version + '/collection/col1/experiment/exp2'
+        data = {'description': 'This is a public new experiment', 'coord_frame': cf,
+                'num_hierarchy_levels': 10, 'hierarchy_method': 'isotropic', 'num_time_samples': 10,
+                'public': True}
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.data['public'])
+
     def test_put_experiment_exists(self):
         """
         Update a experiment (Valid - The experiment exists)
@@ -427,6 +488,34 @@ class ResourceViewsExperimentTests(APITestCase):
 
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
+
+    def test_put_experiment_public(self):
+        """
+        Test making experiment public.
+
+        """
+        url = f'/{version}/collection/{COLL_NOT_PUBLIC}/experiment/{EXP_NOT_PUBLIC}'
+        data = {'public': True}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['public'])
+
+    def test_put_experiment_no_permission(self):
+        """
+        Test updating a experiment w/o ResourceManager role forbidden.
+
+        """
+        url = f'/{version}/collection/{COLL_NOT_PUBLIC}/experiment/{EXP_NOT_PUBLIC}'
+        data = {'public': True}
+
+        user = self.dbsetup.create_user('nonresourcemgr')
+        self.dbsetup.set_user(user)
+
+        self.client.force_login(user)
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
 
     def test_delete_experiment(self):
         """
@@ -698,14 +787,14 @@ class ResourceViewsChannelTests(APITestCase):
         Initialize the database
 
         """
-        dbsetup = SetupTestDB()
-        self.super_user = dbsetup.create_super_user()
-        user = dbsetup.create_user('testuser')
-        dbsetup.add_role('resource-manager')
-        dbsetup.set_user(user)
+        self.dbsetup = SetupTestDB()
+        self.super_user = self.dbsetup.create_super_user()
+        user = self.dbsetup.create_user('testuser')
+        self.dbsetup.add_role('resource-manager')
+        self.dbsetup.set_user(user)
 
         self.client.force_login(user)
-        dbsetup.insert_test_data()
+        self.dbsetup.insert_test_data()
 
     def test_get_channel_doesnotexist(self):
         """
@@ -730,6 +819,7 @@ class ResourceViewsChannelTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['name'], 'channel1')
         self.assertEqual(response.data['downsample_status'], 'NOT_DOWNSAMPLED')
+        self.assertFalse(response.data['public'])
 
     def test_post_channel(self):
         """
@@ -741,6 +831,7 @@ class ResourceViewsChannelTests(APITestCase):
         data = {'description': 'This is a new channel', 'datatype': 'uint8', 'type': 'image'}
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
+        self.assertFalse(response.data['public'])
 
     def test_post_channel_set_cloudvol_storage_no_cv_path(self):
         """
@@ -858,6 +949,22 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 400)
 
+    def test_post_channel_public(self):
+        """
+        Test creating a new public channel.
+
+        """
+        url = '/' + version + '/collection/col1/experiment/exp1/channel/channel33/'
+        data = {'description': 'This is a new public channel', 'type': 'annotation', 'datatype': 'uint8',
+                'sources': ['channel1'], 'related': ['channel2'],
+                'public': True, }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 201)
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['public'])
+
     def test_post_channel_annotation_without_source(self):
         """
         Post a new channel of type annotation w/o providing a source channel.
@@ -881,7 +988,6 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        # Get an existing experiment
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['sources'], ['channel1'])
@@ -899,12 +1005,11 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        # Get an existing experiment
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['sources'], ['channel1', 'channel2'])
 
-        # Ensure that this is Asymmetrical
+        # Ensure that this source relation is asymmetric
         url = '/' + version + '/collection/col1/experiment/exp1/channel/channel1/'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -962,7 +1067,6 @@ class ResourceViewsChannelTests(APITestCase):
         response = self.client.post(url, data=data)
         self.assertEqual(response.status_code, 201)
 
-        # Get an existing experiment
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['related'], ['channel2', 'channel3'])
@@ -983,6 +1087,18 @@ class ResourceViewsChannelTests(APITestCase):
 
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
+
+    def test_put_channel_public(self):
+        """
+        Test making a channel public.
+
+        """
+        url = f'/{version}/collection/{COLL_NOT_PUBLIC}/experiment/{EXP_NOT_PUBLIC}/channel/{CHAN_NOT_PUBLIC}'
+        data = {'public': True}
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.data['public'])
 
     def test_put_channel_set_cv_path_forbidden_for_non_admins(self):
         """
@@ -1187,6 +1303,22 @@ class ResourceViewsChannelTests(APITestCase):
 
         response = self.client.put(url, data=data)
         self.assertEqual(response.status_code, 200)
+
+    def test_put_channel_no_permission(self):
+        """
+        Test updating a channel w/o ResourceManager role forbidden.
+
+        """
+        url = f'/{version}/collection/{COLL_NOT_PUBLIC}/experiment/{EXP_NOT_PUBLIC}/channel/{CHAN_NOT_PUBLIC}'
+        data = {'public': True}
+
+        user = self.dbsetup.create_user('nonresourcemgr')
+        self.dbsetup.set_user(user)
+
+        self.client.force_login(user)
+
+        response = self.client.put(url, data=data)
+        self.assertEqual(response.status_code, 403)
 
     def test_delete_channel(self):
         """

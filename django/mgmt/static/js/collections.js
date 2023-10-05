@@ -3,7 +3,7 @@ function collection_handler(response) {
     var delete_function = "delete_collection";
     var delete_base_url = API_ROOT + "collection/";
 
-    return resource_formatter(response, detail_base_url, delete_function, delete_base_url);
+    return resource_formatter(response, detail_base_url, delete_function, delete_base_url, is_admin);
 }
 
 function coord_handler(response) {
@@ -11,7 +11,7 @@ function coord_handler(response) {
     var delete_function = "delete_coord_frame";
     var delete_base_url = API_ROOT + "coord/";
 
-    return resource_formatter(response, detail_base_url, delete_function, delete_base_url);
+    return resource_formatter(response, detail_base_url, delete_function, delete_base_url, is_admin);
 }
 
 
@@ -21,7 +21,7 @@ function experiment_handler(response) {
     var delete_function = "delete_experiment";
     var delete_base_url = API_ROOT + "collection/" + resources[0] + "/experiment/";
 
-    return resource_formatter(response, detail_base_url, delete_function, delete_base_url);
+    return resource_formatter(response, detail_base_url, delete_function, delete_base_url, is_admin);
 }
 
 function get_collections_callback(params, response) {

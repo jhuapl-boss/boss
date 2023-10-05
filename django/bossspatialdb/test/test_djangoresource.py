@@ -13,22 +13,21 @@
 # limitations under the License.
 
 from django.conf import settings
-from django.http import HttpRequest
 
 from rest_framework.test import APITestCase
-from rest_framework.request import Request
 from rest_framework.test import force_authenticate
 from rest_framework.test import APIRequestFactory
 
+from bosscore.models import Channel
 from bosscore.request import BossRequest
-from bosscore.test.setup_db import SetupTestDB
+from bosscore.test.setup_db import SetupTestDB, CLOUD_VOL_BUCKET, CVPATH_CHAN1, CVPATH_ANNO1
 from spdb.project import BossResourceDjango
 from bossspatialdb.views import Cutout
 
 version = settings.BOSS_VERSION
 
+
 class TestDjangoResourceCloudVolume(APITestCase):
-    
     def setUp(self):
         """Setup test by inserting data model items into the database"""
         self.rf = APIRequestFactory()
@@ -37,7 +36,6 @@ class TestDjangoResourceCloudVolume(APITestCase):
         dbsetup.add_role("resource-manager", self.user)
         self.client.force_login(self.user)
         dbsetup.insert_cloudvolume_test_data()
-
 
         url = '/' + version + '/cutout/col1/exp1/chan1/2/0:5/0:6/0:2/'
 
@@ -86,7 +84,6 @@ class TestDjangoResourceCloudVolume(APITestCase):
 
         self.request_annotation = BossRequest(drfrequest, request_args)
 
-    
     def test_django_resource_channel_image_cloudvol(self):
         """Test basic get channel interface
 
@@ -107,9 +104,9 @@ class TestDjangoResourceCloudVolume(APITestCase):
         assert channel.default_time_sample == self.request_channel.channel.default_time_sample
         assert channel.related == []
         assert channel.sources == []
-        assert channel.storage_type == self.request_channel.storage_type
-        assert channel.bucket == self.request_channel.bucket
-        assert channel.cv_path == self.request_channel.cv_path
+        assert channel.storage_type == Channel.StorageType.CLOUD_VOLUME
+        assert channel.bucket == CLOUD_VOL_BUCKET
+        assert channel.cv_path == CVPATH_CHAN1
 
     def test_django_resource_channel_annotation_cloudvol(self):
         """Test basic get channel when an annotation interface
@@ -130,10 +127,11 @@ class TestDjangoResourceCloudVolume(APITestCase):
         assert channel.base_resolution == self.request_annotation.channel.base_resolution
         assert channel.default_time_sample == self.request_annotation.channel.default_time_sample
         assert channel.related == []
-        assert channel.sources == ['channel1']
-        assert channel.storage_type == self.request_annotation.storage_type
-        assert channel.bucket == self.request_annotation.bucket
-        assert channel.cv_path == self.request_annotation.cv_path
+        assert channel.sources == []
+        assert channel.storage_type == Channel.StorageType.CLOUD_VOLUME
+        assert channel.bucket == CLOUD_VOL_BUCKET
+        assert channel.cv_path == CVPATH_ANNO1
+
 
 class TestDjangoResource(APITestCase):
 

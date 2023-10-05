@@ -4,9 +4,11 @@ Django==2.2.18
 #django-filter==0.11.0
 djangorestframework==3.11.2
 drf-yasg==1.17.1
-Markdown==2.6.5
+Markdown==3.3.4
 mysqlclient==1.4.6
-numpy==1.18.1
+# Upgrade numpy to fix C-header issue
+# https://stackoverflow.com/questions/66060487/valueerror-numpy-ndarray-size-changed-may-indicate-binary-incompatibility-exp
+numpy==1.23.4
 wheel==0.24.0
 uWSGI==2.0.19.1
 

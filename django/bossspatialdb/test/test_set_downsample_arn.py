@@ -16,16 +16,27 @@
 This file tests a function that writes to the DB on the activity server.
 Because Django owns the DB, it makes sense for the test to live here, rather
 than in the boss-tools repo.
+
+Tests run on the endpoint server will not have the activities module, so the
+tests will be skipped if the module cannot be imported.
 """
 
-from activities.boss_db import set_downsample_arn_in_db
+try:
+    from activities.boss_db import set_downsample_arn_in_db
+    HAVE_ACTIVITIES_MODULE = True
+except Exception:
+    HAVE_ACTIVITIES_MODULE = False
+
 from bosscore.models import Channel, Collection, CoordinateFrame, Experiment
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.test import TransactionTestCase
 import pymysql.cursors
+from unittest import skipIf
 from unittest.mock import patch
 
+
+@skipIf(not HAVE_ACTIVITIES_MODULE, 'activities module not present')
 class TestUpdateDownsampleStatus(TransactionTestCase):
     def setUp(self):
         user = User.objects.create_user(username='testuser')
