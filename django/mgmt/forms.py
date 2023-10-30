@@ -104,7 +104,7 @@ class CollectionForm(UpdateForm):
     description = forms.CharField(required=False, help_text="Optional")
 
 class CoordinateFrameForm(UpdateForm):
-    UPDATE_FIELDS = ['name', 'description'] 
+    UPDATE_FIELDS = ['name', 'description']
 
     name = forms.CharField(label="Coordinate Frame", help_text="Globally unique string identifier")
     description = forms.CharField(required=False, help_text="Optional")
@@ -118,9 +118,9 @@ class CoordinateFrameForm(UpdateForm):
     z_start = forms.IntegerField(help_text="Start point in Z, inclusive. Typically 0")
     z_stop = forms.IntegerField(help_text="End point in Z, exclusive")
 
-    x_voxel_size = forms.IntegerField(help_text="Voxel dimension in X")
-    y_voxel_size = forms.IntegerField(help_text="Voxel dimension in y")
-    z_voxel_size = forms.IntegerField(help_text="Voxel dimension in z")
+    x_voxel_size = forms.FloatField(help_text="Voxel dimension in X", min_value=0)
+    y_voxel_size = forms.FloatField(help_text="Voxel dimension in y", min_value=0)
+    z_voxel_size = forms.FloatField(help_text="Voxel dimension in z", min_value=0)
     voxel_unit = forms.ChoiceField(choices=[(c,c) for c in ['',
                                                             'nanometers',
                                                             'micrometers',
@@ -186,8 +186,8 @@ class ChannelForm(UpdateForm):
                              empty_value=None,
                              help_text=f'(default is {DEFAULT_CUBOID_BUCKET_NAME})',
                              label='Bucket Name')
-    
-    cv_path = forms.CharField(required=False, 
+
+    cv_path = forms.CharField(required=False,
                               empty_value=None,
                               help_text='Public S3 URI to Cloudvolume Dataset (start with / after the bucket name)',
                               label='CloudVolume Path')
