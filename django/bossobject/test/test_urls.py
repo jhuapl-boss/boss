@@ -16,7 +16,7 @@ from rest_framework.test import APITestCase
 from django.urls import resolve
 from django.conf import settings
 
-from bossobject.views import Reserve, Ids, BoundingBox
+from bossobject.views import Reserve, Ids, BoundingBox, CuboidsFromID
 
 version = version = settings.BOSS_VERSION
 
@@ -60,3 +60,15 @@ class BoundingBoxRoutingTests(APITestCase):
         """
         match = resolve('/' + version + '/boundingbox/col1/exp1/channel1/0/10')
         self.assertEqual(match.func.__name__, BoundingBox.as_view().__name__)
+
+class CuboidsFromIDRoutingTests(APITestCase):
+
+    def test_cuboids_from_id_resolves(self):
+        """
+        Test that the cuboids from ID urls resolve
+
+        Returns: None
+
+        """
+        match = resolve('/' + version + '/cuboidsfromid/col1/exp1/channel1/0/10')
+        self.assertEqual(match.func.__name__, CuboidsFromID.as_view().__name__)
