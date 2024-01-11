@@ -19,7 +19,8 @@ app_name = 'sso'
 urlpatterns = [
 
     # URLS to add role
-    url(r'(?P<user_name>[\w_-]+)/(?P<role_name>[\w_-]+)?/?',views_user.BossUserRole.as_view()),
-
+    url(r'(?P<user_name>[\w_-]+)/(?P<role_name>[\w_-]+)?/?', views_user.BossUserRole.as_view()),
+    url(r'(?P<user_name>[\w_-]+)/?', views_user.BossUserRole.as_view()),
+    url(r'^', views_user.BossUserRole.as_view()),
 
 ]
