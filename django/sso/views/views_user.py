@@ -75,13 +75,6 @@ def check_for_user_manager(user):
     else:
         return None
 
-# def check_for_user_manager(user):
-#     bpm = BossPrivilegeManager(user)
-#     if not bpm.has_role('resource-manager'):
-#         return BossHTTPError(str(user) + " does not have the required role 'resource-manager'", ErrorCodes.MISSING_ROLE)
-#     else:
-#         return None
-
 class KeyCloakClientMixin:
     """
     Mixin for that returns a logged in KeyCloakClient if LOCAL_KEYCLOAK_TESTING
