@@ -50,7 +50,7 @@ class TestBossUserRole(TestBase):
         # Role 'test' will be filtered out by the view
         self.assertEqual(response.data, ['admin'])
 
-        call = mock.call.get_realm_roles('test')
+        call = mock.call.get_realm_roles('testuser')
         self.assertEqual(ctxMgr.mock_calls, [call])
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
@@ -104,6 +104,16 @@ class TestBossUserRole(TestBase):
         self.assertEqual(response.status_code, 500)
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
+    def test_get_self_role(self, mKCC):
+        ctxMgr = mKCC.return_value.__enter__.return_value
+        ctxMgr.get_realm_roles.side_effect = raise_error
+
+        request = self.makeRequest(get='/' + version + '/sso/user-role')
+        response = BossUserRole.as_view()(request, 'testuser')
+
+        self.assertEqual(response.status_code, 200)
+
+    @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
     def test_post_role(self, mKCC):
         ctxMgr = mKCC.return_value.__enter__.return_value
 
@@ -113,7 +123,7 @@ class TestBossUserRole(TestBase):
         self.assertEqual(response.status_code, 201)
         self.assertIsNone(response.data)
 
-        call = mock.call.map_role_to_user('test', 'resource-manager')
+        call = mock.call.map_role_to_user('testuser', 'resource-manager')
         self.assertEqual(ctxMgr.mock_calls, [call])
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
@@ -155,7 +165,7 @@ class TestBossUserRole(TestBase):
         self.assertEqual(response.status_code, 204)
         self.assertIsNone(response.data)
 
-        call = mock.call.remove_role_from_user('test', 'resource-manager')
+        call = mock.call.remove_role_from_user('testuser', 'resource-manager')
         self.assertEqual(ctxMgr.mock_calls, [call])
 
     @mock.patch('sso.views.views_user.KeyCloakClient', autospec = True)
