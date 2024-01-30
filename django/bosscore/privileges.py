@@ -79,11 +79,10 @@ def check_role(role_name):
     def check_role_decorator(func):
         @wraps(func)
         def wrapped(self, *args, **kwargs):
-            if check_role: # DP ???: Why is this here?
-                bpm = BossPrivilegeManager(self.request.user)
-                if not bpm.has_role(role_name) and not bpm.has_role('admin'):
-                    return BossHTTPError("{} does not have the required role {}"
-                                         .format(self.request.user, role_name), ErrorCodes.MISSING_ROLE)
+            bpm = BossPrivilegeManager(self.request.user)
+            if not bpm.has_role(role_name) and not bpm.has_role('admin'):
+                return BossHTTPError("{} does not have the required role {}"
+                                     .format(self.request.user, role_name), ErrorCodes.MISSING_ROLE)
             return func(self, *args, **kwargs)
 
         return wrapped

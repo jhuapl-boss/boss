@@ -70,8 +70,8 @@ def check_for_admin(user):
 
 def check_for_user_manager(user):
     bpm = BossPrivilegeManager(user)
-    if not bpm.has_role('user-manager'):
-        return BossHTTPError(str(user) + " does not have the required role 'user-manager'", ErrorCodes.MISSING_ROLE)
+    if not bpm.has_role('user-manager') and not bpm.has_role('admin'):
+        return BossHTTPError(str(user) + " does not have the required role 'user-manager' or 'admin'", ErrorCodes.MISSING_ROLE)
     else:
         return None
 

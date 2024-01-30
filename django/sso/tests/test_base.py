@@ -17,41 +17,20 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from functools import wraps
 from unittest import mock
+from bosscore.models import BossRole
 import sys
 
-def patch_check_role():
-    # DP NOTE: has to be called after (potentially) mocking bossutils, but
-    #          before importing any of the sso code
-
-    # After the checks for bossutils, as it will import bosscore
-
-    def fake_check_role(role):
-        def check_role_decorator(func):
-            @wraps(func)
-            def wrapped(self, *args, **kwargs):
-                # Just pass through for the fake.
-                return func(self, *args, **kwargs)
-
-            return wrapped
-        return check_role_decorator
-
-    mock.patch('bosscore.privileges.check_role', fake_check_role).start() # apply right now
-
-# If bossutils is not currently installed, stubb out the library
+# If bossutils is not currently installed, stub out the library
 try:
     import bossutils
 
-    patch_check_role()
-
     from sso.views.views_user import KeyCloakError
 except ImportError:
-    # Stubb out
+    # Stub out
     sys.modules['bossutils'] = mock.MagicMock()
     sys.modules['bossutils.aws'] = mock.MagicMock()
     sys.modules['bossutils.logger'] = mock.MagicMock()
     sys.modules['bossutils.keycloak'] = mock.MagicMock()
-
-    patch_check_role()
 
     class KeyCloakError(Exception):
         def __init__(self, status, data):
@@ -68,6 +47,8 @@ def raise_error(*args, **kwargs):
 
 VERSION = settings.BOSS_VERSION
 TEST_USER = 'testuser'
+ADMIN_USER = 'adminuser'
+USER_MANAGER_USER = 'usermgruser'
 
 class TestBase(APITestCase):
     def setUp(self):
@@ -76,9 +57,16 @@ class TestBase(APITestCase):
         :return:
         """
         self.user = User.objects.create_user(username=TEST_USER)
+        self.admin_user = User.objects.create_user(username=ADMIN_USER)
+        BossRole.objects.create(role='admin', user=self.admin_user).save()
+        self.user_mgr_user = User.objects.create_user(username=USER_MANAGER_USER)
+        BossRole.objects.create(role='user-manager', user=self.user_mgr_user).save()
 
-    def makeRequest(self, get=None, post=None, delete=None, data=None):
+    def makeRequest(self, get=None, post=None, delete=None, data=None, user=None):
         factory = APIRequestFactory()
+
+        if user is None:
+            user = self.user
 
         prefix = '/' + VERSION
 
@@ -91,6 +79,6 @@ class TestBase(APITestCase):
         else:
             raise Exception('Unsupported request type')
 
-        force_authenticate(request, user=self.user)
+        force_authenticate(request, user=user)
 
         return request
