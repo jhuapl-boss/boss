@@ -808,7 +808,7 @@ class BossRequest:
             else:
                 raise BossError("Error encountered while checking permissions for this request",
                                 ErrorCodes.UNABLE_TO_VALIDATE)
-            perm = BossPermissionManager.check_resource_permissions(self.user, obj, self.method)
+            perm = BossPermissionManager.check_metadata_permissions(self.user, obj, self.method)
         elif self.service == 'reserve':
             perm = BossPermissionManager.check_object_permissions(self.user, self.channel, self.method)
 

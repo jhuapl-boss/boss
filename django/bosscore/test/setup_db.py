@@ -142,13 +142,13 @@ class SetupTestDB:
 
         self.add_coordinate_frame('cf1', 'Description for cf1', 0, 1000, 0, 1000, 0, 1000, 4, 4, 4)
         
-        self.add_experiment('col1', EXP1, 'cf1', NUM_HIERARCHY_LEVELS, 10, 1)
-        self.add_experiment('col1', EXP22, 'cf1', NUM_HIERARCHY_LEVELS, 500, 1)
+        self.add_experiment('col1', EXP1, 'cf1', 10, 500, 1)
+        self.add_experiment('col1', EXP22, 'cf1', NUM_HIERARCHY_LEVELS, 10, 1)
         self.add_experiment('col1', EXP_BASE_RES, 'cf1', NUM_HIERARCHY_LEVELS, 10, 1)
         self.add_experiment(COLL_NOT_PUBLIC, EXP_NOT_PUBLIC, 'cf1', NUM_HIERARCHY_LEVELS, 1, 1, public=False)
 
         self.add_channel('col1', EXP1, 'channel1', 0, 0, 'uint8', 'image')
-        self.add_channel('col1', EXP1, 'channel2', 0, 0, 'uint8', 'image')
+        self.add_channel('col1', EXP1, 'channel2', 0, 0, 'uint16', 'image')
         self.add_channel('col1', EXP1, 'channel3', 0, 0, 'uint64', 'annotation', ['channel1'])
         self.add_channel('col1', EXP_BASE_RES, CHAN_BASE_RES, 0, BASE_RESOLUTION, 'uint8', 'image')
         self.add_channel('col1', EXP1, 'layer1', 0, 0, 'uint64', 'annotation', ['channel1'])
@@ -192,24 +192,24 @@ class SetupTestDB:
         """
         Test data for cloudvolume integration.
         """
-        self.add_collection('col1', 'Description for collection1')
-        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4)
-        self.add_experiment('col1', 'exp1', 'cf1', 10, 500, 1)
+        self.add_collection('col1-cvdb', 'Description for collection1')
+        self.add_coordinate_frame('cf1-cvdb', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4)
+        self.add_experiment('col1-cvdb', 'exp1', 'cf1-cvdb', 10, 500, 1)
 
         # Dev Note: Prepopulated cloudvolume layer for uint8 data located at this cloudpath
-        self.add_channel('col1', 'exp1', 'chan1', 0, 0, 'uint8', 'image',
+        self.add_channel('col1-cvdb', 'exp1', 'chan1', 0, 0, 'uint8', 'image',
                 storage_type='cloudvol',
                 bucket=CLOUD_VOL_BUCKET,
                 cv_path=CVPATH_CHAN1)
 
         # Dev Note: Prepopulated cloudvolume layer for uint16 data located at this cloudpath
-        self.add_channel('col1', 'exp1', 'chan2', 0, 0, 'uint16', 'image',
+        self.add_channel('col1-cvdb', 'exp1', 'chan2', 0, 0, 'uint16', 'image',
                 storage_type='cloudvol',
                 bucket=CLOUD_VOL_BUCKET,
                 cv_path=CVPATH_CHAN2)
 
         # Dev Note: Prepopulated cloudvolume layer for uint16 data located at this cloudpath
-        self.add_channel('col1', 'exp1', 'anno1', 0, 0, 'uint64', 'annotation',
+        self.add_channel('col1-cvdb', 'exp1', 'anno1', 0, 0, 'uint64', 'annotation',
                 storage_type='cloudvol',
                 bucket=CLOUD_VOL_BUCKET,
                 cv_path=CVPATH_ANNO1)
@@ -217,8 +217,8 @@ class SetupTestDB:
     def insert_ingest_test_data(self):
 
         self.add_collection('my_col_1', 'Description for collection1')
-        self.add_coordinate_frame('cf1', 'Description for cf1', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4)
-        self.add_experiment('my_col_1', 'my_exp_1', 'cf1', 10, 500, 1)
+        self.add_coordinate_frame('cf2-ingest', 'cf2-ingest', 0, 100000, 0, 100000, 0, 100000, 4, 4, 4)
+        self.add_experiment('my_col_1', 'my_exp_1', 'cf2-ingest', 10, 500, 1)
         self.add_channel('my_col_1', 'my_exp_1', 'my_ch_1', 0, 0, 'uint8', 'image')
 
     def insert_iso_data(self):
@@ -266,6 +266,13 @@ class SetupTestDB:
         assign_perm('delete', user_primary_group, obj)
         assign_perm('assign_group', user_primary_group, obj)
         assign_perm('remove_group', user_primary_group, obj)
+
+        if ct.model != 'coordinateframe':
+            assign_perm('read_metadata', user_primary_group, obj)
+            assign_perm('add_metadata', user_primary_group, obj)
+            assign_perm('update_metadata', user_primary_group, obj)
+            assign_perm('delete_metadata', user_primary_group, obj)
+
         if ct.model == 'channel':
             assign_perm('add_volumetric_data', user_primary_group, obj)
             assign_perm('read_volumetric_data', user_primary_group, obj)
@@ -286,12 +293,13 @@ class SetupTestDB:
             Collection
 
         """
-        col = Collection.objects.create(name=collection_name, description=description, creator=self.user, public=public)
+        col, created = Collection.objects.get_or_create(name=collection_name, description=description, creator=self.user, public=public)
 
         # Add a lookup key
         lkup_key = str(col.pk)
         bs_key = col.name
-        BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key, collection_name=col.name)
+        if created:
+            BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key, collection_name=col.name)
 
         # Give permissions to the users primary group
         primary_group = self.user.username + '-primary'
@@ -320,7 +328,7 @@ class SetupTestDB:
             Coordinate Frame
 
         """
-        cf = CoordinateFrame.objects.create(name=coordinate_frame, description=description,
+        cf, created = CoordinateFrame.objects.get_or_create(name=coordinate_frame, description=description,
                                             x_start=x_start, x_stop=x_stop, y_start=y_start, y_stop=y_stop,
                                             z_start=z_start, z_stop=z_stop,
                                             x_voxel_size=x_voxel_size, y_voxel_size=y_voxel_size,
@@ -349,15 +357,16 @@ class SetupTestDB:
         """
         col = Collection.objects.get(name=collection_name)
         cf = CoordinateFrame.objects.get(name=coordinate_name)
-        exp = Experiment.objects.create(name=experiment_name, collection=col, coord_frame=cf,
+        exp, created = Experiment.objects.get_or_create(name=experiment_name, collection=col, coord_frame=cf,
                                         num_hierarchy_levels=num_hierarchy_levels, hierarchy_method=hierarchy_method,
                                         num_time_samples=num_time_samples, time_step=time_step, creator=self.user,
                                         public=public)
 
-        lkup_key = str(col.pk) + '&' + str(exp.pk)
-        bs_key = col.name + '&' + str(exp.name)
-        BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key, collection_name=col.name,
-                                  experiment_name=exp.name)
+        if created:
+            lkup_key = str(col.pk) + '&' + str(exp.pk)
+            bs_key = col.name + '&' + str(exp.name)
+            BossLookup.objects.create(lookup_key=lkup_key, boss_key=bs_key, collection_name=col.name,
+                                    experiment_name=exp.name)
 
         # Give permissions to the users primary group
         primary_group = self.user.username + '-primary'
@@ -397,7 +406,7 @@ class SetupTestDB:
 
         col = Collection.objects.get(name=collection_name)
         exp = Experiment.objects.get(name=experiment_name, collection=col)
-        channel = Channel.objects.create(name=channel_name, experiment=exp,
+        channel, created = Channel.objects.get_or_create(name=channel_name, experiment=exp,
                                          default_time_sample=default_time_sample, base_resolution=base_resolution,
                                          type=channel_type, datatype=datatype, creator=self.user,
                                          public=public, storage_type=storage_type, bucket=bucket, cv_path=cv_path)
@@ -412,11 +421,12 @@ class SetupTestDB:
         # Set lookup key.
         base_lkup_key = str(col.pk) + '&' + str(exp.pk) + '&' + str(channel.pk)
         base_bs_key = col.name + '&' + exp.name + '&' + channel.name
-        BossLookup.objects.create(lookup_key=base_lkup_key, boss_key=base_bs_key,
-                                  collection_name=col.name,
-                                  experiment_name=exp.name,
-                                  channel_name=channel.name
-                                  )
+        if created: 
+            BossLookup.objects.create(lookup_key=base_lkup_key, boss_key=base_bs_key,
+                                    collection_name=col.name,
+                                    experiment_name=exp.name,
+                                    channel_name=channel.name
+                                    )
 
         # Give permissions to the users primary group
         primary_group = self.user.username + '-primary'
@@ -433,10 +443,11 @@ class DjangoSetupLayer(AWSSetupLayer):
     @classmethod
     def setUp(cls):
         # Create a user in django
-        cls.superuser = cls.django_setup_helper.create_super_user()
-        cls.user = cls.django_setup_helper.create_user('testuser')
+        cls.superuser = cls.django_setup_helper.create_super_user('django-superuser')
+        cls.user = cls.django_setup_helper.create_user('django-testuser')
         cls.django_setup_helper.add_role('resource-manager')
         cls.django_setup_helper.set_user(cls.user)
 
         # Populate django models DB
         cls.django_setup_helper.insert_spatialdb_test_data()
+        cls.django_setup_helper.insert_cloudvolume_test_data()

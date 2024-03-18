@@ -353,8 +353,8 @@ class TestIntegrationBossIngestView(BossIngestViewTestMixin, APITestCase):
     def setUpTestData(cls):
         # Set the environment variable for the tests
         dbsetup = SetupTestDB()
-        cls.superuser = dbsetup.create_super_user()
-        cls.user = dbsetup.create_user('testuser')
+        cls.superuser = dbsetup.create_super_user('ingest-superuser')
+        cls.user = dbsetup.create_user('ingest-testuser')
         dbsetup.set_user(cls.user)
         dbsetup.insert_ingest_test_data()
 

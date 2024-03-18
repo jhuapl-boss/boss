@@ -95,19 +95,24 @@ class BossIntegrationIngestManagerTestMixin(object):
 
 
 class TestIntegrationBossIngestManager(BossIntegrationIngestManagerTestMixin, APITestCase):
-     def setUp(self):
-         # Randomize queue names.
-         NDQueue.test_mode = True
+    def setUp(self):
+        # Log in user
+        self.client.force_login(self.user)
+        
+        # Randomize queue names.
+        NDQueue.test_mode = True
 
-         # Get the config_data
-         self.user = User.objects.create_superuser(username='testuser1', email='test@test.com', password='testuser')
-         config_data = SetupTests().get_ingest_config_data_dict()
-         self.example_config_data = config_data
-         dbsetup = SetupTestDB()
-         dbsetup.set_user(self.user)
-         dbsetup.insert_ingest_test_data()
+        # Get the config_data
+        self.example_config_data = SetupTests().get_ingest_config_data_dict()
 
-     def tearDown(self):
-         NDQueue.test_mode = False
+    @classmethod
+    def setUpTestData(cls):
+        dbsetup = SetupTestDB()
+        cls.user = dbsetup.create_super_user(username='testuser1')
+        dbsetup.set_user(cls.user)
+        dbsetup.insert_ingest_test_data()
+
+    def tearDown(self):
+        NDQueue.test_mode = False
 
 

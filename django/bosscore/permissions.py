@@ -75,6 +75,14 @@ class BossPermissionManager:
         assign_perm('delete', user_primary_group, obj)
         assign_perm('assign_group', user_primary_group, obj)
         assign_perm('remove_group', user_primary_group, obj)
+
+        # Add metadata permissions for primary user
+        if ct.model != 'coordinateframe':
+            assign_perm('read_metadata', user_primary_group, obj)
+            assign_perm('add_metadata', user_primary_group, obj)
+            assign_perm('update_metadata', user_primary_group, obj)
+            assign_perm('delete_metadata', user_primary_group, obj)
+
         if ct.model == 'channel':
             assign_perm('add_volumetric_data', user_primary_group, obj)
             assign_perm('read_volumetric_data', user_primary_group, obj)
@@ -182,6 +190,14 @@ class BossPermissionManager:
             assign_perm('delete', admin_group, obj)
             assign_perm('assign_group', admin_group, obj)
             assign_perm('remove_group', admin_group, obj)
+
+            # Add metadata permissions for admin user
+            if ct.model != 'coordinateframe':
+                assign_perm('read_metadata', admin_group, obj)
+                assign_perm('add_metadata', admin_group, obj)
+                assign_perm('update_metadata', admin_group, obj)
+                assign_perm('delete_metadata', admin_group, obj)
+
             if ct.model == 'channel':
                 assign_perm('add_volumetric_data', admin_group, obj)
                 assign_perm('read_volumetric_data', admin_group, obj)
@@ -190,35 +206,6 @@ class BossPermissionManager:
         except Group.DoesNotExist:
             raise BossError("Cannot assign permissions to the admin group because the group does not exist",
                             ErrorCodes.GROUP_NOT_FOUND)
-
-    @staticmethod
-    def check_resource_permissions(user, obj, method_type):
-        """
-        Check user permissions for a resource object
-        Args:
-            user: User name
-            obj: Obj
-            method_type: Method type specified in the request
-
-        Returns:
-            bool. True if the user has the permission on the resource
-
-        """
-        if method_type == 'GET':
-            permission = 'read'
-        elif method_type == 'POST':
-            permission = 'add'
-        elif method_type == 'PUT':
-            permission = 'update'
-        elif method_type == 'DELETE':
-            permission = 'delete'
-        else:
-            raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
-
-        if permission in get_perms(user, obj):
-            return True
-        else:
-            return False
 
     @staticmethod
     def check_data_permissions(user, obj, method_type):
@@ -239,6 +226,35 @@ class BossPermissionManager:
             permission = 'add_volumetric_data'
         elif method_type == 'DELETE':
             permission = 'delete_volumetric_data'
+        else:
+            raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
+
+        if permission in get_perms(user, obj):
+            return True
+        else:
+            return False
+
+    @staticmethod
+    def check_metadata_permissions(user, obj, method_type):
+        """
+        Check user permissions for a metadata entry
+        Args:
+            user: User name
+            obj: resource
+            method_type: Method type specified in the post
+
+        Returns:
+            bool. True if the user has the permission on the resource
+
+        """
+        if method_type == 'GET':
+            permission = 'read_metadata'
+        elif method_type == 'POST':
+            permission = 'add_metadata'
+        elif method_type == 'PUT':
+            permission = 'update_metadata'
+        elif method_type == 'DELETE':
+            permission = 'delete_metadata'
         else:
             raise BossError("Unable to get permissions for this request", ErrorCodes.INVALID_POST_ARGUMENT)
 
