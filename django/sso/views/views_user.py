@@ -68,6 +68,13 @@ def check_for_admin(user):
     else:
         return None
 
+def check_for_user_manager(user):
+    bpm = BossPrivilegeManager(user)
+    if not bpm.has_role('user-manager') and not bpm.has_role('admin'):
+        return BossHTTPError(str(user) + " does not have the required role 'user-manager' or 'admin'", ErrorCodes.MISSING_ROLE)
+    else:
+        return None
+
 class KeyCloakClientMixin:
     """
     Mixin for that returns a logged in KeyCloakClient if LOCAL_KEYCLOAK_TESTING
@@ -217,14 +224,16 @@ class BossUserRole(APIView, KeyCloakClientMixin):
     View to assign role to users
     """
 
-    @check_role("user-manager")
     @validate_role()
-    def get(self, request, user_name, role_name=None):
+    def get(self, request, user_name=None, role_name=None):
         """
         Multi-function method
-        1) If role_name is None, return all roles assigned to the user
-        2) If role_name is not None, return True/False if the user
-           is assigned the given role
+        1) if user_name and role_name is None, return all roles assigned to 
+            logged-in user
+        2) If role_name is None but username is specified return all roles 
+            assigned to the specified user
+        3) If role_name and username specfied, return True/False if the user
+            is assigned the given role
 
         Args:
            request: Django rest framework request
@@ -236,6 +245,15 @@ class BossUserRole(APIView, KeyCloakClientMixin):
         """
         try:
             with self.get_keycloak_client() as kc:
+                signed_in_user = request.GET.get('user', str(request.user))
+
+                if user_name is None:
+                    user_name = signed_in_user
+                else:
+                    resp = check_for_user_manager(signed_in_user)
+                    if resp is not None:
+                        return resp
+                
                 resp = kc.get_realm_roles(user_name)
                 roles = [r['name'] for r in resp]
                 roles = filter_roles(roles)
