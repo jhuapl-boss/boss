@@ -21,7 +21,7 @@ from rest_framework import status
 
 from bossspatialdb.views import Cutout
 
-from bosscore.test.setup_db import SetupTestDB
+from bosscore.test.setup_db import DjangoSetupLayer
 from bosscore.error import BossError
 
 import numpy as np
@@ -50,14 +50,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/chan1/0/0:128/0:128/0:16/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/chan1/0/0:128/0:128/0:16/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='chan1',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='chan1',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -80,14 +80,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/chan1/0/128:256/256:384/16:32/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/chan1/0/128:256/256:384/16:32/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='chan1',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='chan1',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -111,14 +111,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
         
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/chan1/0/140:692/256:384/7:31/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/chan1/0/140:692/256:384/7:31/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='chan1',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='chan1',
                                     resolution='0', x_range='140:692', y_range='256:384', z_range='7:31', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -141,14 +141,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
         
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/chan2/0/0:128/0:128/0:16/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/chan2/0/0:128/0:128/0:16/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='chan2',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='chan2',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -170,14 +170,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/chan2/0/128:256/256:384/16:32/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/chan2/0/128:256/256:384/16:32/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='chan2',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='chan2',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -200,14 +200,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/chan2/0/140:692/256:384/7:31/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/chan2/0/140:692/256:384/7:31/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='chan2',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='chan2',
                                     resolution='0', x_range='140:692', y_range='256:384', z_range='7:31', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -231,14 +231,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/anno1/0/0:128/0:128/0:16/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/anno1/0/0:128/0:128/0:16/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='anno1',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='anno1',
                                     resolution='0', x_range='0:128', y_range='0:128', z_range='0:16', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -261,14 +261,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/anno1/0/128:256/256:384/16:32/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/anno1/0/128:256/256:384/16:32/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='anno1',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='anno1',
                                     resolution='0', x_range='128:256', y_range='256:384', z_range='16:32', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -291,14 +291,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
 
         # Create Request to get data you posted
         factory = APIRequestFactory()
-        request = factory.get('/' + version + '/cutout/col1/exp1/anno1/0/140:692/256:384/7:31/',
+        request = factory.get('/' + version + '/cutout/col1-cvdb/exp1/anno1/0/140:692/256:384/7:31/',
                               accepts='application/blosc')
 
         # log in user
         force_authenticate(request, user=self.user)
 
         # Make request
-        response = Cutout.as_view()(request, collection='col1', experiment='exp1', channel='anno1',
+        response = Cutout.as_view()(request, collection='col1-cvdb', experiment='exp1', channel='anno1',
                                     resolution='0', x_range='140:692', y_range='256:384', z_range='7:31', t_range=None).render()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -312,23 +312,14 @@ class CutoutInterfaceViewCloudVolumeMixin(object):
         np.testing.assert_array_equal(data_mat, offset_mat)
 
 class TestCutoutCloudVolumeInterfaceView(CutoutInterfaceViewCloudVolumeMixin, APITestCase):
-    
-    @classmethod
-    def setUpClass(cls):
-        """ Set everything up for testing """
-        # Create a user
-        cls.dbsetup = SetupTestDB()
-        cls.user = cls.dbsetup.create_user('testuser')
+    layer = DjangoSetupLayer
+    user = None
 
-        # Populate DB
-        cls.dbsetup.insert_cloudvolume_test_data()
-
-        # Set up external cloudvolume instance
-        # TODO: Fails if cloudvolume not already set up. Make method that creates new cloudvolume.
-        cls.vol_uint8 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan1", use_https=True)
-        cls.vol_uint16 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan2", use_https=True)
-        cls.vol_uint64 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/anno1", use_https=True)
-    
-    @classmethod
-    def tearDownClass(cls):
-        pass
+    def setUp(self):
+        """ Copy params from the Layer setUpClass
+        """
+        # Setup config
+        self.user = self.layer.user
+        self.vol_uint8 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan1", use_https=True)
+        self.vol_uint16 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/chan2", use_https=True)
+        self.vol_uint64 = CloudVolume(f"s3://{TEST_BUCKET}/col1/exp1/anno1", use_https=True)

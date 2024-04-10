@@ -101,6 +101,10 @@ class Collection(models.Model):
             ('add', 'Can add resources '),
             ('assign_group', 'Can assign groups permissions for the resource'),
             ('remove_group', 'Can remove groups permissions for the resource'),
+            ('add_metadata', 'Can add metadata for the channel'),
+            ('read_metadata', 'Can read metadata for the channel'),
+            ('update_metadata', 'Can update metadata for the channel'),
+            ('delete_metadata', 'Can delete metadata for the channel')
 
         )
 
@@ -226,6 +230,10 @@ class Experiment(models.Model):
             ('add', 'Can add resources '),
             ('assign_group', 'Can assign groups permissions for the resource'),
             ('remove_group', 'Can remove groups permissions for the resource'),
+            ('add_metadata', 'Can add metadata for the channel'),
+            ('read_metadata', 'Can read metadata for the channel'),
+            ('update_metadata', 'Can update metadata for the channel'),
+            ('delete_metadata', 'Can delete metadata for the channel')
         )
 
     def __str__(self):
@@ -333,6 +341,10 @@ class Channel(models.Model):
             ('add_volumetric_data', 'Can add volumetric data for the channel'),
             ('read_volumetric_data', 'Can read volumetric data for the channel'),
             ('delete_volumetric_data', 'Can delete volumetric data for the channel'),
+            ('add_metadata', 'Can add metadata for the channel'),
+            ('read_metadata', 'Can read metadata for the channel'),
+            ('update_metadata', 'Can update metadata for the channel'),
+            ('delete_metadata', 'Can delete metadata for the channel'),
         )
 
     def add_source(self, source):

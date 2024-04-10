@@ -38,18 +38,17 @@ class BossCoreMetaServiceViewIntegrationTests(MetaServiceViewTestsMixin, APITest
     Uses Vault and AWS's DynamoDB (as opposed to a local DynamoDB).
     """
     user = None
-
+    
     def setUp(self):
-        dbsetup = SetupTestDB()
-        dbsetup.create_super_user()
-        self.user = User.objects.create_superuser(username='testuser', email='test@test.com', password='testuser')
-        dbsetup.set_user(self.user)
-
         self.client.force_login(self.user)
-        dbsetup.insert_test_data()
-
+        
     @classmethod
     def setUpTestData(cls):
+        dbsetup = SetupTestDB()
+        cls.user = dbsetup.create_super_user(username='meta-superuser')
+        dbsetup.set_user(cls.user)
+        dbsetup.insert_test_data()
+
         # Load table info
         cfgfile = open('bosscore/dynamo_schema.json', 'r')
         tblcfg = json.load(cfgfile)

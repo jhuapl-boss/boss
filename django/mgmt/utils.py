@@ -28,7 +28,20 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
     add_v  = [t,t,f]
     del_v  = [t,t,t]
 
-    def make_selection(p,is_chan):
+    # read_metadata, add_metadata, update_metadata, delete_metadata
+    read_m = [t, f, f, f]
+    add_m = [t, t, f, f]
+    del_m = [t, t, t, t]
+ 
+    def make_selection(p, is_chan):
+        """Returns a permission group or raw permissions based on the raw 
+        permissions from the requesting user's group.
+        
+        Args:
+        p (list): list of raw permissions from the requestor's group
+        is_chan (bool): True if the requested resource is a channel
+        """
+        
         chk = [
             'read' in p,
             'add' in p,
@@ -44,26 +57,41 @@ def get_perms(request, collection=None, experiment=None, channel=None, group=Non
             'delete_volumetric_data' in p,
         ]
 
+        chk_m = [
+            'read_metadata' in p,
+            'add_metadata' in p,
+            'update_metadata' in p,
+            'delete_metadata' in p
+        ]
+
         perm = None
         if not is_chan:
-            if chk == read:
+            if chk == read and chk_m == read_m:
                 perm = "read"
-            elif chk == write:
+            elif chk == read and chk_m == add_m:
+                perm = "read+addmeta"
+            elif chk == read and chk_m == del_m:
+                perm = "read+fullmeta"
+            elif chk == write and chk_m == del_m:
                 perm = "write"
-            elif chk == admin:
+            elif chk == admin and chk_m == del_m:
                 perm = "admin"
-            elif chk == admin_d:
+            elif chk == admin_d and chk_m == del_m:
                 perm = "admin+delete"
             else:
                 perm = "Raw: " + ", ".join(p)
         else:
-            if chk == read and chk_v == read_v:
+            if chk == read and chk_m == read_m and chk_v == read_v:
                 perm = "read"
-            elif chk == write and chk_v == add_v:
+            elif chk == read and chk_m == add_m and chk_v == read_v:
+                perm = "read+addmeta"
+            elif chk == read and chk_m == del_m and chk_v == read_v:
+                perm = "read+fullmeta"
+            elif chk == write and chk_m == del_m and chk_v == add_v:
                 perm = "write"
-            elif chk == admin and chk_v == add_v: # make sure admin has proper permissions
+            elif chk == admin and chk_m == del_m and chk_v == add_v:
                 perm = "admin"
-            elif chk == admin_d and chk_v == del_v:
+            elif chk == admin_d and chk_m == del_m and chk_v == del_v:
                 perm = "admin+delete"
             else:
                 perm = "Raw: " + ", ".join(p)
@@ -97,13 +125,19 @@ def set_perms(request, form, collection=None, experiment=None, channel=None, gro
 
     perms = data['permissions']
     if perms == "read":
-        perms = ['read']
+        perms = ['read', 'read_metadata']
+    elif perms == "read+addmeta":
+        perms = ['read', 'read_metadata', 'add_metadata']
+    elif perms == "read+fullmeta":
+        perms = ['read', 'read_metadata', 'update_metadata', 'add_metadata', 'delete_metadata']
     elif perms == "write":
-        perms = ['read', 'add', 'update']
+        perms = ['read', 'add', 'update', 'read_metadata', 'update_metadata', 'add_metadata', 'delete_metadata']
     elif perms == "admin":
-        perms = ['read', 'add', 'update', 'assign_group', 'remove_group']
+        perms = ['read', 'add', 'update', 'assign_group', 'remove_group', 
+            'read_metadata', 'update_metadata', 'add_metadata', 'delete_metadata']
     elif perms == "admin+delete":
-        perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group']
+        perms = ['read', 'add', 'update', 'delete', 'assign_group', 'remove_group',
+            'read_metadata', 'update_metadata', 'add_metadata', 'delete_metadata']
     else:
         raise Exception("Unknown permissions: " + perms)
 
