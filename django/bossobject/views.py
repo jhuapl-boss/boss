@@ -191,3 +191,52 @@ class BoundingBox(APIView):
             return Response(data, status=200)
         except (TypeError, ValueError) as e:
             return BossHTTPError("Type error in the boundingbox view. {}".format(e), ErrorCodes.TYPE_ERROR)
+
+
+class CuboidsFromID(APIView):
+    """
+        View to get cuboids that belong to a certain ID. 
+
+    """
+    def get(self, request, collection, experiment, channel, resolution, id):
+        """
+        Return the list of cuboid indicies that belong to a certain ID. 
+
+        Args:
+            request: DRF Request object
+            collection: Collection name specifying the collection you want
+            experiment: Experiment name specifying the experiment
+            channel: Channel_name
+            resolution: Data resolution
+            id: The id of the object
+        Returns:
+            JSON dict with the list of cuboid indicies. 
+        Raises:
+            BossHTTPError for an invalid request
+        """
+
+        try:
+            request_args = {
+                "service": "boundingbox",
+                "collection_name": collection,
+                "experiment_name": experiment,
+                "channel_name": channel,
+                "resolution": resolution,
+                "id": id
+            }
+            req = BossRequest(request, request_args)
+        except BossError as err:
+            return err.to_http()
+
+        # create a resource
+        resource = project.BossResourceDjango(req)
+
+        try:
+            # Get interface to SPDB cache
+            spdb = SpatialDB(settings.KVIO_SETTINGS, settings.STATEIO_CONFIG, settings.OBJECTIO_CONFIG)
+            data = spdb.get_cuboids_from_id(resource, int(resolution), int(id))
+            if data is None:
+                return BossHTTPError("The id does not exist. {}".format(id), ErrorCodes.OBJECT_NOT_FOUND)
+            return Response(data, status=200)
+        except (TypeError, ValueError) as e:
+            return BossHTTPError("Type error in the CuboidsFromIDs view. {}".format(e), ErrorCodes.TYPE_ERROR)
