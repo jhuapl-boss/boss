@@ -50,3 +50,18 @@ class JPEGRenderer(renderers.BaseRenderer):
         file_obj.seek(0)
         return file_obj.read()
 
+class TIFFRenderer(renderers.BaseRenderer):
+    """ A DRF renderer for rendering an image as a TIFF file """
+    media_type = 'image/tiff'
+    format = 'tiff'
+    charset = None
+    render_style = 'binary'
+
+    @check_for_403
+    @check_for_429
+    def render(self, data, media_type=None, renderer_context=None):
+        file_obj = io.BytesIO()
+        # Save the image data as TIFF instead of JPEG
+        data.save(file_obj, "TIFF")
+        file_obj.seek(0)
+        return file_obj.read()
