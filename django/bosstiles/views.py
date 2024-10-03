@@ -23,7 +23,9 @@ from bosscore.request import BossRequest
 from bosscore.error import BossError, BossHTTPError, ErrorCodes
 from bossutils.logger import bossLogger
 
+
 import spdb
+import cvdb
 
 import bossutils
 
@@ -142,10 +144,15 @@ class CutoutTile(APIView):
 
 
 
-        # Get interface to SPDB cache
-        cache = spdb.spatialdb.SpatialDB(settings.KVIO_SETTINGS,
-                                         settings.STATEIO_CONFIG,
-                                         settings.OBJECTIO_CONFIG)
+        # Get interface to SPDB or CVDB Mock cache
+        if resource.get_channel().is_cloudvolume():
+            cache = cvdb.cloudvolumedb.CloudVolumeDB()
+        else:
+            cache = spdb.spatialdb.SpatialDB(
+                settings.KVIO_SETTINGS,
+                settings.STATEIO_CONFIG,
+                settings.OBJECTIO_CONFIG
+        )
 
         # Get the params to pull data out of the cache
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
@@ -283,10 +290,16 @@ class Tile(APIView):
 
 
 
-        # Get interface to SPDB cache
-        cache = spdb.spatialdb.SpatialDB(settings.KVIO_SETTINGS,
-                                         settings.STATEIO_CONFIG,
-                                         settings.OBJECTIO_CONFIG)
+        # Get interface to SPDB or CVDB Mock cache
+        if resource.get_channel().is_cloudvolume():
+            cache = cvdb.cloudvolumedb.CloudVolumeDB()
+        else:
+            cache = spdb.spatialdb.SpatialDB(
+                settings.KVIO_SETTINGS,
+                settings.STATEIO_CONFIG,
+                settings.OBJECTIO_CONFIG
+        )
+
 
         # Get the params to pull data out of the cache
         corner = (req.get_x_start(), req.get_y_start(), req.get_z_start())
