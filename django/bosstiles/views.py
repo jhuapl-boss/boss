@@ -27,7 +27,7 @@ import spdb
 
 import bossutils
 
-from .renderers import PNGRenderer, JPEGRenderer, TIFFRenderer
+from .renderers import PNGRenderer, JPEGRenderer, TIFFRenderer, JPEG2000Renderer
 
 
 class CutoutTile(APIView):
@@ -36,7 +36,7 @@ class CutoutTile(APIView):
 
     * Requires authentication.
     """
-    renderer_classes = (PNGRenderer, JPEGRenderer, TIFFRenderer)
+    renderer_classes = (PNGRenderer, JPEGRenderer, TIFFRenderer, JPEG2000Renderer)
 
     def __init__(self):
         super().__init__()
@@ -175,7 +175,7 @@ class Tile(APIView):
 
     * Requires authentication.
     """
-    renderer_classes = (PNGRenderer, JPEGRenderer, TIFFRenderer)
+    renderer_classes = (PNGRenderer, JPEGRenderer, TIFFRenderer, JPEG2000Renderer)
 
     def __init__(self):
         super().__init__()

@@ -266,6 +266,67 @@ class TileInterfaceViewTestMixin(object):
 
         np.testing.assert_equal(test_img, np.squeeze(self.test_data_8[8:12, 28:32, 0]))
 
+    def test_tiff_uint8_xy(self):
+        """ Test a png xy slice"""
+        # Post data to the database
+        factory = APIRequestFactory()
+
+        # Get an image file
+        request = factory.get('/' + version + '/tile/col1/exp1/channel1/xy/512/0/0/0/5/',
+                              Accept='image/tiff')
+        force_authenticate(request, user=self.user)
+        # Make request
+        response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                  orientation='xy', tile_size='512', resolution='0',
+                                  x_idx='0', y_idx='0', z_idx='5')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check data is correct (this is pre-renderer)
+        test_img = np.array(response.data, dtype="uint8")
+
+        np.testing.assert_equal(test_img, self.test_data_8[5, 0:512, 0:512])
+
+    def test_tiff_uint16_xy(self):
+        """ Test a png xy slice"""
+        # Post data to the database
+        factory = APIRequestFactory()
+
+        # Get an image file
+        request = factory.get('/' + version + '/tile/col1/exp1/channel2/xy/512/0/0/0/5/',
+                              Accept='image/tiff')
+        force_authenticate(request, user=self.user)
+        # Make request
+        response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                  orientation='xy', tile_size='512', resolution='0',
+                                  x_idx='0', y_idx='0', z_idx='5')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check data is correct (this is pre-renderer)
+        test_img = np.array(response.data, dtype="uint16")
+
+        np.testing.assert_equal(test_img, self.test_data_8[5, 0:512, 0:512])
+
+
+    def test_jp2_uint8_xy(self):
+        """ Test a png xy slice"""
+        # Post data to the database
+        factory = APIRequestFactory()
+
+        # Get an image file
+        request = factory.get('/' + version + '/tile/col1/exp1/channel1/xy/512/0/0/0/5/',
+                              Accept='image/jp2')
+        force_authenticate(request, user=self.user)
+        # Make request
+        response = Tile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                  orientation='xy', tile_size='512', resolution='0',
+                                  x_idx='0', y_idx='0', z_idx='5')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check data is correct (this is pre-renderer)
+        test_img = np.array(response.data, dtype="uint8")
+
+        np.testing.assert_equal(test_img, self.test_data_8[5, 0:512, 0:512])
+
 
 class TestTileInterfaceView(TileInterfaceViewTestMixin, APITestCase):
 

@@ -65,3 +65,19 @@ class TIFFRenderer(renderers.BaseRenderer):
         data.save(file_obj, "TIFF")
         file_obj.seek(0)
         return file_obj.read()
+
+class JPEG2000Renderer(renderers.BaseRenderer):
+    """ A DRF renderer for rendering an image as a JPEG2000 file """
+    media_type = 'image/jp2'
+    format = 'jp2'
+    charset = None
+    render_style = 'binary'
+
+    @check_for_403
+    @check_for_429
+    def render(self, data, media_type=None, renderer_context=None):
+        file_obj = io.BytesIO()
+        # Save the image data as JPEG2000
+        data.save(file_obj, "JP2")
+        file_obj.seek(0)
+        return file_obj.read()
