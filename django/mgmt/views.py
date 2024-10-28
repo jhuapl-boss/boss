@@ -378,7 +378,7 @@ class Resources(LoginRequiredMixin, View):
     def get(self, request, col_form=None, coord_form=None):
         page_error = None
 
-        is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+        is_admin = 1 if BossPermissionManager.is_in_group(request.user, ADMIN_GRP) else 0
 
         args = {
             'user_roles': get_roles(request),
@@ -490,7 +490,7 @@ class Collection(LoginRequiredMixin, View):
         if err:
             return err
 
-        is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+        is_admin = 1 if BossPermissionManager.is_in_group(request.user, ADMIN_GRP) else 0
 
         args = {
             'user_roles': get_roles(request),
@@ -596,7 +596,7 @@ class Experiment(LoginRequiredMixin, View):
         if err:
             return err
 
-        is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+        is_admin = 1 if BossPermissionManager.is_in_group(request.user, ADMIN_GRP) else 0
 
         args = {
             'user_roles': get_roles(request),
@@ -710,7 +710,7 @@ class Channel(LoginRequiredMixin, View):
         if err:
             return err
 
-        is_admin = BossPermissionManager.is_in_group(request.user, ADMIN_GRP)
+        is_admin = 1 if BossPermissionManager.is_in_group(request.user, ADMIN_GRP) else 0
 
         args = {
             'user_roles': get_roles(request),
