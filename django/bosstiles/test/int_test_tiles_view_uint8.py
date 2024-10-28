@@ -91,6 +91,50 @@ class ImageViewIntegrationTests(ImageInterfaceViewTestMixin, APITestCase):
 
         np.testing.assert_equal(test_img, self.test_data_8[3, 300:800, 400:700])
 
+    def test_no_cache_read_tiff(self):
+        """Test no-cache option when reading an image"""
+        factory = APIRequestFactory()
+
+        # Get an image file
+        request = factory.get('/' + version + '/image/col1/exp1/channel1/xy/0/400:700/300:800/3/?no-cache=true',
+                              Accept='image/tiff')
+        force_authenticate(request, user=self.user)
+
+        time.sleep(10)
+
+        # Make request
+        response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                        orientation='xy', resolution='0', x_args='400:700', y_args='300:800',
+                                        z_args='3')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check data is correct (this is pre-renderer)
+        test_img = np.array(response.data, dtype="uint8")
+
+        np.testing.assert_equal(test_img, self.test_data_8[3, 300:800, 400:700])
+
+    def test_no_cache_read_jp2(self):
+        """Test no-cache option when reading an image"""
+        factory = APIRequestFactory()
+
+        # Get an image file
+        request = factory.get('/' + version + '/image/col1/exp1/channel1/xy/0/400:700/300:800/3/?no-cache=true',
+                              Accept='image/jp2')
+        force_authenticate(request, user=self.user)
+
+        time.sleep(10)
+
+        # Make request
+        response = CutoutTile.as_view()(request, collection='col1', experiment='exp1', channel='channel1',
+                                        orientation='xy', resolution='0', x_args='400:700', y_args='300:800',
+                                        z_args='3')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Check data is correct (this is pre-renderer)
+        test_img = np.array(response.data, dtype="uint8")
+
+        np.testing.assert_equal(test_img, self.test_data_8[3, 300:800, 400:700])
+
 
 class TileViewIntegrationTests(TileInterfaceViewTestMixin, APITestCase):
     layer = DjangoSetupLayer
