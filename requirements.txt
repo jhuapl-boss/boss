@@ -10,7 +10,6 @@ mysqlclient==1.4.6
 # https://stackoverflow.com/questions/66060487/valueerror-numpy-ndarray-size-changed-may-indicate-binary-incompatibility-exp
 numpy==1.23.4
 wheel==0.24.0
-uWSGI==2.0.19.1
 
 drf-oidc-auth==0.10.0
 
